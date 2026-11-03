@@ -72,6 +72,7 @@ Windows GUIの手動操作・IME・アクセシビリティ、実媒体、性能
 - FATのレコード／候補上限と事前取消のテストを追加し、Rust全体は14件成功。
 - Linux/XvfbのGUIでexFATをスキャンし、名前クリック・一括選択・復元を操作。
   8ファイルの正解一致を確認。長い名前の表示を省略し、全文はツールチップで保持。
+- [Windows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41730155697)も成功し、alpha.2を公開済み。
 
 ## v0.2.0-alpha.3 追加検証
 
@@ -80,4 +81,14 @@ Windows GUIの手動操作・IME・アクセシビリティ、実媒体、性能
 - 使用中範囲の索引を独立したクラスター集合と照合。連続配置の大きな使用中ファイルは範囲として保持する。
 - FAT32/exFAT統合は17項目、Rustは15件。
 
-Windows上のFAT32/exFAT検証と配布成果物の確認結果は公開後に追記する。
+2026-11-03、[公開タグのWindows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41731219100)は成功。
+Windows debug/releaseのFAT32/exFAT・NTFS・圧縮/ADS・MCP統合と、Linuxの独立ツール検証を通過。
+最終版のLinux/Xvfb GUIでもexFATの8ファイルを正解と照合した。
+
+公開したrescue-0.2.0-alpha.3-windows-x64.zipをダウンロードし、SHA256SUMS.txtとの一致、
+ZIP内のCRC、GUI/CLIのx64 PE形式、MIT・依存通知・文書を含む9ファイルを確認した。
+ZIPサイズは3,439,643バイト。SHA-256:
+
+    da23044a75971a92585c2a61d00e4284a159c082d41bc2fccf80c2fbe2678479
+
+Windows GUIの手動操作、実媒体、有料製品との比較は引き続き未検証。
