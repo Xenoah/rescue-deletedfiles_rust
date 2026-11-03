@@ -233,7 +233,7 @@ impl eframe::App for App {
                 rescue_core::VERSION
             ));
             ui.label(
-                "対応: 非圧縮・非暗号化の削除ファイル。実ディスク・FAT/exFAT・RAIDは後続フェーズ。",
+                "対応: 通常・圧縮ファイル、ADSの別ファイル保存。暗号化・実ディスク・FAT/exFAT・RAIDは未対応。",
             );
         });
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {

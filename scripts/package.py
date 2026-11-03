@@ -22,6 +22,8 @@ files = {
     "THIRD_PARTY_NOTICES.txt": root/"dist/THIRD_PARTY_NOTICES.txt",
     "docs/ALPHA.md": root/"docs/ALPHA.md",
     "docs/SPEC.md": root/"docs/SPEC.md",
+    "docs/GOAL.md": root/"docs/GOAL.md",
+    "docs/VALIDATION.md": root/"docs/VALIDATION.md",
 }
 for name, path in files.items():
     if not path.is_file():

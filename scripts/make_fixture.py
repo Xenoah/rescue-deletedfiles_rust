@@ -18,15 +18,20 @@ def put(data, offset, fmt, value):
     struct.pack_into("<" + fmt, data, offset, value)
 
 
-def resident(kind, value, flags=0):
-    size = (24 + len(value) + 7) & ~7
+def resident(kind, value, flags=0, name=None):
+    encoded_name = name.encode("utf-16le") if name is not None else b""
+    value_offset = (24 + len(encoded_name) + 7) & ~7
+    size = (value_offset + len(value) + 7) & ~7
     result = bytearray(size)
     put(result, 0, "I", kind)
     put(result, 4, "I", size)
     put(result, 12, "H", flags)
+    result[9] = len(encoded_name) // 2
+    put(result, 10, "H", 24 if encoded_name else 0)
+    result[24:24+len(encoded_name)] = encoded_name
     put(result, 16, "I", len(value))
-    put(result, 20, "H", 24)
-    result[24:24 + len(value)] = value
+    put(result, 20, "H", value_offset)
+    result[value_offset:value_offset + len(value)] = value
     return result
 
 
@@ -40,7 +45,7 @@ def filename(name, parent=5, parent_sequence=1):
     return resident(0x30, value)
 
 
-def nonresident(runs, size, initialized=None, flags=0):
+def nonresident(runs, size, initialized=None, flags=0, name=None, compression=0):
     # runs are (number of clusters, LCN or None); offsets are signed deltas.
     encoded = bytearray()
     previous = 0
@@ -58,17 +63,26 @@ def nonresident(runs, size, initialized=None, flags=0):
         encoded.append(len(offset) << 4 | len(length))
         encoded.extend(length + offset)
     encoded.append(0)
-    attr = bytearray((64 + len(encoded) + 7) & ~7)
+    encoded_name = name.encode("utf-16le") if name is not None else b""
+    header_size = 72 if compression else 64
+    run_offset = (header_size + len(encoded_name) + 7) & ~7
+    attr = bytearray((run_offset + len(encoded) + 7) & ~7)
     put(attr, 0, "I", 0x80)
     put(attr, 4, "I", len(attr))
     attr[8] = 1
+    attr[9] = len(encoded_name) // 2
+    put(attr, 10, "H", header_size if encoded_name else 0)
+    attr[header_size:header_size+len(encoded_name)] = encoded_name
     put(attr, 12, "H", flags)
     put(attr, 24, "Q", clusters - 1)
-    put(attr, 32, "H", 64)
+    put(attr, 32, "H", run_offset)
+    put(attr, 34, "H", compression)
     put(attr, 40, "Q", sum(n for n, lcn in runs if lcn is not None) * SECTOR)
     put(attr, 48, "Q", size)
     put(attr, 56, "Q", size if initialized is None else initialized)
-    attr[64:64+len(encoded)] = encoded
+    if compression:
+        put(attr, 64, "Q", sum(n for n, lcn in runs if lcn is not None) * SECTOR)
+    attr[run_offset:run_offset+len(encoded)] = encoded
     return attr
 
 

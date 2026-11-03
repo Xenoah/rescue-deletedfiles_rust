@@ -37,12 +37,18 @@ pub(crate) enum Data {
         size: u64,
         initialized: u64,
     },
+    Compressed {
+        runs: Vec<Run>,
+        size: u64,
+        initialized: u64,
+        unit: u64,
+    },
 }
 impl Data {
     pub fn size(&self) -> u64 {
         match self {
             Self::Resident(v) => v.len() as u64,
-            Self::NonResident { size, .. } => *size,
+            Self::NonResident { size, .. } | Self::Compressed { size, .. } => *size,
         }
     }
     pub fn read(&self, image: &mut Image, offset: u64, length: usize) -> Result<Vec<u8>> {
@@ -68,7 +74,7 @@ impl Data {
                         .min(end.min(*initialized) - cursor)
                         as usize;
                     if let Some(physical) = run.physical {
-                        let chunk = image.read(physical + cursor - run.logical, count)?;
+                        let chunk = image.read(physical + (cursor - run.logical), count)?;
                         out[(cursor - offset) as usize..(cursor - offset) as usize + count]
                             .copy_from_slice(&chunk);
                     }
@@ -76,7 +82,72 @@ impl Data {
                 }
                 Ok(out)
             }
+            Self::Compressed {
+                runs,
+                initialized,
+                unit,
+                ..
+            } => {
+                let mut output = vec![0; length];
+                let mut cursor = offset;
+                while cursor < end.min(*initialized) {
+                    let start = cursor / unit * unit;
+                    let required = (initialized - start).min(*unit);
+                    let decoded = compression_unit(image, runs, start, *unit, required)?;
+                    let count = (start + required - cursor).min(end - cursor) as usize;
+                    let within = (cursor - start) as usize;
+                    let into = (cursor - offset) as usize;
+                    output[into..into + count].copy_from_slice(&decoded[within..within + count]);
+                    cursor += count as u64;
+                }
+                Ok(output)
+            }
         }
+    }
+}
+
+fn compression_unit(
+    image: &mut Image,
+    runs: &[Run],
+    start: u64,
+    unit: u64,
+    required: u64,
+) -> Result<Vec<u8>> {
+    let covered = runs.last().map(|r| r.logical + r.length).unwrap_or(0);
+    let end = start.saturating_add(unit).min(covered);
+    let mut encoded = Vec::with_capacity(unit as usize);
+    let mut cursor = start;
+    let mut sparse = false;
+    for run in runs
+        .iter()
+        .filter(|r| r.logical < end && r.logical + r.length > start)
+    {
+        if run.logical > cursor {
+            return Err(invalid("unmapped compression unit"));
+        }
+        let count = (run.logical + run.length).min(end) - cursor;
+        if let Some(address) = run.physical {
+            if sparse {
+                return Err(invalid(
+                    "allocated clusters after sparse compression-unit suffix",
+                ));
+            }
+            encoded.extend(image.read(address + (cursor - run.logical), count as usize)?);
+        } else {
+            sparse = true;
+        }
+        cursor += count;
+    }
+    if cursor < start + required {
+        return Err(invalid("incomplete compression unit"));
+    }
+    if encoded.is_empty() {
+        Ok(vec![0; required as usize])
+    } else if !sparse {
+        encoded.truncate(required as usize);
+        Ok(encoded)
+    } else {
+        crate::lznt1::decompress(&encoded, required as usize)
     }
 }
 
@@ -223,9 +294,28 @@ pub(crate) struct Record {
     pub name: Option<String>,
     pub parent: u64,
     pub parent_sequence: u16,
-    pub data: Option<Data>,
+    pub streams: Vec<Stream>,
     pub unsupported: Vec<String>,
     pub hash: String,
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct Stream {
+    pub name: Option<String>,
+    pub data: Option<Data>,
+    pub unsupported: Vec<String>,
+}
+
+pub(crate) fn candidate_id(index: u64, sequence: u16, stream: Option<&str>) -> String {
+    let mut id = format!("mft-{index}-{sequence}");
+    if let Some(name) = stream {
+        id.push_str("-ads-");
+        for code in name.encode_utf16() {
+            use std::fmt::Write;
+            let _ = write!(&mut id, "{code:04x}");
+        }
+    }
+    id
 }
 
 pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Record> {
@@ -262,7 +352,7 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         name: None,
         parent: 0,
         parent_sequence: 0,
-        data: None,
+        streams: Vec::new(),
         unsupported: Vec::new(),
         hash,
     };
@@ -281,11 +371,28 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         if nonresident > 1 {
             return Err(invalid("invalid residency flag"));
         }
-        let named = attr[9] != 0;
-        if named {
+        let stream_name = if attr[9] != 0 {
             let name_offset = u16_at(attr, 10)? as usize;
-            bytes(attr, name_offset, attr[9] as usize * 2)?;
-        }
+            let header = if nonresident == 0 {
+                24
+            } else if kind == 0x80 && u16_at(attr, 12)? & 1 != 0 {
+                72
+            } else {
+                64
+            };
+            if name_offset < header {
+                return Err(invalid("attribute name overlaps header"));
+            }
+            let codes = bytes(attr, name_offset, attr[9] as usize * 2)?
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .map(|b| u16::from_le_bytes([b[0], b[1]]))
+                .collect::<Vec<_>>();
+            Some(String::from_utf16(&codes).map_err(|_| invalid("invalid stream name UTF-16"))?)
+        } else {
+            None
+        };
         let attr_flags = u16_at(attr, 12)?;
         if kind == 0x20 {
             record
@@ -295,7 +402,10 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         if nonresident == 0 {
             let value_len = u32_at(attr, 16)? as usize;
             let offset = u16_at(attr, 20)? as usize;
-            if offset < 24 {
+            if offset < 24
+                || (stream_name.is_some()
+                    && offset < u16_at(attr, 10)? as usize + attr[9] as usize * 2)
+            {
                 return Err(invalid("resident value overlaps header"));
             }
             let value = bytes(attr, offset, value_len)?;
@@ -319,56 +429,97 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
                     name_priority = priority;
                 }
             }
-            if kind == 0x80 && !named {
-                if record.data.is_some() {
-                    return Err(invalid("multiple unnamed DATA attributes"));
-                }
-                if attr_flags != 0 {
-                    record
-                        .unsupported
-                        .push("unsupported resident DATA flags".into());
-                }
-                record.data = Some(Data::Resident(value.to_vec()));
+        }
+        if kind == 0x80 {
+            if record.streams.iter().any(|s| s.name == stream_name) {
+                return Err(invalid("duplicate DATA stream or unsupported extent"));
             }
-        } else if kind == 0x80 && !named {
-            if record.data.is_some() {
-                return Err(invalid("multiple DATA extents"));
-            }
-            if u64_at(attr, 16)? != 0 {
-                record.unsupported.push("extension DATA attribute".into());
-            } else if attr_flags & !0x8000 != 0 || u16_at(attr, 34)? != 0 {
-                record
-                    .unsupported
-                    .push("compressed/encrypted DATA is not supported by this alpha".into());
-            } else {
-                let size = u64_at(attr, 48)?;
-                let initialized = u64_at(attr, 56)?;
-                let run_offset = u16_at(attr, 32)? as usize;
-                if run_offset < 64 || initialized > size {
-                    return Err(invalid("invalid nonresident DATA header"));
-                }
-                let runs = runlist(
-                    attr.get(run_offset..)
-                        .ok_or_else(|| invalid("runlist offset"))?,
-                    geometry,
-                    u64_at(attr, 24)?,
-                )?;
-                let covered = runs.last().map(|r| r.logical + r.length).unwrap_or(0);
-                if size > covered {
-                    return Err(invalid("DATA larger than runlist"));
-                }
-                record.data = Some(Data::NonResident {
-                    runs,
-                    size,
-                    initialized,
-                });
-            }
+            let stream = parse_stream(attr, stream_name, attr_flags, geometry)?;
+            record.streams.push(stream);
         }
         at = at
             .checked_add(length)
             .ok_or_else(|| invalid("attribute offset overflow"))?;
     }
     Ok(record)
+}
+
+fn parse_stream(
+    attr: &[u8],
+    name: Option<String>,
+    flags: u16,
+    geometry: &Geometry,
+) -> Result<Stream> {
+    let mut stream = Stream {
+        name,
+        data: None,
+        unsupported: Vec::new(),
+    };
+    if attr[8] == 0 {
+        if flags != 0 {
+            stream
+                .unsupported
+                .push("unsupported resident DATA flags".into());
+        } else {
+            stream.data = Some(Data::Resident(
+                bytes(attr, u16_at(attr, 20)? as usize, u32_at(attr, 16)? as usize)?.to_vec(),
+            ));
+        }
+        return Ok(stream);
+    }
+    let compression = u16_at(attr, 34)?;
+    let compressed = flags & 1 != 0;
+    if u64_at(attr, 16)? != 0 {
+        stream.unsupported.push("extension DATA attribute".into());
+    } else if flags & !0x8001 != 0 {
+        stream
+            .unsupported
+            .push("encrypted or unknown DATA flags".into());
+    } else if (compressed && (compression != 4 || geometry.cluster > 4096))
+        || (!compressed && compression != 0)
+    {
+        stream
+            .unsupported
+            .push("unsupported compression-unit geometry".into());
+    } else {
+        let size = u64_at(attr, 48)?;
+        let initialized = u64_at(attr, 56)?;
+        let run_offset = u16_at(attr, 32)? as usize;
+        let header_end = if compressed { 72 } else { 64 };
+        let name_end = if stream.name.is_some() {
+            u16_at(attr, 10)? as usize + attr[9] as usize * 2
+        } else {
+            0
+        };
+        if run_offset < header_end.max(name_end) || initialized > size {
+            return Err(invalid("invalid nonresident DATA header"));
+        }
+        let runs = runlist(
+            attr.get(run_offset..)
+                .ok_or_else(|| invalid("runlist offset"))?,
+            geometry,
+            u64_at(attr, 24)?,
+        )?;
+        let covered = runs.last().map(|r| r.logical + r.length).unwrap_or(0);
+        if size > covered {
+            return Err(invalid("DATA larger than runlist"));
+        }
+        stream.data = Some(if compressed {
+            Data::Compressed {
+                runs,
+                size,
+                initialized,
+                unit: geometry.cluster * 16,
+            }
+        } else {
+            Data::NonResident {
+                runs,
+                size,
+                initialized,
+            }
+        });
+    }
+    Ok(stream)
 }
 
 pub(crate) struct Ntfs {
@@ -385,9 +536,17 @@ impl Ntfs {
                 "MFT attribute-list/compression is not supported by this alpha".into(),
             ));
         }
-        let mft = first.data.ok_or_else(|| invalid("MFT DATA is absent"))?;
+        let stream = first
+            .streams
+            .into_iter()
+            .find(|s| s.name.is_none())
+            .ok_or_else(|| invalid("MFT DATA is absent"))?;
+        if !stream.unsupported.is_empty() {
+            return Err(Error::Unsupported(stream.unsupported.join("; ")));
+        }
+        let mft = stream.data.ok_or_else(|| invalid("MFT DATA is absent"))?;
         if !matches!(mft, Data::NonResident { .. }) {
-            return Err(invalid("resident MFT"));
+            return Err(invalid("MFT must be nonresident and uncompressed"));
         }
         if let Data::NonResident {
             runs,
@@ -503,6 +662,61 @@ mod tests {
         assert_eq!(&bytes[..256], &[0x77; 256]);
         assert_eq!(&bytes[256..], &[0; 512]);
         assert!(stream.read(&mut image, u64::MAX, 2).is_err());
+    }
+    #[test]
+    fn compressed_4k_clusters_allow_random_reads_across_units() {
+        let temporary = tempfile::NamedTempFile::new().unwrap();
+        let mut raw = vec![b'B'; 8192 + 65536];
+        let encoded = [3, 0xb0, 2, b'A', 0xfc, 0x0f].repeat(16);
+        raw[4096..4096 + encoded.len()].copy_from_slice(&encoded);
+        std::fs::write(temporary.path(), raw).unwrap();
+        let mut image = Image::open(temporary.path()).unwrap();
+        let stream = Data::Compressed {
+            runs: vec![
+                Run {
+                    logical: 0,
+                    physical: Some(4096),
+                    length: 4096,
+                },
+                Run {
+                    logical: 4096,
+                    physical: None,
+                    length: 61440,
+                },
+                Run {
+                    logical: 65536,
+                    physical: Some(8192),
+                    length: 65536,
+                },
+            ],
+            size: 131072,
+            initialized: 130972,
+            unit: 65536,
+        };
+        let crossing = stream.read(&mut image, 65000, 1000).unwrap();
+        assert_eq!(&crossing[..536], &[b'A'; 536]);
+        assert_eq!(&crossing[536..], &[b'B'; 464]);
+        let tail = stream.read(&mut image, 130900, 172).unwrap();
+        assert_eq!(&tail[..72], &[b'B'; 72]);
+        assert_eq!(&tail[72..], &[0; 100]);
+        let malformed = [
+            Run {
+                logical: 0,
+                physical: Some(4096),
+                length: 4096,
+            },
+            Run {
+                logical: 4096,
+                physical: None,
+                length: 4096,
+            },
+            Run {
+                logical: 8192,
+                physical: Some(8192),
+                length: 57344,
+            },
+        ];
+        assert!(compression_unit(&mut image, &malformed, 0, 65536, 65536).is_err());
     }
     #[test]
     fn record_fixup_and_attribute_boundaries_are_checked() {

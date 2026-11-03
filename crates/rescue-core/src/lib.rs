@@ -1,3 +1,4 @@
+mod lznt1;
 mod ntfs;
 mod source;
 
@@ -59,6 +60,8 @@ pub struct Candidate {
     pub id: String,
     pub record: u64,
     pub sequence: u16,
+    #[serde(default)]
+    pub stream_name: Option<String>,
     pub name: String,
     pub original_path: String,
     pub path_verified: bool,
@@ -104,7 +107,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if session.schema_version != 1 {
+        if ![1, 2].contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -147,7 +150,7 @@ pub fn scan_image(
     let fingerprint = image.fingerprint()?;
     let ntfs = Ntfs::open(&mut image)?;
     let mut session = Session {
-        schema_version: 1,
+        schema_version: 2,
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
         fingerprint,
@@ -172,7 +175,7 @@ pub fn scan_image(
         }
         session.scanned_records = index + 1;
         match ntfs.record(&mut image, index) {
-            Ok(Some(record)) if record.base == 0 => {
+            Ok(Some(mut record)) if record.base == 0 => {
                 if record.directory {
                     if let Some(name) = record.name {
                         directories.insert(
@@ -183,24 +186,43 @@ pub fn scan_image(
                 } else if !record.in_use
                     && let Some(name) = record.name
                 {
-                    let mut warnings = record.unsupported;
-                    if record.data.is_none() {
-                        warnings.push("unnamed DATA is unavailable".into());
+                    if record.streams.is_empty() {
+                        record.streams.push(ntfs::Stream {
+                            name: None,
+                            data: None,
+                            unsupported: Vec::new(),
+                        });
                     }
-                    let supported = warnings.is_empty() && record.data.is_some();
-                    parents.push((record.parent, record.parent_sequence));
-                    session.candidates.push(Candidate {
-                        id: format!("mft-{index}-{}", record.sequence),
-                        record: index,
-                        sequence: record.sequence,
-                        original_path: name.clone(),
-                        name,
-                        path_verified: false,
-                        size: record.data.as_ref().map(|d| d.size()),
-                        supported,
-                        warnings,
-                        record_sha256: record.hash,
-                    });
+                    for stream in record.streams {
+                        if session.candidates.len() >= options.max_candidates {
+                            session.truncated = true;
+                            break;
+                        }
+                        let mut warnings = record.unsupported.clone();
+                        warnings.extend(stream.unsupported);
+                        if stream.data.is_none() {
+                            warnings.push("DATA is unavailable".into());
+                        }
+                        let supported = warnings.is_empty() && stream.data.is_some();
+                        let display = stream
+                            .name
+                            .as_ref()
+                            .map_or_else(|| name.clone(), |s| format!("{name}:{s}"));
+                        parents.push((record.parent, record.parent_sequence));
+                        session.candidates.push(Candidate {
+                            id: ntfs::candidate_id(index, record.sequence, stream.name.as_deref()),
+                            record: index,
+                            sequence: record.sequence,
+                            stream_name: stream.name,
+                            original_path: display.clone(),
+                            name: display,
+                            path_verified: false,
+                            size: stream.data.as_ref().map(|d| d.size()),
+                            supported,
+                            warnings,
+                            record_sha256: record.hash.clone(),
+                        });
+                    }
                 }
             }
             Err(error) => {
@@ -291,7 +313,7 @@ pub fn recover(
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if session.schema_version != 1 {
+    if ![1, 2].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if ids.is_empty() {
@@ -348,19 +370,36 @@ pub fn recover(
                 || record.directory
                 || record.base != 0
                 || record.sequence != candidate.sequence
-                || candidate.id != format!("mft-{}-{}", candidate.record, record.sequence)
+                || candidate.id
+                    != ntfs::candidate_id(
+                        candidate.record,
+                        record.sequence,
+                        candidate.stream_name.as_deref(),
+                    )
             {
                 return Err(Error::SourceChanged);
             }
             if !record.unsupported.is_empty() {
                 return Err(Error::Unsupported(record.unsupported.join("; ")));
             }
-            let data = record
+            let stream = record
+                .streams
+                .into_iter()
+                .find(|s| s.name == candidate.stream_name)
+                .ok_or(Error::SourceChanged)?;
+            if !stream.unsupported.is_empty() {
+                return Err(Error::Unsupported(stream.unsupported.join("; ")));
+            }
+            let data = stream
                 .data
-                .ok_or_else(|| Error::Unsupported("no unnamed DATA".into()))?;
+                .ok_or_else(|| Error::Unsupported("no DATA".into()))?;
             let name = record
                 .name
                 .ok_or_else(|| Error::Invalid("no filename".into()))?;
+            let name = stream.name.map_or_else(
+                || name.clone(),
+                |s| format!("{}__ADS__{}", safe_name(&name), safe_name(&s)),
+            );
             let filename = format!("{}_{}", Uuid::new_v4(), safe_name(&name));
             let partial = format!("{filename}.partial");
             let mut output =

@@ -82,6 +82,9 @@ def main(binary):
         proof = root/"proof.bin"
         proof.write_bytes(bytes(range(256))*100)
         command("ntfscp", image, proof, "/proof.bin")
+        ads = root/"ads.bin"
+        ads.write_bytes(b"Independent named stream\n" * 100)
+        command("ntfscp", "-N", "rescue-proof", image, ads, "/proof.bin")
         info = command("ntfsinfo", "-F", "/proof.bin", image)
         number = int(re.search(r"Dumping Inode (\d+)", info).group(1))
         sequence = mark_deleted(image, number)
@@ -92,9 +95,16 @@ def main(binary):
         recovered = result["results"][0]
         assert recovered["status"] == "completed"
         assert Path(recovered["path"]).read_bytes() == proof.read_bytes()
+        candidates = json.loads(command(binary, "results", "--session", summary["session"], "--json"))["candidates"]
+        named = next(c for c in candidates if c.get("stream_name") == "rescue-proof")
+        result = json.loads(command(binary, "recover", "--session", summary["session"],
+            "--id", named["id"], "--destination", root/"out", "--json"))
+        assert result["results"][0]["status"] == "completed"
+        assert Path(result["results"][0]["path"]).read_bytes() == ads.read_bytes()
         assert hashlib.sha256(image.read_bytes()).hexdigest() == before
         print(json.dumps({"status": "passed", "bytes": recovered["bytes_written"],
-                          "scope": "ntfs-3g metadata; emulated deleted-record flag"}))
+                          "ads_bytes": len(ads.read_bytes()),
+                          "scope": "ntfs-3g metadata with named DATA; emulated deleted-record flag"}))
 
 
 if __name__ == "__main__":

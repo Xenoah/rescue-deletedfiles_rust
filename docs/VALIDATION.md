@@ -1,4 +1,4 @@
-# v0.1 alpha の検証記録
+# Alpha の検証記録
 
 ## ローカル環境
 
@@ -31,8 +31,24 @@ Windows上の統合テストでは実行ファイル名をrescue.exeにする。
 
 ## 別途確認する項目
 
-Windowsでのビルド、debug/release実行ファイルの統合テストはGitHub Actionsで記録する。
+v0.1.0-alpha.2のWindowsでのビルド、debug/release実行ファイルの統合テストは
+[GitHub Actions](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41660787133)で成功。
+公開ZIPをダウンロードし、公開SHA256SUMS.txtとの一致とGUI/CLI・MIT・依存通知の同梱を確認した。
 alpha.1の公開CIはWindowsのライセンス通知生成で停止した。alpha.2では通知生成のUTF-8を明示し、
 上流ライセンスを改行変換しないGit属性を設定した。期待SHA-256は変更せず、照合を維持する。
 Windows GUIの手動操作・IME・アクセシビリティ、実媒体、性能目標、有料製品比較は未検証。
 未対応機能と既知の制約は[ALPHA.md](ALPHA.md)を参照する。
+
+## v0.2.0-alpha.1 追加検証
+
+- LZNT1の重なり参照、短い入力、展開上限、破損入力群、4KiBクラスターの圧縮単位境界。
+- scripts/e2e_streams.py: Linuxで13ストリームの正解一致、圧縮/非圧縮/疎領域の混在、
+  断片化、resident/non-resident/圧縮ADS、日本語・パス記号の名前、MCPからの復元。
+- セッションv1互換、改変されたストリーム名の拒否、暗号化ADSと通常ストリームの区別、
+  壊れた圧縮データの未完了扱い。
+- WindowsではRtlCompressBufferで生成する3種類の入力を追加し、16ストリームを照合するCIを用意。
+  native Windowsの結果は公開後に追記する。
+- ntfs-3g由来の通常DATA（25,600バイト）と名前付きDATA（2,500バイト）の復元。
+
+これは合成イメージとAPI由来の圧縮データの検証であり、Windowsの実ボリュームでの削除・復元、
+破損媒体や有料ソフトとの比較を検証したものではない。
