@@ -5,6 +5,11 @@ import json
 import subprocess
 from pathlib import Path
 
+def fail(message):
+    annotation = message.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print("::error::" + annotation)
+    raise SystemExit(message)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--output", type=Path, required=True)
 args = parser.parse_args()
@@ -13,13 +18,13 @@ vendor = {(v["package"], v["version"]):v for v in json.loads((vendor_root/"licen
 metadata = json.loads(subprocess.check_output([
     "cargo", "metadata", "--locked", "--offline", "--format-version", "1",
     "--filter-platform", "x86_64-pc-windows-msvc",
-], text=True))
+], text=True, encoding="utf-8"))
 packages = {p["id"]: p for p in metadata["packages"]}
 tree = subprocess.check_output([
     "cargo", "tree", "--workspace", "--locked", "--offline",
     "--target", "x86_64-pc-windows-msvc", "--edges", "normal,build",
     "--prefix", "none", "--format", "{p}",
-], text=True)
+], text=True, encoding="utf-8")
 selected = {(line.split()[0], line.split()[1].removeprefix("v"))
             for line in tree.splitlines() if len(line.split()) >= 2}
 visited = {p["id"] for p in metadata["packages"] if (p["name"], p["version"]) in selected}
@@ -45,7 +50,7 @@ for package_id in sorted(visited):
     for item in vendor.get((package["name"], package["version"]), {}).get("files", []):
         content = (vendor_root/item["path"]).read_bytes()
         if hashlib.sha256(content).hexdigest() != item["sha256"]:
-            raise SystemExit("Vendor license checksum mismatch: " + item["path"])
+            fail("Vendor license checksum mismatch: " + item["path"])
         text.append(f'\n--- Upstream: {item["url"]} ---\n{content.decode("utf-8")}\n')
         found = True
     for path in sorted(paths):
@@ -60,7 +65,7 @@ for package_id in sorted(visited):
         missing.append(package["name"])
     sections.append("".join(text))
 if missing:
-    raise SystemExit("License texts missing; review before distribution: " + ", ".join(missing))
+    fail("License texts missing; review before distribution: " + ", ".join(missing))
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text("\n".join(sections), encoding="utf-8")
 print(f"Collected notices for {len(sections)-1} dependencies")

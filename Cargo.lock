@@ -2607,7 +2607,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2618,7 +2618,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "cap-std",
  "serde",
@@ -2631,7 +2631,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "eframe",
  "rescue-core",
@@ -2640,7 +2640,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "0.1.0-alpha.1"
+version = "0.1.0-alpha.2"
 dependencies = [
  "rescue-core",
  "serde_json",

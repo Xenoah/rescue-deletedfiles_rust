@@ -4,7 +4,9 @@ from queue import Queue
 import argparse
 import hashlib
 import json
+import signal
 import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -163,6 +165,18 @@ def main(binary):
             cases += 9
         finally:
             client.close()
+        if sys.platform != "win32":
+            client = Client(binary, mcp_source, root/"signal-work", root/"signal-out")
+            client.rpc("initialize", {"protocolVersion": "2025-11-25"})
+            client.process.send_signal(signal.SIGINT)
+            try:
+                check(client.process.wait(timeout=5) == -signal.SIGINT, "MCP SIGINT was swallowed")
+                cases += 1
+            finally:
+                if client.process.poll() is None:
+                    client.process.kill()
+                    client.process.wait(timeout=5)
+                client.process.stdin.close()
         large = root/"cancellation.raw"
         build(large, records=100_000)
         client = Client(binary, large, root/"cancel-work", root/"cancel-out")

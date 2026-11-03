@@ -80,8 +80,12 @@ fn run() -> Result<i32, Error> {
     let cli = Cli::parse();
     let cancel = Arc::new(AtomicBool::new(false));
     let signal = cancel.clone();
-    ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::Relaxed))
-        .map_err(|e| Error::Request(e.to_string()))?;
+    // MCP clients close stdin for a graceful shutdown. Do not intercept SIGINT
+    // with the unrelated cancellation flag used by interactive CLI operations.
+    if !matches!(cli.command, Command::Mcp { .. }) {
+        ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::Relaxed))
+            .map_err(|e| Error::Request(e.to_string()))?;
+    }
     match cli.command {
         Command::Scan {
             source,
