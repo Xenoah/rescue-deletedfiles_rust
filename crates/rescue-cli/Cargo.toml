@@ -1,0 +1,18 @@
+[package]
+name = "rescue-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "rescue"
+path = "src/main.rs"
+
+[dependencies]
+rescue-core.workspace = true
+rescue-mcp.workspace = true
+serde_json.workspace = true
+clap.workspace = true
+ctrlc = "3"

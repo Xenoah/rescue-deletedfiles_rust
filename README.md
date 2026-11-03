@@ -1,15 +1,59 @@
-# Rescue（仮称）
+# Rescue
 
-Rustで構築するWindows向けファイル復元ソフトウェアの仕様策定リポジトリです。
+Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで共通の復元エンジンを使います。
+復元できるファイル数と内容の完全性を最優先に、NTFS、FAT32/exFAT、破損媒体、RAIDへ段階的に対応します。
 
-- GUI・CLI・ローカルMCPで共通の復元エンジンを操作します。
-- NTFS、FAT32/exFAT、SDカード・USBメモリ、破損媒体、RAIDを対象にします。
-- 復元できるファイルの多さと内容の完全性を最優先にします。
-- 有料製品との比較は、同じイメージと正解データを使って検証します。
+現在の実装は **v0.1.0-alpha.1：NTFSボリュームのRAWイメージ専用** です。
+[この版の対応範囲と制限](docs/ALPHA.md)を確認してください。
+実ディスク・FAT/exFAT・RAIDはまだ未対応です。有料製品を上回る性能は未検証です。
 
-詳細は[製品仕様書](docs/SPEC.md)を参照してください。
-仕様書には、対応範囲、GUI・CLI・MCP、非破壊の入出力、評価方法、
-段階的な開発・リリース条件を記載しています。
+- [製品仕様](docs/SPEC.md)
+- [フェーズと進捗](docs/GOAL.md)
+- [リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases)
 
-現在は仕様策定段階です。機能・性能は未実装・未検証で、実行可能な製品はまだありません。
-設計目標と測定済みの実績を区別して公開します。
+## Windowsで使う
+
+配布ZIPを展開し、rescue-gui.exeを起動します。NTFSイメージ、作業フォルダー、復元先を選択し、
+スキャン結果からファイルを選んで復元します。元イメージは読み取り専用です。
+復元先にはNTFS等のハードリンク対応媒体を使います。
+
+CLIの例（PowerShell）:
+
+    .\rescue.exe scan --source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --json
+    .\rescue.exe results --session 'E:\RescueWork\<id>.rescue-session.json' --json
+    .\rescue.exe recover --session 'E:\RescueWork\<id>.rescue-session.json' --id mft-20-7 --destination 'E:\Recovered' --json
+
+scanが返すsessionと、resultsが返す候補IDを使います。全対応候補を選ぶ場合は--idの代わりに--allを指定します。
+出力ファイル名にはUUIDが付き、既存ファイルを上書きしません。結果とSHA-256はJSONレポートに保存します。
+処理が完了しても、上書きやTRIMで失われた元データを復元できたとは限りません。
+
+## MCP
+
+MCPクライアントから次のローカルstdioコマンドを起動します:
+
+    rescue.exe mcp --stdio --allow-source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --allow-output-root 'E:\Recovered'
+
+list_sources、start_scan、get_job、list_candidates、recover_files、cancel_job、get_reportを提供します。
+start_scanとrecover_filesはrequest_idを要求し、job_idを即座に返します。get_jobで終了を確認します。
+許可した入力と出力先だけを使い、復元ファイルの内容はMCPの結果へ送りません。
+
+## 開発
+
+Rust 1.99.1、Python 3.12以降。WindowsではMSVCのC++ Build Toolsが必要です。
+依存関係はCargo.lockに固定しています。
+
+    cargo build --workspace --locked
+    cargo test --workspace --locked
+    cargo clippy --workspace --all-targets --locked -- -D warnings
+    python scripts/e2e.py --binary target/debug/rescue.exe
+    cargo run -p rescue-gui --locked
+
+Linuxでは統合テストの実行ファイルをtarget/debug/rescueにします。
+テスト用イメージは人工生成し、実媒体を変更しません。製品の主対象はWindowsです。
+
+タグによるGitHub ActionsはLinux/Windowsの検証後にWindows用ZIPとSHA-256一覧をプレリリースします。
+ソースのみのpushを、実行ファイルの公開完了とは扱いません。
+
+## ライセンス
+
+[MIT](LICENSE)。依存ライブラリのライセンスは配布ZIPのTHIRD_PARTY_NOTICES.txtに収録します。

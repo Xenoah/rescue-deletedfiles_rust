@@ -1,0 +1,28 @@
+[workspace]
+members = ["crates/rescue-core", "crates/rescue-cli", "crates/rescue-mcp", "crates/rescue-gui"]
+default-members = ["crates/rescue-core", "crates/rescue-cli", "crates/rescue-mcp"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0-alpha.1"
+edition = "2024"
+rust-version = "1.99"
+publish = false
+repository = "https://github.com/Xenoah/rescue-deletedfiles_rust"
+license = "MIT"
+
+[workspace.dependencies]
+rescue-core = { path = "crates/rescue-core" }
+rescue-mcp = { path = "crates/rescue-mcp" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+sha2 = "0.10"
+clap = { version = "4", features = ["derive"] }
+tempfile = "3"
+uuid = { version = "1", features = ["v4"] }
+cap-std = "3"
+
+[profile.release]
+lto = "thin"
+strip = "debuginfo"

@@ -1,0 +1,9 @@
+/target/
+/dist/
+*.partial
+*.raw
+*.img
+*.vhd
+*.vhdx
+*.rescue-session.json
+__pycache__/

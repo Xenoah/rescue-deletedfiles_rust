@@ -1,0 +1,98 @@
+name: Verify and release
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            executable: rescue
+          - os: windows-latest
+            executable: rescue.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+      - run: cargo fetch --locked
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+      - run: cargo test --workspace --locked --offline
+      - run: cargo build --workspace --locked --offline
+      - name: CLI and MCP integration
+        run: python scripts/e2e.py --binary target/debug/${{ matrix.executable }}
+      - name: Install independent NTFS tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ntfs-3g
+      - name: Validate independently generated NTFS metadata
+        if: runner.os == 'Linux'
+        run: python scripts/independent_ntfs.py --binary target/debug/rescue
+      - name: Build Windows distribution
+        if: runner.os == 'Windows'
+        run: cargo build --release --workspace --locked --offline
+      - name: Verify release executable
+        if: runner.os == 'Windows'
+        run: python scripts/e2e.py --binary target/release/rescue.exe
+      - name: Collect third-party notices
+        if: runner.os == 'Windows'
+        run: python scripts/notices.py --output dist/THIRD_PARTY_NOTICES.txt
+      - name: Package Windows distribution
+        if: runner.os == 'Windows'
+        run: python scripts/package.py
+      - name: Upload Windows portable distribution
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-portable
+          path: dist
+      - name: Validate tag and artifact checksums
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          python scripts/package.py --validate-tag "$RELEASE_TAG"
+          cd dist
+          sha256sum --check SHA256SUMS.txt
+      - name: Publish tested alpha
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/*.zip dist/SHA256SUMS.txt --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.1.md
