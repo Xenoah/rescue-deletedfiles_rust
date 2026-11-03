@@ -6,7 +6,7 @@ import struct
 import tempfile
 from pathlib import Path
 from e2e import Client, check, run
-from make_fat_fixture import fat32, exfat, file_hash, put, rotate_sum, sfn
+from make_fat_fixture import fat32, exfat, exfat_set, file_hash, put, rotate_sum, sfn
 
 
 def scan(binary, source, work, expected=0):
@@ -97,6 +97,30 @@ def main(binary):
         root=Path(temporary)
         recovered=positive(binary,root,"fat32",fat32)+positive(binary,root,"exfat",exfat)
         cases+=2
+
+        source=root/"fat-live-directory-overlap.raw"
+        _,_,meta=fat32(source)
+        write_at(source,meta["heap"]+7*32+26,struct.pack("<H",500))
+        fake_offset=meta["heap"]+(500-2)*512
+        write_at(source,fake_offset,sfn(b"FAKE    TXT",400,12))
+        summary=scan(binary,source,root/"fat-live-directory-overlap-work",expected=5)
+        check(f"fat32-{fake_offset}" not in candidates(binary,summary["session"]),"live file bytes interpreted as a directory")
+        check(any("overlaps" in w for w in summary["warnings"]),"live directory/file crosslink not reported")
+        cases+=1
+        source=root/"exfat-live-directory-overlap.raw"
+        _,_,meta=exfat(source)
+        free_slot=meta["heap"]+(40-2)*meta["cluster"]+3*32
+        write_at(source,free_slot,b"".join(exfat_set("LiveOwner.bin",220,4096,deleted=False)))
+        write_at(source,free_slot+3*32,b"".join(exfat_set("ReusedOwner.bin",140,1000,deleted=False)))
+        with source.open("r+b") as f:
+            offset=meta["bitmap"]+(140-2)//8
+            f.seek(offset);value=f.read(1)[0]
+            f.seek(offset);f.write(bytes([value & ~(1<<((140-2)%8))]))
+        summary=scan(binary,source,root/"exfat-live-directory-overlap-work",expected=5)
+        items=candidates(binary,summary["session"])
+        check(not any(c["original_path"]=="LiveFolder/inner.txt" for c in items.values()),"exFAT live file treated as directory")
+        check(not items[f"exfat-{meta['positions']['reused.bin']}"]["supported"],"bitmap-only check missed a live allocation reference")
+        cases+=1
 
         source=root/"deleted-directory.raw"
         truth,_,meta=fat32(source,deleted_folder=True)

@@ -3,7 +3,7 @@
 Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで共通の復元エンジンを使います。
 復元できるファイル数と内容の完全性を最優先に、NTFS、FAT32/exFAT、破損媒体、RAIDへ段階的に対応します。
 
-現在の実装は **v0.2.0-alpha.2：NTFS・FAT32・exFATボリュームのRAWイメージ復元** です。
+現在の実装は **v0.2.0-alpha.3：NTFS・FAT32・exFATボリュームのRAWイメージ復元** です。
 [この版の対応範囲と制限](docs/ALPHA.md)を確認してください。
 実ディスク・carving・RAIDはまだ未対応です。有料製品を上回る性能は未検証です。
 

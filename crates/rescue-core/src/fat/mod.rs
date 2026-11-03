@@ -60,7 +60,46 @@ struct Volume {
     fat_cache: BTreeMap<u64, Vec<u8>>,
     bitmap: Option<Bitmap>,
     upcase: Vec<u16>,
+    system_clusters: Vec<u32>,
     visits: u64,
+}
+
+/// Merged cluster intervals keep large exFAT NoFatChain live files cheap to index.
+#[derive(Default)]
+struct Owners(BTreeMap<u32, u32>);
+impl Owners {
+    fn contains(&self, cluster: &u32) -> bool {
+        self.0
+            .range(..=*cluster)
+            .next_back()
+            .is_some_and(|(_, end)| cluster <= end)
+    }
+    fn add(&mut self, mut start: u32, mut end: u32) {
+        if let Some((&previous, &last)) = self.0.range(..=start).next_back()
+            && u64::from(last) + 1 >= u64::from(start)
+        {
+            start = previous;
+            end = end.max(last);
+            self.0.remove(&previous);
+        }
+        loop {
+            let next = self.0.range(start..).next().map(|(&a, &b)| (a, b));
+            let Some((a, b)) = next else {
+                break;
+            };
+            if u64::from(a) > u64::from(end) + 1 {
+                break;
+            }
+            end = end.max(b);
+            self.0.remove(&a);
+        }
+        self.0.insert(start, end);
+    }
+    fn extend(&mut self, clusters: &[u32]) {
+        for cluster in clusters {
+            self.add(*cluster, *cluster);
+        }
+    }
 }
 
 impl Volume {
@@ -328,6 +367,8 @@ impl Volume {
                 ));
             }
         }
+        self.system_clusters.extend(bitmap_chain);
+        self.system_clusters.extend(table_chain);
         Ok(())
     }
 }
@@ -495,6 +536,7 @@ pub(crate) fn scan(
         fat_cache: BTreeMap::new(),
         bitmap: None,
         upcase: Vec::new(),
+        system_clusters: Vec::new(),
         visits: 0,
     };
     if scan.filesystem == FileSystem::Exfat {
@@ -514,7 +556,8 @@ pub(crate) fn scan(
     }
     let mut entries = Vec::new();
     let mut directory_clusters: BTreeSet<u32> = BTreeSet::new();
-    let mut live_clusters: BTreeSet<u32> = BTreeSet::new();
+    let mut live_clusters = Owners::default();
+    live_clusters.extend(&volume.system_clusters);
     let mut live_complete = true;
     let mut folders_seen = 0;
     while let Some(folder) = live.pop_front().or_else(|| deleted.pop_front()) {
@@ -586,18 +629,19 @@ pub(crate) fn scan(
             }
             continue;
         }
-        let bitmap_conflict = if folder.deleted && scan.filesystem == FileSystem::Exfat {
+        let bitmap_conflict = if scan.filesystem == FileSystem::Exfat {
             clusters.iter().try_fold(false, |found, cluster| {
                 volume
                     .allocated(image, *cluster)
-                    .map(|allocated| found || allocated)
+                    .map(|allocated| found || allocated == folder.deleted)
             })?
         } else {
             false
         };
-        if clusters.iter().any(|c| {
-            directory_clusters.contains(c) || (folder.deleted && live_clusters.contains(c))
-        }) || bitmap_conflict
+        if clusters
+            .iter()
+            .any(|c| directory_clusters.contains(c) || live_clusters.contains(c))
+            || bitmap_conflict
         {
             scan.problem(format!(
                 "directory {}: allocation overlaps a live/previous directory or file",
@@ -772,9 +816,23 @@ pub(crate) fn scan(
                     }
                 } else if is_deleted {
                     entries.push(entry);
-                } else if scan.filesystem == FileSystem::Fat32 {
+                } else if scan.filesystem == FileSystem::Exfat && entry.contiguous && entry.size > 0
+                {
+                    let count = entry.size.div_ceil(volume.geometry.cluster);
+                    let last = u64::from(entry.first) + count - 1;
+                    if count > u64::from(volume.geometry.clusters)
+                        || last > u64::from(u32::MAX)
+                        || volume.geometry.address(entry.first).is_err()
+                        || volume.geometry.address(last as u32).is_err()
+                    {
+                        live_complete = false;
+                        scan.problem("invalid live exFAT contiguous allocation".into());
+                    } else {
+                        live_clusters.add(entry.first, last as u32);
+                    }
+                } else {
                     match volume.file_clusters(image, &entry, false, cancel) {
-                        Ok(clusters) => live_clusters.extend(clusters),
+                        Ok(clusters) => live_clusters.extend(&clusters),
                         Err(Error::Cancelled) => {
                             scan.cancelled = true;
                             break;
@@ -825,14 +883,18 @@ pub(crate) fn scan(
                     ExtentEvidence::ResidualFatChain
                 };
                 for cluster in &clusters {
-                    if volume.allocated(image, *cluster)? {
+                    if live_clusters.contains(cluster) || volume.allocated(image, *cluster)? {
                         entry.candidate.allocation_status = AllocationStatus::Conflict;
                         return Err(Error::Unsupported(
-                            "deleted extents are allocated in the exFAT bitmap".into(),
+                            "deleted extents overlap a live file/directory or allocated exFAT bitmap bits".into(),
                         ));
                     }
                 }
                 entry.candidate.allocation_status = AllocationStatus::Unallocated;
+                if !live_complete {
+                    entry.candidate.allocation_status = AllocationStatus::Unknown;
+                    entry.candidate.warnings.push("Bitmap marks these extents free, but live ownership traversal was incomplete".into());
+                }
             } else {
                 let free = clusters.is_empty()
                     || (clusters.len() == 1 && volume.next(image, entry.first)? == 0);
@@ -899,6 +961,26 @@ pub(crate) fn scan(
 mod tests {
     use super::*;
     use std::io::{Seek, SeekFrom, Write};
+
+    #[test]
+    fn ownership_intervals_match_a_cluster_set_after_overlapping_insertions() {
+        let mut owners = Owners::default();
+        let mut reference = BTreeSet::new();
+        let mut seed = 0x7219_03abu32;
+        for _ in 0..256 {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let start = seed % 4096;
+            let end = (start + ((seed >> 20) % 64)).min(4096);
+            owners.add(start, end);
+            reference.extend(start..=end);
+        }
+        for cluster in 0..=4097 {
+            assert_eq!(owners.contains(&cluster), reference.contains(&cluster));
+        }
+        owners.add(u32::MAX - 2, u32::MAX);
+        assert!(owners.contains(&u32::MAX));
+        assert!(!owners.contains(&(u32::MAX - 3)));
+    }
 
     #[test]
     fn scan_limits_and_preexisting_cancel_return_explicit_partial_sessions() {
