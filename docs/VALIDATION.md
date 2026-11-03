@@ -1,6 +1,6 @@
 # Alpha の検証記録
 
-## ローカル環境
+## v0.1のローカル環境
 
 Linux x86_64、Rust 1.99.1。これはWindows実行時の検証とは区別する。
 
@@ -23,10 +23,14 @@ ntfs-3gテストは、独立ツールで作った正規のNTFSメタデータに
     cargo test --workspace --locked
     cargo build --workspace --locked
     python scripts/e2e.py --binary target/debug/rescue
+    python scripts/e2e_streams.py --binary target/debug/rescue
+    python scripts/e2e_fat.py --binary target/debug/rescue
     python scripts/independent_ntfs.py --binary target/debug/rescue
+    python scripts/independent_fat.py --binary target/debug/rescue
     cargo check --workspace --all-targets --target x86_64-pc-windows-msvc --locked
 
 independent_ntfs.pyにはmkntfs、ntfscp、ntfsinfoが必要。
+independent_fat.pyにはmkfs.fat、mcopy、mdel、mkfs.exfatが必要。
 Windows上の統合テストでは実行ファイル名をrescue.exeにする。
 
 ## 別途確認する項目
@@ -46,9 +50,27 @@ Windows GUIの手動操作・IME・アクセシビリティ、実媒体、性能
   断片化、resident/non-resident/圧縮ADS、日本語・パス記号の名前、MCPからの復元。
 - セッションv1互換、改変されたストリーム名の拒否、暗号化ADSと通常ストリームの区別、
   壊れた圧縮データの未完了扱い。
-- WindowsではRtlCompressBufferで生成する3種類の入力を追加し、16ストリームを照合するCIを用意。
-  native Windowsの結果は公開後に追記する。
+- WindowsではRtlCompressBufferで生成する3種類の入力を追加し、16ストリームを照合。
+  [Windows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41664246239)は成功し、
+  公開済みZIPのSHA-256一致も確認した。
 - ntfs-3g由来の通常DATA（25,600バイト）と名前付きDATA（2,500バイト）の復元。
 
 これは合成イメージとAPI由来の圧縮データの検証であり、Windowsの実ボリュームでの削除・復元、
 破損媒体や有料ソフトとの比較を検証したものではない。
+
+## v0.2.0-alpha.2 追加検証
+
+- FAT32/exFATのCLI/MCP統合15項目、13ファイルの正解バイト一致。
+  残存チェーン、連続配置、切断・循環、FATミラー／active FAT、割当競合、名前の推定、
+  断片化したディレクトリー境界、日本語、254文字の名前、削除ディレクトリーを含む。
+- 不正なブート・LFN・エントリー集合・名前ハッシュ・upcase・ビットマップの検出、
+  巨大data lengthの拒否、セッションのオフセット改変拒否、スキャン／復元再探索の取消。
+- mkfs.fatとmcopyで作りmdelで実際に削除した3ファイル（日本語名を含む）の正解一致。
+- mkfs.exfatが生成したブート・FAT・ビットマップ・圧縮upcase表を使い、削除エントリーを
+  明示的に合成したファイル10,040バイトの正解一致。exFATの削除操作自体はエミュレーション。
+- 既存NTFSのRust 13テスト、CLI/MCP 24項目、圧縮/ADS 13ストリームもローカルで成功。
+- FATのレコード／候補上限と事前取消のテストを追加し、Rust全体は14件成功。
+- Linux/XvfbのGUIでexFATをスキャンし、名前クリック・一括選択・復元を操作。
+  8ファイルの正解一致を確認。長い名前の表示を省略し、全文はツールチップで保持。
+
+Windows上のFAT32/exFAT検証とalpha.2配布成果物の確認結果は公開後に追記する。

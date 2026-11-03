@@ -1,3 +1,4 @@
+mod fat;
 mod lznt1;
 mod ntfs;
 mod source;
@@ -24,6 +25,36 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_SESSION_BYTES: u64 = 128 * 1024 * 1024;
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FileSystem {
+    #[default]
+    Ntfs,
+    Fat32,
+    Exfat,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExtentEvidence {
+    #[default]
+    Unknown,
+    Metadata,
+    ResidualFatChain,
+    SingleCluster,
+    NoFatChain,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AllocationStatus {
+    #[default]
+    Unknown,
+    Unallocated,
+    Unreferenced,
+    Conflict,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("{0}")]
@@ -34,6 +65,8 @@ pub enum Error {
     Invalid(String),
     #[error("unsupported: {0}")]
     Unsupported(String),
+    #[error("resource limit reached: {0}")]
+    Limit(String),
     #[error("source identity or metadata changed; rescan the image")]
     SourceChanged,
     #[error("operation cancelled")]
@@ -48,6 +81,7 @@ impl Error {
             Self::Json(_) => "INVALID_JSON",
             Self::Invalid(_) => "INVALID_IMAGE",
             Self::Unsupported(_) => "UNSUPPORTED",
+            Self::Limit(_) => "RESOURCE_LIMIT",
             Self::SourceChanged => "SOURCE_CHANGED",
             Self::Cancelled => "CANCELLED",
             Self::Request(_) => "INVALID_REQUEST",
@@ -69,11 +103,17 @@ pub struct Candidate {
     pub supported: bool,
     pub warnings: Vec<String>,
     pub record_sha256: String,
+    #[serde(default)]
+    pub extent_evidence: ExtentEvidence,
+    #[serde(default)]
+    pub allocation_status: AllocationStatus,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Session {
     pub schema_version: u32,
+    #[serde(default)]
+    pub filesystem: FileSystem,
     pub id: String,
     pub source: PathBuf,
     pub fingerprint: Fingerprint,
@@ -107,7 +147,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if ![1, 2].contains(&session.schema_version) {
+        if ![1, 2, 3].contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -148,9 +188,30 @@ pub fn scan_image(
 ) -> Result<Session> {
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
+    if image.read(3, 8)? != b"NTFS    " {
+        let result = fat::scan(&mut image, options, cancel, &mut progress)?;
+        if image.fingerprint()? != fingerprint {
+            return Err(Error::SourceChanged);
+        }
+        return Ok(Session {
+            schema_version: 3,
+            filesystem: result.filesystem,
+            id: Uuid::new_v4().to_string(),
+            source: image.path,
+            fingerprint,
+            candidates: result.entries.into_iter().map(|e| e.candidate).collect(),
+            scanned_records: result.scanned_records,
+            total_records: result.total_records,
+            cancelled: result.cancelled,
+            truncated: result.truncated,
+            invalid_records: result.invalid_records,
+            warnings: result.warnings,
+        });
+    }
     let ntfs = Ntfs::open(&mut image)?;
     let mut session = Session {
-        schema_version: 2,
+        schema_version: 3,
+        filesystem: FileSystem::Ntfs,
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
         fingerprint,
@@ -221,6 +282,8 @@ pub fn scan_image(
                             supported,
                             warnings,
                             record_sha256: record.hash.clone(),
+                            extent_evidence: ExtentEvidence::Metadata,
+                            allocation_status: AllocationStatus::Unknown,
                         });
                     }
                 }
@@ -284,10 +347,78 @@ pub struct RecoveryResult {
     pub bytes_written: u64,
     pub sha256: Option<String>,
     pub error: Option<String>,
+    pub warnings: Vec<String>,
+    pub extent_evidence: ExtentEvidence,
+    pub allocation_status: AllocationStatus,
+}
+
+struct RecoveryData {
+    data: ntfs::Data,
+    name: String,
+    warnings: Vec<String>,
+    extent_evidence: ExtentEvidence,
+    allocation_status: AllocationStatus,
+}
+
+fn ntfs_recovery_data(
+    ntfs: &Ntfs,
+    image: &mut Image,
+    candidate: &Candidate,
+) -> Result<RecoveryData> {
+    let record = ntfs
+        .record(image, candidate.record)?
+        .ok_or(Error::SourceChanged)?;
+    if record.hash != candidate.record_sha256
+        || record.in_use
+        || record.directory
+        || record.base != 0
+        || record.sequence != candidate.sequence
+        || candidate.id
+            != ntfs::candidate_id(
+                candidate.record,
+                record.sequence,
+                candidate.stream_name.as_deref(),
+            )
+    {
+        return Err(Error::SourceChanged);
+    }
+    if !record.unsupported.is_empty() {
+        return Err(Error::Unsupported(record.unsupported.join("; ")));
+    }
+    let stream = record
+        .streams
+        .into_iter()
+        .find(|s| s.name == candidate.stream_name)
+        .ok_or(Error::SourceChanged)?;
+    if !stream.unsupported.is_empty() {
+        return Err(Error::Unsupported(stream.unsupported.join("; ")));
+    }
+    let data = stream
+        .data
+        .ok_or_else(|| Error::Unsupported("no DATA".into()))?;
+    let name = record
+        .name
+        .ok_or_else(|| Error::Invalid("no filename".into()))?;
+    let name = stream.name.map_or_else(
+        || name.clone(),
+        |s| format!("{}__ADS__{}", safe_name(&name), safe_name(&s)),
+    );
+    Ok(RecoveryData {
+        data,
+        name,
+        warnings: Vec::new(),
+        extent_evidence: ExtentEvidence::Metadata,
+        allocation_status: AllocationStatus::Unknown,
+    })
+}
+
+enum RecoverySource {
+    Ntfs(Ntfs),
+    Fat(BTreeMap<String, fat::RecoveredEntry>),
 }
 
 fn safe_name(name: &str) -> String {
-    let value = name
+    let mut value = name
         .chars()
         .take(80)
         .map(|c| {
@@ -298,6 +429,10 @@ fn safe_name(name: &str) -> String {
             }
         })
         .collect::<String>();
+    // Leave room for UUID and .partial on filesystems whose component limit is bytes.
+    while value.len() > 180 {
+        value.pop();
+    }
     let value = value.trim_end_matches([' ', '.']);
     if value.is_empty() {
         "unnamed".into()
@@ -306,14 +441,15 @@ fn safe_name(name: &str) -> String {
     }
 }
 
-/// Re-reads MFT records; serialized candidates never supply trusted byte offsets or payloads.
+/// Re-reads source metadata. FAT entries are rediscovered by traversing the volume directories.
+/// Serialized candidates never supply trusted byte offsets or payloads.
 pub fn recover(
     session: &Session,
     ids: &[String],
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if ![1, 2].contains(&session.schema_version) {
+    if ![1, 2, 3].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if ids.is_empty() {
@@ -336,7 +472,24 @@ pub fn recover(
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
-    let ntfs = Ntfs::open(&mut image)?;
+    let source = if session.filesystem == FileSystem::Ntfs {
+        RecoverySource::Ntfs(Ntfs::open(&mut image)?)
+    } else {
+        let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;
+        if fresh.cancelled {
+            return Err(Error::Cancelled);
+        }
+        if fresh.filesystem != session.filesystem {
+            return Err(Error::SourceChanged);
+        }
+        RecoverySource::Fat(
+            fresh
+                .entries
+                .into_iter()
+                .map(|entry| (entry.candidate.id.clone(), entry))
+                .collect(),
+        )
+    };
     fs::create_dir_all(destination)?;
     let destination = destination.canonicalize()?;
     let dir = Dir::open_ambient_dir(&destination, ambient_authority())?;
@@ -350,6 +503,9 @@ pub fn recover(
                 bytes_written: 0,
                 sha256: None,
                 error: Some("CANCELLED: not started".into()),
+                warnings: Vec::new(),
+                extent_evidence: ExtentEvidence::Unknown,
+                allocation_status: AllocationStatus::Unknown,
             });
             continue;
         }
@@ -360,46 +516,43 @@ pub fn recover(
             bytes_written: 0,
             sha256: None,
             error: None,
+            warnings: Vec::new(),
+            extent_evidence: ExtentEvidence::Unknown,
+            allocation_status: AllocationStatus::Unknown,
         };
         let attempt = (|| -> Result<()> {
-            let record = ntfs
-                .record(&mut image, candidate.record)?
-                .ok_or(Error::SourceChanged)?;
-            if record.hash != candidate.record_sha256
-                || record.in_use
-                || record.directory
-                || record.base != 0
-                || record.sequence != candidate.sequence
-                || candidate.id
-                    != ntfs::candidate_id(
-                        candidate.record,
-                        record.sequence,
-                        candidate.stream_name.as_deref(),
-                    )
-            {
-                return Err(Error::SourceChanged);
-            }
-            if !record.unsupported.is_empty() {
-                return Err(Error::Unsupported(record.unsupported.join("; ")));
-            }
-            let stream = record
-                .streams
-                .into_iter()
-                .find(|s| s.name == candidate.stream_name)
-                .ok_or(Error::SourceChanged)?;
-            if !stream.unsupported.is_empty() {
-                return Err(Error::Unsupported(stream.unsupported.join("; ")));
-            }
-            let data = stream
-                .data
-                .ok_or_else(|| Error::Unsupported("no DATA".into()))?;
-            let name = record
-                .name
-                .ok_or_else(|| Error::Invalid("no filename".into()))?;
-            let name = stream.name.map_or_else(
-                || name.clone(),
-                |s| format!("{}__ADS__{}", safe_name(&name), safe_name(&s)),
-            );
+            let fresh = match &source {
+                RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
+                RecoverySource::Fat(entries) => {
+                    let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
+                    if candidate.record != entry.candidate.record
+                        || candidate.record_sha256 != entry.candidate.record_sha256
+                        || candidate.sequence != 0
+                        || candidate.stream_name.is_some()
+                    {
+                        return Err(Error::SourceChanged);
+                    }
+                    result.warnings = entry.candidate.warnings.clone();
+                    result.extent_evidence = entry.candidate.extent_evidence;
+                    result.allocation_status = entry.candidate.allocation_status;
+                    let data = entry
+                        .data
+                        .clone()
+                        .ok_or_else(|| Error::Unsupported(entry.candidate.warnings.join("; ")))?;
+                    RecoveryData {
+                        data,
+                        name: entry.candidate.name.clone(),
+                        warnings: entry.candidate.warnings.clone(),
+                        extent_evidence: entry.candidate.extent_evidence,
+                        allocation_status: entry.candidate.allocation_status,
+                    }
+                }
+            };
+            result.warnings = fresh.warnings;
+            result.extent_evidence = fresh.extent_evidence;
+            result.allocation_status = fresh.allocation_status;
+            let data = fresh.data;
+            let name = fresh.name;
             let filename = format!("{}_{}", Uuid::new_v4(), safe_name(&name));
             let partial = format!("{filename}.partial");
             let mut output =
@@ -460,6 +613,7 @@ pub fn save_report(
         &mut file,
         &serde_json::json!({
             "schema_version":1, "session_id":session.id, "source":session.source,
+            "filesystem":session.filesystem,
             "source_fingerprint":session.fingerprint, "results":results,
             "integrity_note":"Output hashes do not prove equality with the deleted originals."
         }),

@@ -81,7 +81,7 @@ impl App {
             busy: false,
             recovering: false,
             progress: Progress::default(),
-            status: "NTFSボリュームのRAWイメージを選択してください。".into(),
+            status: "NTFS・FAT32・exFATボリュームのRAWイメージを選択してください。".into(),
             report: String::new(),
         }
     }
@@ -101,7 +101,7 @@ impl App {
         self.session = None;
         self.selected.clear();
         self.progress = Progress::default();
-        self.status = "削除済みMFTレコードを解析中…".into();
+        self.status = "ファイルシステムの管理情報を解析中…".into();
         thread::spawn(move || {
             let result = scan_image(&source, ScanOptions::default(), &cancel, |p| {
                 let _ = tx.try_send(Message::Progress(p));
@@ -229,11 +229,11 @@ impl eframe::App for App {
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
             ui.heading("Rescue");
             ui.label(format!(
-                "{} — NTFSイメージ復元 / Alpha",
+                "{} — NTFS / FAT32 / exFAT イメージ復元 / Alpha",
                 rescue_core::VERSION
             ));
             ui.label(
-                "対応: 通常・圧縮ファイル、ADSの別ファイル保存。暗号化・実ディスク・FAT/exFAT・RAIDは未対応。",
+                "対応: ボリュームのRAWイメージ。復元方式・名前の推定・割当競合は各候補の詳細を確認してください。",
             );
         });
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
@@ -250,10 +250,15 @@ impl eframe::App for App {
                     } else {
                         0.0
                     };
-                    ui.add(egui::ProgressBar::new(fraction).text(format!(
-                        "MFT {} / {}",
-                        self.progress.scanned_records, self.progress.total_records
-                    )));
+                    let text = if self.progress.total_records == 0 {
+                        format!("解析済み {} 件", self.progress.scanned_records)
+                    } else {
+                        format!(
+                            "レコード {} / {}",
+                            self.progress.scanned_records, self.progress.total_records
+                        )
+                    };
+                    ui.add(egui::ProgressBar::new(fraction).text(text));
                 }
                 if ui.button("取消").clicked() {
                     self.cancel.store(true, Ordering::Relaxed);
@@ -301,12 +306,22 @@ impl eframe::App for App {
                             let c = visible[index];
                             ui.horizontal(|ui| {
                                 let mut selected = self.selected.contains(&c.id);
-                                if ui.add_enabled(c.supported && !self.busy,
-                                    egui::Checkbox::new(&mut selected, &c.original_path)).changed() {
+                                let name_width = (ui.available_width() - 240.0).max(80.0);
+                                let checkbox = ui.add_enabled(c.supported && !self.busy,
+                                    egui::Checkbox::without_text(&mut selected));
+                                let label = ui.add_sized([name_width, 24.0],
+                                    egui::Label::new(&c.original_path).halign(egui::Align::Min).truncate().sense(egui::Sense::click()))
+                                    .on_hover_text(&c.original_path);
+                                let changed = checkbox.changed();
+                                checkbox.labelled_by(label.id);
+                                let name_clicked = label.clicked() && c.supported && !self.busy;
+                                if name_clicked { selected = !selected; }
+                                if changed || name_clicked {
                                     if selected { self.selected.insert(c.id.clone()); } else { self.selected.remove(&c.id); }
                                 }
                                 ui.label(c.size.map(|s|format!("{s} bytes")).unwrap_or_else(||"サイズ不明".into()));
-                                if !c.supported { ui.label("未対応").on_hover_text(c.warnings.join("\n")); }
+                                if !c.supported { ui.label("復元不可").on_hover_text(c.warnings.join("\n")); }
+                                else if !c.warnings.is_empty() { ui.label("要確認").on_hover_text(c.warnings.join("\n")); }
                             });
                         }
                     });

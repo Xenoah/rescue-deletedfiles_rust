@@ -66,10 +66,14 @@ impl Data {
                 let mut out = vec![0; length];
                 let mut cursor = offset;
                 while cursor < end.min(*initialized) {
-                    let run = runs
-                        .iter()
-                        .find(|r| cursor >= r.logical && cursor - r.logical < r.length)
+                    let index = runs
+                        .partition_point(|r| r.logical <= cursor)
+                        .checked_sub(1)
                         .ok_or_else(|| invalid("unmapped logical range"))?;
+                    let run = &runs[index];
+                    if cursor - run.logical >= run.length {
+                        return Err(invalid("unmapped logical range"));
+                    }
                     let count = (run.length - (cursor - run.logical))
                         .min(end.min(*initialized) - cursor)
                         as usize;

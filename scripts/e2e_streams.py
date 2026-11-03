@@ -145,9 +145,12 @@ def main(binary):
 
         legacy = json.loads(session.read_text(encoding="utf-8"))
         legacy["schema_version"] = 1
+        legacy.pop("filesystem", None)
         legacy["candidates"] = [c for c in legacy["candidates"] if c["stream_name"] is None]
         for candidate in legacy["candidates"]:
             candidate.pop("stream_name")
+            candidate.pop("extent_evidence", None)
+            candidate.pop("allocation_status", None)
         legacy_path = root/"legacy.json"
         legacy_path.write_text(json.dumps(legacy), encoding="utf-8")
         result = run(binary, "recover", "--session", legacy_path, "--id", "mft-20-7", "--destination", root/"legacy-out", "--json")

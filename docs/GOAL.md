@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 仕様 | 対象全カテゴリ、GUI/CLI/MCP、比較・受入基準 | mainに公開済み |
 | v0.1 alpha | NTFS RAWの基本復元、GUI/CLI/MCP、正解付きテスト、Windows成果物 | v0.1.0-alpha.2公開済み。Windows/Linux CI成功、公開ZIPのSHA-256一致 |
-| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADSを実装・Linux検証済み。v0.2.0-alpha.1のWindows CIと公開を確認中。FAT/carvingは未着手 |
+| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADSはv0.2.0-alpha.1で公開・Windows/Linux CI成功。FAT32/exFATの基本復元を実装・Linux検証済み。alpha.2のWindows CIと公開を確認中。carvingは未着手 |
 | v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | 未着手 |
 | v0.4 alpha | 対応RAIDの仮想再構成 | 未着手 |
 | v0.9 beta | 統合、異常系、大容量、Windows操作性 | 未着手 |
@@ -26,4 +26,7 @@ Windows debug/releaseのCLI/MCP実行は[公開CI](https://github.com/Xenoah/res
 
 第2フェーズ内の順序: (1) NTFS圧縮/ADS → (2) FAT32/exFAT → (3) 主要形式のcarving。
 各小区切りでも検証後にタグを追加し、既存タグは付け替えない。
+v0.2.0-alpha.1は[CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41664246239)成功、
+公開ZIPのSHA-256一致を確認済み。alpha.2ではFAT32/exFATの13ファイルと異常系・取消15項目を検証。
+次の実装対象は主要形式のcarving。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
 この環境には/goalの登録・継続実行ツールがないため、会話終了後の自動実行は登録していない。

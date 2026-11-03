@@ -10,7 +10,7 @@ use std::{
 #[command(
     name = "rescue",
     version,
-    about = "Read-only NTFS RAW image recovery (alpha)"
+    about = "Read-only NTFS/FAT32/exFAT RAW volume recovery (alpha)"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -96,7 +96,7 @@ fn run() -> Result<i32, Error> {
             let session = scan_image(&source, ScanOptions::default(), &cancel, |p| {
                 if !compact {
                     eprintln!(
-                        "MFT {} / {} ; candidates {}",
+                        "Records {} / {} ; candidates {}",
                         p.scanned_records, p.total_records, p.candidates
                     );
                 }
@@ -105,6 +105,7 @@ fn run() -> Result<i32, Error> {
             print(
                 json!({"event":"scan_finished","schema_version":1,"session":path,
                 "session_id":session.id,"candidates":session.candidates.len(),
+                "filesystem":session.filesystem,
                 "scanned_records":session.scanned_records,"total_records":session.total_records,
                 "cancelled":session.cancelled,"truncated":session.truncated,
                 "invalid_records":session.invalid_records,"warnings":session.warnings}),
@@ -139,6 +140,7 @@ fn run() -> Result<i32, Error> {
                 .collect::<Vec<_>>();
             print(
                 json!({"schema_version":1,"session_id":session.id,"total":matching.len(),
+                "filesystem":session.filesystem,
                 "offset":offset,"candidates":matching.iter().skip(offset).take(limit).collect::<Vec<_>>()}),
                 compact,
             );
@@ -181,6 +183,7 @@ fn run() -> Result<i32, Error> {
             let session = Session::load(&session)?;
             print(
                 json!({"schema_version":1,"session_id":session.id,"source":session.source,
+                "filesystem":session.filesystem,
                 "source_fingerprint":session.fingerprint,"candidates":session.candidates.len(),
                 "supported":session.candidates.iter().filter(|c|c.supported).count(),
                 "cancelled":session.cancelled,"truncated":session.truncated,

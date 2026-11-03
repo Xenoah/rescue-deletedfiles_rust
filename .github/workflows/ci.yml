@@ -41,14 +41,19 @@ jobs:
         run: python scripts/e2e.py --binary target/debug/${{ matrix.executable }}
       - name: NTFS compression and stream integration
         run: python scripts/e2e_streams.py --binary target/debug/${{ matrix.executable }}
-      - name: Install independent NTFS tools
+      - name: FAT32 and exFAT integration
+        run: python scripts/e2e_fat.py --binary target/debug/${{ matrix.executable }}
+      - name: Install independent filesystem tools
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ntfs-3g
+          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs
       - name: Validate independently generated NTFS metadata
         if: runner.os == 'Linux'
         run: python scripts/independent_ntfs.py --binary target/debug/rescue
+      - name: Validate independently generated FAT metadata
+        if: runner.os == 'Linux'
+        run: python scripts/independent_fat.py --binary target/debug/rescue
       - name: Build Windows distribution
         if: runner.os == 'Windows'
         run: cargo build --release --workspace --locked --offline
@@ -58,6 +63,9 @@ jobs:
       - name: Verify release compression and ADS
         if: runner.os == 'Windows'
         run: python scripts/e2e_streams.py --binary target/release/rescue.exe
+      - name: Verify release FAT32 and exFAT
+        if: runner.os == 'Windows'
+        run: python scripts/e2e_fat.py --binary target/release/rescue.exe
       - name: Collect third-party notices
         if: runner.os == 'Windows'
         run: python scripts/notices.py --output dist/THIRD_PARTY_NOTICES.txt

@@ -37,3 +37,4 @@ cargo build --workspace --locked --offline
 cargo test --workspace --locked --offline
 python3 scripts/e2e.py --binary target/debug/rescue
 python3 scripts/e2e_streams.py --binary target/debug/rescue
+python3 scripts/e2e_fat.py --binary target/debug/rescue

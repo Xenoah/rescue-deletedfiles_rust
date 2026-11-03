@@ -3,9 +3,9 @@
 Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで共通の復元エンジンを使います。
 復元できるファイル数と内容の完全性を最優先に、NTFS、FAT32/exFAT、破損媒体、RAIDへ段階的に対応します。
 
-現在の実装は **v0.2.0-alpha.1：NTFSボリュームのRAWイメージ専用** です。
+現在の実装は **v0.2.0-alpha.2：NTFS・FAT32・exFATボリュームのRAWイメージ復元** です。
 [この版の対応範囲と制限](docs/ALPHA.md)を確認してください。
-実ディスク・FAT/exFAT・RAIDはまだ未対応です。有料製品を上回る性能は未検証です。
+実ディスク・carving・RAIDはまだ未対応です。有料製品を上回る性能は未検証です。
 
 - [製品仕様](docs/SPEC.md)
 - [フェーズと進捗](docs/GOAL.md)
@@ -13,9 +13,11 @@ Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで
 
 ## Windowsで使う
 
-配布ZIPを展開し、rescue-gui.exeを起動します。NTFSイメージ、作業フォルダー、復元先を選択し、
+配布ZIPを展開し、rescue-gui.exeを起動します。ボリュームイメージ、作業フォルダー、復元先を選択し、
 スキャン結果からファイルを選んで復元します。元イメージは読み取り専用です。
 通常ファイル、LZNT1圧縮、ADSの別ファイル保存に対応しています。
+FAT32/exFATは残存チェーン、既知の先頭クラスター、exFATの連続割当を使います。
+失われた断片位置は推測しません。候補の「要確認」「復元不可」に理由を表示します。
 復元先にはNTFS等のハードリンク対応媒体を使います。
 Windows x64と[Microsoft Visual C++ v14 x64ランタイム](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)が必要です。
 
@@ -49,6 +51,7 @@ Rust 1.99.1、Python 3.12以降。WindowsではMSVCのC++ Build Toolsが必要�
     cargo clippy --workspace --all-targets --locked -- -D warnings
     python scripts/e2e.py --binary target/debug/rescue.exe
     python scripts/e2e_streams.py --binary target/debug/rescue.exe
+    python scripts/e2e_fat.py --binary target/debug/rescue.exe
     cargo run -p rescue-gui --locked
 
 Linuxでは統合テストの実行ファイルをtarget/debug/rescueにします。

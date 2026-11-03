@@ -69,7 +69,7 @@ fn tools() -> Value {
         ),
         tool(
             "start_scan",
-            "Start NTFS RAW scan; poll get_job. Alpha: quick scan only.",
+            "Start NTFS/FAT32/exFAT RAW volume scan; poll get_job. Alpha: quick scan only.",
             json!({"source":string,"request_id":string}),
             &["source", "request_id"],
             false
@@ -228,7 +228,7 @@ impl Server {
                         }
                         Err(e) => {
                             let job = state.jobs.get_mut(&job_id).unwrap();
-                            job.state = "failed".into();
+                            job.state = if matches!(e, Error::Cancelled) { "cancelled" } else { "failed" }.into();
                             job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
                         }
                     }
@@ -341,7 +341,12 @@ impl Server {
                             job.result = json!({"results":results,"report":report});
                         }
                         Err(e) => {
-                            job.state = "failed".into();
+                            job.state = if matches!(e, Error::Cancelled) {
+                                "cancelled"
+                            } else {
+                                "failed"
+                            }
+                            .into();
                             job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
                         }
                     }
