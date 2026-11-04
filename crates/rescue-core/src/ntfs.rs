@@ -279,10 +279,15 @@ fn runlist(data: &[u8], geometry: &Geometry, last_vcn: u64) -> Result<Vec<Run>> 
             .checked_add(length)
             .ok_or_else(|| invalid("logical run overflow"))?;
     }
-    let expected = last_vcn
-        .checked_add(1)
-        .and_then(|n| n.checked_mul(geometry.cluster))
-        .ok_or_else(|| invalid("VCN overflow"))?;
+    // NTFS uses signed -1 as the highest VCN of an empty nonresident stream.
+    let expected = if last_vcn == u64::MAX && runs.is_empty() {
+        0
+    } else {
+        last_vcn
+            .checked_add(1)
+            .and_then(|n| n.checked_mul(geometry.cluster))
+            .ok_or_else(|| invalid("VCN overflow"))?
+    };
     if logical != expected {
         return Err(invalid("runlist VCN coverage mismatch"));
     }
@@ -512,6 +517,11 @@ fn parse_stream(
         if run_offset < header_end.max(name_end) || initialized > size {
             return Err(invalid("invalid nonresident DATA header"));
         }
+        if u64_at(attr, 24)? == u64::MAX
+            && (size != 0 || initialized != 0 || u64_at(attr, 40)? != 0)
+        {
+            return Err(invalid("nonempty DATA with empty VCN sentinel"));
+        }
         let runs = runlist(
             attr.get(run_offset..)
                 .ok_or_else(|| invalid("runlist offset"))?,
@@ -575,7 +585,8 @@ impl Ntfs {
         {
             return Err(invalid("MFT has uninitialized or sparse ranges"));
         }
-        if !mft.size().is_multiple_of(geometry.record as u64) {
+        if mft.size() < geometry.record as u64 || !mft.size().is_multiple_of(geometry.record as u64)
+        {
             return Err(invalid("MFT stream size is not record aligned"));
         }
         let records = mft.size() / geometry.record as u64;
@@ -640,6 +651,31 @@ mod tests {
             assert!(runlist(&encoded, &geometry(), 0).is_err(), "{encoded:?}");
         }
         assert!(runlist(&[0x11, 1, 4, 0], &geometry(), 1).is_err());
+    }
+    #[test]
+    fn empty_nonresident_stream_accepts_only_the_empty_vcn_sentinel() {
+        let mut attr = vec![0u8; 72];
+        attr[8] = 1;
+        attr[24..32].copy_from_slice(&u64::MAX.to_le_bytes());
+        attr[32..34].copy_from_slice(&64u16.to_le_bytes());
+        let stream = parse_stream(&attr, None, 0, &geometry()).unwrap();
+        assert_eq!(stream.data.unwrap().size(), 0);
+        for field in [16, 40, 48, 56] {
+            let mut malformed = attr.clone();
+            malformed[field..field + 8].copy_from_slice(&1u64.to_le_bytes());
+            if field == 16 {
+                assert!(
+                    parse_stream(&malformed, None, 0, &geometry())
+                        .unwrap()
+                        .data
+                        .is_none()
+                );
+            } else {
+                assert!(parse_stream(&malformed, None, 0, &geometry()).is_err());
+            }
+        }
+        assert!(runlist(&[0x11, 1, 4, 0], &geometry(), u64::MAX).is_err());
+        assert!(runlist(&[0], &geometry(), 0).is_err());
     }
     #[test]
     fn truncated_fields_never_panic() {

@@ -51,6 +51,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse
+      - name: Verify disposable native fixture setup before compiling
+        timeout-minutes: 4
+        run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
       - name: Install pinned Rust
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
       - uses: actions/cache/restore@v4

@@ -154,9 +154,23 @@ def main(binary, output):
         print(json.dumps(result))
 
 
+def preflight(output):
+    with tempfile.TemporaryDirectory(prefix='rescue-owned-preflight-') as temporary:
+        with mounted_fixture(Path(temporary).resolve()) as (source,mount,filesystem):
+            deleted_file(mount,'fixture-preflight.pdf',b'%PDF-1.4\nfixture mount check\n%%EOF\n')
+            check(not (mount/'fixture-preflight.pdf').exists(),'fixture deletion failed')
+            proof={'status':'passed','scope':'virtual fixture setup only; not recovery evidence','os':platform.system(),'filesystem':filesystem,'source':str(source),'mount':str(mount)}
+    output.parent.mkdir(parents=True,exist_ok=True)
+    output.write_text(json.dumps(proof,indent=2)+'\n',encoding='utf-8')
+    print(json.dumps(proof))
+
+
 if __name__ == '__main__':
     p = argparse.ArgumentParser()
-    p.add_argument('--binary', type=Path, required=True)
+    p.add_argument('--binary', type=Path)
+    p.add_argument('--fixture-only',action='store_true')
     p.add_argument('--output', type=Path, required=True)
     a = p.parse_args()
-    main(a.binary.resolve(), a.output.resolve())
+    if a.fixture_only:preflight(a.output.resolve())
+    elif a.binary:main(a.binary.resolve(), a.output.resolve())
+    else:p.error('--binary is required for recovery verification')
