@@ -12,7 +12,7 @@ from pathlib import Path
 import tempfile
 import zipfile
 from e2e import Client, check, run
-from make_fixture import build, record, filename, nonresident, MFT_LCN, SECTOR, RECORD
+from make_fixture import build, record, filename, nonresident, resident, MFT_LCN, SECTOR, RECORD
 from make_ui_fixture import build as build_ui
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -32,6 +32,17 @@ def main(binary, output=None):
         candidate = next(c for c in candidates if c['name'] == 'sample.pdf')
         check(candidate['path_verified'] and candidate['original_path'] == '01_書類/sample.pdf', candidate)
         checks += 1
+        long_source=root/'long-name.raw'
+        build(long_source)
+        long_name='long-'+('x'*180)+'.txt'
+        with long_source.open('r+b') as f:
+            f.seek(MFT_LCN*SECTOR+23*RECORD)
+            f.write(record(23,[filename(long_name),resident(0x80,b'preserved long filename')]))
+        long=run(binary,'restore','--source',long_source,'--name',long_name,'--destination',root/'long-output','--json')['results'][0]
+        check(Path(long['path']).name==long_name and Path(long['path']).read_bytes()==b'preserved long filename',long)
+        duplicate=run(binary,'restore','--source',long_source,'--name',long_name,'--destination',root/'long-output','--json')['results'][0]
+        check(Path(duplicate['path']).name==long_name[:-4]+' (復元 1).txt' and Path(long['path']).read_bytes()==b'preserved long filename',duplicate)
+        checks+=2
         original = root/'original-volume'
         documents = original/'01_書類'
         documents.mkdir(parents=True)

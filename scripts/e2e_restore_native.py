@@ -52,7 +52,7 @@ def mounted_fixture(root):
             call('sudo', 'losetup', '--detach', device)
     elif system == 'Darwin':
         image = root/'owned-volume.raw'
-        label = 'RESCUE_'+uuid.uuid4().hex[:8]
+        label = 'RSC'+uuid.uuid4().hex[:8].upper()
         with image.open('xb') as f:
             f.truncate(128*1024*1024)
         # Attach the newly created raw file first. The only format target is

@@ -57,9 +57,42 @@ fn result_for(id: &str) -> RecoveryResult {
     }
 }
 fn component(value: &str) -> String {
-    let value = safe_name(value);
+    let mut value = value
+        .chars()
+        .map(|c| {
+            if c.is_control() || r#"<>:"/\|?*"#.contains(c) {
+                '_'
+            } else {
+                c
+            }
+        })
+        .collect::<String>();
+    if value.len() > 255 {
+        let extension = Path::new(&value)
+            .extension()
+            .and_then(|e| e.to_str())
+            .filter(|e| e.len() <= 128)
+            .map(|e| format!(".{e}"));
+        if let Some(extension) = extension {
+            let mut stem = value[..value.len() - extension.len()].to_owned();
+            while stem.len() + extension.len() > 255 {
+                stem.pop();
+            }
+            value = format!("{stem}{extension}");
+        } else {
+            while value.len() > 255 {
+                value.pop();
+            }
+        }
+    }
+    let value = value.trim_end_matches([' ', '.']).to_owned();
+    let value = if value.is_empty() {
+        "unnamed".into()
+    } else {
+        value
+    };
     let stem = value.split('.').next().unwrap_or("").to_ascii_uppercase();
-    if matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
+    let mut value = if matches!(stem.as_str(), "CON" | "PRN" | "AUX" | "NUL")
         || (stem.len() == 4
             && (stem.starts_with("COM") || stem.starts_with("LPT"))
             && stem.as_bytes()[3].is_ascii_digit())
@@ -67,7 +100,11 @@ fn component(value: &str) -> String {
         format!("_{value}")
     } else {
         value
+    };
+    while value.len() > 255 {
+        value.pop();
     }
+    value
 }
 fn relative_path(path: &str, name: &str, verified: bool) -> Result<PathBuf> {
     if !verified {
@@ -342,16 +379,31 @@ fn read_volume(
     Ok(())
 }
 fn renamed(name: &str, n: u32, directory: bool) -> String {
+    let suffix = format!(" (復元 {n})");
+    let fit = |stem: &str, extension: &str| {
+        let mut stem = stem.to_owned();
+        let mut extension = extension.to_owned();
+        while stem.len() + suffix.len() + extension.len() > 255 {
+            if !stem.is_empty() {
+                stem.pop();
+            } else if !extension.is_empty() {
+                extension.pop();
+            } else {
+                break;
+            }
+        }
+        format!("{stem}{suffix}{extension}")
+    };
     if directory {
-        return format!("{name} (復元 {n})");
+        return fit(name, "");
     }
     let path = Path::new(name);
     match (
         path.file_stem().and_then(|s| s.to_str()),
         path.extension().and_then(|s| s.to_str()),
     ) {
-        (Some(stem), Some(ext)) => format!("{stem} (復元 {n}).{ext}"),
-        _ => format!("{name} (復元 {n})"),
+        (Some(stem), Some(ext)) => fit(stem, &format!(".{ext}")),
+        _ => fit(name, ""),
     }
 }
 fn existing(dir: &Dir, name: &str) -> Result<Option<String>> {
@@ -685,6 +737,11 @@ fn zip_impl(
             .large_file(true);
         let mut names = BTreeSet::from(["rescue-report.json".to_owned()]);
         for mut file in batch.files {
+            if session.filesystem == FileSystem::Disk {
+                file.relative =
+                    PathBuf::from(format!("P{}", file.partition.ok_or(Error::SourceChanged)?))
+                        .join(&file.relative);
+            }
             if cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
             }
