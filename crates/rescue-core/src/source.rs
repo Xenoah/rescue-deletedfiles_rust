@@ -27,10 +27,13 @@ impl Image {
     pub fn open(path: &Path) -> Result<Self> {
         let path = device::canonical_source_path(path)?;
         let (file, device) = device::open(&path)?;
-        let total = device
-            .as_ref()
-            .map(|d| d.bytes)
-            .unwrap_or(file.metadata()?.len());
+        // Windows raw handles do not implement ordinary file metadata queries.
+        // Do not eagerly evaluate a file-length fallback for a device.
+        let total = if let Some(device) = &device {
+            device.bytes
+        } else {
+            file.metadata()?.len()
+        };
         Ok(Self {
             file,
             path,

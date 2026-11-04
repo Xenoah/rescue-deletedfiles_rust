@@ -100,7 +100,10 @@ fn control(file: &File, code: u32, input: &[u8], size: usize) -> Result<Vec<u8>>
         )
     };
     if ok == 0 {
-        return Err(std::io::Error::last_os_error().into());
+        let error = std::io::Error::last_os_error();
+        return Err(
+            std::io::Error::new(error.kind(), format!("disk query 0x{code:08x}: {error}")).into(),
+        );
     }
     if returned as usize > out.len() {
         return Err(Error::Invalid("disk query exceeded buffer".into()));
