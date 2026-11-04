@@ -3,11 +3,46 @@ use crate::{Error, Result};
 use cap_std::{ambient_authority, fs::Dir};
 use std::path::{Path, PathBuf};
 
+pub fn canonical_output_path(path: &Path) -> Result<PathBuf> {
+    let absolute = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        std::env::current_dir()?.join(path)
+    };
+    if absolute
+        .components()
+        .any(|c| matches!(c, std::path::Component::ParentDir))
+    {
+        return Err(Error::Request("parent traversal in output path".into()));
+    }
+    let mut ancestor = absolute.as_path();
+    let mut missing = Vec::new();
+    while !ancestor.try_exists()? {
+        missing.push(
+            ancestor
+                .file_name()
+                .ok_or_else(|| Error::Request("invalid output path".into()))?
+                .to_owned(),
+        );
+        ancestor = ancestor
+            .parent()
+            .ok_or_else(|| Error::Request("no output ancestor".into()))?;
+    }
+    let mut result = ancestor.canonicalize()?;
+    for part in missing.iter().rev() {
+        result.push(part);
+    }
+    Ok(result)
+}
+
 pub struct OutputRoot {
     pub(crate) path: PathBuf,
     dir: Dir,
 }
 impl OutputRoot {
+    pub(crate) fn verify(&self) -> Result<()> {
+        RecoveryDestination::pinned(self.path.clone(), self.dir.try_clone()?).map(|_| ())
+    }
     pub fn open(path: &Path) -> Result<Self> {
         let path = path.canonicalize()?;
         let dir = Dir::open_ambient_dir(&path, ambient_authority())?;
@@ -72,11 +107,10 @@ impl RecoveryDestination {
     // Called only after the entire selected batch has been read. Creation is
     // confined to an already pinned MCP output root, including symlink checks.
     pub(crate) fn within_create(path: &Path, roots: &[OutputRoot]) -> Result<Self> {
-        let absolute = if path.is_absolute() {
-            path.to_owned()
-        } else {
-            std::env::current_dir()?.join(path)
-        };
+        for root in roots {
+            root.verify()?;
+        }
+        let absolute = canonical_output_path(path)?;
         if absolute
             .components()
             .any(|c| matches!(c, std::path::Component::ParentDir))

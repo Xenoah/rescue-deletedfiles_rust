@@ -66,7 +66,7 @@ def main(binary, output=None):
         tampered.write_text(json.dumps(edited), encoding='utf-8')
         output_folder = root/'normal-output'
         result = run(binary, 'recover', '--session', tampered, '--id', candidate['id'], '--destination', output_folder, '--json')['results'][0]
-        check(Path(result['path']).relative_to(output_folder) == Path('01_書類/sample.pdf'), result)
+        check(Path(result['path']).parent.samefile(output_folder/'01_書類') and Path(result['path']).name=='sample.pdf', result)
         check(Path(result['path']).read_bytes() == pdf and not (root/'outside').exists(), 'forged output escaped')
         checks += 2
         # A valid sparse stream over the batch limit is rejected before any

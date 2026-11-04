@@ -54,7 +54,7 @@ def positive(binary, root, kind, make):
     check(len(recovered["results"])==len(truth),"recover all selected unsupported entry")
     for result in recovered["results"]:
         path=Path(result["path"])
-        check(result["status"]=="completed" and path.resolve().is_relative_to(output.resolve()),result)
+        check(result["status"]=="completed" and any(p.samefile(output) for p in path.parents),result)
         check(path.read_bytes()==truth[result["candidate_id"]],result)
         check(result["sha256"]==hashlib.sha256(truth[result["candidate_id"]]).hexdigest(),result)
         check(result["extent_evidence"]!="unknown" and result["allocation_status"]!="conflict",result)

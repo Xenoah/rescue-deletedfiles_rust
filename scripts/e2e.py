@@ -17,6 +17,11 @@ def check(condition, message):
     if not condition:
         raise AssertionError(message)
 
+def inside(path, root):
+    # Windows canonical paths may carry \\?\; macOS /var aliases /private/var.
+    # Check directory identity instead of comparing those spellings.
+    return any(parent.samefile(root) for parent in Path(path).parents)
+
 
 def run(binary, *args, expected=0):
     p = subprocess.run([str(binary), *map(str, args)], capture_output=True, text=True,
@@ -91,7 +96,7 @@ def main(binary):
         for item in result["results"]:
             check(item["status"] == "completed", item)
             path = Path(item["path"])
-            check(path.resolve().is_relative_to((root/"out").resolve()), "path escaped destination")
+            check(inside(path,root/"out"), "path escaped destination")
             data = path.read_bytes()
             expected = truth[item["candidate_id"]]
             check(data.hex() == expected["hex"], f"byte mismatch: {item['candidate_id']}")

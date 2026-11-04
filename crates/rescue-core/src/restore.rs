@@ -477,6 +477,11 @@ fn restore_impl(
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
     let batch = prepare(session, ids, cancel)?;
+    if let Some(roots) = roots {
+        for root in roots {
+            root.verify()?;
+        }
+    }
     let mut results = batch.failures;
     let mut directories = BTreeMap::new();
     for mut file in batch.files {
@@ -503,6 +508,7 @@ fn restore_impl(
                         .ok_or_else(|| Error::Request("original volume is not mounted or identified; provide a volume root or choose a folder".into()))?
                 }
             };
+            let base = crate::destination::canonical_output_path(&base)?;
             if base.join(&file.relative).to_string_lossy().len() > 3000
                 || file.relative.components().count() > 64
             {

@@ -17,7 +17,7 @@ use cap_std::{
     ambient_authority,
     fs::{Dir, OpenOptions},
 };
-pub use destination::{OutputRoot, RecoveryDestination};
+pub use destination::{OutputRoot, RecoveryDestination, canonical_output_path};
 pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device, list_disks};
 pub use disk_scan::scan_source;
 use ntfs::Ntfs;

@@ -406,11 +406,7 @@ impl Server {
                             OutputRoot::narrow(parent, &self.output_roots).map_err(err)?,
                         ])
                     } else {
-                        let absolute = if parent.is_absolute() {
-                            parent.to_owned()
-                        } else {
-                            std::env::current_dir().map_err(err)?.join(parent)
-                        };
+                        let absolute = rescue_core::canonical_output_path(parent).map_err(err)?;
                         if !self
                             .config
                             .output_roots

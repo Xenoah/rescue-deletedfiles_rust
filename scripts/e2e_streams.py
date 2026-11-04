@@ -137,7 +137,7 @@ def main(binary):
         result = run(binary, "recover", "--session", session, "--all", "--destination", root/"out", "--json")
         for item in result["results"]:
             recovered = Path(item["path"])
-            check(recovered.resolve().is_relative_to((root/"out").resolve()), "ADS escaped destination")
+            check(any(p.samefile(root/"out") for p in recovered.parents), "ADS escaped destination")
             check(":" not in recovered.name, "ADS became an actual output stream")
             check(recovered.read_bytes().hex() == truth[item["candidate_id"]]["hex"], item)
             check(item["sha256"] == truth[item["candidate_id"]]["sha256"], item)
