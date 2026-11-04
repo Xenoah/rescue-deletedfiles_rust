@@ -75,6 +75,18 @@ struct App {
 }
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        #[cfg(windows)]
+        if let Some(state) = &cc.wgpu_render_state {
+            let info = state.adapter.get_info();
+            eprintln!(
+                "Rescue renderer: {:?}; device: {:?}; adapter: {}",
+                info.backend, info.device_type, info.name
+            );
+        }
+        #[cfg(not(windows))]
+        if cc.gl.is_some() {
+            eprintln!("Rescue renderer: OpenGL");
+        }
         cc.egui_ctx.set_visuals(egui::Visuals::dark());
         cc.egui_ctx.style_mut(|s| {
             s.spacing.item_spacing = egui::vec2(9.0, 7.0);
@@ -1141,6 +1153,10 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Rescue — File Recovery",
         eframe::NativeOptions {
+            #[cfg(windows)]
+            renderer: eframe::Renderer::Wgpu,
+            #[cfg(not(windows))]
+            renderer: eframe::Renderer::Glow,
             viewport: egui::ViewportBuilder::default()
                 .with_inner_size([1260.0, 820.0])
                 .with_min_inner_size([900.0, 620.0]),

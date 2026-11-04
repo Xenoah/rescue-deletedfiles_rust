@@ -269,6 +269,24 @@
     ]
   },
   {
+    "package": "egui-wgpu",
+    "version": "0.33.3",
+    "repo": "emilk/egui",
+    "commit": "44cdd653e2317d300fb8a6c9c36b03f23991e803",
+    "files": [
+      {
+        "path": "licenses/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-MIT",
+        "sha256": "95ca92f5f8ea5231f1580b3a2a799e8260af3114b900e1def5355a7f44bcf60c"
+      },
+      {
+        "path": "licenses/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/emilk/egui/44cdd653e2317d300fb8a6c9c36b03f23991e803/LICENSE-APACHE",
+        "sha256": "8173d5c29b4f956d532781d2b86e4e30f83e6b7878dce18c919451d6ba707c90"
+      }
+    ]
+  },
+  {
     "package": "egui-winit",
     "version": "0.33.3",
     "repo": "emilk/egui",
@@ -422,6 +440,25 @@
         "path": "licenses/brendanzab/gl-rs/ea503e8d5fb6d73c6030e6191ce738cd3bf3433e/LICENSE",
         "url": "https://raw.githubusercontent.com/brendanzab/gl-rs/ea503e8d5fb6d73c6030e6191ce738cd3bf3433e/LICENSE",
         "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      }
+    ]
+  },
+  {
+    "package": "hexf-parse",
+    "version": "0.2.1",
+    "repo": "lifthrasiir/hexf",
+    "commit": "4225763d744183d720f575ae96d04161b4d08ea0",
+    "note": "CC0-1.0 is declared in the original parse/Cargo.toml. The upstream crate omits the legal text; the canonical CC0-1.0 text below is supplied by SPDX license-list-data v3.25.0, with its separate URL and SHA-256.",
+    "files": [
+      {
+        "path": "licenses/lifthrasiir/hexf/4225763d744183d720f575ae96d04161b4d08ea0/parse/Cargo.toml",
+        "url": "https://raw.githubusercontent.com/lifthrasiir/hexf/4225763d744183d720f575ae96d04161b4d08ea0/parse/Cargo.toml",
+        "sha256": "4a56dbdbc12054fd33b7a2634a45cbbe6fe12f5e6f4081002cbfa527f7220c70"
+      },
+      {
+        "path": "licenses/SPDX/license-list-data/v3.25.0/CC0-1.0.txt",
+        "url": "https://raw.githubusercontent.com/spdx/license-list-data/v3.25.0/text/CC0-1.0.txt",
+        "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499"
       }
     ]
   },

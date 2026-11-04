@@ -57,6 +57,8 @@ jobs:
             ~/.cargo/git
             target
           key: ${{ matrix.os }}-${{ matrix.arch }}-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ matrix.arch }}-rust-1.99.1-
       - run: cargo fetch --locked
       - run: cargo fmt --all -- --check
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings

@@ -25,7 +25,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 | macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64-portable.zip) |
 | macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64-portable.zip) |
 
-Windows版はユーザー単位でインストールし、スタートメニューから起動できます。VCランタイムを静的リンクしています。
+Windows版はユーザー単位でインストールし、スタートメニューから起動できます。VCランタイムを静的リンクしています。描画はDirect3D 12（wgpu）を使用します。
 Linux版はglibc 2.35以降（Ubuntu 22.04相当）、X11／Wayland・OpenGL環境が必要です。DEBはGUIメニューとCLIを登録します。
 macOS版は13以降。PKGはApplicationsにRescue.appを置き、`rescue`コマンドを登録します。
 macOSはアドホック署名のみで、Developer ID署名・公証はありません。初回起動時のOSの許可が必要になる場合があります。
@@ -48,7 +48,7 @@ Carvingは指定バイト範囲の静止PNGを探索します。終了位置は�
 ![フォルダーでグループ化したアイコン表示](docs/images/icons-view.png)
 
 元イメージは読み取り専用です。入力・検索条件を変えると古い候補を無効化します。
-出力はUUID付きの名前で平坦に保存し、元の階層はレポートに残します。既存ファイル・ZIPは上書きしません。
+出力はUUID付きの名前で平坦に保存し、元の階層はセッションの候補情報に残します。既存ファイル・ZIPは上書きしません。
 保存先は別媒体のハードリンク対応ファイルシステムを使用してください。
 ZIPはZIP64対応・無圧縮で、作成中は作業領域にも空き容量が必要です。取消・失敗時は一時ファイルの場所を表示します。
 

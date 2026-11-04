@@ -8,6 +8,12 @@ license.workspace = true
 
 [dependencies]
 rescue-core.workspace = true
-eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "x11", "wayland", "accesskit"] }
 rfd = "0.15"
 egui_extras = { version = "0.33", default-features = false }
+
+[target.'cfg(not(windows))'.dependencies]
+eframe = { version = "0.33", default-features = false, features = ["default_fonts", "glow", "x11", "wayland", "accesskit"] }
+
+[target.'cfg(windows)'.dependencies]
+eframe = { version = "0.33", default-features = false, features = ["default_fonts", "wgpu", "accesskit"] }
+wgpu = { version = "27.0.1", default-features = false, features = ["std", "dx12", "wgsl"] }

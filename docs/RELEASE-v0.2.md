@@ -30,7 +30,7 @@ Windows/macOSの手動GUI操作を示す画像ではありません。
 | macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64.pkg) | [.app ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64-portable.zip) |
 | macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64.pkg) | [.app ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64-portable.zip) |
 
-Windowsはユーザー単位のインストールで、VCランタイムを静的リンク。Linuxはglibc 2.35以降、DEBはDebian/Ubuntu系向けです。
+Windowsはユーザー単位のインストールで、VCランタイムを静的リンク。GUIはOpenGLに依存せずDirect3D 12（wgpu）で描画し、GPUのない環境のWARPにも対応します。Linuxはglibc 2.35以降、DEBはDebian/Ubuntu系向けです。
 macOSは13以降で、アドホック署名のみ。Developer ID署名・公証はありません。Windowsも発行者署名はありません。
 [インストール方法](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.6/docs/INSTALL.md)を参照してください。
 

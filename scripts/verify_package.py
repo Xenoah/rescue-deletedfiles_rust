@@ -67,13 +67,19 @@ def main():
             if a.platform!='windows':file.chmod(file.stat().st_mode|0o755)
         version(binary)
         features(binary)
-        gui_status='not_run'
+        gui_status='not_run';renderer_log=None
         if a.smoke_gui:
             log=root/'gui.log'
             with log.open('w') as f:
                 process=subprocess.Popen([str(gui)],stdout=f,stderr=f)
                 time.sleep(3)
-                try:check(process.poll() is None,'GUI exited during startup: '+log.read_text(errors='replace'));gui_status='alive_after_3_seconds'
+                try:
+                    diagnostic=log.read_text(errors='replace')
+                    check(process.poll() is None,'GUI exited during startup: '+diagnostic)
+                    renderer_log=next((line for line in diagnostic.splitlines() if line.startswith('Rescue renderer:')),None)
+                    check(renderer_log is not None,'GUI renderer did not initialize: '+diagnostic)
+                    if a.platform=='windows':check('Dx12' in renderer_log,'Windows must initialize Direct3D 12: '+renderer_log)
+                    gui_status='renderer_initialized_and_alive_after_3_seconds'
                 finally:
                     if process.poll() is None:process.terminate()
                     try:process.wait(timeout=10)
@@ -104,7 +110,7 @@ def main():
             check(any(os.readlink(q)=='/Applications/Rescue.app/Contents/MacOS/rescue' for q in links),'pkg CLI link missing')
             subprocess.run(['codesign','--verify','--deep','--strict',str(portable/'Rescue.app')],check=True)
             installer_status='pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked'
-        result={'status':'passed','version':VERSION,'platform':a.platform,'arch':a.arch,'portable_cli_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'portable_gui_sha256':hashlib.sha256(gui.read_bytes()).hexdigest(),'installer_validation':installer_status,'packaged_cli_mcp_features':'passed: 35 formats, ZIP bytes/CRC/SHA, date and scope','gui_startup':gui_status,'manual_gui_test':False}
+        result={'status':'passed','version':VERSION,'platform':a.platform,'arch':a.arch,'portable_cli_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'portable_gui_sha256':hashlib.sha256(gui.read_bytes()).hexdigest(),'installer_validation':installer_status,'packaged_cli_mcp_features':'passed: 35 formats, ZIP bytes/CRC/SHA, date and scope','gui_startup':gui_status,'gui_renderer_log':renderer_log,'manual_gui_test':False}
     (a.dist/f'verification-{a.platform}-{a.arch}.json').write_text(json.dumps(result,indent=2)+'\n',encoding='utf-8');print(json.dumps(result))
 
 if __name__=='__main__':main()

@@ -11,7 +11,7 @@
 CLIはインストール先のrescue.exeを使う。PATHは自動変更しない。
 
 ポータブルZIPは任意のフォルダーへ展開し、rescue-gui.exeを起動する。
-alpha.6以降の配布ビルドはVCランタイムを静的リンクする。Windows 10/11の個別バージョンと実機操作は別途検証が必要。
+alpha.6以降の配布ビルドはVCランタイムを静的リンクする。GUIはDirect3D 12（wgpu）を使用し、GPUのない環境ではWindowsのWARPソフトウェア描画を利用できる。Windows 10/11の個別バージョンと実機操作は別途検証が必要。
 発行者署名はなく、SmartScreenが初回起動の確認を表示する場合がある。
 
 ## Linux x64
