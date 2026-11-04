@@ -9,7 +9,7 @@
 | 仕様 | 対象全カテゴリ、GUI/CLI/MCP、比較・受入基準 | mainに公開済み |
 | v0.1 alpha | NTFS RAWの基本復元、GUI/CLI/MCP、正解付きテスト、Windows成果物 | v0.1.0-alpha.2公開済み。Windows/Linux CI成功、公開ZIPのSHA-256一致 |
 | v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。JPEG等は未完了 |
-| v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | 未着手 |
+| v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | alpha.7でデバイスの読み取り専用アクセスとMBR/EBR/GPTを先行実装。読取マップ・イメージ取得は未完了 |
 | v0.4 alpha | 対応RAIDの仮想再構成 | 未着手 |
 | v0.9 beta | 統合、異常系、大容量、Windows操作性 | 未着手 |
 | v1.0 | 全必須範囲の受入と有料製品比較の公表 | 未着手 |
@@ -55,3 +55,7 @@ Windows x64、Linux x64、macOS Intel/Apple Siliconの4ネイティブビルド�
 新しい画面とSHA-256付きのGUI検証は[UI-FLOW.md](UI-FLOW.md)。従来の監査修正と形式別試験を継続する。
 
 alpha.6は[全4ネイティブ環境のタグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)が成功し公開済み。8つのインストール／ポータブル配布物と、添付38点のSHA-256を照合した。詳細・アイコン・設定フローとREADME／リリースの実画面・技術説明UIも更新済み。JPEG等のcarving、実デバイス、RAID、商用比較は引き続き後続工程。
+
+## alpha.7 ディスク入力
+
+ユーザー指定に合わせ、ディスクをGUIの既定入力にした。全パーティションの候補を集約し、元ディスクへの作業・復元を拒否する。CLIのsources / inspect / check-destinationと、明示的allowlistを維持したMCPも同じディスク読取を使う。各OSで新規仮想媒体を読み取り専用に接続する試験と、画像・技術UI・配布物の検証をリリース条件にする。

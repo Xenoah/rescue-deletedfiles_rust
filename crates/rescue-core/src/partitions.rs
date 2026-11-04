@@ -373,32 +373,53 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
         return Ok(layout);
     }
     let boot = image.read(0, 512)?;
-    let entries = mbr_entries(&boot)?;
-    if entries.iter().any(|e| e.0 == 0xee) {
-        if entries.iter().any(|e| e.0 != 0 && e.0 != 0xee) {
-            return Err(invalid("hybrid GPT/MBR is ambiguous"));
-        }
-        let sectors = if image.is_device() {
-            vec![u64::from(image.sector_size())]
-        } else {
-            vec![512, 4096]
-        };
-        let mut error = invalid("no valid GPT");
-        for sector in sectors {
-            let mut warnings = Vec::new();
-            match gpt(&mut image, sector, &mut warnings) {
-                Ok(regions) => {
-                    layout.scheme = "gpt".into();
-                    layout.sector_size = sector as u32;
-                    layout.regions = regions;
-                    layout.warnings = warnings;
-                    return Ok(layout);
-                }
-                Err(e) => error = e,
-            }
-        }
-        return Err(error);
+    let entries = mbr_entries(&boot);
+    let protective = entries
+        .as_ref()
+        .is_ok_and(|e| e.iter().any(|e| e.0 == 0xee));
+    if protective
+        && entries
+            .as_ref()
+            .unwrap()
+            .iter()
+            .any(|e| e.0 != 0 && e.0 != 0xee)
+    {
+        return Err(invalid("hybrid GPT/MBR is ambiguous"));
     }
+    let sectors = if image.is_device() {
+        vec![u64::from(image.sector_size())]
+    } else {
+        vec![512, 4096]
+    };
+    let mut gpt_error = invalid("no valid GPT");
+    for sector in sectors {
+        let blocks = image.length / sector;
+        let signature = blocks >= 2
+            && [sector, (blocks - 1) * sector]
+                .into_iter()
+                .any(|at| image.read(at, 8).is_ok_and(|b| b == b"EFI PART"));
+        if !protective && !signature {
+            continue;
+        }
+        let mut warnings = Vec::new();
+        match gpt(&mut image, sector, &mut warnings) {
+            Ok(regions) => {
+                if !protective {
+                    warnings.push("Protective MBR missing or damaged; using CRC-checked GPT without repairing the source".into());
+                }
+                layout.scheme = "gpt".into();
+                layout.sector_size = sector as u32;
+                layout.regions = regions;
+                layout.warnings = warnings;
+                return Ok(layout);
+            }
+            Err(e) => gpt_error = e,
+        }
+    }
+    if protective {
+        return Err(gpt_error);
+    }
+    entries?;
     layout.scheme = "mbr".into();
     layout.regions = mbr(&mut image, &boot, u64::from(layout.sector_size))?;
     if layout.regions.is_empty() {

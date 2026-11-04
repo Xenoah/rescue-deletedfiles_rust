@@ -125,13 +125,13 @@ impl Server {
             .map(|p| rescue_core::canonical_source_path(p))
             .collect::<rescue_core::Result<Vec<_>>>()?;
         for source in &config.sources {
-            rescue_core::inspect_image(source)?;
-        }
-        for source in &config.sources {
             rescue_core::guard_output_path(source, &config.work_dir)?;
             for output in &config.output_roots {
                 rescue_core::guard_output_path(source, output)?;
             }
+        }
+        for source in &config.sources {
+            rescue_core::inspect_image(source)?;
         }
         fs::create_dir_all(&config.work_dir)?;
         config.work_dir = config.work_dir.canonicalize()?;

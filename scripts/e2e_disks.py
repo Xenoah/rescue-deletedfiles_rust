@@ -135,8 +135,22 @@ def native_test(binary,disk,truth,root,rows):
         forbidden=root/'must-not-be-created'
         p=subprocess.run([str(executable),'scan','--source',host_same,'--work-dir',str(forbidden),'--json'],capture_output=True,text=True,encoding='utf-8',timeout=60)
         check(p.returncode!=0 and 'UNSAFE_DESTINATION' in p.stdout+p.stderr and not forbidden.exists(),'work directory created on scanned disk')
+        # Reuse the synthetic session to exercise each write entry point. The same-
+        # disk guard must reject before validating payloads or creating a directory.
+        original=next((root/'native-read-only-disk-cli-work').glob('*.rescue-session.json'))
+        unsafe=json.loads(original.read_text(encoding='utf-8'));unsafe['source']=host_same
+        unsafe_session=root/'same-disk-session.json';unsafe_session.write_text(json.dumps(unsafe),encoding='utf-8')
+        for args in [
+            ['recover','--session',unsafe_session,'--all','--destination',forbidden,'--json'],
+            ['recover','--session',unsafe_session,'--all','--archive',forbidden/'output.zip','--work-dir',forbidden/'work','--json'],
+            ['mcp','--stdio','--allow-source',host_same,'--work-dir',forbidden,'--allow-output-root',root],
+        ]:
+            p=subprocess.run([str(executable),*map(str,args)],input='',capture_output=True,text=True,encoding='utf-8',timeout=60)
+            check(p.returncode!=0 and 'UNSAFE_DESTINATION' in p.stdout+p.stderr and not forbidden.exists(),'unsafe recovery/ZIP/MCP created output')
         check(file_hash(backing)==backing_before,'read-only backing file changed while attached')
+    check(file_hash(backing)==backing_before,'backing file changed on detach')
     check(file_hash(disk)==before,'native source changed')
+    return {'device_path':str(device),'backing_sha256_before_and_after':backing_before,'raw_image_sha256_before_and_after':before,'same_disk_entry_points_rejected':['scan work','folder recovery','ZIP work/output','MCP work/output']}
 
 
 def main(binary,output,native):
@@ -151,7 +165,7 @@ def main(binary,output,native):
         check(len(layout['regions'])==3 and layout['sector_size']==sector,'layout mismatch')
         positive(binary,disk,truth,output,case,rows)
     disk=output/'gpt-512.raw'
-    for name,offsets in [('primary-header',[512+16]),('primary-table',[1024]),('backup-header',[disk.stat().st_size-512+16]),('both-headers',[512+16,disk.stat().st_size-512+16])]:
+    for name,offsets in [('protective-mbr',[510]),('primary-header',[512+16]),('primary-table',[1024]),('backup-header',[disk.stat().st_size-512+16]),('both-headers',[512+16,disk.stat().st_size-512+16])]:
         damaged=output/(name+'.raw');shutil.copyfile(disk,damaged)
         with damaged.open('r+b') as f:
             for offset in offsets:f.seek(offset);v=f.read(1);f.seek(offset);f.write(bytes([v[0]^0xff]))
@@ -167,11 +181,11 @@ def main(binary,output,native):
     changed=output/'tampered-session.json';changed.write_text(json.dumps(session))
     run(binary,'recover','--session',changed,'--all','--destination',output/'tamper-out','--json',expected=4)
     check(not list((output/'tamper-out').glob('*')),'tampered session published data')
-    if native:native_test(binary,disk,truth,output,rows)
-    result={'schema_version':1,'version':call(binary,'--version'),
+    native_report=native_test(binary,disk,truth,output,rows) if native else None
+    result={'schema_version':1,'status':'passed','native_access':native_report,'version':call(binary,'--version'),
         'os':platform.system(),'architecture':platform.machine(),'native_virtual_disk':native,
         'source_read_only':True,'formats':35,'byte_exact':sum(r['byte_exact'] for r in rows),'results':rows,
-        'partition_checks':['MBR','GPT-512','GPT-4096','primary-header-fallback','primary-table-fallback','backup-header-warning','both-invalid-rejected','overlap-rejected','tampered-window-rejected','same-disk-output-and-work-rejected'] if native else ['partition-image-tests']}
+        'partition_checks':['MBR','GPT-512','GPT-4096','protective-MBR-fallback','primary-header-fallback','primary-table-fallback','backup-header-warning','both-invalid-rejected','overlap-rejected','tampered-window-rejected','same-disk-output-and-work-rejected'] if native else ['partition-image-tests']}
     (output/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k!='results'}),flush=True)
 

@@ -1,18 +1,15 @@
 name: Verify actual published packages
 on:
-  push:
-    branches: [main]
-    paths: ['scripts/test_published_packages.py', 'scripts/published_package_report.py', '.github/workflows/published-packages.yml']
   workflow_dispatch:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.6
+        default: v0.2.0-alpha.7
         required: true
 permissions:
   contents: read
 env:
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.6' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.7' }}
 jobs:
   test:
     strategy:
@@ -41,7 +38,7 @@ jobs:
           python-version: '3.12'
       - name: Match test driver and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py tests/corpus
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py tests/corpus
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |

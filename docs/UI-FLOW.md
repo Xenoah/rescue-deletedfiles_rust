@@ -1,3 +1,11 @@
+# alpha.7 ディスク入力とGUI検証
+
+既定のディスク選択画面を実撮影。撮影したクラウド環境はデバイスが非公開のため、直接アクセスは各OSの読み取り専用仮想ディスク試験で別途検証する。GUIは補助イメージモードからGPT内の合成NTFSを探索し、35形式・36ファイル、全36日時を確認してグループ・選択・ZIP復元を実操作した。独立したPython ZIP展開で全バイトとSHA-256が一致し、元ディスクイメージの全体ハッシュも一致した。
+
+実画面とGUI実行ファイルのハッシュは[ui-flow-results.json](ui-flow-results.json)、正解データは[ui-demo-manifest.json](ui-demo-manifest.json)。Linux debug GUIの記録であり、公開配布物のハッシュやWindows/macOSの手動操作とは区別する。ディスク選択・設定・詳細・アイコンの4画面と、Disk・Quick・PNGの3方式を切り替える技術説明UIは、390px幅を含めJavaScriptエラー・外部リクエストなしを確認する。
+
+---
+
 # alpha.6：GUIの操作と復元検証
 
 2026-11-04、Linux / Xvfb、1260×820、Rust debug版の実GUIをXTestのマウス・キーボード入力で操作した。

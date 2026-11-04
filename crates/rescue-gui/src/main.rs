@@ -1049,7 +1049,7 @@ impl App {
             ui.strong("割当状態");
             ui.label(match c.allocation_status {
                 AllocationStatus::Unknown => "不明",
-                AllocationStatus::Unallocated => allocation_label(c, s.filesystem),
+                AllocationStatus::Unallocated => allocation_label(c, s.candidate_filesystem(c)),
                 AllocationStatus::Unreferenced => "探索した使用中エントリーからの参照なし",
                 AllocationStatus::Conflict => "使用中領域と競合：復元不可",
             });

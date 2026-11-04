@@ -1,286 +1,292 @@
 {
   "schema_version": 1,
-  "time_utc": "2026-11-04T12:20:03.284273+00:00",
+  "time_utc": "2026-11-04T16:01:43.916093+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
-  "application_version": "0.2.0-alpha.6",
-  "scope": "GUI settings/scan/selection/ZIP recovery on Linux Xvfb; synthetic NTFS dates/folders; real corpus bytes",
-  "gui_binary_sha256": "c54bcbecbdb0bc49a7659fc77e11fd2a9168d1565035eaaab9d059c44f3260ef",
+  "application_version": "0.2.0-alpha.7",
+  "scope": "Actual GUI disk-default setup plus image-mode GPT partition scan, 36 dated candidates, group/selection and ZIP recovery on Linux Xvfb. Native device CLI/MCP tested separately in each OS CI.",
+  "gui_binary_sha256": "1d2d6507b613bf5eb44631620bd3b9394233eb659cbe360617e7277c60547697",
   "gui_build": "Linux debug, separate from release native package startup checks",
-  "source_sha256_before_and_after": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
-  "archive_sha256": "10019248eb2ea269fad80fa9eb873fd31be7239646e6de67e3e91a3f61f58db7",
+  "source_sha256_before_and_after": "eaa1271a630db2927c6f87c9c3c53c7ceff14c0d8ac53a6fc5396cd0adae23b3",
+  "archive_sha256": "f07195e246172887d742249ecd58762c49cffcf46d6ec5c06821523ec28b1458",
   "files_byte_exact": 36,
   "recorded_dates_matched": 36,
   "windows_manual_gui_test": false,
   "macos_manual_gui_test": false,
   "screenshots": [
     {
+      "file": "images/disk-selection.png",
+      "width": 1260,
+      "height": 820,
+      "sha256": "1ac81fc867ceb0d4276b3f0d9bd9dc1f4afd4a5c4787c52303e779d9bb882688"
+    },
+    {
       "file": "images/settings-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "a80490b7ff178619443c1d5fa67c15adb6f3101877b27211a79f403f97fde12b"
+      "sha256": "1d41c0992e6224ef5a97b311c706bc62e2ddc0bc2d5aa8530821bc1dd1d1e688"
     },
     {
       "file": "images/details-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "914ab1e103742967f296e818c2e2c3cac3c87172ee23db96057123e7bee29fde"
+      "sha256": "e8b09ded6c61bfd6be3ade5a8e5435d3d7d0be1b3b3673b53ab1e3860be347b5"
     },
     {
       "file": "images/icons-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "6e03bda8f7d4295157171bb89bfd95895cb8cb5d5dea66d8cbf7f62be9ed8af2"
+      "sha256": "515039d7b69cbbcdc56b8c3e7f39c14a0321e6c911d8b5987970db042dbaf24c"
     }
   ],
   "files": [
     {
-      "candidate_id": "mft-20-7",
-      "archive_entry": "619d9346-1252-466c-a8e7-9cbfeabcf346_sample.jpg",
+      "candidate_id": "p1:mft-20-7",
+      "archive_entry": "48c98449-6a6c-431c-bc8f-371b70bd4e71_sample.jpg",
       "bytes": 767,
       "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-21-7",
-      "archive_entry": "64fe7b2f-d5a5-4fd3-9f4d-6b180c72cce1_sample.png",
+      "candidate_id": "p1:mft-21-7",
+      "archive_entry": "728e874e-c782-4946-a165-c5af6bc27fec_sample.png",
       "bytes": 102,
       "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-22-7",
-      "archive_entry": "84c772a7-9a8e-4965-9aa9-6db4896e1b93_sample.gif",
+      "candidate_id": "p1:mft-22-7",
+      "archive_entry": "1384cfba-7ed1-4309-9553-566da49b167d_sample.gif",
       "bytes": 1731,
       "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-23-7",
-      "archive_entry": "9af03c64-0544-42bf-b6de-7ca57666a39f_sample.bmp",
+      "candidate_id": "p1:mft-23-7",
+      "archive_entry": "1d7749c7-133f-42b3-a8c5-779bbe6daba9_sample.bmp",
       "bytes": 3126,
       "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-24-7",
-      "archive_entry": "8f661d49-fdc7-40d4-90ca-86274d90bb63_sample.tif",
+      "candidate_id": "p1:mft-24-7",
+      "archive_entry": "0bf12dce-5104-442c-b38b-1043fdfa3f50_sample.tif",
       "bytes": 3212,
       "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-25-7",
-      "archive_entry": "0d96e571-41ef-4a29-bea8-0ce3fbd5b5ca_sample.webp",
+      "candidate_id": "p1:mft-25-7",
+      "archive_entry": "84e43541-3823-48cb-bd71-b5f291e5bc08_sample.webp",
       "bytes": 184,
       "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-26-7",
-      "archive_entry": "f4dd63a9-b9d4-45c1-b039-8273b7ce5eda_sample.ico",
+      "candidate_id": "p1:mft-26-7",
+      "archive_entry": "dbb651e9-7d62-4ad1-a05b-ff3c435b9f65_sample.ico",
       "bytes": 124,
       "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-27-7",
-      "archive_entry": "ba896dc7-eb72-464f-82d1-f95d25701e70_sample.apng",
+      "candidate_id": "p1:mft-27-7",
+      "archive_entry": "e4aca64c-183b-42e2-be6d-bbbaceb649d6_sample.apng",
       "bytes": 310,
       "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-28-7",
-      "archive_entry": "6a98f7c7-7d67-49f8-8b61-4e6cbc4f293c_sample.pdf",
+      "candidate_id": "p1:mft-28-7",
+      "archive_entry": "dd981a6e-1cb2-433b-a9cb-209b72077d6d_sample.pdf",
       "bytes": 1367,
       "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-29-7",
-      "archive_entry": "c7591fa4-5690-48ba-87f2-2c36a16a2ace_sample.docx",
+      "candidate_id": "p1:mft-29-7",
+      "archive_entry": "6b003c6b-8bd4-459c-8849-6df550ff927d_sample.docx",
       "bytes": 36642,
       "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-30-7",
-      "archive_entry": "4eeb5ec6-eb5e-4ab4-a2f2-e544b0dbebe2_sample.xlsx",
+      "candidate_id": "p1:mft-30-7",
+      "archive_entry": "651c6d81-13a9-4b71-b85a-b64ade37b5da_sample.xlsx",
       "bytes": 4880,
       "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-31-7",
-      "archive_entry": "9f2df7e7-13b3-42f3-aa4c-8db3dc0d472a_sample.pptx",
+      "candidate_id": "p1:mft-31-7",
+      "archive_entry": "3b127525-8611-43d0-bfac-87bb55f4a0c8_sample.pptx",
       "bytes": 28268,
       "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-32-7",
-      "archive_entry": "076a717e-f83f-4b46-b409-cdb4df73e4f9_sample.txt",
+      "candidate_id": "p1:mft-32-7",
+      "archive_entry": "f4ca9f23-6f4d-4ed7-b8dc-003050dff80a_sample.txt",
       "bytes": 61,
       "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-33-7",
-      "archive_entry": "4bb16c66-ffa9-49e1-b98b-c154c0b0ae83_sample.csv",
+      "candidate_id": "p1:mft-33-7",
+      "archive_entry": "562020f3-7af8-4914-a7ba-6086d71493bf_sample.csv",
       "bytes": 33,
       "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-34-7",
-      "archive_entry": "4497c202-dea2-4d92-9bb2-98be4b537637_sample.json",
+      "candidate_id": "p1:mft-34-7",
+      "archive_entry": "de610e97-2c0d-4631-9ae4-b0c7476aa78c_sample.json",
       "bytes": 78,
       "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-35-7",
-      "archive_entry": "16bd0a6d-b080-433d-90d9-b8ebc3c681ee_sample.html",
+      "candidate_id": "p1:mft-35-7",
+      "archive_entry": "79831fff-a3fe-4512-abbe-20d510537495_sample.html",
       "bytes": 80,
       "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-36-7",
-      "archive_entry": "cbd45460-5f3f-4406-a0a7-bff7e48ca926_sample.xml",
+      "candidate_id": "p1:mft-36-7",
+      "archive_entry": "43d81a14-a8c7-49da-abf9-9e12d87ff010_sample.xml",
       "bytes": 70,
       "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-37-7",
-      "archive_entry": "090c7214-97e8-4f93-8056-84a5ed34de62_sample.rtf",
+      "candidate_id": "p1:mft-37-7",
+      "archive_entry": "c8f1bf05-0a72-412a-9b3d-45e77d25ccfe_sample.rtf",
       "bytes": 55,
       "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-38-7",
-      "archive_entry": "d3011bc8-0e6d-469f-98a3-f0a847deb029_sample.mp4",
+      "candidate_id": "p1:mft-38-7",
+      "archive_entry": "915a21e0-abaf-497a-a6ca-4e50ee0727c1_sample.mp4",
       "bytes": 2162,
       "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-39-7",
-      "archive_entry": "38e59693-433d-4170-979f-800a27020a54_sample.mov",
+      "candidate_id": "p1:mft-39-7",
+      "archive_entry": "20715784-d39c-460f-b51b-88aa124e3538_sample.mov",
       "bytes": 2109,
       "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-40-7",
-      "archive_entry": "88ff39cb-648f-4115-b7ae-eea542e88836_sample.avi",
+      "candidate_id": "p1:mft-40-7",
+      "archive_entry": "6ebfc78f-afcd-4a66-b862-5ff7510f80e5_sample.avi",
       "bytes": 7356,
       "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-41-7",
-      "archive_entry": "53980769-b5c3-495b-b31a-431d5378d8ff_sample.mkv",
+      "candidate_id": "p1:mft-41-7",
+      "archive_entry": "dfebc1b7-6feb-401f-ba1d-dee78d093e59_sample.mkv",
       "bytes": 1915,
       "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-42-7",
-      "archive_entry": "105d210f-aed4-4b0e-9f52-7dc3ac395945_sample.webm",
+      "candidate_id": "p1:mft-42-7",
+      "archive_entry": "041f6d37-bc17-40cd-8c4f-3da231f0654c_sample.webm",
       "bytes": 1175,
       "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-43-7",
-      "archive_entry": "2c8e0509-f49a-44f7-acd9-ef73dc3fc006_sample.mp3",
+      "candidate_id": "p1:mft-43-7",
+      "archive_entry": "e9804ebc-8eb6-4229-b718-97785e09a5c6_sample.mp3",
       "bytes": 1088,
       "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-44-7",
-      "archive_entry": "86c1f759-4349-4588-8bea-9bf87ad1fb4d_sample.wav",
+      "candidate_id": "p1:mft-44-7",
+      "archive_entry": "4c6a6a81-36f0-4b88-9973-81f4950db7d2_sample.wav",
       "bytes": 6478,
       "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-45-7",
-      "archive_entry": "e569d6d4-8b60-4dcb-bea5-3fa8c9e8119b_sample.flac",
+      "candidate_id": "p1:mft-45-7",
+      "archive_entry": "4fced3a3-1633-438b-ab03-8025fe22c327_sample.flac",
       "bytes": 9478,
       "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-46-7",
-      "archive_entry": "0eb70309-267a-4a12-8601-187766acfe35_sample.ogg",
+      "candidate_id": "p1:mft-46-7",
+      "archive_entry": "89b6c753-f2b1-45c9-adb6-4e540a027947_sample.ogg",
       "bytes": 3717,
       "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-47-7",
-      "archive_entry": "25ab37ad-2fb3-48b6-ad56-59266d0f4e99_sample.aac",
+      "candidate_id": "p1:mft-47-7",
+      "archive_entry": "c6c875af-2ada-47fc-9df8-7b983569b0c1_sample.aac",
       "bytes": 1812,
       "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-48-7",
-      "archive_entry": "002c28de-4938-4a46-99a2-f0c69e75ca4e_sample.m4a",
+      "candidate_id": "p1:mft-48-7",
+      "archive_entry": "6ae32129-c11d-4c6d-9f43-c0f29dc6d181_sample.m4a",
       "bytes": 2603,
       "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-49-7",
-      "archive_entry": "40fe2861-b8e3-4fe6-bbe3-bc791bf05b40_sample.zip",
+      "candidate_id": "p1:mft-49-7",
+      "archive_entry": "cc665184-8acf-4fb1-a5f0-04ac5b9c1b25_sample.zip",
       "bytes": 179,
       "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-50-7",
-      "archive_entry": "57ec1d55-e4b9-49f0-b765-e1e0c79997b4_sample.tar",
+      "candidate_id": "p1:mft-50-7",
+      "archive_entry": "d86a0476-e321-4931-9e11-8df2e7ede5ca_sample.tar",
       "bytes": 10240,
       "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-51-7",
-      "archive_entry": "c3236e12-b16f-4436-bd75-d0159f9a0cdd_sample.gz",
+      "candidate_id": "p1:mft-51-7",
+      "archive_entry": "d4b3fa6d-99fd-4603-9974-677972b8c47b_sample.gz",
       "bytes": 81,
       "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-52-7",
-      "archive_entry": "548d1d99-241b-44ae-97ce-447877f66a30_sample.xz",
+      "candidate_id": "p1:mft-52-7",
+      "archive_entry": "2dd43772-ec7d-476a-9dfd-d0b13341f2a8_sample.xz",
       "bytes": 120,
       "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-53-7",
-      "archive_entry": "70baa337-ad96-495d-933a-90212821517e_sample.bz2",
+      "candidate_id": "p1:mft-53-7",
+      "archive_entry": "d2a9e639-9234-45ff-a0fd-07c244c6c5be_sample.bz2",
       "bytes": 110,
       "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-54-7",
-      "archive_entry": "0957f5b7-d647-4bca-a2f5-9ed92e623594_sample.sqlite",
+      "candidate_id": "p1:mft-54-7",
+      "archive_entry": "b4e1d355-06ea-4ee0-90bf-93b783b4cfc3_sample.sqlite",
       "bytes": 8192,
       "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
       "byte_exact": true
     },
     {
-      "candidate_id": "mft-55-7",
-      "archive_entry": "3e17739a-cdbc-4b6c-b292-bf62fc209248_noise.png",
+      "candidate_id": "p1:mft-55-7",
+      "archive_entry": "3d31d5f7-611c-4ae4-aa4d-c33a316bc2c6_noise.png",
       "bytes": 12420,
       "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
       "byte_exact": true

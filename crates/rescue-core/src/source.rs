@@ -160,3 +160,31 @@ impl Image {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn device_reads_align_without_exposing_adjacent_volume_bytes() {
+        use std::io::Write;
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        let bytes = (0..16384).map(|i| (i % 251) as u8).collect::<Vec<_>>();
+        file.write_all(&bytes).unwrap();
+        let mut image = Image::open(file.path()).unwrap();
+        image.device = Some(device::DeviceInfo {
+            bytes: 16384,
+            sector: 4096,
+            identity: "test".into(),
+        });
+        image.base = 4096;
+        image.length = 8192;
+        for (offset, size) in [(0, 1), (3, 501), (4000, 200), (8191, 1), (0, 8192)] {
+            assert_eq!(
+                image.read(offset, size).unwrap(),
+                bytes[4096 + offset as usize..4096 + offset as usize + size]
+            );
+        }
+        assert!(image.read(8191, 2).is_err());
+        assert!(image.read(u64::MAX, 1).is_err());
+    }
+}

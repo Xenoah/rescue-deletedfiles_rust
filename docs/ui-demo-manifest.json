@@ -1,218 +1,218 @@
 {
-  "image_sha256": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
-  "scope": "synthetic NTFS metadata with real 35-format corpus bytes; dates are fixture values",
+  "image_sha256": "eaa1271a630db2927c6f87c9c3c53c7ceff14c0d8ac53a6fc5396cd0adae23b3",
+  "scope": "GPT disk image with one synthetic NTFS partition, real 35-format bytes and fixture timestamps",
   "files": {
-    "mft-20-7": {
+    "p1:mft-20-7": {
       "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
       "bytes": 767,
       "created": "2026-10-11T08:38:00Z",
       "modified": "2026-10-11T08:39:00Z"
     },
-    "mft-21-7": {
+    "p1:mft-21-7": {
       "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
       "bytes": 102,
       "created": "2026-10-12T08:39:00Z",
       "modified": "2026-10-12T08:41:00Z"
     },
-    "mft-22-7": {
+    "p1:mft-22-7": {
       "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
       "bytes": 1731,
       "created": "2026-10-13T08:40:00Z",
       "modified": "2026-10-13T08:43:00Z"
     },
-    "mft-23-7": {
+    "p1:mft-23-7": {
       "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
       "bytes": 3126,
       "created": "2026-10-14T08:41:00Z",
       "modified": "2026-10-14T08:45:00Z"
     },
-    "mft-24-7": {
+    "p1:mft-24-7": {
       "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
       "bytes": 3212,
       "created": "2026-10-15T08:42:00Z",
       "modified": "2026-10-15T08:47:00Z"
     },
-    "mft-25-7": {
+    "p1:mft-25-7": {
       "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
       "bytes": 184,
       "created": "2026-10-16T08:43:00Z",
       "modified": "2026-10-16T08:49:00Z"
     },
-    "mft-26-7": {
+    "p1:mft-26-7": {
       "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
       "bytes": 124,
       "created": "2026-10-17T08:44:00Z",
       "modified": "2026-10-17T08:51:00Z"
     },
-    "mft-27-7": {
+    "p1:mft-27-7": {
       "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6",
       "bytes": 310,
       "created": "2026-10-11T08:45:00Z",
       "modified": "2026-10-11T08:53:00Z"
     },
-    "mft-28-7": {
+    "p1:mft-28-7": {
       "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
       "bytes": 1367,
       "created": "2026-10-12T08:46:00Z",
       "modified": "2026-10-12T08:55:00Z"
     },
-    "mft-29-7": {
+    "p1:mft-29-7": {
       "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
       "bytes": 36642,
       "created": "2026-10-13T08:47:00Z",
       "modified": "2026-10-13T08:57:00Z"
     },
-    "mft-30-7": {
+    "p1:mft-30-7": {
       "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
       "bytes": 4880,
       "created": "2026-10-14T08:48:00Z",
       "modified": "2026-10-14T08:59:00Z"
     },
-    "mft-31-7": {
+    "p1:mft-31-7": {
       "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
       "bytes": 28268,
       "created": "2026-10-15T08:49:00Z",
       "modified": "2026-10-15T09:01:00Z"
     },
-    "mft-32-7": {
+    "p1:mft-32-7": {
       "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
       "bytes": 61,
       "created": "2026-10-16T08:50:00Z",
       "modified": "2026-10-16T09:03:00Z"
     },
-    "mft-33-7": {
+    "p1:mft-33-7": {
       "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
       "bytes": 33,
       "created": "2026-10-17T08:51:00Z",
       "modified": "2026-10-17T09:05:00Z"
     },
-    "mft-34-7": {
+    "p1:mft-34-7": {
       "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
       "bytes": 78,
       "created": "2026-10-11T08:52:00Z",
       "modified": "2026-10-11T09:07:00Z"
     },
-    "mft-35-7": {
+    "p1:mft-35-7": {
       "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
       "bytes": 80,
       "created": "2026-10-12T08:53:00Z",
       "modified": "2026-10-12T09:09:00Z"
     },
-    "mft-36-7": {
+    "p1:mft-36-7": {
       "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
       "bytes": 70,
       "created": "2026-10-13T08:54:00Z",
       "modified": "2026-10-13T09:11:00Z"
     },
-    "mft-37-7": {
+    "p1:mft-37-7": {
       "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
       "bytes": 55,
       "created": "2026-10-14T08:55:00Z",
       "modified": "2026-10-14T09:13:00Z"
     },
-    "mft-38-7": {
+    "p1:mft-38-7": {
       "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
       "bytes": 2162,
       "created": "2026-10-15T08:56:00Z",
       "modified": "2026-10-15T09:15:00Z"
     },
-    "mft-39-7": {
+    "p1:mft-39-7": {
       "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
       "bytes": 2109,
       "created": "2026-10-16T08:57:00Z",
       "modified": "2026-10-16T09:17:00Z"
     },
-    "mft-40-7": {
+    "p1:mft-40-7": {
       "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
       "bytes": 7356,
       "created": "2026-10-17T08:58:00Z",
       "modified": "2026-10-17T09:19:00Z"
     },
-    "mft-41-7": {
+    "p1:mft-41-7": {
       "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
       "bytes": 1915,
       "created": "2026-10-11T08:59:00Z",
       "modified": "2026-10-11T09:21:00Z"
     },
-    "mft-42-7": {
+    "p1:mft-42-7": {
       "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
       "bytes": 1175,
       "created": "2026-10-12T09:00:00Z",
       "modified": "2026-10-12T09:23:00Z"
     },
-    "mft-43-7": {
+    "p1:mft-43-7": {
       "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
       "bytes": 1088,
       "created": "2026-10-13T09:01:00Z",
       "modified": "2026-10-13T09:25:00Z"
     },
-    "mft-44-7": {
+    "p1:mft-44-7": {
       "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
       "bytes": 6478,
       "created": "2026-10-14T09:02:00Z",
       "modified": "2026-10-14T09:27:00Z"
     },
-    "mft-45-7": {
+    "p1:mft-45-7": {
       "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
       "bytes": 9478,
       "created": "2026-10-15T09:03:00Z",
       "modified": "2026-10-15T09:29:00Z"
     },
-    "mft-46-7": {
+    "p1:mft-46-7": {
       "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
       "bytes": 3717,
       "created": "2026-10-16T09:04:00Z",
       "modified": "2026-10-16T09:31:00Z"
     },
-    "mft-47-7": {
+    "p1:mft-47-7": {
       "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
       "bytes": 1812,
       "created": "2026-10-17T09:05:00Z",
       "modified": "2026-10-17T09:33:00Z"
     },
-    "mft-48-7": {
+    "p1:mft-48-7": {
       "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
       "bytes": 2603,
       "created": "2026-10-11T09:06:00Z",
       "modified": "2026-10-11T09:35:00Z"
     },
-    "mft-49-7": {
+    "p1:mft-49-7": {
       "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
       "bytes": 179,
       "created": "2026-10-12T09:07:00Z",
       "modified": "2026-10-12T09:37:00Z"
     },
-    "mft-50-7": {
+    "p1:mft-50-7": {
       "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
       "bytes": 10240,
       "created": "2026-10-13T09:08:00Z",
       "modified": "2026-10-13T09:39:00Z"
     },
-    "mft-51-7": {
+    "p1:mft-51-7": {
       "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
       "bytes": 81,
       "created": "2026-10-14T09:09:00Z",
       "modified": "2026-10-14T09:41:00Z"
     },
-    "mft-52-7": {
+    "p1:mft-52-7": {
       "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd",
       "bytes": 120,
       "created": "2026-10-15T09:10:00Z",
       "modified": "2026-10-15T09:43:00Z"
     },
-    "mft-53-7": {
+    "p1:mft-53-7": {
       "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816",
       "bytes": 110,
       "created": "2026-10-16T09:11:00Z",
       "modified": "2026-10-16T09:45:00Z"
     },
-    "mft-54-7": {
+    "p1:mft-54-7": {
       "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
       "bytes": 8192,
       "created": "2026-10-17T09:12:00Z",
       "modified": "2026-10-17T09:47:00Z"
     },
-    "mft-55-7": {
+    "p1:mft-55-7": {
       "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
       "bytes": 12420,
       "created": "2026-10-11T09:13:00Z",

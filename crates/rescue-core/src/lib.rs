@@ -170,6 +170,13 @@ pub struct ScannedVolume {
     pub fingerprint: Fingerprint,
 }
 impl Session {
+    pub fn candidate_filesystem(&self, candidate: &Candidate) -> FileSystem {
+        self.volumes
+            .iter()
+            .find(|v| candidate.id.starts_with(&format!("p{}:", v.region.index)))
+            .and_then(|v| v.region.filesystem)
+            .unwrap_or(self.filesystem)
+    }
     pub fn save(&self, work_dir: &Path) -> Result<PathBuf> {
         self.guard_output(work_dir)?;
         if serialized_size(self)? + 1 > MAX_SESSION_BYTES {

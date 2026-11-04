@@ -82,6 +82,7 @@ jobs:
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_formats.py --binary target/${{ matrix.target }}/release/rescue --output format-results/independent --independent
       - name: Native read-only virtual disks and partition recovery
+        timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_disks.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output disk-results --native
       - name: Collect target-specific third-party licenses
         run: python scripts/ci_command.py python scripts/notices.py --target ${{ matrix.target }} --output dist/THIRD_PARTY_NOTICES.txt
@@ -120,6 +121,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -154,3 +156,10 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md
+      - name: Verify exact public packages after publishing
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh workflow run published-packages.yml --ref main -f release_tag="$RELEASE_TAG"

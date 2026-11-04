@@ -57,7 +57,10 @@ impl SearchSettings {
         Ok(())
     }
     pub fn matches(&self, candidate: &Candidate) -> bool {
-        let path = candidate.original_path.replace('\\', "/").to_lowercase();
+        self.matches_path(candidate, &candidate.original_path)
+    }
+    fn matches_path(&self, candidate: &Candidate, path: &str) -> bool {
+        let path = path.replace('\\', "/").to_lowercase();
         let prefix = self
             .path_prefix
             .replace('\\', "/")
@@ -119,7 +122,20 @@ pub fn scan_with_settings(
         )?,
     };
     let discovered = session.candidates.len();
-    session.candidates.retain(|c| settings.matches(c));
+    let disk = session.filesystem == crate::FileSystem::Disk;
+    session.candidates.retain(|c| {
+        if disk {
+            // P<n>/ labels identify volumes in results, not an extra folder level.
+            settings.matches_path(
+                c,
+                c.original_path
+                    .split_once('/')
+                    .map_or(c.original_path.as_str(), |(_, path)| path),
+            )
+        } else {
+            settings.matches(c)
+        }
+    });
     if discovered != session.candidates.len() {
         session.warnings.push(format!("Search filters retained {} of {discovered} discovered candidates; ownership verification still examined metadata across the volume",session.candidates.len()));
     }

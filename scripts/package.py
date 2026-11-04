@@ -111,13 +111,13 @@ Maintainer: Xenoah <noreply@users.noreply.github.com>
 Homepage: https://github.com/Xenoah/rescue-deletedfiles_rust
 Depends: libc6 (>= 2.35), libgcc-s1, libstdc++6, libx11-6, libxcursor1, libxrandr2, libxi6, libxkbcommon0, libxkbcommon-x11-0, libwayland-client0, libgl1, libegl1
 Recommends: xdg-desktop-portal, xdg-desktop-portal-gtk, fonts-noto-cjk
-Description: Read-only RAW-image recovery GUI, CLI and MCP server
+Description: Read-only disk recovery GUI, CLI and MCP server
  NTFS, FAT32, exFAT metadata recovery and contiguous PNG carving.
 ''',encoding='utf-8')
             (debroot/'usr/bin').mkdir(parents=True)
             for name in ['rescue','rescue-gui']:(debroot/'usr/bin'/name).symlink_to('/opt/rescue/'+name)
             desktop=debroot/'usr/share/applications';desktop.mkdir(parents=True)
-            (desktop/'rescue.desktop').write_text('[Desktop Entry]\nType=Application\nName=Rescue\nComment=Recover files from RAW images\nExec=/opt/rescue/rescue-gui\nIcon=rescue\nTerminal=false\nCategories=Utility;System;\n',encoding='utf-8')
+            (desktop/'rescue.desktop').write_text('[Desktop Entry]\nType=Application\nName=Rescue\nComment=Recover deleted files from disks\nExec=/opt/rescue/rescue-gui\nIcon=rescue\nTerminal=false\nCategories=Utility;System;\n',encoding='utf-8')
             icons=debroot/'usr/share/icons/hicolor/scalable/apps';icons.mkdir(parents=True)
             (icons/'rescue.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="24" fill="#191919"/><path d="M35 92V32h32q28 0 28 21 0 15-16 20l20 19H78L58 73h-6v19zm17-35h15q10 0 10-6t-10-6H52z" fill="#70c7ff"/></svg>')
             permissions(debroot,{debroot/'opt/rescue/rescue',debroot/'opt/rescue/rescue-gui'})

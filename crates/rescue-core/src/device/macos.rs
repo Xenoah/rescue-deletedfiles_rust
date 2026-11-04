@@ -91,18 +91,24 @@ fn query(args: &[&str]) -> Result<Value> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()?;
-    convert
+    let mut input = convert
         .stdin
         .take()
-        .ok_or_else(|| Error::Request("plist pipe".into()))?
-        .write_all(&result.stdout)?;
+        .ok_or_else(|| Error::Request("plist pipe".into()))?;
+    // Drain converter output while feeding its input: a large APFS inventory
+    // can fill both pipes if write_all is performed before wait_with_output.
+    let writer = std::thread::spawn(move || input.write_all(&result.stdout));
     let data = convert.wait_with_output()?;
+    let written = writer
+        .join()
+        .map_err(|_| Error::Request("plist writer failed".into()))?;
     if !data.status.success() {
         return Err(Error::Request(format!(
             "disk inventory conversion: {}",
             String::from_utf8_lossy(&data.stderr)
         )));
     }
+    written?;
     Ok(serde_json::from_slice(&data.stdout)?)
 }
 fn roots(
