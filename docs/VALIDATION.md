@@ -231,3 +231,7 @@ macOSの署名でCLIハッシュが変わるため、公開署名後の実ファ
 Windowsの実NTFS仮想媒体で、空の非resident DATAがhighest VCN=-1を持つことを確認。alpha.8で空ストリームとして正しく解析する。データ・割当がある偽のsentinel、空のMFTは引き続き拒否し、回帰テストを追加した。
 
 最終Linux debug GUI（SHA-256: 4e6f1c249fe3b9d022d08b338d1706c149729ac2d45b6e59beb239f528a78e0b）で元の場所へ36件・既存PDF保持・ZIP36件・36日時を再照合した。実画面と機械可読記録を更新済み。
+
+## alpha.8 4環境ネイティブ検証
+
+[最終CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)は8分23秒で成功。Windows x64、Linux x64、macOS Intel/Apple Siliconの4環境でRust29テスト・debug/releaseの7統合群・35形式・ディスク864件・実削除したPDFの元の場所へのCLI/MCP復元を通過した。WindowsはNTFS、Linux/macOSはexFAT。スキャン時に元ボリュームへ作業先を作らないことも確認。各インストール／ポータブルの8配布物の検証、GUI初期化、48添付ファイルの組立とSHA-256照合が成功。公開ダウンロードの検証とは区別する。

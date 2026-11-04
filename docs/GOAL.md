@@ -65,3 +65,5 @@ alpha.7は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/
 ## alpha.8 元の場所と同じディスク
 
 ユーザー指定に従い、別ディスク限定を解除。元の場所・フォルダー・ZIP、連番／スキップ、同名フォルダーの統合を共通化した。選択データを全て先に読み出し、合計512 MiB上限では出力作成前に停止する。ローカル追加61項目と実GUIの元の場所への36件・ZIP36件・36日時を照合済み。4 OSネイティブの実削除・同じボリュームへの復元をリリース必須条件にする。詳細は[SAME-LOCATION.md](SAME-LOCATION.md)。公開済みのalpha.7とは区別して記録する。
+
+alpha.8の[4ネイティブ環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)が成功。新規仮想媒体の実削除・元の場所へのCLI/MCP復元、8配布物と全添付の組立まで通過した。タグ発行後、公開した実ファイルを再取得して照合する。

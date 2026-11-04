@@ -81,7 +81,7 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
 alpha.7の公開LinuxポータブルのGUIでも、GPTイメージ内の36ファイルをZIP保存し、正解バイト・SHA-256・日時と一致しました。
 [公開版の保存完了画面](docs/images/public-saved-view-v7.png)と[GUI実行・照合JSON](docs/public-gui-v0.2.0-alpha.7.json)を記録しています。
-alpha.7の4環境の読み取り専用仮想ディスク試験は各864件が一致しました。alpha.8は同じディスクへの保存も許可し、新しい仮想媒体で実際の削除と元の場所への復元を追加検証します。
+alpha.7の4環境の読み取り専用仮想ディスク試験は各864件が一致しました。alpha.8は[4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)で、新規仮想媒体上のPDFを実際に削除し、CLI・MCPから元の場所へ復元する試験も通過しました。
 [公開配布物の照合記録](docs/public-release-v0.2.0-alpha.7.json)では8配布物と37添付ファイルを照合しています。
 
 [全形式と条件の結果表](docs/CLOUD-TESTS.md)、[GUI操作の検証記録](docs/UI-FLOW.md)、[検証履歴](docs/VALIDATION.md)を公開しています。

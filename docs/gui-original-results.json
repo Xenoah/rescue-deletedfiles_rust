@@ -225,5 +225,8 @@
       "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
       "byte_exact": true
     }
-  ]
+  ],
+  "gui_skip_policy_verified": true,
+  "gui_skipped_files": 36,
+  "existing_output_files_unchanged_after_skip": 37
 }
