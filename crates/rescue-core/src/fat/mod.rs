@@ -525,6 +525,8 @@ fn candidate(
         record_sha256: format!("{:x}", Sha256::digest(raw)),
         extent_evidence: ExtentEvidence::Unknown,
         allocation_status: AllocationStatus::Unknown,
+        created: None,
+        modified: None,
     }
 }
 
@@ -764,13 +766,21 @@ pub(crate) fn scan(
                     (u32::from(u16_at(&slot.raw, 20)?) << 16) | u32::from(u16_at(&slot.raw, 26)?);
                 let mut raw = lfn.iter().flatten().copied().collect::<Vec<_>>();
                 raw.extend(slot.raw);
-                let entry = Entry {
+                let mut entry = Entry {
                     candidate: candidate(scan.filesystem, slot.offset, name, &folder, size, &raw),
                     first,
                     size,
                     initialized: size,
                     contiguous: false,
                 };
+                entry.candidate.created = crate::timestamps::dos(
+                    u16_at(&slot.raw, 16)?,
+                    u16_at(&slot.raw, 14)?,
+                    slot.raw[13],
+                    None,
+                );
+                entry.candidate.modified =
+                    crate::timestamps::dos(u16_at(&slot.raw, 24)?, u16_at(&slot.raw, 22)?, 0, None);
                 Some((
                     entry,
                     slot.raw[11] & 16 != 0,
@@ -809,7 +819,7 @@ pub(crate) fn scan(
                             warnings: Vec::new(),
                         };
                         let raw = set.iter().flatten().copied().collect::<Vec<_>>();
-                        let entry = Entry {
+                        let mut entry = Entry {
                             candidate: candidate(
                                 scan.filesystem,
                                 slot.offset,
@@ -823,6 +833,8 @@ pub(crate) fn scan(
                             initialized: parsed.initialized,
                             contiguous: parsed.contiguous,
                         };
+                        entry.candidate.created = parsed.created;
+                        entry.candidate.modified = parsed.modified;
                         Some((entry, parsed.directory, parsed.deleted || folder.deleted))
                     }
                     Err(error) => {

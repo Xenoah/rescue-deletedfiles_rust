@@ -1,4 +1,4 @@
-"""Collect bundled dependency license texts for the Windows distribution."""
+"""Collect bundled dependency license texts for the selected native distribution."""
 import argparse
 import hashlib
 import json
@@ -12,17 +12,18 @@ def fail(message):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--output", type=Path, required=True)
+parser.add_argument("--target", required=True)
 args = parser.parse_args()
 vendor_root = Path(__file__).resolve().parent.parent/"third_party"
 vendor = {(v["package"], v["version"]):v for v in json.loads((vendor_root/"licenses.json").read_text())}
 metadata = json.loads(subprocess.check_output([
     "cargo", "metadata", "--locked", "--offline", "--format-version", "1",
-    "--filter-platform", "x86_64-pc-windows-msvc",
+    "--filter-platform", args.target,
 ], text=True, encoding="utf-8"))
 packages = {p["id"]: p for p in metadata["packages"]}
 tree = subprocess.check_output([
     "cargo", "tree", "--workspace", "--locked", "--offline",
-    "--target", "x86_64-pc-windows-msvc", "--edges", "normal,build",
+    "--target", args.target, "--edges", "normal,build",
     "--prefix", "none", "--format", "{p}",
 ], text=True, encoding="utf-8")
 selected = {(line.split()[0], line.split()[1].removeprefix("v"))
@@ -47,7 +48,10 @@ for package_id in sorted(visited):
                 paths.add(path)
     text = [f'\n{"="*72}\n{package["name"]} {package["version"]}\nLicense: {package.get("license")}\n']
     found = False
-    for item in vendor.get((package["name"], package["version"]), {}).get("files", []):
+    supplied = vendor.get((package["name"], package["version"]), {})
+    if supplied.get("note"):
+        text.append("\n" + supplied["note"] + "\n")
+    for item in supplied.get("files", []):
         content = (vendor_root/item["path"]).read_bytes()
         if hashlib.sha256(content).hexdigest() != item["sha256"]:
             fail("Vendor license checksum mismatch: " + item["path"])

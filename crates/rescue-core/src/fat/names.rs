@@ -140,6 +140,8 @@ pub(super) struct ExfatEntry {
     pub size: u64,
     pub initialized: u64,
     pub contiguous: bool,
+    pub created: Option<crate::FileTimestamp>,
+    pub modified: Option<crate::FileTimestamp>,
 }
 
 pub(super) fn exfat_entry(entries: &[[u8; 32]], upcase: &[u16]) -> Result<ExfatEntry> {
@@ -223,6 +225,18 @@ pub(super) fn exfat_entry(entries: &[[u8; 32]], upcase: &[u16]) -> Result<ExfatE
         size,
         initialized,
         contiguous: stream[1] & 2 != 0,
+        created: crate::timestamps::dos(
+            (u32_at(primary, 8)? >> 16) as u16,
+            u32_at(primary, 8)? as u16,
+            primary[20],
+            Some(primary[22]),
+        ),
+        modified: crate::timestamps::dos(
+            (u32_at(primary, 12)? >> 16) as u16,
+            u32_at(primary, 12)? as u16,
+            primary[21],
+            Some(primary[23]),
+        ),
     })
 }
 

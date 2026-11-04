@@ -301,6 +301,8 @@ pub(crate) struct Record {
     pub streams: Vec<Stream>,
     pub unsupported: Vec<String>,
     pub hash: String,
+    pub created: Option<crate::FileTimestamp>,
+    pub modified: Option<crate::FileTimestamp>,
 }
 
 #[derive(Clone, Debug)]
@@ -359,8 +361,11 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         streams: Vec::new(),
         unsupported: Vec::new(),
         hash,
+        created: None,
+        modified: None,
     };
     let mut name_priority = 0;
+    let mut standard_times = false;
     loop {
         let kind = u32_at(&raw[..used], at)?;
         if kind == 0xffff_ffff {
@@ -413,6 +418,11 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
                 return Err(invalid("resident value overlaps header"));
             }
             let value = bytes(attr, offset, value_len)?;
+            if kind == 0x10 && value.len() >= 32 {
+                record.created = crate::timestamps::filetime(u64_at(value, 0)?);
+                record.modified = crate::timestamps::filetime(u64_at(value, 8)?);
+                standard_times = true;
+            }
             if kind == 0x30 {
                 if value.len() < 66 {
                     return Err(invalid("short FILE_NAME"));
@@ -420,6 +430,10 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
                 let namespace = value[65];
                 let priority = if namespace == 2 { 1 } else { 2 };
                 if priority >= name_priority {
+                    if !standard_times {
+                        record.created = crate::timestamps::filetime(u64_at(value, 8)?);
+                        record.modified = crate::timestamps::filetime(u64_at(value, 16)?);
+                    }
                     let name = bytes(value, 66, value[64] as usize * 2)?
                         .as_chunks::<2>()
                         .0

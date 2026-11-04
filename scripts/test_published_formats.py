@@ -19,7 +19,7 @@ def download(url,limit):
 
 def test(tag,output):
     if not re.fullmatch(r'v\d+\.\d+\.\d+-alpha\.\d+',tag):raise ValueError('expected a release alpha tag')
-    version=tag.removeprefix('v');name=f'rescue-{version}-windows-x64.zip'
+    version=tag.removeprefix('v');suffix='-portable' if int(version.rsplit('.',1)[1])>=6 else '';name=f'rescue-{version}-windows-x64{suffix}.zip'
     base=f'https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/{tag}/'
     manifest=download(base+'SHA256SUMS.txt',65536).decode('ascii')
     expected=next(line.split()[0] for line in manifest.splitlines() if line.split()[1]==name)

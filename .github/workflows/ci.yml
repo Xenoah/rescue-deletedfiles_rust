@@ -7,22 +7,47 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  MACOSX_DEPLOYMENT_TARGET: '13.0'
 jobs:
   verify:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x64
+            target: x86_64-unknown-linux-gnu
             executable: rescue
-          - os: windows-latest
+          - os: windows-2022
+            platform: windows
+            arch: x64
+            target: x86_64-pc-windows-msvc
             executable: rescue.exe
+          - os: macos-15-intel
+            platform: macos
+            arch: x64
+            target: x86_64-apple-darwin
+            executable: rescue
+          - os: macos-15
+            platform: macos
+            arch: arm64
+            target: aarch64-apple-darwin
+            executable: rescue
     runs-on: ${{ matrix.os }}
+    env:
+      RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install Linux GUI and independent filesystem tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxkbcommon-dev libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs
       - name: Install pinned Rust
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
       - uses: actions/cache@v4
@@ -31,78 +56,57 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          key: ${{ matrix.os }}-${{ matrix.arch }}-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
       - run: cargo fetch --locked
       - run: cargo fmt --all -- --check
       - run: cargo clippy --workspace --all-targets --locked --offline -- -D warnings
       - run: cargo test --workspace --locked --offline
       - run: cargo build --workspace --locked --offline
-      - name: CLI and MCP integration
-        run: python scripts/e2e.py --binary target/debug/${{ matrix.executable }}
-      - name: NTFS compression and stream integration
-        run: python scripts/e2e_streams.py --binary target/debug/${{ matrix.executable }}
-      - name: FAT32 and exFAT integration
-        run: python scripts/e2e_fat.py --binary target/debug/${{ matrix.executable }}
-      - name: PNG carving integration
-        run: python scripts/e2e_carve.py --binary target/debug/${{ matrix.executable }}
-      - name: Audit regressions
-        run: python scripts/e2e_audit.py --binary target/debug/${{ matrix.executable }}
-      - name: All format families (CLI and MCP)
-        run: python scripts/e2e_formats.py --binary target/debug/${{ matrix.executable }} --output format-results/debug
-      - name: Install independent filesystem tools
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs
-      - name: Validate independently generated NTFS metadata
+      - name: Debug CLI and MCP integration (all six suites)
+        run: python scripts/run_integration.py --binary target/debug/${{ matrix.executable }}
+      - name: Independent NTFS metadata
         if: runner.os == 'Linux'
         run: python scripts/independent_ntfs.py --binary target/debug/rescue
-      - name: Validate independently generated FAT metadata
+      - name: Independent FAT metadata
         if: runner.os == 'Linux'
         run: python scripts/independent_fat.py --binary target/debug/rescue
-      - name: Build Windows distribution
-        if: runner.os == 'Windows'
+      - name: Build native release executables
         run: cargo build --release --workspace --locked --offline
-      - name: Verify release executable
-        if: runner.os == 'Windows'
-        run: python scripts/e2e.py --binary target/release/rescue.exe
-      - name: Verify release compression and ADS
-        if: runner.os == 'Windows'
-        run: python scripts/e2e_streams.py --binary target/release/rescue.exe
-      - name: Verify release FAT32 and exFAT
-        if: runner.os == 'Windows'
-        run: python scripts/e2e_fat.py --binary target/release/rescue.exe
-      - name: Verify release PNG carving
-        if: runner.os == 'Windows'
-        run: python scripts/e2e_carve.py --binary target/release/rescue.exe
-      - name: Verify release audit regressions
-        if: runner.os == 'Windows'
-        run: python scripts/e2e_audit.py --binary target/release/rescue.exe
-      - name: Verify release format families
-        if: runner.os == 'Windows'
-        run: python scripts/e2e_formats.py --binary target/release/rescue.exe --output format-results/release
-      - name: Upload format verification evidence
-        uses: actions/upload-artifact@v4
+      - name: Release CLI and MCP integration (all six suites)
+        run: python scripts/run_integration.py --binary target/release/${{ matrix.executable }}
+      - name: Release all-format byte verification
+        run: python scripts/e2e_formats.py --binary target/release/${{ matrix.executable }} --output format-results/release
+      - name: Independent deletion and all formats on Linux
+        if: runner.os == 'Linux'
+        run: python scripts/e2e_formats.py --binary target/release/rescue --output format-results/independent --independent
+      - name: Collect target-specific third-party licenses
+        run: python scripts/notices.py --target ${{ matrix.target }} --output dist/THIRD_PARTY_NOTICES.txt
+      - name: Build installer and portable
+        run: python scripts/package.py --platform ${{ matrix.platform }} --arch ${{ matrix.arch }}
+      - name: Verify Linux packages and GUI startup
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python scripts/verify_package.py --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --smoke-gui
+      - name: Verify native packages and GUI startup
+        if: runner.os != 'Linux'
+        run: python scripts/verify_package.py --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --smoke-gui
+      - name: Collect native format evidence
+        run: python -c "from pathlib import Path;import shutil;shutil.copyfile('format-results/release/results.json','dist/format-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect independent deletion evidence
+        if: runner.os == 'Linux'
+        run: python -c "import shutil;shutil.copyfile('format-results/independent/results.json','dist/format-results-linux-independent.json')"
+      - uses: actions/upload-artifact@v4
         with:
-          name: format-evidence-${{ runner.os }}
-          path: format-results/*/results.json
-          if-no-files-found: error
-      - name: Collect third-party notices
-        if: runner.os == 'Windows'
-        run: python scripts/notices.py --output dist/THIRD_PARTY_NOTICES.txt
-      - name: Package Windows distribution
-        if: runner.os == 'Windows'
-        run: python scripts/package.py
-      - name: Upload Windows portable distribution
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
-        with:
-          name: windows-portable
+          name: native-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            dist/*.zip
-            dist/*.html
-            dist/*.png
-            dist/SHA256SUMS.txt
+            dist/*-portable.zip
+            dist/*-portable.tar.gz
+            dist/*-setup.exe
+            dist/*.deb
+            dist/*.pkg
+            dist/package-*.json
+            dist/verification-*.json
+            dist/format-results-*.json
+            dist/SHA256SUMS-*.txt
           if-no-files-found: error
   release:
     if: startsWith(github.ref, 'refs/tags/v')
@@ -117,18 +121,20 @@ jobs:
           python-version: '3.12'
       - uses: actions/download-artifact@v4
         with:
-          name: windows-portable
+          pattern: native-*
+          merge-multiple: true
           path: dist
-      - name: Validate tag and artifact checksums
+      - name: Validate tag and every native distribution
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           python scripts/package.py --validate-tag "$RELEASE_TAG"
+          python scripts/assemble_release.py
           cd dist
           sha256sum --check SHA256SUMS.txt
-      - name: Publish tested alpha
+      - name: Publish verified installer and portable distributions
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/*.zip dist/*.html dist/*.png dist/SHA256SUMS.txt --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md
+        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md

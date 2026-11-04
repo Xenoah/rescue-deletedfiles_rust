@@ -1,6 +1,6 @@
 use rescue_core::{
-    Error, OutputRoot, Progress, RecoveryDestination, ScanOptions, Session, recover_to,
-    save_report_to, scan_carving, scan_image,
+    Error, OutputRoot, Progress, RecoveryDestination, ScanMethod, ScanOptions, SearchSettings,
+    Session, recover_to, recover_zip_to, save_report_to, scan_with_settings,
 };
 use serde_json::{Value, json};
 use std::{
@@ -74,7 +74,7 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan a regular image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG with CRC and pixel decoding. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"}}),
+            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
             &["source", "request_id"],
             false
         ),
@@ -97,7 +97,7 @@ fn tools() -> Value {
             "recover_files",
             "Recover explicitly selected IDs into an allowed existing directory.",
             json!({"session_id":string,"ids":{"type":"array","items":string,"minItems":1,"maxItems":10000},
-                "destination":string,"request_id":string}),
+                "destination":string,"request_id":string,"output_format":{"type":"string","enum":["directory","zip"],"default":"directory"}}),
             &["session_id", "ids", "destination", "request_id"],
             false
         ),
@@ -212,6 +212,48 @@ impl Server {
                     Some(Value::String(mode)) if mode == "carve" => true,
                     _ => return Err("mode must be quick or carve".into()),
                 };
+                let number = |name: &str| -> std::result::Result<Option<u64>, String> {
+                    args.get(name)
+                        .map(|value| value.as_u64().ok_or_else(|| format!("invalid {name}")))
+                        .transpose()
+                };
+                let extensions = args
+                    .get("extensions")
+                    .map(|v| {
+                        v.as_array()
+                            .ok_or("extensions must be an array")
+                            .and_then(|values| {
+                                values
+                                    .iter()
+                                    .map(|v| {
+                                        v.as_str().map(str::to_owned).ok_or("invalid extension")
+                                    })
+                                    .collect::<std::result::Result<Vec<_>, _>>()
+                            })
+                    })
+                    .transpose()
+                    .map_err(str::to_owned)?
+                    .unwrap_or_default();
+                let max_depth = number("max_depth")?
+                    .map(|v| u16::try_from(v).map_err(err))
+                    .transpose()?;
+                let settings = SearchSettings {
+                    method: if carve {
+                        ScanMethod::Carve
+                    } else {
+                        ScanMethod::Quick
+                    },
+                    extensions,
+                    path_prefix: args
+                        .get("path_prefix")
+                        .map(|v| v.as_str().map(str::to_owned).ok_or("invalid path_prefix"))
+                        .transpose()?
+                        .unwrap_or_default(),
+                    max_depth,
+                    range_start: number("range_start")?.unwrap_or(0),
+                    range_end: number("range_end")?,
+                };
+                settings.validate().map_err(err)?;
                 let path = Path::new(field(args, "source")?)
                     .canonicalize()
                     .map_err(err)?;
@@ -226,8 +268,7 @@ impl Server {
                 let job_id = id.clone();
                 let work = self.config.work_dir.clone();
                 self.threads.push(thread::spawn(move || {
-                    let scanner = if carve { scan_carving } else { scan_image };
-                    let operation = scanner(&path, ScanOptions::default(), &cancel, |progress| {
+                    let operation = scan_with_settings(&path, ScanOptions::default(), &settings, &cancel, |progress| {
                         shared.lock().unwrap().jobs.get_mut(&job_id).unwrap().progress = progress;
                     }).and_then(|session| {
                         let path = session.save(&work)?;
@@ -303,11 +344,34 @@ impl Server {
                 )
             }
             "recover_files" => {
-                let destination = RecoveryDestination::within(
-                    Path::new(field(args, "destination")?),
-                    &self.output_roots,
-                )
-                .map_err(err)?;
+                let zip = match args.get("output_format").and_then(Value::as_str) {
+                    None if !args.as_object().unwrap().contains_key("output_format") => false,
+                    Some("directory") => false,
+                    Some("zip") => true,
+                    _ => return Err("output_format must be directory or zip".into()),
+                };
+                let requested = Path::new(field(args, "destination")?);
+                let archive_name = if zip {
+                    Some(
+                        requested
+                            .file_name()
+                            .and_then(|v| v.to_str())
+                            .ok_or("invalid ZIP filename")?
+                            .to_owned(),
+                    )
+                } else {
+                    None
+                };
+                let parent = if zip {
+                    requested
+                        .parent()
+                        .filter(|v| !v.as_os_str().is_empty())
+                        .unwrap_or_else(|| Path::new("."))
+                } else {
+                    requested
+                };
+                let destination =
+                    RecoveryDestination::within(parent, &self.output_roots).map_err(err)?;
                 let session = self
                     .state
                     .lock()
@@ -330,7 +394,31 @@ impl Server {
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
+                let work = self.config.work_dir.clone();
                 self.threads.push(thread::spawn(move || {
+                    if let Some(name) = archive_name {
+                        let operation =
+                            recover_zip_to(&session, &ids, &work, &destination, &name, &cancel);
+                        let mut state = shared.lock().unwrap();
+                        let job = state.jobs.get_mut(&job_id).unwrap();
+                        match operation {
+                            Ok(archive) => {
+                                job.state = archive.status.clone();
+                                job.result = json!({"archive":archive});
+                            }
+                            Err(e) => {
+                                job.state = if matches!(e, Error::Cancelled) {
+                                    "cancelled"
+                                } else {
+                                    "failed"
+                                }
+                                .into();
+                                job.result =
+                                    json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            }
+                        }
+                        return;
+                    }
                     let operation =
                         recover_to(&session, &ids, &destination, &cancel).and_then(|results| {
                             let report = save_report_to(&destination, &session, &results)?;

@@ -90,7 +90,7 @@ FAT32の実削除ではFATチェーンが消える。既知の先頭クラスタ
 - [操作できる検証レポート](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)
 - [検証一式ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.zip)
 
-Windowsでは公開ZIPのSHA-256を検証し、同梱のrescue.exeそのものを別途クラウドCIで実行する。完了後に結果を追記する。
+Windows Server 2025の[公開済み実行ファイル検証CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41819957577)も成功。公開alpha.5のZIPとSHA-256を照合してから、同梱rescue.exeそのものを実行した。管理情報が残る8方式は576/576ファイルがバイト一致し、LZNT1フィクスチャ37単位はWindowsのネイティブ展開APIとも一致した。実行ファイルSHA-256: `9e53827053a6187c6938fc078b7c1873ad829a93839a75b0d8f05095a0a4add8`。
 
 ```bash
 python scripts/e2e_formats.py --binary target/debug/rescue --output /tmp/rescue-format-new --independent

@@ -1,16 +1,21 @@
+mod archive;
 mod carve;
 mod destination;
 mod fat;
 mod lznt1;
 mod ntfs;
+mod search;
 mod source;
+mod timestamps;
 
+pub use archive::{ArchiveRecovery, recover_zip, recover_zip_to};
 use cap_std::{
     ambient_authority,
     fs::{Dir, OpenOptions},
 };
 pub use destination::{OutputRoot, RecoveryDestination};
 use ntfs::Ntfs;
+pub use search::{ScanMethod, SearchSettings, scan_with_settings};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub use source::Fingerprint;
@@ -22,6 +27,7 @@ use std::{
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
 };
+pub use timestamps::FileTimestamp;
 use uuid::Uuid;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -119,6 +125,10 @@ pub struct Candidate {
     pub extent_evidence: ExtentEvidence,
     #[serde(default)]
     pub allocation_status: AllocationStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub created: Option<FileTimestamp>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub modified: Option<FileTimestamp>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -136,6 +146,8 @@ pub struct Session {
     pub truncated: bool,
     pub invalid_records: u64,
     pub warnings: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub search: Option<SearchSettings>,
 }
 impl Session {
     pub fn save(&self, work_dir: &Path) -> Result<PathBuf> {
@@ -271,6 +283,7 @@ pub fn scan_image(
             truncated: result.truncated,
             invalid_records: result.invalid_records,
             warnings: result.warnings,
+            search: None,
         };
         session.bound_candidates()?;
         return Ok(session);
@@ -289,6 +302,7 @@ pub fn scan_image(
         truncated: false,
         invalid_records: 0,
         warnings: Vec::new(),
+        search: None,
     };
     let mut directories = BTreeMap::new();
     let mut parents = Vec::new();
@@ -351,6 +365,8 @@ pub fn scan_image(
                             record_sha256: record.hash.clone(),
                             extent_evidence: ExtentEvidence::Metadata,
                             allocation_status: AllocationStatus::Unknown,
+                            created: record.created.clone(),
+                            modified: record.modified.clone(),
                         });
                     }
                 }
@@ -432,6 +448,8 @@ pub struct RecoveryResult {
     pub warnings: Vec<String>,
     pub extent_evidence: ExtentEvidence,
     pub allocation_status: AllocationStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub archive_entry: Option<String>,
 }
 
 struct RecoveryData {
@@ -601,6 +619,7 @@ pub fn recover_to(
                 warnings: Vec::new(),
                 extent_evidence: ExtentEvidence::Unknown,
                 allocation_status: AllocationStatus::Unknown,
+                archive_entry: None,
             });
             continue;
         }
@@ -614,6 +633,7 @@ pub fn recover_to(
             warnings: Vec::new(),
             extent_evidence: ExtentEvidence::Unknown,
             allocation_status: AllocationStatus::Unknown,
+            archive_entry: None,
         };
         let attempt = (|| -> Result<()> {
             destination.verify()?;

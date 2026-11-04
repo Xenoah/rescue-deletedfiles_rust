@@ -1,5 +1,8 @@
 use clap::{Parser, Subcommand};
-use rescue_core::{Error, ScanOptions, Session, recover, save_report, scan_carving, scan_image};
+use rescue_core::{
+    Error, ScanMethod, ScanOptions, SearchSettings, Session, recover, recover_zip, save_report,
+    scan_with_settings,
+};
 use serde_json::json;
 use std::{
     path::PathBuf,
@@ -25,6 +28,16 @@ enum Command {
         work_dir: PathBuf,
         #[arg(long, default_value = "quick", value_parser = ["quick", "carve"])]
         mode: String,
+        #[arg(long = "extension", value_delimiter = ',')]
+        extensions: Vec<String>,
+        #[arg(long, default_value = "")]
+        path_prefix: String,
+        #[arg(long)]
+        max_depth: Option<u16>,
+        #[arg(long, default_value_t = 0)]
+        range_start: u64,
+        #[arg(long)]
+        range_end: Option<u64>,
         #[arg(long)]
         json: bool,
     },
@@ -48,7 +61,15 @@ enum Command {
         #[arg(long)]
         all: bool,
         #[arg(long)]
-        destination: PathBuf,
+        destination: Option<PathBuf>,
+        #[arg(
+            long,
+            conflicts_with = "destination",
+            required_unless_present = "destination"
+        )]
+        archive: Option<PathBuf>,
+        #[arg(long)]
+        work_dir: Option<PathBuf>,
         #[arg(long)]
         json: bool,
     },
@@ -92,15 +113,28 @@ fn run() -> Result<i32, Error> {
             work_dir,
             json: compact,
             mode,
+            extensions,
+            path_prefix,
+            max_depth,
+            range_start,
+            range_end,
         } => {
-            let scanner = if mode == "carve" {
-                scan_carving
-            } else {
-                scan_image
+            let settings = SearchSettings {
+                method: if mode == "carve" {
+                    ScanMethod::Carve
+                } else {
+                    ScanMethod::Quick
+                },
+                extensions,
+                path_prefix,
+                max_depth,
+                range_start,
+                range_end,
             };
-            let session = scanner(
+            let session = scan_with_settings(
                 &source,
                 ScanOptions::default(),
+                &settings,
                 &cancel,
                 |p: rescue_core::Progress| {
                     if !compact {
@@ -162,8 +196,16 @@ fn run() -> Result<i32, Error> {
             mut id,
             all,
             destination,
+            archive,
+            work_dir,
             json: compact,
         } => {
+            let archive_work = work_dir.unwrap_or_else(|| {
+                session
+                    .parent()
+                    .unwrap_or_else(|| std::path::Path::new("."))
+                    .to_owned()
+            });
             let session = Session::load(&session)?;
             if all {
                 id = session
@@ -173,6 +215,23 @@ fn run() -> Result<i32, Error> {
                     .map(|c| c.id.clone())
                     .collect();
             }
+            if let Some(archive) = archive {
+                let result = recover_zip(&session, &id, &archive_work, &archive, &cancel)?;
+                let code = if result.status == "cancelled" {
+                    130
+                } else if result.status == "completed" {
+                    0
+                } else {
+                    5
+                };
+                print(
+                    json!({"event":"zip_recovery_finished","schema_version":1,"result":result}),
+                    compact,
+                );
+                return Ok(code);
+            }
+            let destination = destination
+                .ok_or_else(|| Error::Request("choose --destination or --archive".into()))?;
             let results = recover(&session, &id, &destination, &cancel)?;
             let report = save_report(&destination, &session, &results)?;
             print(

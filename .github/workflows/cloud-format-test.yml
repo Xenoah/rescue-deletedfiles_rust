@@ -1,13 +1,5 @@
 name: Published release cloud format verification
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/e2e_formats.py'
-      - 'scripts/test_published_formats.py'
-      - 'scripts/format_test_report.py'
-      - 'tests/corpus/**'
-      - '.github/workflows/cloud-format-test.yml'
   workflow_dispatch:
     inputs:
       release_tag:

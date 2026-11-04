@@ -106,7 +106,11 @@ fn validate(
     offset: u64,
     cancel: &AtomicBool,
     budget: &mut u64,
+    boundary: u64,
 ) -> Result<Vec<u8>> {
+    if offset.checked_add(8).is_none_or(|end| end > boundary) {
+        return Err(invalid("signature outside selected range"));
+    }
     let mut bytes = image.read(offset, 8)?;
     charge(budget, 8)?;
     if bytes != SIGNATURE {
@@ -125,6 +129,9 @@ fn validate(
         let start = offset
             .checked_add(bytes.len() as u64)
             .ok_or_else(|| invalid("offset overflow"))?;
+        if start.checked_add(8).is_none_or(|end| end > boundary) {
+            return Err(invalid("chunk header outside selected range"));
+        }
         let header = image.read(start, 8)?;
         charge(budget, 8)?;
         let length = u32::from_be_bytes(header[..4].try_into().unwrap()) as usize;
@@ -172,6 +179,12 @@ fn validate(
         }
         if has_idat && kind != b"IDAT" {
             ended_idat = true;
+        }
+        if start
+            .checked_add(length as u64 + 12)
+            .is_none_or(|end| end > boundary)
+        {
+            return Err(invalid("PNG extends outside selected range"));
         }
         charge(budget, length + 4)?;
         let body = image.read(start + 8, length + 4)?;
@@ -262,25 +275,41 @@ pub fn scan_carving(
     path: &Path,
     options: ScanOptions,
     cancel: &AtomicBool,
+    progress: impl FnMut(Progress),
+) -> Result<Session> {
+    scan_range(path, options, 0, None, cancel, progress)
+}
+
+pub(crate) fn scan_range(
+    path: &Path,
+    options: ScanOptions,
+    start: u64,
+    end: Option<u64>,
+    cancel: &AtomicBool,
     mut progress: impl FnMut(Progress),
 ) -> Result<Session> {
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
+    let boundary = end.unwrap_or(image.length);
+    if start > boundary || boundary > image.length {
+        return Err(Error::Request("scan range outside image".into()));
+    }
     let mut session = Session {
         schema_version: 4, filesystem: FileSystem::Raw, id: Uuid::new_v4().to_string(),
         source: image.path.clone(), fingerprint, candidates: Vec::new(), scanned_records: 0,
-        total_records: image.length, cancelled: false, truncated: false, invalid_records: 0,
+        total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
+        search: None,
         warnings: vec![PROVENANCE.into(), "PNG only; <=64 MiB encoded and decoded pixels, <=128 MiB filtered scanlines, <=65536 chunks per file; 4 GiB validation budget. Progress counters use bytes. Ancillary text/ICC contents are not semantically validated.".into()],
     };
-    let mut offset = 0;
+    let mut offset = start;
     let mut budget = VALIDATION_BUDGET;
-    'scan: while offset < image.length {
+    'scan: while offset < boundary {
         if cancel.load(Ordering::Relaxed) {
             session.cancelled = true;
             break;
         }
-        let count = WINDOW.min(image.length - offset);
-        let buffer = image.read(offset, (count + 7).min(image.length - offset) as usize)?;
+        let count = WINDOW.min(boundary - offset);
+        let buffer = image.read(offset, (count + 7).min(boundary - offset) as usize)?;
         for (index, window) in buffer.windows(8).enumerate().take(count as usize) {
             if window != SIGNATURE {
                 continue;
@@ -289,7 +318,7 @@ pub fn scan_carving(
                 session.cancelled = true;
                 break 'scan;
             }
-            session.scanned_records = offset + index as u64;
+            session.scanned_records = offset + index as u64 - start;
             if session.candidates.len() >= options.max_candidates
                 || session.candidates.len() as u64 >= options.max_records
             {
@@ -297,7 +326,7 @@ pub fn scan_carving(
                 break 'scan;
             }
             let at = offset + index as u64;
-            let parsed = validate(&mut image, at, cancel, &mut budget);
+            let parsed = validate(&mut image, at, cancel, &mut budget, boundary);
             let mut candidate = Candidate {
                 id: id(at),
                 record: at,
@@ -312,6 +341,8 @@ pub fn scan_carving(
                 record_sha256: String::new(),
                 extent_evidence: ExtentEvidence::Unknown,
                 allocation_status: AllocationStatus::Unknown,
+                created: None,
+                modified: None,
             };
             match parsed {
                 Ok(bytes) => {
@@ -340,10 +371,10 @@ pub fn scan_carving(
             }
         }
         offset += count;
-        session.scanned_records = offset;
+        session.scanned_records = offset - start;
         progress(Progress {
-            scanned_records: offset,
-            total_records: image.length,
+            scanned_records: offset - start,
+            total_records: boundary - start,
             candidates: session.candidates.len(),
             unit: ProgressUnit::Bytes,
         });
@@ -359,7 +390,7 @@ pub fn scan_carving(
     }
     progress(Progress {
         scanned_records: session.scanned_records,
-        total_records: image.length,
+        total_records: boundary - start,
         candidates: session.candidates.len(),
         unit: ProgressUnit::Bytes,
     });
@@ -378,7 +409,8 @@ pub(crate) fn recovery_data(
         return Err(Error::SourceChanged);
     }
     let mut budget = VALIDATION_BUDGET;
-    let bytes = validate(image, candidate.record, cancel, &mut budget)?;
+    let boundary = image.length;
+    let bytes = validate(image, candidate.record, cancel, &mut budget, boundary)?;
     if candidate.record_sha256 != format!("{:x}", Sha256::digest(&bytes)) {
         return Err(Error::SourceChanged);
     }
