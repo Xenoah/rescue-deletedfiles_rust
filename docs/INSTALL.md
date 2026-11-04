@@ -7,7 +7,7 @@
 ## Windows x64
 
 セットアップEXEを実行すると、既定ではユーザーのLocalAppData/Programs/Rescueにインストールする。
-管理者権限は不要。スタートメニューからRescueを起動し、Windowsの「インストールされているアプリ」から削除できる。
+インストールに管理者権限は不要。ディスクを直接スキャンする際は管理者として起動する。スタートメニューからRescueを起動し、Windowsの「インストールされているアプリ」から削除できる。
 CLIはインストール先のrescue.exeを使う。PATHは自動変更しない。
 
 ポータブルZIPは任意のフォルダーへ展開し、rescue-gui.exeを起動する。
@@ -19,7 +19,7 @@ alpha.6以降の配布ビルドはVCランタイムを静的リンクする。GU
 glibc 2.35以降を必要とする。インストール版はDebian/Ubuntu系のDEB。
 
 ```sh
-sudo apt install ./rescue-0.2.0-alpha.6-linux-x64.deb
+sudo apt install ./rescue-0.2.0-alpha.7-linux-x64.deb
 rescue-gui
 rescue --version
 sudo apt remove rescue-deletedfiles
@@ -50,7 +50,7 @@ macOSの実機による初回インストール・手動GUI操作と、CIのPKG�
 
 ## 共通
 
-解析するRAWイメージは読み取り専用で開く。復元先は元媒体と別のハードリンク対応媒体にする。
+解析するディスク・ボリューム・RAWイメージは読み取り専用で開く。復元先は元媒体と別のハードリンク対応媒体にする。
 ZIP保存は作業フォルダーへ一度復元してから無圧縮ZIP64を作るため、ファイル合計とZIP分の空き容量が必要。
 作業フォルダーを空欄にしたGUIでは保存先の.rescue-workを使う。セッションを再利用する間は保持する。
 取消・失敗時の一時保存先は結果に表示し、成功したZIPだけを最終ファイル名で公開する。
