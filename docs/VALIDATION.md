@@ -211,3 +211,13 @@ macOSの署名でCLIハッシュが変わるため、公開署名後の実ファ
 
 署名・梱包後の公開CLI検証は[追加ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41840193814)でも56秒で成功した。リリースへ4環境のJSON、統合JSON/Markdown、PUBLISHED-SHA256SUMS.txtを追加し、元の32ファイルとSHA256SUMS.txtは変更していない。
 公開された単体HTMLもChromiumで3画面・2方式・390px幅・外部通信ゼロ・JSエラーなしを確認。[ブラウザー記録](public-browser-v0.2.0-alpha.6.json)、[公開GUIでの36ファイル保存記録](public-gui-v0.2.0-alpha.6.json)も収録した。
+
+## v0.2.0-alpha.7 ディスク対応
+
+[タグCI 41879142077](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41879142077)が4環境で成功し、インストール版・ポータブル版を公開した。Windows 2022、Ubuntu 22.04、macOS 26 Intel／Apple Siliconを使用。macOSの配布最小OS設定は13。Rust共通28テストとWindows／macOS各1テスト、debug/releaseの6統合スイート、形式別・独立ツール・パッケージ・GUI描画初期化を検証した。
+
+各環境でMBR・512/4096セクターGPTの648バイト照合に加え、新規読み取り専用loop/VHD/hdiutilの3パーティションで216照合が成功。作業領域・フォルダー復元・ZIP・MCPの同一媒体への出力を作成前に拒否した。元fixture全体のSHA-256も不変。管理情報のある8条件576件とMBR/GPT144件、独立ツール由来の条件は`format-results-*.json`、ディスク試験は`disk-results-*.json`へ記録した。実SSDのTRIMや一般的な復元率の測定ではない。
+
+公開37添付ファイルを再取得してSHA-256を照合し、8配布物の構造・実行ファイルを検査した。記録は[公開配布物JSON](public-release-v0.2.0-alpha.7.json)。公開Linux GUIのSHA-256 `72f6c0f9877eef18d00938215b654cf4cf1349fbffa9bd0b53550ac23963a9bd`はパッケージの検証値と一致。実GUIからGPTイメージをスキャンして36件を選択・ZIP保存し、独立したPythonで全バイト・SHA-256・36日時が一致した。[GUI JSON](public-gui-v0.2.0-alpha.7.json)と実画面を保持する。これはイメージ補助モードのGUI操作で、デバイスAPIは別途CIの仮想媒体で検証した。
+
+公開`intelligence.html`もブラウザーで4画面・3方式の切替、390px幅、JavaScriptエラー・外部通信なしを確認した。[ブラウザーJSON](public-browser-v0.2.0-alpha.7.json)。

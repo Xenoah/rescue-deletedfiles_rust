@@ -77,8 +77,10 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 
 35種類・36ファイルを正解データと照合します。管理情報が残る8条件ではCLI/MCP計576件がバイト一致しました。
 実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
-以前のalpha.6の公開ポータブルのGUIからZIP保存した36ファイルも、独立したPython ZIP展開で正解バイトと一致しました。
-[公開版の保存完了画面](docs/images/public-saved-view-v6.png)と[GUI実行・照合JSON](docs/public-gui-v0.2.0-alpha.6.json)も記録しています。
+公開したLinuxポータブルのGUIでも、GPTイメージ内の36ファイルをZIP保存し、正解バイト・SHA-256・日時と一致しました。
+[公開版の保存完了画面](docs/images/public-saved-view-v7.png)と[GUI実行・照合JSON](docs/public-gui-v0.2.0-alpha.7.json)を記録しています。
+4環境の読み取り専用仮想ディスク試験は各864件が一致し、元媒体への作業・フォルダー・ZIP・MCPの保存を拒否することも確認しました。
+[公開配布物の照合記録](docs/public-release-v0.2.0-alpha.7.json)では8配布物と37添付ファイルを照合しています。
 
 [全形式と条件の結果表](docs/CLOUD-TESTS.md)、[GUI操作の検証記録](docs/UI-FLOW.md)、[検証履歴](docs/VALIDATION.md)を公開しています。
 公開済みalpha.5の実行ファイルそのものを使った[クラウド検証HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)も参照できます。

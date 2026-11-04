@@ -1,0 +1,127 @@
+{
+  "status": "passed",
+  "scope": "primary public assets; before extra post-package matrix completes",
+  "tag": "v0.2.0-alpha.7",
+  "checksummed_public_assets": 37,
+  "primary_checksummed_assets": 37,
+  "post_package_checksummed_assets": 0,
+  "binaries": [
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 2594304,
+      "sha256": "57807f48391162d54368980acd02adb051fa12b204b8c08506430ba4365e100d"
+    },
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 12041216,
+      "sha256": "c1833fa9c6442120b70a61e63081995d572bb055cab6b551e9d80eb16218731e"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 3148416,
+      "sha256": "0e5c9b4fdacbeb2265c7d30efcf491e615db31b768d6d7e9b47f41db59cab4aa"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 18284752,
+      "sha256": "72f6c0f9877eef18d00938215b654cf4cf1349fbffa9bd0b53550ac23963a9bd"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 2898880,
+      "sha256": "2594c9360220e3da02300e2f2517d8138e22add4eae0c2256c09a8da918f5968"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 7816224,
+      "sha256": "20283d249ecfa0f82308742ef31a33ecac4fb5e3dadd8e80f45e99ed42fb5305"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue",
+      "bytes": 2718608,
+      "sha256": "b5ef5cf33c2cc60ca08888da8cacce86dcc491021b658c38553e2dabfb11d93e"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue-gui",
+      "bytes": 7537424,
+      "sha256": "303cd80c69b70e3b9945ac273f26853b8bfb002416dbb20a2ad25ea16ec354f3"
+    }
+  ],
+  "native_platforms": [
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "57807f48391162d54368980acd02adb051fa12b204b8c08506430ba4365e100d",
+      "post_package_matrix_cli_sha256": null,
+      "macos_signing_changed_binary_hash": false,
+      "platform": "windows",
+      "arch": "x64",
+      "gui": "Rescue renderer: Dx12; device: Cpu; adapter: Microsoft Basic Render Driver",
+      "installer": "installed_version_and_bytes_verified_then_uninstalled",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 37
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "0e5c9b4fdacbeb2265c7d30efcf491e615db31b768d6d7e9b47f41db59cab4aa",
+      "post_package_matrix_cli_sha256": null,
+      "macos_signing_changed_binary_hash": false,
+      "platform": "linux",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "deb_extracted_version_payload_and_shortcuts_verified",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "9a513eda49e519f720ddff099364f7d6b075ee390bda6c0e05270a333183a462",
+      "post_package_matrix_cli_sha256": null,
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "6629bfc33fff23c042c65167751b54b36028c8425a683bd1dd7d608121b5f074",
+      "post_package_matrix_cli_sha256": null,
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "arm64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0
+    }
+  ],
+  "published_linux_feature_suite": true,
+  "gui_proof_files": 36,
+  "standalone_html_embedded_screenshots": 4
+}

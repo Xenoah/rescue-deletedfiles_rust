@@ -1,7 +1,7 @@
 name: Retry hosted runner allocation failures
 on:
   workflow_run:
-    workflows: [Verify and release]
+    workflows: [Verify and release, Verify actual published packages]
     types: [completed]
 permissions:
   actions: write
@@ -10,7 +10,7 @@ jobs:
   retry:
     if: >-
       github.event.workflow_run.conclusion == 'failure' &&
-      github.event.workflow_run.event == 'push' &&
+      (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
       github.event.workflow_run.run_attempt < 3
     runs-on: ubuntu-22.04
@@ -23,6 +23,7 @@ jobs:
           FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
           FAILED_BRANCH: ${{ github.event.workflow_run.head_branch }}
           FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+          FAILED_WORKFLOW: ${{ github.event.workflow_run.name }}
         run: |
           python3 - <<'PYCODE'
           import json, os, subprocess
@@ -31,12 +32,15 @@ jobs:
           branch=os.environ['FAILED_BRANCH']
           def api(path):
               return json.loads(subprocess.check_output(['gh','api',path],text=True,timeout=30))
-          if branch=='main':
-              if api('repos/'+repo+'/commits/main')['sha']!=os.environ['FAILED_SHA']:
-                  print('Superseded main commit; no retry.')
+          if branch in ('main','work'):
+              if branch=='work' and os.environ['FAILED_WORKFLOW']!='Verify actual published packages':
+                  print('Only published-package QA is retried on work.')
+                  raise SystemExit(0)
+              if api('repos/'+repo+'/commits/'+branch)['sha']!=os.environ['FAILED_SHA']:
+                  print('Superseded branch commit; no retry.')
                   raise SystemExit(0)
           elif not branch.startswith('v'):
-              print('Only current main and release tags are retried.')
+              print('Only current main, published-package QA and release tags are retried.')
               raise SystemExit(0)
           run=api('repos/'+repo+'/actions/runs/'+run_id)
           if int(run.get('run_attempt',3))>=3:
