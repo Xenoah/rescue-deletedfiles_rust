@@ -22,10 +22,10 @@ jobs:
           - os: windows-2022
             platform: windows
             arch: x64
-          - os: macos-15-intel
+          - os: macos-26-intel
             platform: macos
             arch: x64
-          - os: macos-15
+          - os: macos-26
             platform: macos
             arch: arm64
     runs-on: ${{ matrix.os }}
