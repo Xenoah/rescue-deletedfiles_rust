@@ -111,6 +111,18 @@ fn query(args: &[&str]) -> Result<Value> {
     written?;
     Ok(serde_json::from_slice(&data.stdout)?)
 }
+fn is_whole(info: &Value) -> bool {
+    info.get("WholeDisk")
+        .or_else(|| info.get("Whole"))
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+}
+fn parent<'a>(info: &'a Value, id: &'a str) -> &'a str {
+    info["ParentWholeDisk"]
+        .as_str()
+        .or_else(|| info["PartOfWhole"].as_str())
+        .unwrap_or(id)
+}
 fn roots(
     id: &str,
     apfs: &Value,
@@ -121,7 +133,7 @@ fn roots(
         return Err(Error::UnsafeDestination("cyclic disk topology".into()));
     }
     let info = query(&["info", "-plist", id])?;
-    let whole = info["ParentWholeDisk"].as_str().unwrap_or(id);
+    let whole = parent(&info, id);
     if let Some(container) = apfs["Containers"].as_array().and_then(|items| {
         items
             .iter()
@@ -143,10 +155,12 @@ fn roots(
         return roots(whole, apfs, seen, depth + 1);
     }
     // Virtual disk images are separate media; physical partition parents still collapse.
-    if !info["Whole"].as_bool().unwrap_or(false) {
-        return Err(Error::UnsafeDestination(
-            "cannot identify physical output disk".into(),
-        ));
+    if !is_whole(&info) {
+        return Err(Error::UnsafeDestination(format!(
+            "cannot identify physical output disk {id}; WholeDisk={:?}, Whole={:?}",
+            info.get("WholeDisk"),
+            info.get("Whole")
+        )));
     }
     Ok(BTreeSet::from([format!("macos-{whole}")]))
 }
@@ -194,18 +208,16 @@ pub fn list() -> Result<Vec<DiskSource>> {
                 .or_else(|| info["MediaName"].as_str())
                 .unwrap_or(id)
                 .into(),
-            kind: if info["Whole"].as_bool() == Some(true) {
-                "disk"
-            } else {
-                "volume"
-            }
-            .into(),
+            kind: if is_whole(&info) { "disk" } else { "volume" }.into(),
             bytes: info["TotalSize"]
                 .as_u64()
                 .or_else(|| info["Size"].as_u64())
                 .unwrap_or(0),
             sector_size: info["DeviceBlockSize"].as_u64().unwrap_or(512) as u32,
-            read_only: info["MediaReadOnly"].as_bool().unwrap_or(false),
+            read_only: info["MediaReadOnly"]
+                .as_bool()
+                .or_else(|| info["ReadOnlyMedia"].as_bool())
+                .unwrap_or(false),
             mounts: info["MountPoint"]
                 .as_str()
                 .map(|s| vec![s.into()])
@@ -213,4 +225,22 @@ pub fn list() -> Result<Vec<DiskSource>> {
         });
     }
     Ok(out)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn whole_disk_plist_flags_and_partition_parents_are_distinguished() {
+        assert!(is_whole(&json!({"WholeDisk":true})));
+        assert!(is_whole(&json!({"Whole":true})));
+        assert!(!is_whole(&json!({"WholeDisk":false,"Whole":true})));
+        assert!(!is_whole(&json!({})));
+        assert_eq!(
+            parent(&json!({"ParentWholeDisk":"disk3"}), "disk3s1"),
+            "disk3"
+        );
+        assert_eq!(parent(&json!({"PartOfWhole":"disk4"}), "disk4s1"), "disk4");
+    }
 }

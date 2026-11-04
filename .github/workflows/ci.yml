@@ -53,7 +53,8 @@ jobs:
           sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs
       - name: Install pinned Rust
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
+        id: cargo-cache
         with:
           path: |
             ~/.cargo/registry
@@ -119,6 +120,15 @@ jobs:
             dist/disk-results-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
+      - name: Preserve compiled dependencies after test failures
+        if: always() && steps.cargo-cache.outcome == 'success' && steps.cargo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
   release:
     needs: verify
     runs-on: ubuntu-latest

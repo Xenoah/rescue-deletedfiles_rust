@@ -124,6 +124,14 @@ def native_test(binary,disk,truth,root,rows):
         check(layout['device'] and layout['scheme']=='gpt' and len(layout['regions'])==3,'native layout mismatch')
         inventory=run(executable,'sources','--json')['sources']
         check(any(str(s['path']).lower()==str(device).lower() for s in inventory),'native disk missing from inventory')
+        if platform.system()=='Darwin':
+            import plistlib
+            fields=['DeviceIdentifier','ParentWholeDisk','PartOfWhole','WholeDisk','Whole','APFSContainerReference']
+            diagnostics={}
+            for label,target in [('source',str(device)),('output',str(root))]:
+                value=plistlib.loads(subprocess.check_output(['/usr/sbin/diskutil','info','-plist',target],timeout=30))
+                diagnostics[label]={key:value[key] for key in fields if key in value}
+            print('macOS disk topology:',json.dumps(diagnostics),flush=True)
         positive(executable,device,truth,root,'native-read-only-disk',rows,hash_source=backing)
         # The output guard can be checked without reading user file contents or writing anything.
         host_same=None
