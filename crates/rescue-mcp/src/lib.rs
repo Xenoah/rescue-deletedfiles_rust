@@ -122,10 +122,16 @@ impl Server {
         config.sources = config
             .sources
             .iter()
-            .map(|p| p.canonicalize())
-            .collect::<io::Result<Vec<_>>>()?;
+            .map(|p| rescue_core::canonical_source_path(p))
+            .collect::<rescue_core::Result<Vec<_>>>()?;
         for source in &config.sources {
             rescue_core::inspect_image(source)?;
+        }
+        for source in &config.sources {
+            rescue_core::guard_output_path(source, &config.work_dir)?;
+            for output in &config.output_roots {
+                rescue_core::guard_output_path(source, output)?;
+            }
         }
         fs::create_dir_all(&config.work_dir)?;
         config.work_dir = config.work_dir.canonicalize()?;
@@ -203,7 +209,7 @@ impl Server {
         let result = match name {
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
-                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving"],"version":rescue_core::VERSION}),
+                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","native_read_only_disks","mbr_gpt_partitions"],"version":rescue_core::VERSION}),
             ),
             "start_scan" => {
                 let carve = match args.get("mode") {
@@ -254,8 +260,7 @@ impl Server {
                     range_end: number("range_end")?,
                 };
                 settings.validate().map_err(err)?;
-                let path = Path::new(field(args, "source")?)
-                    .canonicalize()
+                let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
                     .map_err(err)?;
                 if !self.config.sources.contains(&path) {
                     return Err("source is outside the allowlist".into());

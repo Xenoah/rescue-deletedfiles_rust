@@ -3,8 +3,9 @@ mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use rescue_core::{
-    AllocationStatus, Candidate, FileSystem, Progress, RecoveryResult, ScanMethod, ScanOptions,
-    SearchSettings, Session, recover, recover_zip, save_report, scan_with_settings,
+    AllocationStatus, Candidate, DiskSource, FileSystem, Progress, RecoveryResult, ScanMethod,
+    ScanOptions, SearchSettings, Session, guard_output_path, list_disks, recover, recover_zip,
+    save_report, scan_with_settings,
 };
 use std::{
     collections::BTreeSet,
@@ -32,6 +33,12 @@ enum SaveMode {
     Directory,
     Zip,
 }
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum SourceMode {
+    #[default]
+    Disk,
+    Image,
+}
 enum Message {
     Progress(Progress),
     Scanned(Box<Session>, PathBuf),
@@ -44,6 +51,10 @@ enum Message {
 }
 struct App {
     source: String,
+    source_mode: SourceMode,
+    disks: Vec<DiskSource>,
+    disk_messages: Option<mpsc::Receiver<Result<Vec<DiskSource>, String>>>,
+    disk_status: String,
     work: String,
     destination: String,
     save_mode: SaveMode,
@@ -130,11 +141,17 @@ impl App {
                 break;
             }
         }
-        Self::blank()
+        let mut app = Self::blank();
+        app.refresh_disks();
+        app
     }
     fn blank() -> Self {
         Self {
             source: String::new(),
+            source_mode: SourceMode::Disk,
+            disks: Vec::new(),
+            disk_messages: None,
+            disk_status: String::new(),
             work: String::new(),
             destination: String::new(),
             save_mode: SaveMode::Directory,
@@ -160,7 +177,7 @@ impl App {
             messages: None,
             cancel: Arc::new(AtomicBool::new(false)),
             progress: Progress::default(),
-            status: "イメージと保存方法を設定してください。".into(),
+            status: "ディスクと保存方法を設定してください。".into(),
             report: String::new(),
             results: Vec::new(),
         }
@@ -232,6 +249,11 @@ impl App {
     }
     fn install_session(&mut self, s: Session, path: &Path) {
         self.source = s.source.to_string_lossy().into_owned();
+        self.source_mode = if rescue_core::is_device(&s.source) {
+            SourceMode::Disk
+        } else {
+            SourceMode::Image
+        };
         let settings = s.search.clone().unwrap_or_else(|| SearchSettings {
             method: if s.filesystem == FileSystem::Raw {
                 ScanMethod::Carve
@@ -296,7 +318,7 @@ impl App {
     }
     fn start_scan(&mut self) {
         if self.source.trim().is_empty() || self.destination.trim().is_empty() {
-            self.status = "イメージと保存先を指定してください。".into();
+            self.status = "ディスクと保存先を指定してください。".into();
             return;
         }
         let settings = match self.settings() {
@@ -308,6 +330,21 @@ impl App {
         };
         let source = PathBuf::from(&self.source);
         let work = self.work_path();
+        let destination = PathBuf::from(&self.destination);
+        let output = if self.save_mode == SaveMode::Zip {
+            destination
+                .parent()
+                .filter(|p| !p.as_os_str().is_empty())
+                .unwrap_or(Path::new("."))
+        } else {
+            &destination
+        };
+        if let Err(e) =
+            guard_output_path(&source, &work).and_then(|()| guard_output_path(&source, output))
+        {
+            self.status = format!("保存先を変更してください: {e}");
+            return;
+        }
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -417,7 +454,7 @@ impl App {
                         if s.cancelled {
                             " / 取消：未探索領域があります"
                         } else if s.truncated {
-                            " / 上限到達：未探索領域があります"
+                            " / 一部未探索：警告を確認してください"
                         } else {
                             ""
                         }
@@ -445,9 +482,107 @@ impl App {
             }
         }
     }
+    fn refresh_disks(&mut self) {
+        if self.disk_messages.is_some() {
+            return;
+        }
+        let (tx, rx) = mpsc::channel();
+        self.disk_messages = Some(rx);
+        self.disk_status = "ディスクを確認中…".into();
+        thread::spawn(move || {
+            let _ = tx.send(list_disks().map_err(|e| e.to_string()));
+        });
+    }
+    fn source_ui(&mut self, ui: &mut egui::Ui) {
+        if let Some(result) = self
+            .disk_messages
+            .as_ref()
+            .and_then(|rx| rx.try_recv().ok())
+        {
+            self.disk_messages = None;
+            match result {
+                Ok(disks) => {
+                    self.disk_status = if disks.is_empty() {
+                        "ディスクを検出できませんでした。接続・アクセス権を確認してください。"
+                            .into()
+                    } else {
+                        format!("{} 個のディスク／ボリューム", disks.len())
+                    };
+                    self.disks = disks;
+                }
+                Err(e) => self.disk_status = format!("ディスク一覧を取得できません: {e}"),
+            }
+        }
+        ui.strong("1  スキャンするディスク");
+        ui.horizontal(|ui| {
+            let previous = self.source_mode;
+            ui.selectable_value(
+                &mut self.source_mode,
+                SourceMode::Disk,
+                "ディスク／ボリューム",
+            );
+            ui.selectable_value(&mut self.source_mode, SourceMode::Image, "保存したイメージ");
+            if previous != self.source_mode {
+                self.source.clear();
+            }
+        });
+        if self.source_mode == SourceMode::Disk {
+            ui.horizontal(|ui| {
+                if ui
+                    .add_enabled(
+                        self.disk_messages.is_none(),
+                        egui::Button::new("ディスク一覧を更新"),
+                    )
+                    .clicked()
+                {
+                    self.refresh_disks();
+                }
+                ui.weak(&self.disk_status);
+            });
+            egui::ScrollArea::vertical()
+                .id_salt("disks")
+                .max_height(145.0)
+                .show(ui, |ui| {
+                    for disk in &self.disks {
+                        let path = disk.path.to_string_lossy();
+                        let kind = if disk.kind == "disk" {
+                            "ディスク全体"
+                        } else {
+                            "ボリューム"
+                        };
+                        let label = format!(
+                            "{kind}   {}   {}   {}",
+                            disk.name,
+                            view::size_text(Some(disk.bytes)),
+                            path
+                        );
+                        if ui.selectable_label(self.source == path, label).clicked() {
+                            self.source = path.into_owned();
+                        }
+                    }
+                });
+            text_row(
+                ui,
+                "選択したディスク",
+                &mut self.source,
+                if cfg!(windows) {
+                    r"例: \\.\PhysicalDrive1 または \\.\D:"
+                } else if cfg!(target_os = "macos") {
+                    "/dev/rdisk2 または /dev/rdisk2s1"
+                } else {
+                    "/dev/sdb または /dev/sdb1"
+                },
+            );
+            ui.small("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。");
+            ui.small(if cfg!(windows) { "アクセス拒否の場合は管理者として起動してください。復元先と作業フォルダーには別ディスクが必要です。" } else { "ディスクを読み取れる権限が必要です。元ディスクをアンマウントすると他のアプリによる書き換えを抑えられます。" });
+        } else {
+            path_row(ui, "イメージファイル", &mut self.source, Picker::Open);
+            ui.small("RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。");
+        }
+    }
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
         egui::ScrollArea::vertical().show(ui,|ui|{
-  ui.set_max_width(950.0);ui.add_space(14.0);ui.heading("保存方法と検索条件");ui.label("復元するファイルは、スキャン後に選択できます。");ui.add_space(16.0);ui.strong("1  スキャンするイメージ");path_row(ui,"入力ファイル",&mut self.source,Picker::Open);ui.small("NTFS・FAT32・exFATボリュームのRAWイメージ（通常ファイル）を読み取り専用で解析します。");
+  ui.set_max_width(950.0);ui.add_space(14.0);ui.heading("保存方法と検索条件");ui.label("復元するファイルは、スキャン後に選択できます。");ui.add_space(16.0);self.source_ui(ui);
   ui.add_space(16.0);ui.strong("2  保存方法");ui.horizontal(|ui|{ui.selectable_value(&mut self.save_mode,SaveMode::Directory,"フォルダーに保存");if ui.selectable_value(&mut self.save_mode,SaveMode::Zip,"ZIPファイルに保存").changed()&&!self.destination.to_lowercase().ends_with(".zip"){self.destination.clear();}});let picker=if self.save_mode==SaveMode::Zip{Picker::Zip}else{Picker::Folder};path_row(ui,"保存先",&mut self.destination,picker);ui.small(if self.save_mode==SaveMode::Zip{"ファイルと復元レポートを1つのZIPにまとめます。既存ZIPは上書きしません。"}else{"任意のフォルダーに保存します。名前の衝突時も既存ファイルは上書きしません。"});
   ui.add_space(16.0);ui.collapsing("詳細設定 — 検索方式・範囲・深度・拡張子",|ui|{
    ui.horizontal(|ui|{ui.label("検索方式");ui.selectable_value(&mut self.carve,false,"管理情報 / Quick");ui.selectable_value(&mut self.carve,true,"PNG / Carving");});text_row(ui,"探す拡張子",&mut self.extensions,"空欄: すべて / 例: jpg, png, docx, zip");
@@ -457,7 +592,7 @@ impl App {
    if ui.add_sized([170.0,38.0],egui::Button::new("スキャン開始")).clicked(){self.start_scan();}
  if self.session.is_some()&&ui.button("スキャン結果へ戻る").clicked(){self.stage=Stage::Selecting;}
    if ui.button("保存したセッションを開く").clicked()&&let Some(p)=rfd::FileDialog::new().add_filter("Rescue session",&["json"]).pick_file(){match Session::load(&p){Ok(s)=>{self.install_session(s,&p);self.status="セッションを読み込みました。保存先は設定で確認してください。".into();},Err(e)=>self.status=e.to_string()}}
-  });ui.add_space(14.0);ui.small("保存先は元データと別の媒体を推奨します。保存にはハードリンク対応のファイルシステムが必要です。");
+  });ui.add_space(14.0);ui.small("保存先はスキャンするディスクとは別の物理ディスクを指定してください。保存にはハードリンク対応のファイルシステムが必要です。");
  });
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
@@ -1171,6 +1306,8 @@ mod tests {
     fn session(fs: FileSystem) -> Session {
         Session {
             schema_version: 4,
+            region: None,
+            volumes: Vec::new(),
             filesystem: fs,
             id: "test".into(),
             source: PathBuf::from("images/loaded.raw"),

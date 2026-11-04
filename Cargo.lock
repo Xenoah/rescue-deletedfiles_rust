@@ -2711,6 +2711,7 @@ dependencies = [
  "cap-std",
  "crc32fast",
  "flate2",
+ "libc",
  "png",
  "same-file",
  "serde",
@@ -2719,6 +2720,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "uuid",
+ "windows-sys 0.61.2",
  "zip",
 ]
 

@@ -13,7 +13,7 @@ use std::{
 #[command(
     name = "rescue",
     version,
-    about = "Read-only NTFS/FAT32/exFAT RAW volume recovery (alpha)"
+    about = "Read-only NTFS/FAT32/exFAT disk and volume recovery (alpha)"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -21,6 +21,27 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Validate that output and source use different physical disks, without writing.
+    CheckDestination {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        destination: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List native disks and volumes (read-only inventory).
+    Sources {
+        #[arg(long)]
+        json: bool,
+    },
+    /// Inspect a disk partition table or a volume without scanning deleted files.
+    Inspect {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     Scan {
         #[arg(long)]
         source: PathBuf,
@@ -108,6 +129,35 @@ fn run() -> Result<i32, Error> {
             .map_err(|e| Error::Request(e.to_string()))?;
     }
     match cli.command {
+        Command::CheckDestination {
+            source,
+            destination,
+            json: compact,
+        } => {
+            rescue_core::guard_output_path(&source, &destination)?;
+            print(
+                json!({"safe":true,"source":source,"destination":destination}),
+                compact,
+            );
+            Ok(0)
+        }
+        Command::Sources { json: compact } => {
+            print(
+                json!({"schema_version":1,"sources":rescue_core::list_disks()?}),
+                compact,
+            );
+            Ok(0)
+        }
+        Command::Inspect {
+            source,
+            json: compact,
+        } => {
+            print(
+                json!({"schema_version":1,"layout":rescue_core::inspect_source(&source)?}),
+                compact,
+            );
+            Ok(0)
+        }
         Command::Scan {
             source,
             work_dir,
@@ -119,6 +169,7 @@ fn run() -> Result<i32, Error> {
             range_start,
             range_end,
         } => {
+            rescue_core::guard_output_path(&source, &work_dir)?;
             let settings = SearchSettings {
                 method: if mode == "carve" {
                     ScanMethod::Carve

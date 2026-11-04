@@ -180,8 +180,9 @@ def record_results(case,frontend,files,truth,results,rows,strict=True):
                      'expected': 'byte_exact' if strict else 'not_recoverable', 'error':result.get('error')})
 
 
-def positive(binary,source,truth,root,case,rows):
-    before=file_hash(source);work=root/(case+'-cli-work');out=root/(case+'-cli-out')
+def positive(binary,source,truth,root,case,rows,hash_source=None):
+    hash_source=hash_source or source
+    before=file_hash(hash_source);work=root/(case+'-cli-work');out=root/(case+'-cli-out')
     scan=run(binary,'scan','--source',source,'--work-dir',work,'--json')
     listed=run(binary,'results','--session',scan['session'],'--limit','1000','--json')['candidates']
     check(set(truth).issubset({c['id'] for c in listed if c['supported']}),'missing candidate: '+case)
@@ -199,7 +200,7 @@ def positive(binary,source,truth,root,case,rows):
         check(job['state']=='completed',job)
         record_results(case,'mcp',None,truth,job['result']['results'],rows)
     finally:client.close()
-    check(file_hash(source)==before,'source image modified: '+case)
+    check(file_hash(hash_source)==before,'source image modified: '+case)
     print(case,':',len(truth)*2,'byte-exact CLI/MCP files',flush=True)
 
 
@@ -207,7 +208,7 @@ def carving(binary,source,files,root,case,rows,large_png=False,erase_metadata=Tr
     # Remove volume boot and all MFT records, preserving only file content.
     if erase_metadata:
         with source.open('r+b') as f:f.write(bytes(512));f.seek(MFT_LCN*SECTOR);f.write(bytes(128*RECORD))
-    run(binary,'scan','--source',source,'--work-dir',root/(case+'-quick'),'--json',expected=4)
+    if erase_metadata:run(binary,'scan','--source',source,'--work-dir',root/(case+'-quick'),'--json',expected=4)
     before=file_hash(source)
     scan=run(binary,'scan','--mode','carve','--source',source,'--work-dir',root/(case+'-work'),'--json',expected=5)
     listed=run(binary,'results','--session',scan['session'],'--limit','1000','--json')['candidates']
@@ -334,6 +335,7 @@ def main(binary,corpus,output,use_independent):
         carving(binary,copy,files,root,name+'-metadata-lost',rows,expected_large)
     for scheme in ['mbr','gpt']:
         disk=root/('whole-disk-'+scheme+'.raw');partition_image(disk,sources['ntfs-contiguous'][0],scheme=='gpt')
+        positive(binary,disk,{'p1:'+key:value for key,value in sources['ntfs-contiguous'][1].items()},root,'whole-disk-'+scheme+'-metadata',rows)
         carving(binary,disk,files,root,'whole-disk-'+scheme,rows,True,False)
     unavailable=[]
     for feature,args in [('RAID 0/1/5/6/10/JBOD',['raid','--help']),('raw-device imaging',['image','--help']),('checkpoint resume',['resume','--help'])]:

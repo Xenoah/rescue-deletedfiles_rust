@@ -1,9 +1,12 @@
 mod archive;
 mod carve;
 mod destination;
+mod device;
+mod disk_scan;
 mod fat;
 mod lznt1;
 mod ntfs;
+mod partitions;
 mod search;
 mod source;
 mod timestamps;
@@ -14,7 +17,10 @@ use cap_std::{
     fs::{Dir, OpenOptions},
 };
 pub use destination::{OutputRoot, RecoveryDestination};
+pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device, list_disks};
+pub use disk_scan::scan_source;
 use ntfs::Ntfs;
+pub use partitions::{SourceLayout, SourceRegion, inspect_source};
 pub use search::{ScanMethod, SearchSettings, scan_with_settings};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -46,6 +52,8 @@ pub enum FileSystem {
     Exfat,
     /// Signature scan of a regular image; no filesystem interpretation.
     Raw,
+    /// A physical disk containing one or more partition volumes.
+    Disk,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -86,6 +94,8 @@ pub enum Error {
     SourceChanged,
     #[error("destination directory changed; select the output folder again")]
     DestinationChanged,
+    #[error("unsafe destination: {0}")]
+    UnsafeDestination(String),
     #[error("operation cancelled")]
     Cancelled,
     #[error("invalid request: {0}")]
@@ -102,6 +112,7 @@ impl Error {
             Self::SourceChanged => "SOURCE_CHANGED",
             Self::DestinationChanged => "DESTINATION_CHANGED",
             Self::Cancelled => "CANCELLED",
+            Self::UnsafeDestination(_) => "UNSAFE_DESTINATION",
             Self::Request(_) => "INVALID_REQUEST",
         }
     }
@@ -148,9 +159,19 @@ pub struct Session {
     pub warnings: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub search: Option<SearchSettings>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub region: Option<SourceRegion>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub volumes: Vec<ScannedVolume>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ScannedVolume {
+    pub region: SourceRegion,
+    pub fingerprint: Fingerprint,
 }
 impl Session {
     pub fn save(&self, work_dir: &Path) -> Result<PathBuf> {
+        self.guard_output(work_dir)?;
         if serialized_size(self)? + 1 > MAX_SESSION_BYTES {
             return Err(Error::Limit("serialized session exceeds 128 MiB".into()));
         }
@@ -174,11 +195,17 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if ![1, 2, 3, 4].contains(&session.schema_version) {
+        if ![1, 2, 3, 4, 5].contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
         Ok(session)
+    }
+    pub fn guard_output(&self, path: &Path) -> Result<()> {
+        if self.fingerprint.modified_ns.starts_with("device:") && !device::is_device(&self.source) {
+            return Err(Error::SourceChanged);
+        }
+        guard_output_path(&self.source, path)
     }
 }
 
@@ -261,9 +288,19 @@ pub fn scan_image(
     path: &Path,
     options: ScanOptions,
     cancel: &AtomicBool,
+    progress: impl FnMut(Progress),
+) -> Result<Session> {
+    scan_volume(path, None, options, cancel, progress)
+}
+
+fn scan_volume(
+    path: &Path,
+    region: Option<&SourceRegion>,
+    options: ScanOptions,
+    cancel: &AtomicBool,
     mut progress: impl FnMut(Progress),
 ) -> Result<Session> {
-    let mut image = Image::open(path)?;
+    let mut image = Image::open_region(path, region)?;
     let fingerprint = image.fingerprint()?;
     if image.read(3, 8)? != b"NTFS    " {
         let result = fat::scan(&mut image, options, cancel, &mut progress)?;
@@ -271,7 +308,7 @@ pub fn scan_image(
             return Err(Error::SourceChanged);
         }
         let mut session = Session {
-            schema_version: 3,
+            schema_version: if region.is_some() { 5 } else { 3 },
             filesystem: result.filesystem,
             id: Uuid::new_v4().to_string(),
             source: image.path,
@@ -284,13 +321,15 @@ pub fn scan_image(
             invalid_records: result.invalid_records,
             warnings: result.warnings,
             search: None,
+            region: region.cloned(),
+            volumes: Vec::new(),
         };
         session.bound_candidates()?;
         return Ok(session);
     }
     let ntfs = Ntfs::open(&mut image)?;
     let mut session = Session {
-        schema_version: 3,
+        schema_version: if region.is_some() { 5 } else { 3 },
         filesystem: FileSystem::Ntfs,
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
@@ -303,6 +342,8 @@ pub fn scan_image(
         invalid_records: 0,
         warnings: Vec::new(),
         search: None,
+        region: region.cloned(),
+        volumes: Vec::new(),
     };
     let mut directories = BTreeMap::new();
     let mut parents = Vec::new();
@@ -550,6 +591,7 @@ pub fn recover(
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
+    session.guard_output(destination)?;
     let destination = RecoveryDestination::open(destination)?;
     recover_to(session, ids, &destination, cancel)
 }
@@ -560,9 +602,14 @@ pub fn recover_to(
     destination: &RecoveryDestination,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if ![1, 2, 3, 4].contains(&session.schema_version) {
+    session.guard_output(&destination.path)?;
+    if ![1, 2, 3, 4, 5].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
+    if session.filesystem == FileSystem::Disk {
+        return disk_scan::recover_disk(session, ids, destination, cancel);
+    }
+    disk_scan::validate_region(session)?;
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
@@ -579,7 +626,7 @@ pub fn recover_to(
             .ok_or_else(|| Error::Request(format!("unknown candidate: {id}")))?;
         selected.push(candidate);
     }
-    let mut image = Image::open(&session.source)?;
+    let mut image = Image::open_region(&session.source, session.region.as_ref())?;
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
@@ -637,6 +684,7 @@ pub fn recover_to(
         };
         let attempt = (|| -> Result<()> {
             destination.verify()?;
+            session.guard_output(&destination.path)?;
             let fresh = match &source {
                 RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
                 RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
@@ -724,6 +772,7 @@ pub fn save_report(
     session: &Session,
     results: &[RecoveryResult],
 ) -> Result<PathBuf> {
+    session.guard_output(destination)?;
     let destination = RecoveryDestination::open(destination)?;
     save_report_to(&destination, session, results)
 }
@@ -734,6 +783,7 @@ pub fn save_report_to(
     results: &[RecoveryResult],
 ) -> Result<PathBuf> {
     destination.verify()?;
+    session.guard_output(&destination.path)?;
     let dir = &destination.dir;
     let name = format!("rescue-report-{}.json", Uuid::new_v4());
     let mut file = dir.open_with(&name, OpenOptions::new().write(true).create_new(true))?;
@@ -755,7 +805,7 @@ pub fn save_report_to(
 mod tests {
     use super::*;
     #[test]
-    fn source_rejects_devices_directories_and_out_of_range_reads() {
+    fn source_rejects_non_disk_types_directories_and_out_of_range_reads() {
         let dir = tempfile::tempdir().unwrap();
         assert!(Image::open(dir.path()).is_err());
         let path = dir.path().join("image");

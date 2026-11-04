@@ -81,6 +81,8 @@ jobs:
       - name: Independent deletion and all formats on Linux
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_formats.py --binary target/${{ matrix.target }}/release/rescue --output format-results/independent --independent
+      - name: Native read-only virtual disks and partition recovery
+        run: python scripts/ci_command.py python scripts/e2e_disks.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output disk-results --native
       - name: Collect target-specific third-party licenses
         run: python scripts/ci_command.py python scripts/notices.py --target ${{ matrix.target }} --output dist/THIRD_PARTY_NOTICES.txt
       - name: Build installer and portable
@@ -96,6 +98,8 @@ jobs:
       - name: Collect independent deletion evidence
         if: runner.os == 'Linux'
         run: python -c "import shutil;shutil.copyfile('format-results/independent/results.json','dist/format-results-linux-independent.json')"
+      - name: Collect disk access evidence
+        run: python -c "import shutil;shutil.copyfile('disk-results/results.json','dist/disk-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.platform }}-${{ matrix.arch }}
@@ -108,6 +112,7 @@ jobs:
             dist/package-*.json
             dist/verification-*.json
             dist/format-results-*.json
+            dist/disk-results-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
   release:

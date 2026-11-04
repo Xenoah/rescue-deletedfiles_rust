@@ -39,6 +39,8 @@ pub fn recover_zip(
         .file_name()
         .and_then(|n| n.to_str())
         .ok_or_else(|| Error::Request("invalid ZIP path".into()))?;
+    session.guard_output(parent)?;
+    session.guard_output(work)?;
     recover_zip_to(
         session,
         ids,
@@ -58,6 +60,8 @@ pub fn recover_zip_to(
     name: &str,
     cancel: &AtomicBool,
 ) -> Result<ArchiveRecovery> {
+    session.guard_output(&destination.path)?;
+    session.guard_output(work)?;
     if name.len() > 240
         || name.contains(['/', '\\', ':', '\0'])
         || !name.to_lowercase().ends_with(".zip")

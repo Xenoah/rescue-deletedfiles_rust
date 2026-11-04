@@ -108,7 +108,7 @@ pub fn scan_with_settings(
 ) -> Result<Session> {
     settings.validate()?;
     let mut session = match settings.method {
-        ScanMethod::Quick => crate::scan_image(path, options, cancel, progress)?,
+        ScanMethod::Quick => crate::scan_source(path, options, cancel, progress)?,
         ScanMethod::Carve => crate::carve::scan_range(
             path,
             options,

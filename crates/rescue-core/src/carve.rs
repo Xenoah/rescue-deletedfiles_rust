@@ -299,6 +299,7 @@ pub(crate) fn scan_range(
         source: image.path.clone(), fingerprint, candidates: Vec::new(), scanned_records: 0,
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: None,
+        region: None, volumes: Vec::new(),
         warnings: vec![PROVENANCE.into(), "PNG only; <=64 MiB encoded and decoded pixels, <=128 MiB filtered scanlines, <=65536 chunks per file; 4 GiB validation budget. Progress counters use bytes. Ancillary text/ICC contents are not semantically validated.".into()],
     };
     let mut offset = start;
