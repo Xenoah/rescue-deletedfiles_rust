@@ -92,3 +92,25 @@ ZIPサイズは3,439,643バイト。SHA-256:
     da23044a75971a92585c2a61d00e4284a159c082d41bc2fccf80c2fbe2678479
 
 Windows GUIの手動操作、実媒体、有料製品との比較は引き続き未検証。
+
+## v0.2.0-alpha.4 ローカル検証（2026-11-04）
+
+- Rust 16テスト、Linux clippy/build、Windows MSVC全ターゲットのclippy（型検査）成功。
+- `scripts/e2e_carve.py`：23項目、23ファイルのバイト一致。Python struct/zlibで生成したPNGの
+  全合法色形式・ビット深度、Adam7、5種類のフィルター、分割IDAT、1MiB読取窓の境界を含む。
+- CRC・Adler-32不一致、短い画素データ、不正フィルター、IDATの順序、巨大サイズ、APNG、
+  未知のcriticalチャンク、重複IHDRの拒否。セッションのオフセット・ハッシュ改変を拒否し、
+  偽のサイズ・名前は保存範囲と出力名に採用しない。空入力、同一PNGの異なる位置も検証。
+- サンプル照合範囲外のPNGをCRCが合うように変更し、ソースの更新日時を戻した場合も、
+  復元時のPNG全体ハッシュ再照合が拒否することを確認。
+- 既存CLI/MCP 24項目、圧縮/ADS 13ストリーム、FAT32/exFAT 17項目・13ファイル、
+  ntfs-3gおよびmkfs.fat/mtools/mkfs.exfatによる独立検証も成功。
+- Linux/Xvfbの最終GUIでPNG探索・一括選択・保存を操作し、3ファイルの正解バイト一致を確認。
+  4件の署名候補のうち、CRC不一致の1件は選択・保存対象から除外。
+  実スクリーンショットを`docs/images/intelligence.png`に保存。
+- `docs/intelligence.html`をChromiumで表示し、両方式の切替・aria-pressed状態・390px幅の
+  横はみ出しなし・JavaScriptエラーなしを確認。1280px幅の実表示を`docs/images/technical-ui.png`に保存。
+- 依存ライブラリの通知は引き続き170パッケージ。PNG/CRCのバージョンは既存のCargo.lockから変更なし。
+
+Windows実行時の結果と公開成果物の照合は、公開後に追記する。
+Windows GUIの手動操作・実媒体・有料製品比較は未検証。

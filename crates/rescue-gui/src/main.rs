@@ -2,7 +2,8 @@
 
 use eframe::egui;
 use rescue_core::{
-    Progress, RecoveryResult, ScanOptions, Session, recover, save_report, scan_image,
+    AllocationStatus, ExtentEvidence, FileSystem, Progress, ProgressUnit, RecoveryResult,
+    ScanOptions, Session, recover, save_report, scan_carving, scan_image,
 };
 use std::{
     collections::BTreeSet,
@@ -35,9 +36,136 @@ struct App {
     progress: Progress,
     status: String,
     report: String,
+    carve: bool,
+    focused: Option<String>,
+    results: Vec<RecoveryResult>,
 }
 impl App {
+    fn intelligence(&self, ui: &mut egui::Ui) {
+        let accent = egui::Color32::from_rgb(101, 215, 190);
+        ui.add_space(8.0);
+        ui.colored_label(accent, "RECOVERY INTELLIGENCE");
+        ui.heading("復元の根拠を確認");
+        ui.label("検出・検証・保存の状態を分けて表示します。");
+        ui.separator();
+        let Some(session) = &self.session else {
+            ui.strong("01  探索方式を選ぶ");
+            ui.label("Quick：NTFS / FAT32 / exFATの管理情報をたどります。");
+            ui.label("Carving：画像全体からPNGを探索し、CRCと画像データを検証します。");
+            ui.separator();
+            ui.strong("02  候補の根拠を確認");
+            ui.label(
+                "ファイル名をクリックすると、ここに配置根拠・割当状態・保存結果を表示します。",
+            );
+            ui.separator();
+            ui.strong("03  別の媒体に保存");
+            ui.label(
+                "出力のSHA-256を記録します。削除前の内容との一致は、正解データとの照合が必要です。",
+            );
+            return;
+        };
+        ui.horizontal(|ui| {
+            ui.strong(format!("{} 候補", session.candidates.len()));
+            ui.colored_label(
+                accent,
+                format!(
+                    "{} 対応",
+                    session.candidates.iter().filter(|c| c.supported).count()
+                ),
+            );
+        });
+        ui.label(format!(
+            "{} 保存完了 / {} 選択",
+            self.results
+                .iter()
+                .filter(|r| r.status == "completed")
+                .count(),
+            self.selected.len()
+        ));
+        ui.label(if session.filesystem == FileSystem::Raw {
+            "探索方式：PNG carving / 連続配置"
+        } else {
+            "探索方式：ファイルシステムの管理情報"
+        });
+        if session.truncated || session.cancelled {
+            ui.colored_label(
+                egui::Color32::YELLOW,
+                "探索は途中です。未探索領域が残っています。",
+            );
+        }
+        ui.separator();
+        if let Some(c) = session
+            .candidates
+            .iter()
+            .find(|c| Some(&c.id) == self.focused.as_ref())
+        {
+            ui.strong(&c.name);
+            ui.small(&c.id);
+            ui.add_space(8.0);
+            ui.colored_label(accent, "01  配置・形式の根拠");
+            ui.label(match c.extent_evidence {
+                ExtentEvidence::PngValidated => {
+                    "PNG：全チャンクのCRC・画素の展開を通過。補助チャンクの内容の意味は未検証。"
+                }
+                ExtentEvidence::Metadata => {
+                    "ファイルシステムの管理情報から配置を取得。ファイル形式の内容検証は未実施。"
+                }
+                ExtentEvidence::ResidualFatChain => "残存FATチェーンから配置を取得。",
+                ExtentEvidence::SingleCluster => "既知の先頭クラスター内に収まる範囲。",
+                ExtentEvidence::NoFatChain => "exFATのNoFatChainで示された連続配置。",
+                ExtentEvidence::Unknown => {
+                    "検証未通過または配置情報が不足。警告を確認してください。"
+                }
+            });
+            ui.add_space(8.0);
+            ui.colored_label(accent, "02  割当と元の名前");
+            ui.label(match c.allocation_status {
+                AllocationStatus::Unknown => "割当状態：不明",
+                AllocationStatus::Unallocated => "割当ビットマップ：空き領域",
+                AllocationStatus::Unreferenced => "探索した使用中エントリーからの参照なし",
+                AllocationStatus::Conflict => "使用中領域と競合：復元不可",
+            });
+            ui.label(if session.filesystem == FileSystem::Raw {
+                "元の名前・階層・削除状態：不明。使用中ファイルや埋込画像も候補になります。"
+            } else if c.path_verified {
+                "親参照を照合したパス"
+            } else {
+                "元のパスは未確認または推定を含みます。"
+            });
+            ui.add_space(8.0);
+            ui.colored_label(accent, "03  保存と照合");
+            if let Some(r) = self.results.iter().rev().find(|r| r.candidate_id == c.id) {
+                ui.label(format!("{} / {} bytes", r.status, r.bytes_written));
+                if let Some(hash) = &r.sha256 {
+                    ui.small("出力 SHA-256");
+                    ui.add(egui::Label::new(hash).wrap());
+                }
+                if let Some(error) = &r.error {
+                    ui.label(error);
+                }
+            } else {
+                ui.label("この実行での保存結果：未記録");
+            }
+            ui.label("保存完了・形式検証済みでも、削除前の内容との一致は保証しません。");
+            ui.collapsing("候補の詳細な警告", |ui| {
+                for warning in &c.warnings {
+                    ui.label(warning);
+                }
+            });
+        }
+        ui.collapsing("スキャンの制限・警告", |ui| {
+            for warning in &session.warnings {
+                ui.label(warning);
+            }
+        });
+    }
+
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
+        cc.egui_ctx.set_visuals(egui::Visuals::dark());
+        cc.egui_ctx.style_mut(|s| {
+            s.spacing.item_spacing = egui::vec2(10.0, 8.0);
+            s.visuals.selection.bg_fill = egui::Color32::from_rgb(22, 94, 110);
+        });
         let mut font_paths = if cfg!(windows) {
             let windows = std::env::var_os("WINDIR")
                 .map(PathBuf::from)
@@ -83,6 +211,9 @@ impl App {
             progress: Progress::default(),
             status: "NTFS・FAT32・exFATボリュームのRAWイメージを選択してください。".into(),
             report: String::new(),
+            carve: false,
+            focused: None,
+            results: Vec::new(),
         }
     }
     fn start_scan(&mut self) {
@@ -92,6 +223,7 @@ impl App {
         }
         let source = PathBuf::from(&self.source);
         let work = PathBuf::from(&self.work);
+        let carve = self.carve;
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -100,10 +232,19 @@ impl App {
         self.recovering = false;
         self.session = None;
         self.selected.clear();
+        self.focused = None;
+        self.results.clear();
+        self.report.clear();
         self.progress = Progress::default();
-        self.status = "ファイルシステムの管理情報を解析中…".into();
+        self.status = if carve {
+            "PNG署名を探索し、CRC・画像データを検証中…"
+        } else {
+            "ファイルシステムの管理情報を解析中…"
+        }
+        .into();
         thread::spawn(move || {
-            let result = scan_image(&source, ScanOptions::default(), &cancel, |p| {
+            let scanner = if carve { scan_carving } else { scan_image };
+            let result = scanner(&source, ScanOptions::default(), &cancel, |p| {
                 let _ = tx.try_send(Message::Progress(p));
             })
             .and_then(|session| {
@@ -158,13 +299,14 @@ impl App {
                 Message::Scanned(session, path) => {
                     self.busy = false;
                     self.status = format!(
-                        "{}件の候補。破損レコード: {} / 打切り: {} / 取消: {}",
+                        "{}件の候補。検証未通過: {} / 打切り: {} / 取消: {}",
                         session.candidates.len(),
                         session.invalid_records,
                         session.truncated,
                         session.cancelled
                     );
                     self.report = format!("セッション: {}", path.display());
+                    self.focused = session.candidates.first().map(|c| c.id.clone());
                     self.session = Some(session);
                 }
                 Message::Recovered(results, path) => {
@@ -189,6 +331,7 @@ impl App {
                             .collect::<Vec<_>>()
                             .join("\n")
                     );
+                    self.results = results;
                 }
                 Message::Error(error) => {
                     self.busy = false;
@@ -229,11 +372,11 @@ impl eframe::App for App {
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
             ui.heading("Rescue");
             ui.label(format!(
-                "{} — NTFS / FAT32 / exFAT イメージ復元 / Alpha",
+                "{} — NTFS / FAT32 / exFAT / PNG carving",
                 rescue_core::VERSION
             ));
             ui.label(
-                "対応: ボリュームのRAWイメージ。復元方式・名前の推定・割当競合は各候補の詳細を確認してください。",
+                "Quick：ボリュームの管理情報 / Carving：PNGの署名と内容を検証。元イメージは読み取り専用です。",
             );
         });
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
@@ -254,8 +397,14 @@ impl eframe::App for App {
                         format!("解析済み {} 件", self.progress.scanned_records)
                     } else {
                         format!(
-                            "レコード {} / {}",
-                            self.progress.scanned_records, self.progress.total_records
+                            "{} {} / {}",
+                            if self.progress.unit == ProgressUnit::Bytes {
+                                "バイト"
+                            } else {
+                                "レコード"
+                            },
+                            self.progress.scanned_records,
+                            self.progress.total_records
                         )
                     };
                     ui.add(egui::ProgressBar::new(fraction).text(text));
@@ -269,8 +418,18 @@ impl eframe::App for App {
                 ui.label(&self.report);
             });
         });
+        egui::SidePanel::right("intelligence")
+            .exact_width(305.0)
+            .show(ctx, |ui| {
+                egui::ScrollArea::vertical().show(ui, |ui| self.intelligence(ui));
+            });
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.add_enabled_ui(!self.busy, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label("探索方式");
+                    ui.selectable_value(&mut self.carve, false, "管理情報 / Quick");
+                    ui.selectable_value(&mut self.carve, true, "PNG / Carving");
+                });
                 path_row(ui, "イメージ", &mut self.source, false);
                 path_row(ui, "作業フォルダー", &mut self.work, true);
                 ui.horizontal(|ui| {
@@ -279,7 +438,7 @@ impl eframe::App for App {
                     if ui.button("保存したセッションを開く").clicked()
                         && let Some(path) = rfd::FileDialog::new().pick_file() {
                         match Session::load(&path) {
-                            Ok(session) => { self.session = Some(session); self.selected.clear(); self.status = "セッションを読み込みました。".into(); }
+                            Ok(session) => { self.carve = session.filesystem == FileSystem::Raw; self.focused = session.candidates.first().map(|c|c.id.clone()); self.session = Some(session); self.selected.clear(); self.results.clear(); self.status = "セッションを読み込みました。".into(); }
                             Err(e) => self.status = format!("エラー: {e}"),
                         }
                     }
@@ -309,19 +468,22 @@ impl eframe::App for App {
                                 let name_width = (ui.available_width() - 240.0).max(80.0);
                                 let checkbox = ui.add_enabled(c.supported && !self.busy,
                                     egui::Checkbox::without_text(&mut selected));
-                                let label = ui.add_sized([name_width, 24.0],
-                                    egui::Label::new(&c.original_path).halign(egui::Align::Min).truncate().sense(egui::Sense::click()))
+                                let label = ui.allocate_ui_with_layout(egui::vec2(name_width, 24.0),
+                                    egui::Layout::left_to_right(egui::Align::Center), |ui|
+                                    ui.add(egui::Label::new(&c.original_path).truncate().sense(egui::Sense::click()))).inner
                                     .on_hover_text(&c.original_path);
                                 let changed = checkbox.changed();
                                 checkbox.labelled_by(label.id);
+                                if label.clicked() { self.focused = Some(c.id.clone()); }
                                 let name_clicked = label.clicked() && c.supported && !self.busy;
                                 if name_clicked { selected = !selected; }
                                 if changed || name_clicked {
                                     if selected { self.selected.insert(c.id.clone()); } else { self.selected.remove(&c.id); }
                                 }
                                 ui.label(c.size.map(|s|format!("{s} bytes")).unwrap_or_else(||"サイズ不明".into()));
+                                if c.extent_evidence == ExtentEvidence::PngValidated { ui.colored_label(egui::Color32::from_rgb(101, 215, 190), "PNG検証済"); }
                                 if !c.supported { ui.label("復元不可").on_hover_text(c.warnings.join("\n")); }
-                                else if !c.warnings.is_empty() { ui.label("要確認").on_hover_text(c.warnings.join("\n")); }
+                                else if !c.warnings.is_empty() && c.extent_evidence != ExtentEvidence::PngValidated { ui.label("要確認").on_hover_text(c.warnings.join("\n")); }
                             });
                         }
                     });

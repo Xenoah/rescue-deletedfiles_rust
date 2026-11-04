@@ -1,7 +1,7 @@
-# v0.2.0-alpha.3 の対応範囲
+# v0.2.0-alpha.4 の対応範囲
 
-この版はNTFS・FAT32・exFATボリュームのRAWイメージ専用です。パーティション先頭をファイルのbyte 0に置きます。
-GPT/MBRを含む物理ディスク全体のイメージ、実デバイスはまだ受け付けません。
+QuickはNTFS・FAT32・exFATボリュームのRAWイメージ専用で、パーティション先頭をbyte 0に置きます。
+Carvingは通常ファイルのイメージ全体からPNGを探索し、GPT/MBR等は解釈しません。実デバイスはまだ受け付けません。
 
 ## 実装対象
 
@@ -16,16 +16,24 @@ GPT/MBRを含む物理ディスク全体のイメージ、実デバイスはま�
   NoFatChainの連続割当、残存チェーン、割当ビットマップ、valid data lengthに対応します。
 - FAT32/exFATの使用中・削除済みディレクトリーをたどり、使用中領域との競合を拒否します。
   復元時にはディレクトリーを再探索し、セッションの任意バイト位置を信頼しません。
+- 連続配置の静止PNG carving：全チャンクCRC、画素の展開、復元時の構造・全PNGハッシュ照合。
+  色形式・ビット深度の各合法な組合せ、Adam7、分割IDATに対応します。
+- Recovery Intelligenceパネル：配置・形式、割当・名前、保存・SHA-256を区別して表示。
 - CLI、egui/eframeのGUI、ローカルstdio MCP。
 - セッション保存、候補検索、明示したIDの復元、出力SHA-256とJSONレポート。
 - 既存ファイルの上書き防止、保存先からのパス逸脱防止、変更されたソースの拒否。
 
 ## 制限
 
+- PNGは符号化データ・画素バッファそれぞれ64MiB、65,536チャンク、スキャン全体の検証予算4GiBまで。
+  署名数は最大200万、候補は10万。上限到達は未対応候補またはtruncatedとして記録します。
+  APNG・断片再構成は未対応。補助チャンクのCRCは照合しますが、圧縮テキスト・ICCの意味は未検証。
+  元の名前・階層・割当・削除状態は不明で、使用中ファイルや埋込画像も候補になります。
+  読取窓・チャンク・画素展開の前後で取消を確認します。単一フレーム展開中は完了を待ちます。
 - EFS、属性リストの追加extentsは未対応です。ディレクトリー自体のADSは未対応です。
   圧縮単位の指数が4以外、クラスターが4096バイトを超える圧縮も未対応です。
   $MFT自体が属性リストを必要とする場合は、この版ではスキャンを開始できません。
-- carving、RAID、デバイス読取、イメージ取得、破損領域探索は後続フェーズです。
+- PNG以外のcarving、RAID、デバイス読取、イメージ取得、破損領域探索は後続フェーズです。
 - FAT12/16、dual-FATのTexFAT、未知のexFAT revisionは未対応です。
   主・副ブートが不一致／チェックサム不正の場合の修復・代替探索も未対応です。
 - FATのチェーンが消えた複数クラスターのファイルは復元不可にします。連続配置の推測はまだ行いません。
@@ -43,8 +51,10 @@ GPT/MBRを含む物理ディスク全体のイメージ、実デバイスはま�
   FATは16,384ディレクトリー、階層64、ディレクトリー64MiB、チェーン1,048,576クラスター、
   解析全体で200万クラスター訪問に制限します。上限到達はtruncatedまたはRESOURCE_LIMITで示します。
   FATの総レコード数は探索完了前には不明で、total_records=0です。
-- 新しいセッションはschema_version=3でfilesystem・stream_name・配置根拠・割当状態を保存します。
-  旧v1/v2を読み込めます。以前の版はv3を読めません。
+- Quickのセッションはschema_version=3、Carvingは4（filesystem=raw）を生成します。
+  v1〜v4を読み込めます。以前の版はv4を読めません。PNGのrecordはバイトオフセット、
+  record_sha256はPNG全体のSHA-256です。Carvingのscanned_records/total_recordsはバイト数、
+  invalid_recordsは検証未通過のPNG署名数です。進捗APIはunit=bytesを付けて区別します。
 - セッションはJSONです。大容量索引・メモリ目標の達成は未検証です。
 - MCPは同時に1ジョブ、最大32ジョブ・4セッション。再起動するとプロセス内の履歴は消えます。
   サーバーは保存済みの任意セッションを読み込まず、今回スキャンした許可済みソースだけを扱います。
@@ -64,6 +74,7 @@ GPT/MBRを含む物理ディスク全体のイメージ、実デバイスはま�
     python scripts/e2e.py --binary target/debug/rescue.exe
     python scripts/e2e_streams.py --binary target/debug/rescue.exe
     python scripts/e2e_fat.py --binary target/debug/rescue.exe
+    python scripts/e2e_carve.py --binary target/debug/rescue.exe
 
 Linuxでは最後の実行ファイル名をrescueにします。
 合成イメージと正解データから、バイト一致、元イメージの無変更、CLI/MCPの同一結果、

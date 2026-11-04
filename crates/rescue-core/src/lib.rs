@@ -1,3 +1,4 @@
+mod carve;
 mod fat;
 mod lznt1;
 mod ntfs;
@@ -23,6 +24,7 @@ use uuid::Uuid;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_SESSION_BYTES: u64 = 128 * 1024 * 1024;
+pub use carve::scan_carving;
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -32,6 +34,8 @@ pub enum FileSystem {
     Ntfs,
     Fat32,
     Exfat,
+    /// Signature scan of a regular image; no filesystem interpretation.
+    Raw,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,6 +47,7 @@ pub enum ExtentEvidence {
     ResidualFatChain,
     SingleCluster,
     NoFatChain,
+    PngValidated,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -147,7 +152,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if ![1, 2, 3].contains(&session.schema_version) {
+        if ![1, 2, 3, 4].contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -160,6 +165,16 @@ pub struct Progress {
     pub scanned_records: u64,
     pub total_records: u64,
     pub candidates: usize,
+    #[serde(default)]
+    pub unit: ProgressUnit,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProgressUnit {
+    #[default]
+    Records,
+    Bytes,
 }
 
 #[derive(Clone, Copy)]
@@ -301,6 +316,7 @@ pub fn scan_image(
                 scanned_records: session.scanned_records,
                 total_records: ntfs.records,
                 candidates: session.candidates.len(),
+                unit: crate::ProgressUnit::Records,
             });
         }
     }
@@ -335,6 +351,7 @@ pub fn scan_image(
         scanned_records: session.scanned_records,
         total_records: ntfs.records,
         candidates: session.candidates.len(),
+        unit: crate::ProgressUnit::Records,
     });
     Ok(session)
 }
@@ -415,6 +432,7 @@ fn ntfs_recovery_data(
 enum RecoverySource {
     Ntfs(Ntfs),
     Fat(BTreeMap<String, fat::RecoveredEntry>),
+    Carved,
 }
 
 fn safe_name(name: &str) -> String {
@@ -449,7 +467,7 @@ pub fn recover(
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if ![1, 2, 3].contains(&session.schema_version) {
+    if ![1, 2, 3, 4].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if ids.is_empty() {
@@ -474,6 +492,8 @@ pub fn recover(
     }
     let source = if session.filesystem == FileSystem::Ntfs {
         RecoverySource::Ntfs(Ntfs::open(&mut image)?)
+    } else if session.filesystem == FileSystem::Raw {
+        RecoverySource::Carved
     } else {
         let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;
         if fresh.cancelled {
@@ -523,6 +543,7 @@ pub fn recover(
         let attempt = (|| -> Result<()> {
             let fresh = match &source {
                 RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
+                RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
                 RecoverySource::Fat(entries) => {
                     let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
                     if candidate.record != entry.candidate.record

@@ -1,5 +1,5 @@
 use clap::{Parser, Subcommand};
-use rescue_core::{Error, ScanOptions, Session, recover, save_report, scan_image};
+use rescue_core::{Error, ScanOptions, Session, recover, save_report, scan_carving, scan_image};
 use serde_json::json;
 use std::{
     path::PathBuf,
@@ -23,7 +23,7 @@ enum Command {
         source: PathBuf,
         #[arg(long)]
         work_dir: PathBuf,
-        #[arg(long, default_value = "quick", value_parser = ["quick"])]
+        #[arg(long, default_value = "quick", value_parser = ["quick", "carve"])]
         mode: String,
         #[arg(long)]
         json: bool,
@@ -91,21 +91,32 @@ fn run() -> Result<i32, Error> {
             source,
             work_dir,
             json: compact,
-            ..
+            mode,
         } => {
-            let session = scan_image(&source, ScanOptions::default(), &cancel, |p| {
-                if !compact {
-                    eprintln!(
-                        "Records {} / {} ; candidates {}",
-                        p.scanned_records, p.total_records, p.candidates
-                    );
-                }
-            })?;
+            let scanner = if mode == "carve" {
+                scan_carving
+            } else {
+                scan_image
+            };
+            let session = scanner(
+                &source,
+                ScanOptions::default(),
+                &cancel,
+                |p: rescue_core::Progress| {
+                    if !compact {
+                        eprintln!(
+                            "{:?} {} / {} ; candidates {}",
+                            p.unit, p.scanned_records, p.total_records, p.candidates
+                        );
+                    }
+                },
+            )?;
             let path = session.save(&work_dir)?;
             print(
                 json!({"event":"scan_finished","schema_version":1,"session":path,
                 "session_id":session.id,"candidates":session.candidates.len(),
                 "filesystem":session.filesystem,
+                "progress_unit":if mode == "carve" { "bytes" } else { "records" },
                 "scanned_records":session.scanned_records,"total_records":session.total_records,
                 "cancelled":session.cancelled,"truncated":session.truncated,
                 "invalid_records":session.invalid_records,"warnings":session.warnings}),

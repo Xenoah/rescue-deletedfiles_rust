@@ -855,6 +855,7 @@ pub(crate) fn scan(
                     scanned_records: scan.scanned_records,
                     total_records: 0,
                     candidates: entries.len(),
+                    unit: crate::ProgressUnit::Records,
                 });
             }
         }
@@ -953,6 +954,7 @@ pub(crate) fn scan(
         scanned_records: scan.scanned_records,
         total_records: scan.total_records,
         candidates: scan.entries.len(),
+        unit: crate::ProgressUnit::Records,
     });
     Ok(scan)
 }

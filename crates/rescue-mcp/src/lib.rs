@@ -1,4 +1,6 @@
-use rescue_core::{Error, Progress, ScanOptions, Session, recover, save_report, scan_image};
+use rescue_core::{
+    Error, Progress, ScanOptions, Session, recover, save_report, scan_carving, scan_image,
+};
 use serde_json::{Value, json};
 use std::{
     collections::BTreeMap,
@@ -69,8 +71,8 @@ fn tools() -> Value {
         ),
         tool(
             "start_scan",
-            "Start NTFS/FAT32/exFAT RAW volume scan; poll get_job. Alpha: quick scan only.",
-            json!({"source":string,"request_id":string}),
+            "Scan a regular image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG with CRC and pixel decoding. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
+            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"}}),
             &["source", "request_id"],
             false
         ),
@@ -193,9 +195,15 @@ impl Server {
         let result = match name {
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
-                "capabilities":["ntfs_raw_quick_scan"],"version":rescue_core::VERSION}),
+                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving"],"version":rescue_core::VERSION}),
             ),
             "start_scan" => {
+                let carve = match args.get("mode") {
+                    None => false,
+                    Some(Value::String(mode)) if mode == "quick" => false,
+                    Some(Value::String(mode)) if mode == "carve" => true,
+                    _ => return Err("mode must be quick or carve".into()),
+                };
                 let path = Path::new(field(args, "source")?)
                     .canonicalize()
                     .map_err(err)?;
@@ -210,7 +218,8 @@ impl Server {
                 let job_id = id.clone();
                 let work = self.config.work_dir.clone();
                 self.threads.push(thread::spawn(move || {
-                    let operation = scan_image(&path, ScanOptions::default(), &cancel, |progress| {
+                    let scanner = if carve { scan_carving } else { scan_image };
+                    let operation = scanner(&path, ScanOptions::default(), &cancel, |progress| {
                         shared.lock().unwrap().jobs.get_mut(&job_id).unwrap().progress = progress;
                     }).and_then(|session| {
                         let path = session.save(&work)?;
