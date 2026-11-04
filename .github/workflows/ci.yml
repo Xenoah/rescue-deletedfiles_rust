@@ -47,6 +47,8 @@ jobs:
         run: python scripts/e2e_carve.py --binary target/debug/${{ matrix.executable }}
       - name: Audit regressions
         run: python scripts/e2e_audit.py --binary target/debug/${{ matrix.executable }}
+      - name: All format families (CLI and MCP)
+        run: python scripts/e2e_formats.py --binary target/debug/${{ matrix.executable }} --output format-results/debug
       - name: Install independent filesystem tools
         if: runner.os == 'Linux'
         run: |
@@ -76,6 +78,15 @@ jobs:
       - name: Verify release audit regressions
         if: runner.os == 'Windows'
         run: python scripts/e2e_audit.py --binary target/release/rescue.exe
+      - name: Verify release format families
+        if: runner.os == 'Windows'
+        run: python scripts/e2e_formats.py --binary target/release/rescue.exe --output format-results/release
+      - name: Upload format verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: format-evidence-${{ runner.os }}
+          path: format-results/*/results.json
+          if-no-files-found: error
       - name: Collect third-party notices
         if: runner.os == 'Windows'
         run: python scripts/notices.py --output dist/THIRD_PARTY_NOTICES.txt

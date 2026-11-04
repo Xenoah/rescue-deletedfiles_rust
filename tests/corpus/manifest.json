@@ -1,0 +1,369 @@
+{
+  "schema_version": 1,
+  "provenance": "Generated synthetic content only; independent encoders/readers. No user files.",
+  "python": "3.12.14",
+  "pillow": "13.0.0",
+  "ffmpeg": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "files": [
+    {
+      "format": "JPEG",
+      "extension": "jpg",
+      "category": "image",
+      "file": "files/sample.jpg",
+      "bytes": 767,
+      "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "PNG",
+      "extension": "png",
+      "category": "image",
+      "file": "files/sample.png",
+      "bytes": 102,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "validated_by": "Pillow decode",
+      "carving_supported": true
+    },
+    {
+      "format": "GIF",
+      "extension": "gif",
+      "category": "image",
+      "file": "files/sample.gif",
+      "bytes": 1731,
+      "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "BMP",
+      "extension": "bmp",
+      "category": "image",
+      "file": "files/sample.bmp",
+      "bytes": 3126,
+      "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "TIFF",
+      "extension": "tif",
+      "category": "image",
+      "file": "files/sample.tif",
+      "bytes": 3212,
+      "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "WebP",
+      "extension": "webp",
+      "category": "image",
+      "file": "files/sample.webp",
+      "bytes": 184,
+      "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "ICO",
+      "extension": "ico",
+      "category": "image",
+      "file": "files/sample.ico",
+      "bytes": 124,
+      "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+      "validated_by": "Pillow decode",
+      "carving_supported": false
+    },
+    {
+      "format": "APNG",
+      "extension": "apng",
+      "category": "image",
+      "file": "files/sample.apng",
+      "bytes": 310,
+      "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6",
+      "validated_by": "Pillow two-frame decode",
+      "carving_supported": false
+    },
+    {
+      "format": "PDF",
+      "extension": "pdf",
+      "category": "document",
+      "file": "files/sample.pdf",
+      "bytes": 1367,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "validated_by": "PyMuPDF text extraction",
+      "carving_supported": false
+    },
+    {
+      "format": "DOCX",
+      "extension": "docx",
+      "category": "document",
+      "file": "files/sample.docx",
+      "bytes": 36642,
+      "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "validated_by": "python-docx reopen",
+      "carving_supported": false
+    },
+    {
+      "format": "XLSX",
+      "extension": "xlsx",
+      "category": "document",
+      "file": "files/sample.xlsx",
+      "bytes": 4880,
+      "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+      "validated_by": "openpyxl reopen",
+      "carving_supported": false
+    },
+    {
+      "format": "PPTX",
+      "extension": "pptx",
+      "category": "document",
+      "file": "files/sample.pptx",
+      "bytes": 28268,
+      "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "validated_by": "python-pptx reopen",
+      "carving_supported": false
+    },
+    {
+      "format": "TXT (UTF-8)",
+      "extension": "txt",
+      "category": "text",
+      "file": "files/sample.txt",
+      "bytes": 61,
+      "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "validated_by": "UTF-8 decode",
+      "carving_supported": false
+    },
+    {
+      "format": "CSV (UTF-8)",
+      "extension": "csv",
+      "category": "text",
+      "file": "files/sample.csv",
+      "bytes": 33,
+      "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "validated_by": "csv reader",
+      "carving_supported": false
+    },
+    {
+      "format": "JSON",
+      "extension": "json",
+      "category": "text",
+      "file": "files/sample.json",
+      "bytes": 78,
+      "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "validated_by": "json parser",
+      "carving_supported": false
+    },
+    {
+      "format": "HTML",
+      "extension": "html",
+      "category": "text",
+      "file": "files/sample.html",
+      "bytes": 80,
+      "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "validated_by": "UTF-8 document inspection",
+      "carving_supported": false
+    },
+    {
+      "format": "XML",
+      "extension": "xml",
+      "category": "text",
+      "file": "files/sample.xml",
+      "bytes": 70,
+      "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "validated_by": "ElementTree parse",
+      "carving_supported": false
+    },
+    {
+      "format": "RTF",
+      "extension": "rtf",
+      "category": "document",
+      "file": "files/sample.rtf",
+      "bytes": 55,
+      "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "validated_by": "RTF header/structure inspection",
+      "carving_supported": false
+    },
+    {
+      "format": "MP4",
+      "extension": "mp4",
+      "category": "video",
+      "file": "files/sample.mp4",
+      "bytes": 2162,
+      "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "MOV",
+      "extension": "mov",
+      "category": "video",
+      "file": "files/sample.mov",
+      "bytes": 2109,
+      "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "AVI",
+      "extension": "avi",
+      "category": "video",
+      "file": "files/sample.avi",
+      "bytes": 7356,
+      "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "MKV",
+      "extension": "mkv",
+      "category": "video",
+      "file": "files/sample.mkv",
+      "bytes": 1915,
+      "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "WebM",
+      "extension": "webm",
+      "category": "video",
+      "file": "files/sample.webm",
+      "bytes": 1175,
+      "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "MP3",
+      "extension": "mp3",
+      "category": "audio",
+      "file": "files/sample.mp3",
+      "bytes": 1088,
+      "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "WAV",
+      "extension": "wav",
+      "category": "audio",
+      "file": "files/sample.wav",
+      "bytes": 6478,
+      "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "FLAC",
+      "extension": "flac",
+      "category": "audio",
+      "file": "files/sample.flac",
+      "bytes": 9478,
+      "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "Ogg/Vorbis",
+      "extension": "ogg",
+      "category": "audio",
+      "file": "files/sample.ogg",
+      "bytes": 3717,
+      "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "AAC/ADTS",
+      "extension": "aac",
+      "category": "audio",
+      "file": "files/sample.aac",
+      "bytes": 1812,
+      "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "M4A/AAC",
+      "extension": "m4a",
+      "category": "audio",
+      "file": "files/sample.m4a",
+      "bytes": 2603,
+      "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
+      "validated_by": "FFmpeg full decode + FFprobe",
+      "carving_supported": false
+    },
+    {
+      "format": "ZIP",
+      "extension": "zip",
+      "category": "archive",
+      "file": "files/sample.zip",
+      "bytes": 179,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+      "validated_by": "zipfile CRC + contents",
+      "carving_supported": false
+    },
+    {
+      "format": "TAR",
+      "extension": "tar",
+      "category": "archive",
+      "file": "files/sample.tar",
+      "bytes": 10240,
+      "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+      "validated_by": "tarfile contents",
+      "carving_supported": false
+    },
+    {
+      "format": "GZIP",
+      "extension": "gz",
+      "category": "archive",
+      "file": "files/sample.gz",
+      "bytes": 81,
+      "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "validated_by": "stdlib decompression",
+      "carving_supported": false
+    },
+    {
+      "format": "XZ",
+      "extension": "xz",
+      "category": "archive",
+      "file": "files/sample.xz",
+      "bytes": 120,
+      "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd",
+      "validated_by": "stdlib decompression",
+      "carving_supported": false
+    },
+    {
+      "format": "BZIP2",
+      "extension": "bz2",
+      "category": "archive",
+      "file": "files/sample.bz2",
+      "bytes": 110,
+      "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816",
+      "validated_by": "stdlib decompression",
+      "carving_supported": false
+    },
+    {
+      "format": "SQLite",
+      "extension": "sqlite",
+      "category": "database",
+      "file": "files/sample.sqlite",
+      "bytes": 8192,
+      "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "validated_by": "SQLite integrity_check + query",
+      "carving_supported": false
+    },
+    {
+      "format": "PNG",
+      "extension": "png",
+      "category": "image",
+      "file": "files/noise.png",
+      "bytes": 12420,
+      "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+      "validated_by": "Pillow 64x64 noise decode",
+      "carving_supported": true
+    }
+  ]
+}

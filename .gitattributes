@@ -1,3 +1,5 @@
 * text=auto eol=lf
 # License digests refer to the exact upstream bytes, including original line endings.
 third_party/licenses/** -text
+
+tests/corpus/files/** -text

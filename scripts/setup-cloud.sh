@@ -42,3 +42,7 @@ python3 scripts/e2e_fat.py --binary target/debug/rescue
 python3 scripts/e2e_carve.py --binary target/debug/rescue
 
 python3 scripts/e2e_audit.py --binary target/debug/rescue
+
+# Format corpus is committed; no external encoders are needed for this check.
+format_result_dir="$(mktemp -d /tmp/rescue-format-setup.XXXXXX)"
+python3 scripts/e2e_formats.py --binary target/debug/rescue --output "$format_result_dir/results"

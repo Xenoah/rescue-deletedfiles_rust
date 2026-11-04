@@ -1,0 +1,87 @@
+name: Published release cloud format verification
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/e2e_formats.py'
+      - 'scripts/test_published_formats.py'
+      - 'scripts/format_test_report.py'
+      - 'tests/corpus/**'
+      - '.github/workflows/cloud-format-test.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published alpha release tag to verify
+        default: v0.2.0-alpha.5
+        required: true
+permissions:
+  contents: read
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.5' }}
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Match engine source to the published release
+        shell: bash
+        run: git diff --exit-code "$RELEASE_TAG" -- crates Cargo.toml Cargo.lock
+      - name: Install independent filesystem tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs
+      - name: Build matching Linux CLI
+        if: runner.os == 'Linux'
+        run: |
+          rustup toolchain install 1.99.1 --profile minimal
+          cargo +1.99.1 build --locked
+      - name: All formats on matching Linux engine and independent filesystems
+        if: runner.os == 'Linux'
+        run: python scripts/e2e_formats.py --binary target/debug/rescue --output cloud-results/Linux --independent
+      - name: All formats on the actual published Windows executable
+        if: runner.os == 'Windows'
+        run: python scripts/test_published_formats.py --tag "$env:RELEASE_TAG" --output cloud-results/Windows
+      - name: Collect executed evidence
+        run: python -c "import os,shutil;shutil.copyfile('cloud-results/'+os.environ['RUNNER_OS']+'/results.json','cloud-result.json')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-format-${{ runner.os }}
+          path: cloud-result.json
+          if-no-files-found: error
+  publish-evidence:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: published-format-*
+          path: evidence
+      - name: Build reproducible evidence bundle
+        run: |
+          python scripts/format_test_report.py --tag "$RELEASE_TAG" --input evidence/published-format-Linux/cloud-result.json --input evidence/published-format-Windows/cloud-result.json --input docs/cloud-gui-results.json --output report --screenshot docs/images/format-matrix.png
+      - name: Attach verification artifacts to the tested release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release upload "$RELEASE_TAG" report/format-verification.json report/format-verification.md report/format-verification.html report/format-verification.zip report/format-matrix.png report/FORMAT-SHA256SUMS.txt --clobber
+          gh release view "$RELEASE_TAG" --json body --jq .body > report/current-release.md
+          python scripts/append_format_release.py --tag "$RELEASE_TAG" --report report/format-verification.json --body report/current-release.md --output report/updated-release.md
+          gh release edit "$RELEASE_TAG" --notes-file report/updated-release.md
+          cat report/format-verification.md >> "$GITHUB_STEP_SUMMARY"

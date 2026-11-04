@@ -7,3 +7,5 @@
 *.vhdx
 *.rescue-session.json
 __pycache__/
+
+/format-results/

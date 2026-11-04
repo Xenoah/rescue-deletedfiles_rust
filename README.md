@@ -15,6 +15,14 @@ Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで
 PNGの不完全な圧縮データ、大容量セッション、割当警告、GUIの入力同期・根拠表示を改善しています。
 [修正内容と回帰テスト](docs/AUDIT-FIXES.md)を参照してください。
 
+## クラウドでの形式別復元テスト
+
+35種類・36ファイルを元データと照合しました。管理情報が残る8条件ではCLI/MCP計576件が全バイト一致。
+実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。チェーン喪失や上書きがあると結果は変わります。
+[条件・全形式の結果表](docs/CLOUD-TESTS.md)と[操作できる検証レポート](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)を参照してください。
+
+![35種類36ファイルを保存したクラウドGUIの実画面](docs/images/format-matrix.png)
+
 ## Recovery Intelligence
 
 ![PNG carvingと検証根拠を表示する実際のRescue GUI](docs/images/intelligence.png)
