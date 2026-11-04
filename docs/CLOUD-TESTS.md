@@ -105,3 +105,5 @@ NTFS/exFATの削除エントリー合成と、mtoolsによる実際のFAT32削�
 表示・ZIP・検索設定を追加したalpha.6でも同じ固定コーパスを使用する。ローカルLinuxで全形式・独立FSの全条件を再実行し、上表と同じ結果を得た。
 新GUIは[UI-FLOW.md](UI-FLOW.md)の通り36ファイルを実ZIPへ保存・照合した。3 OS・4 CPU/OSターゲットのネイティブCIと配布物にも、同じ形式別テストを追加した。
 alpha.5の公開バイナリを検証した上記レポートと、新しい版の実行記録は混同せず、各リリースの`format-results-*.json`に版・バイナリSHA-256を残す。
+
+alpha.6も[公開タグの4ターゲットCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)が成功した。各OSの管理情報が残る8条件は576/576バイト一致。公開ポータブルのCLI・GUI各4本は検証時のバイナリSHA-256と一致し、公開Linux CLIで検索・日時・ZIP・MCP60項目を再実行して成功した。[公開物照合の記録](public-release-v0.2.0-alpha.6.json)も参照できる。

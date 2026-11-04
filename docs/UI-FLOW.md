@@ -38,3 +38,8 @@ python scripts/verify_gui_flow.py --truth /tmp/new-ui-truth.json --source /tmp/n
 検証スクリプトはdocs/images内の3画面もハッシュ化する。画面を再撮影する場合は同じ1260×820で保存する。
 CLI/MCP側の絞り込み・日時・ZIP・既存保護・旧セッション互換は`e2e_features.py`の60項目、
 ZIP取消・出力先差替えとGUIの入力・選択・数値／日時の並べ替えはRustテストで補っている。
+
+
+## 公開ポータブルでの再検証
+
+公開Linux x64ポータブルのGUI本体（ネイティブCIの検証済みSHA-256と一致）でも、同じ設定・スキャン・グループ・選択・ZIP復元を実行した。36ファイルの正解SHA-256、36件の日時、元イメージの全体無変更を再確認した。[公開GUIの照合記録](public-gui-v0.2.0-alpha.6.json)と[保存完了の実画面](images/public-saved-view-v6.png)に収録した。既存の開発版GUI記録とは実行ファイルのSHA-256を区別している。

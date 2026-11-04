@@ -177,7 +177,7 @@ Linuxの全形式試験も972観測・768一致で通過した。この総計に
 両配布物のCLIを実行してバージョンと追加60項目を再検証した。DEBの実システムへのインストールと、この展開検証は区別する。
 
 Windows/MSVC、Linux/glibc 2.35、macOS x64/arm64はそれぞれネイティブCIで検証する。
-全ターゲットの成功と公開ファイルの検証結果は完了後に追記する。Windows/macOSの手動GUI、実媒体、有料製品比較は未検証。
+全ターゲットと公開物の完了結果は下記「alpha.6の公開と公開ファイル照合」に記録した。Windows/macOSの手動GUI、実媒体、有料製品比較は未検証。
 
 
 4ターゲットの移植検証では、Windowsの出力先ハンドルがディレクトリー差替え自体を拒否する動作を確認した。回帰テストは差替え検出とOSによる差替え阻止を区別し、ハンドルを解放した後には同じrenameが成功することも確認する。
@@ -185,3 +185,29 @@ LinuxはGUI実行に必要なlibxkbcommon-x11等を実行依存へ追加し、�
 WindowsクラウドではOpenGL 1.1しか提供されず旧描画方式が起動できなかったため、Windowsの描画をDirect3D 12のwgpuへ変更した。OSにあるFXCを使い、追加のDXC DLLは配布しない。復元エンジンと画面の操作は共通のまま維持する。
 
 WindowsのDirect3D版は描画初期化・インストール／削除検証まで成功した。macOS Intelのコールド起動で固定3秒の判定が早すぎる事例があり、起動確認を最大30秒の初期化待ちと、その後3秒の生存確認に分けた。未初期化や途中終了は引き続き失敗とし、計測時間も検証JSONに記録する。
+
+
+## alpha.6の公開と公開ファイル照合
+
+2026-11-04、[リリースタグの全ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)が成功し、[v0.2.0-alpha.6](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.6)を公開した。
+Windows x64・Linux x64・macOS Intel/Apple Siliconのインストール版とポータブル版、計8点がダウンロード可能。
+
+公開された38添付ファイルを再取得し、すべてSHA256SUMS.txt / PUBLISHED-SHA256SUMS.txtと一致した。
+ポータブル内の8実行ファイルのPE/ELF/Mach-OとCPUを確認し、ネイティブCIが実行・検証したバイナリのSHA-256とも一致した。
+WindowsはVCランタイムの静的リンクもPEのimportで確認。ZIPのCRC、Linux DEBの実ペイロードとポータブルの一致、macOS PKGのXARチェックサム・Payload/PackageInfo/Bom、.appの最低OSと版も確認した。
+公開Linux CLIでも検索・日時・ZIP・MCPの追加60項目を再実行して成功した。
+
+| OS / CPU | 管理情報が残る8条件の正解一致 | 実際に初期化した描画 |
+| --- | --- | --- |
+| windows x64 | 576 / 576 | Rescue renderer: Dx12; device: Cpu; adapter: Microsoft Basic Render Driver |
+| linux x64 | 576 / 576 | Rescue renderer: OpenGL |
+| macos x64 | 576 / 576 | Rescue renderer: OpenGL |
+| macos arm64 | 576 / 576 | Rescue renderer: OpenGL |
+
+この表は固定コーパス・限定条件の照合数。実媒体の一般的な復元率ではない。
+macOSの署名でCLIハッシュが変わるため、公開署名後の実ファイルでも全8条件を再実行し576/576一致を確認した。署名前と署名後の検証記録は区別して保持した。
+公開のインストーラー検証内容、バイナリの全ハッシュは[公開物照合JSON](public-release-v0.2.0-alpha.6.json)に収録した。
+単体HTMLは3枚の画面を内包し、GUIの36ファイルZIP検証と画面ハッシュも照合した。macOSはアドホック署名のみで未公証。Windows/macOSの手動操作、実媒体、有料製品比較は未検証。
+
+署名・梱包後の公開CLI検証は[追加ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41840193814)でも56秒で成功した。リリースへ4環境のJSON、統合JSON/Markdown、PUBLISHED-SHA256SUMS.txtを追加し、元の32ファイルとSHA256SUMS.txtは変更していない。
+公開された単体HTMLもChromiumで3画面・2方式・390px幅・外部通信ゼロ・JSエラーなしを確認。[ブラウザー記録](public-browser-v0.2.0-alpha.6.json)、[公開GUIでの36ファイル保存記録](public-gui-v0.2.0-alpha.6.json)も収録した。

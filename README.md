@@ -71,7 +71,8 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 
 35種類・36ファイルを正解データと照合します。管理情報が残る8条件ではCLI/MCP計576件がバイト一致しました。
 実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
-新GUIからZIP保存した36ファイルも、独立したPython ZIP展開で正解バイトと一致しました。
+公開ポータブルのGUIからZIP保存した36ファイルも、独立したPython ZIP展開で正解バイトと一致しました。
+[公開版の保存完了画面](docs/images/public-saved-view-v6.png)と[GUI実行・照合JSON](docs/public-gui-v0.2.0-alpha.6.json)も記録しています。
 
 [全形式と条件の結果表](docs/CLOUD-TESTS.md)、[GUI操作の検証記録](docs/UI-FLOW.md)、[検証履歴](docs/VALIDATION.md)を公開しています。
 公開済みalpha.5の実行ファイルそのものを使った[クラウド検証HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)も参照できます。

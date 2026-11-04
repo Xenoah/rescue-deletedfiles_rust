@@ -28,8 +28,8 @@ Windows debug/releaseのCLI/MCP実行は[公開CI](https://github.com/Xenoah/res
 各小区切りでも検証後にタグを追加し、既存タグは付け替えない。
 v0.2.0-alpha.1は[CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41664246239)成功、
 公開ZIPのSHA-256一致を確認済み。alpha.3ではFAT32/exFATの13ファイルと異常系・取消17項目を検証。
-最新の[Windows版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.5)と
-[成功したCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41812660512)を確認済み。
+最新の[3 OS版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.6)と
+[成功したタグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)を確認済み。
 次はJPEG/PDF/ZIP/MP4等の主要形式へcarvingを拡張する。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
 この環境には/goalの登録・継続実行ツールがないため、会話終了後の自動実行は登録していない。
 
@@ -51,5 +51,7 @@ ZIP内14ファイル、x64 PE、監査修正記録、実画面、単体HTMLの�
 2026-11-04：ユーザーから表示と配布要件を追加。alpha.6では起動時の保存／詳細検索設定、Explorer風の詳細列・並べ替え・グループ化、アイコン表示、実ZIP保存を実装した。
 Windows x64、Linux x64、macOS Intel/Apple Siliconの4ネイティブビルドと、全OSのインストール／ポータブル配布を必須に変更した。
 ローカルはRust 25項目、既存5群、追加の検索・日時・ZIP統合60項目、Linux全形式・独立FS検証、GUIからの36ファイルZIP照合を通過。
-各OSのCI・インストーラー検証、公開成果物の取得確認を経てalpha.6を公開する。実装済みと公開済みは区別して記録する。
+各OSのCI・インストーラー検証、公開成果物の取得確認を経てalpha.6を公開済み。実装済みと公開済みは区別して記録する。
 新しい画面とSHA-256付きのGUI検証は[UI-FLOW.md](UI-FLOW.md)。従来の監査修正と形式別試験を継続する。
+
+alpha.6は[全4ネイティブ環境のタグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)が成功し公開済み。8つのインストール／ポータブル配布物と、添付38点のSHA-256を照合した。詳細・アイコン・設定フローとREADME／リリースの実画面・技術説明UIも更新済み。JPEG等のcarving、実デバイス、RAID、商用比較は引き続き後続工程。
