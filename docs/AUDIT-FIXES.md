@@ -39,3 +39,6 @@ python scripts/e2e_carve.py --binary target/debug/rescue.exe
 Linuxでは実行ファイルを`target/debug/rescue`にする。新しい監査回帰16ケースと強化したPNG30ケースを、
 Windows/LinuxのdebugおよびWindows releaseのCIに組み込んだ。Windows GUIの実操作とLinux/Xvfbでの操作は区別して記録する。
 公開成果物の検証記録は[VALIDATION.md](VALIDATION.md)を参照。
+
+[公開タグのWindows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41812660512)は成功。
+公開ZIP・HTML・画像の全5点をダウンロードしてチェックサムを照合し、ZIPの14ファイルと公開HTMLの動作も確認した。

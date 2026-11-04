@@ -146,5 +146,15 @@ Windows GUIの手動操作・実媒体・有料製品比較は未検証。
   aria状態、390px幅で横にはみ出さないこと、JavaScriptエラーなしを確認。
 - Windows配布用のnormal/build依存172パッケージのライセンス本文を収集できた。
 
-Windows実行時のCIと公開成果物の結果は、公開確認後に追記する。
+2026-11-04、[alpha.5タグのWindows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41812660512)は4分46秒で成功。
+Windows debug/releaseで監査回帰16ケース、PNG30ケース、既存NTFS・圧縮/ADS・FATの統合を通過した。
+
+公開ZIP・単体HTML・3枚の画像をダウンロードし、5点すべてのSHA256SUMS.txtとの一致を確認。
+ZIPのCRC、14ファイルの構成、GUI/CLIのx64 PE、MIT・依存通知172パッケージ、監査修正記録・実画面の同梱を検証した。
+公開HTMLもChromiumで実画像、両方式の切替、8件の監査説明、外部通信ゼロ・JavaScriptエラーなしを確認。
+リリース本文に修正表と3枚のスクリーンショットが掲載されていることを確認した。
+ZIPは4,125,152バイト。SHA-256:
+
+    f91525437802b142e9a31eadd79ed70ea170a41f841b78f65f853683ad459630
+
 Windows GUIの手動操作、実媒体、有料製品比較は未検証。
