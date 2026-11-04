@@ -1,0 +1,157 @@
+{
+  "status": "passed",
+  "scope": "primary public assets and executed post-package signed/portable native CLI evidence",
+  "tag": "v0.2.0-alpha.8",
+  "checksummed_public_assets": 54,
+  "primary_checksummed_assets": 48,
+  "post_package_checksummed_assets": 6,
+  "binaries": [
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 2925568,
+      "sha256": "2771148e31578dd16326356c64d1015d171449071b067b5bb67aa2b39224d261"
+    },
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 12187648,
+      "sha256": "eab41e5e6d752ece2b9dc547955adf6e798fea5a042b830b975dec0630eb8937"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 3539744,
+      "sha256": "9039e1c8507d66b558e2591d6d5c42121d100ddd3dfef289bf27ff1c107f75e0"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 18460784,
+      "sha256": "2777e20c298b135e0a22925bbd38f68f32a582d459066851421eea0308e643ae"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 3269760,
+      "sha256": "10996e0fb1325923370d68d3c607cb8e14f5d65c68766b1bbc9b22f5f3cc52c2"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 7970832,
+      "sha256": "3c375489b7be7f9c85a5f80b72c3aa9dc2acb7856e7b60b590dcd5d64e01001e"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue",
+      "bytes": 3022752,
+      "sha256": "3cadc014f4bb0f2bb6b20aaf6a508e55656d3ff8d930a2bb379c204aab7ef643"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue-gui",
+      "bytes": 7663552,
+      "sha256": "6271a3963f110d9845a3a335b83cb064f723b264a286011a960ac599ee531462"
+    }
+  ],
+  "native_platforms": [
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "2771148e31578dd16326356c64d1015d171449071b067b5bb67aa2b39224d261",
+      "post_package_matrix_cli_sha256": "2771148e31578dd16326356c64d1015d171449071b067b5bb67aa2b39224d261",
+      "macos_signing_changed_binary_hash": false,
+      "platform": "windows",
+      "arch": "x64",
+      "gui": "Rescue renderer: Dx12; device: Cpu; adapter: Microsoft Basic Render Driver",
+      "installer": "installed_version_and_bytes_verified_then_uninstalled",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 37,
+      "post_package_native_original_PDFs_byte_exact": 2,
+      "post_package_original_path_cases": 61,
+      "post_package_ci_provenance": {
+        "run_id": "41934558749",
+        "attempt": "1",
+        "commit": "46e6642a3851da13aa1631ead797aaaee32f4dc7"
+      }
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "9039e1c8507d66b558e2591d6d5c42121d100ddd3dfef289bf27ff1c107f75e0",
+      "post_package_matrix_cli_sha256": "9039e1c8507d66b558e2591d6d5c42121d100ddd3dfef289bf27ff1c107f75e0",
+      "macos_signing_changed_binary_hash": false,
+      "platform": "linux",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "deb_extracted_version_payload_and_shortcuts_verified",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "post_package_native_original_PDFs_byte_exact": 2,
+      "post_package_original_path_cases": 61,
+      "post_package_ci_provenance": {
+        "run_id": "41934558749",
+        "attempt": "1",
+        "commit": "46e6642a3851da13aa1631ead797aaaee32f4dc7"
+      }
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "e080f8a0e45c6c63ffe9fcd6940b83705463d9c07670d043006c1f51ee461d05",
+      "post_package_matrix_cli_sha256": "10996e0fb1325923370d68d3c607cb8e14f5d65c68766b1bbc9b22f5f3cc52c2",
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "post_package_native_original_PDFs_byte_exact": 2,
+      "post_package_original_path_cases": 61,
+      "post_package_ci_provenance": {
+        "run_id": "41934558749",
+        "attempt": "1",
+        "commit": "46e6642a3851da13aa1631ead797aaaee32f4dc7"
+      }
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "1b37a47007dbd29875a13d98c1cc2cbb6c1e3c98541e3d9c41473a3bbf0cd1fc",
+      "post_package_matrix_cli_sha256": "3cadc014f4bb0f2bb6b20aaf6a508e55656d3ff8d930a2bb379c204aab7ef643",
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "arm64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "post_package_native_original_PDFs_byte_exact": 2,
+      "post_package_original_path_cases": 61,
+      "post_package_ci_provenance": {
+        "run_id": "41934558749",
+        "attempt": "1",
+        "commit": "46e6642a3851da13aa1631ead797aaaee32f4dc7"
+      }
+    }
+  ],
+  "published_linux_feature_suite": true,
+  "gui_proof_files": 36,
+  "standalone_html_embedded_screenshots": 5,
+  "post_package_ci": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749",
+  "published_linux_restore_cases": 61
+}

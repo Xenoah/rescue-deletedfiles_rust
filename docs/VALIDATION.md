@@ -235,3 +235,13 @@ Windowsの実NTFS仮想媒体で、空の非resident DATAがhighest VCN=-1を持
 ## alpha.8 4環境ネイティブ検証
 
 [最終CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)は8分23秒で成功。Windows x64、Linux x64、macOS Intel/Apple Siliconの4環境でRust29テスト・debug/releaseの7統合群・35形式・ディスク864件・実削除したPDFの元の場所へのCLI/MCP復元を通過した。WindowsはNTFS、Linux/macOSはexFAT。スキャン時に元ボリュームへ作業先を作らないことも確認。各インストール／ポータブルの8配布物の検証、GUI初期化、48添付ファイルの組立とSHA-256照合が成功。公開ダウンロードの検証とは区別する。
+
+## alpha.8 公開版の実ファイル検証
+
+[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41932655121)は14分25秒で成功し、[alpha.8](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.8)を公開。8配布物と48一次添付、追加6検証レポートのチェックサムを実取得で照合した。Windows PE、macOS両CPUのMach-O、署名後のCLI/GUIハッシュ、PKGのXAR内容、DEBとポータブルの実行ファイル一致も確認。
+
+[公開後CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)も4ネイティブ環境で成功（1分36秒）。実際の公開CLIをダウンロード・照合して実行し、各環境で35形式、ディスク864件、ZIP/日時/検索60項目、元の場所・衝突処理の追加試験、新規仮想ボリュームのPDF実削除・CLI/MCP復元2件を通過した。Macはアドホック署名後の実ファイルである。CI実行ID・SHAを含む追加JSONはリリースに添付済み。
+
+公開Linux GUI（SHA-256: 2777e20c298b135e0a22925bbd38f68f32a582d459066851421eea0308e643ae）でも元の場所へ36件、既存PDF保持、36件スキップ、ZIP36件と表示日時36件、入力イメージの全体無変更を再確認。6画面を実撮影した。公開HTMLも5画面・4方式・390px幅でJSエラー／外部リクエストなし。[公開配布物](public-release-v0.2.0-alpha.8.json)・[元の場所](public-gui-original-v0.2.0-alpha.8.json)・[GUI ZIP](public-gui-v0.2.0-alpha.8.json)・[HTML](public-browser-v0.2.0-alpha.8.json)が機械可読記録。
+
+実デバイス試験は新規の仮想媒体に限る。実SSDのTRIM、物理故障、未対応FS、商用製品との復元率比較、Windows/macOS GUIの手動操作は検証したと主張しない。

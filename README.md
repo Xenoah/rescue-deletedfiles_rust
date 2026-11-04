@@ -77,6 +77,14 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 
 ## クラウドでの復元検証
 
+alpha.8の公開インストール／ポータブル8配布物、48添付ファイルと追加6レポートのSHA-256を実取得で照合しました。[照合JSON](docs/public-release-v0.2.0-alpha.8.json)を参照。
+[公開後の4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)では、署名・梱包後のCLIそのもので35形式、864件のディスク試験、元の場所・同名処理の追加試験、新規仮想媒体で実際に削除したPDFのCLI／MCP復元が成功しています。実HDD／SSD一般の復元率を示すものではありません。
+
+公開Linux GUIでも、元の場所へ36ファイル・ZIPへ36ファイル・表示日時36件を照合し、既存PDFの保持と36件のスキップを確認しました。[公開GUIの元の場所の記録](docs/public-gui-original-v0.2.0-alpha.8.json)・[ZIP照合](docs/public-gui-v0.2.0-alpha.8.json)・[技術説明HTMLの確認](docs/public-browser-v0.2.0-alpha.8.json)を記録しています。
+
+![公開Linuxポータブルで元の場所への復元が36件完了した実画面](docs/images/public-original-restored-v8.png)
+
+
 35種類・36ファイルを正解データと照合します。管理情報が残る8条件ではCLI/MCP計576件がバイト一致しました。
 実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
 alpha.7の公開LinuxポータブルのGUIでも、GPTイメージ内の36ファイルをZIP保存し、正解バイト・SHA-256・日時と一致しました。

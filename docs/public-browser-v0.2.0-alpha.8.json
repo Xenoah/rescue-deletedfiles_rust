@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "tag": "v0.2.0-alpha.8",
+  "tested_file": "downloaded intelligence.html",
+  "screen_toggles": 5,
+  "method_toggles": 4,
+  "mobile_width": 390,
+  "javascript_errors": [],
+  "external_requests": []
+}
