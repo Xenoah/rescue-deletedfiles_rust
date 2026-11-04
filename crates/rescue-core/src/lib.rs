@@ -690,8 +690,9 @@ pub fn recover_to(
             archive_entry: None,
         };
         let attempt = (|| -> Result<()> {
+            // Media were checked before opening this pinned destination. Recheck
+            // its file/volume identity for every file without rediscovering topology.
             destination.verify()?;
-            session.guard_output(&destination.path)?;
             let fresh = match &source {
                 RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
                 RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
