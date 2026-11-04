@@ -773,7 +773,7 @@ impl App {
             .id_salt("icon-table")
             .column(Column::remainder())
             .body(|body| {
-                body.heterogeneous_rows(heights, |mut table_row| {
+                body.heterogeneous_rows(heights.into_iter(), |mut table_row| {
                     let i = table_row.index();
                     table_row.col(|ui| {
                         ui.horizontal(|ui| {
