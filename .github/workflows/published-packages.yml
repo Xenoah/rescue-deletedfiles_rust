@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
       - name: Match test driver and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py tests/corpus
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py tests/corpus
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |

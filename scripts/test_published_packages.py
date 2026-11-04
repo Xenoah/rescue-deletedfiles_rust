@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -12,6 +13,8 @@ import zipfile
 from e2e_formats import main as formats
 from e2e_features import main as features
 from e2e_disks import main as disks
+from e2e_restore import main as restore_paths
+from e2e_restore_native import main as restore_native
 from verify_package import architecture
 
 
@@ -48,8 +51,13 @@ def main():
     features(binary)
     result=formats(binary,Path(__file__).resolve().parent.parent/'tests/corpus',a.output,a.independent)
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
+    restore_paths(binary,(a.output/'restore-paths.json').resolve())
+    restore_native(binary,(a.output/'restore-native.json').resolve())
+    result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
+    result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))
     result['published_release']={'tag':a.tag,'platform':a.platform,'arch':a.arch,'portable_sha256':hashlib.sha256(archive).hexdigest(),'executable_sha256':digest,'download_url':base+name,'tested_after_packaging_and_signing':True,'package_feature_suite_checks':60}
+    result['ci_provenance']={'run_id':os.environ.get('GITHUB_RUN_ID'),'attempt':os.environ.get('GITHUB_RUN_ATTEMPT'),'commit':os.environ.get('GITHUB_SHA')}
     (a.output/'results.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     print(json.dumps({'status':'passed','published_release':a.tag,'platform':a.platform,'arch':a.arch,'binary_sha256':digest,'signed_or_packaged_bytes_tested':True}))
 
