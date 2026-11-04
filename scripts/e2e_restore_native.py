@@ -51,18 +51,28 @@ def mounted_fixture(root):
                 call('sudo', 'umount', mount)
             call('sudo', 'losetup', '--detach', device)
     elif system == 'Darwin':
-        image = root/'owned-volume.dmg'
+        image = root/'owned-volume.raw'
         label = 'RESCUE_'+uuid.uuid4().hex[:8]
-        call('sudo', '/usr/bin/hdiutil', 'create', '-size', '64m', '-fs', 'ExFAT', '-volname', label,
-             '-layout', 'MBRSPUD', image)
-        p = subprocess.run(['sudo', '/usr/bin/hdiutil', 'attach', '-nobrowse', '-plist', str(image)],
+        with image.open('xb') as f:
+            f.truncate(128*1024*1024)
+        # Attach the newly created raw file first. The only format target is
+        # the whole disk returned by this attach, never a discovered host disk.
+        p = subprocess.run(['sudo', '/usr/bin/hdiutil', 'attach', '-nomount', '-imagekey',
+                            'diskimage-class=CRawDiskImage', '-plist', str(image)],
                            capture_output=True, check=True, timeout=120)
         nodes = plistlib.loads(p.stdout)['system-entities']
-        mounted = next(n for n in nodes if n.get('mount-point'))
         whole = next(n['dev-entry'] for n in nodes if n.get('dev-entry', '').startswith('/dev/disk') and n['dev-entry'][9:].isdigit())
         try:
-            call('sudo','chmod','a+rwx',mounted['mount-point'])
-            yield Path('/dev/r'+mounted['dev-entry'][5:]), Path(mounted['mount-point']), 'exfat'
+            call('sudo','/usr/sbin/diskutil','eraseDisk','ExFAT',label,'MBRFormat',whole)
+            info=plistlib.loads(subprocess.check_output(['/usr/sbin/diskutil','list','-plist',whole],timeout=30))
+            parts=info['AllDisksAndPartitions'][0]['Partitions']
+            partition=next(p['DeviceIdentifier'] for p in parts if p.get('VolumeName')==label)
+            check(partition.startswith(whole[5:]+'s') and partition[len(whole[5:])+1:].isdigit(),'unexpected owned partition')
+            volume=plistlib.loads(subprocess.check_output(['/usr/sbin/diskutil','info','-plist',partition],timeout=30))
+            mount=Path(volume['MountPoint'])
+            check(mount.name==label and mount.is_dir(),'owned mount not identified')
+            call('sudo','chmod','a+rwx',mount)
+            yield Path('/dev/r'+partition), mount, 'exfat'
         finally:
             call('sudo','/usr/bin/hdiutil', 'detach', whole)
     elif system == 'Windows':
@@ -112,7 +122,8 @@ def deleted_file(mount, name, data):
 
 
 def main(binary, output):
-    with tempfile.TemporaryDirectory(prefix='rescue-owned-restore-') as temp:
+    output.parent.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='rescue-owned-restore-',dir=output.parent) as temp:
         root = Path(temp).resolve()
         data = (ROOT/'tests/corpus/files/sample.pdf').read_bytes()
         executable = binary
@@ -155,7 +166,8 @@ def main(binary, output):
 
 
 def preflight(output):
-    with tempfile.TemporaryDirectory(prefix='rescue-owned-preflight-') as temporary:
+    output.parent.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='rescue-owned-preflight-',dir=output.parent) as temporary:
         with mounted_fixture(Path(temporary).resolve()) as (source,mount,filesystem):
             deleted_file(mount,'fixture-preflight.pdf',b'%PDF-1.4\nfixture mount check\n%%EOF\n')
             check(not (mount/'fixture-preflight.pdf').exists(),'fixture deletion failed')

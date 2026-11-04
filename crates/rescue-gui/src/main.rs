@@ -448,10 +448,16 @@ impl App {
                         )
                     };
                     let n = results.iter().filter(|r| r.status == "completed").count();
+                    let skipped = results.iter().filter(|r| r.status == "skipped").count();
+                    let skipped_label = if skipped == 0 {
+                        String::new()
+                    } else {
+                        format!(" / スキップ: {skipped}")
+                    };
                     Ok(Message::Finished {
                         status: format!(
-                            "保存完了: {n} / 不完全・失敗: {} / 取消: {}",
-                            results.len() - n,
+                            "保存完了: {n}{skipped_label} / 不完全・失敗: {} / 取消: {}",
+                            results.len() - n - skipped,
                             cancel.load(Ordering::Relaxed)
                         ),
                         detail,

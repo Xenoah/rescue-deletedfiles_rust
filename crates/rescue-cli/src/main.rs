@@ -428,6 +428,9 @@ fn run() -> Result<i32, Error> {
                 &cancel,
                 |_| {},
             )?;
+            if session.cancelled {
+                return Err(Error::Cancelled);
+            }
             let ids = session
                 .candidates
                 .iter()

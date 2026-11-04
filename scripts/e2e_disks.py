@@ -160,7 +160,7 @@ def native_test(binary,disk,truth,root,rows):
         check(file_hash(backing)==backing_before,'read-only backing file changed while attached')
     check(file_hash(backing)==backing_before,'backing file changed on detach')
     check(file_hash(disk)==before,'native source changed')
-    return {'device_path':str(device),'backing_sha256_before_and_after':backing_before,'raw_image_sha256_before_and_after':before,'same_disk_entry_points_rejected':['scan work','folder recovery','ZIP work/output','MCP work/output']}
+    return {'device_path':str(device),'backing_sha256_before_and_after':backing_before,'raw_image_sha256_before_and_after':before,'legacy_same_disk_entry_points_rejected':['scan work','stream folder recovery','stream ZIP work/output'],'same_disk_mcp_memory_only':True}
 
 
 def main(binary,output,native):
@@ -195,7 +195,7 @@ def main(binary,output,native):
     result={'schema_version':1,'status':'passed','native_access':native_report,'version':call(binary,'--version'),
         'os':platform.system(),'architecture':platform.machine(),'native_virtual_disk':native,
         'source_read_only':True,'formats':35,'byte_exact':sum(r['byte_exact'] for r in rows),'results':rows,
-        'partition_checks':['MBR','GPT-512','GPT-4096','protective-MBR-fallback','primary-header-fallback','primary-table-fallback','backup-header-warning','both-invalid-rejected','overlap-rejected','tampered-window-rejected','same-disk-output-and-work-rejected'] if native else ['partition-image-tests']}
+        'partition_checks':['MBR','GPT-512','GPT-4096','protective-MBR-fallback','primary-header-fallback','primary-table-fallback','backup-header-warning','both-invalid-rejected','overlap-rejected','tampered-window-rejected','legacy-stream-same-disk-output-rejected','same-disk-scan-work-rejected','same-disk-MCP-memory-only'] if native else ['partition-image-tests']}
     (output/'results.json').write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps({k:v for k,v in result.items() if k!='results'}),flush=True)
 

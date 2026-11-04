@@ -459,7 +459,12 @@ impl Server {
                         let job = state.jobs.get_mut(&job_id).unwrap();
                         match operation {
                             Ok(archive) => {
-                                job.state = archive.status.clone();
+                                job.state = match archive.status.as_str() {
+                                    "completed" | "skipped" => "completed",
+                                    "cancelled" => "cancelled",
+                                    _ => "partial",
+                                }
+                                .into();
                                 job.result = json!({"archive":archive});
                             }
                             Err(e) => {

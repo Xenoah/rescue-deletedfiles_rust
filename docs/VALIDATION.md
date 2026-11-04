@@ -224,6 +224,8 @@ macOSの署名でCLIハッシュが変わるため、公開署名後の実ファ
 
 ## alpha.8 元の場所・同名処理（ローカル）
 
-2026-11-04、Rust28テスト、clippy全workspace/all-targets、7つのCLI/MCP統合群を通過。追加59項目はPDFの元パス・36件の階層保存・既存保護・大小文字・リンク・JSON改変・512 MiB上限・ZIP CRC・MCP出力範囲を検証した。GUIでも元の場所へ36件、既存PDF保持、ZIP36件と日時36件、入力無変更を照合済み。技術説明HTMLは5画面・4方式・390px幅を外部通信/JSエラーなしで確認。
+2026-11-04、Rust29テスト、clippy全workspace/all-targets、7つのCLI/MCP統合群を通過。追加59項目はPDFの元パス・36件の階層保存・既存保護・大小文字・リンク・JSON改変・512 MiB上限・ZIP CRC・MCP出力範囲を検証した。GUIでも元の場所へ36件、既存PDF保持、ZIP36件と日時36件、入力無変更を照合済み。技術説明HTMLは5画面・4方式・390px幅を外部通信/JSエラーなしで確認。
 
 各OSのネイティブ実削除・同じボリュームへの復元と、公開した配布物の確認はそれぞれ完了後に記録する。GUIはLinux/Xvfb上の実操作で、Windows/macOSの手動GUI検証ではない。[保存仕様](SAME-LOCATION.md)、[追加結果](restore-results.json)、[GUI元の場所](gui-original-results.json)を参照。
+
+Windowsの実NTFS仮想媒体で、空の非resident DATAがhighest VCN=-1を持つことを確認。alpha.8で空ストリームとして正しく解析する。データ・割当がある偽のsentinel、空のMFTは引き続き拒否し、回帰テストを追加した。
