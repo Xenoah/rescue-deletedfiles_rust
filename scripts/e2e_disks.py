@@ -128,7 +128,8 @@ def native_test(binary,disk,truth,root,rows):
             import plistlib
             fields=['DeviceIdentifier','ParentWholeDisk','PartOfWhole','WholeDisk','Whole','APFSContainerReference']
             diagnostics={}
-            for label,target in [('source',str(device)),('output',str(root))]:
+            output_device=subprocess.check_output(['/bin/df','-P',str(root)],text=True,timeout=30).splitlines()[1].split()[0]
+            for label,target in [('source',str(device)),('output',output_device)]:
                 value=plistlib.loads(subprocess.check_output(['/usr/sbin/diskutil','info','-plist',target],timeout=30))
                 diagnostics[label]={key:value[key] for key in fields if key in value}
             print('macOS disk topology:',json.dumps(diagnostics),flush=True)

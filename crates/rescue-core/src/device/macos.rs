@@ -3,9 +3,11 @@ use crate::{Error, Result};
 use serde_json::Value;
 use std::{
     collections::BTreeSet,
+    ffi::CString,
     fs::File,
     io::Write,
     os::unix::{
+        ffi::OsStrExt,
         fs::{FileTypeExt, MetadataExt},
         io::AsRawFd,
     },
@@ -172,17 +174,34 @@ pub fn source_disks(path: &Path) -> Result<BTreeSet<String>> {
     mapped(&identifier(path).ok_or_else(|| Error::Unsupported("disk path".into()))?)
 }
 pub fn output_disks(path: &Path) -> Result<BTreeSet<String>> {
-    let info = query(&[
-        "info",
-        "-plist",
-        path.to_str()
-            .ok_or_else(|| Error::Request("output path encoding".into()))?,
-    ])?;
-    mapped(
-        info["DeviceIdentifier"]
-            .as_str()
-            .ok_or_else(|| Error::UnsafeDestination("output device unavailable".into()))?,
-    )
+    let path = CString::new(path.as_os_str().as_bytes())
+        .map_err(|_| Error::Request("output path contains NUL".into()))?;
+    let mut metadata = std::mem::MaybeUninit::<libc::statfs>::zeroed();
+    // statfs resolves an arbitrary existing directory to its actual filesystem,
+    // including APFS firmlinks. diskutil info only accepts a device/mount point.
+    if unsafe { libc::statfs(path.as_ptr(), metadata.as_mut_ptr()) } != 0 {
+        return Err(Error::UnsafeDestination(format!(
+            "cannot identify output filesystem: {}",
+            std::io::Error::last_os_error()
+        )));
+    }
+    // statfs succeeded; the zero-initialized structure is fully initialized.
+    let metadata = unsafe { metadata.assume_init() };
+    let end = metadata
+        .f_mntfromname
+        .iter()
+        .position(|c| *c == 0)
+        .ok_or_else(|| Error::UnsafeDestination("unterminated mount device".into()))?;
+    let bytes = metadata.f_mntfromname[..end]
+        .iter()
+        .map(|c| *c as u8)
+        .collect::<Vec<_>>();
+    let device = std::str::from_utf8(&bytes)
+        .map_err(|_| Error::UnsafeDestination("unrecognized output mount device".into()))?;
+    let id = identifier(Path::new(device)).ok_or_else(|| {
+        Error::UnsafeDestination("output is not an identifiable local disk filesystem".into())
+    })?;
+    mapped(&id)
 }
 pub fn list() -> Result<Vec<DiskSource>> {
     let inventory = query(&["list", "-plist"])?;
