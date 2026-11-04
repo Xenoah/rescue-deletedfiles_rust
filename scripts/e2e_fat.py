@@ -54,12 +54,12 @@ def positive(binary, root, kind, make):
     check(len(recovered["results"])==len(truth),"recover all selected unsupported entry")
     for result in recovered["results"]:
         path=Path(result["path"])
-        check(result["status"]=="completed" and path.parent.samefile(output),result)
+        check(result["status"]=="completed" and path.resolve().is_relative_to(output.resolve()),result)
         check(path.read_bytes()==truth[result["candidate_id"]],result)
         check(result["sha256"]==hashlib.sha256(truth[result["candidate_id"]]).hexdigest(),result)
         check(result["extent_evidence"]!="unknown" and result["allocation_status"]!="conflict",result)
     check(file_hash(source)==before,"source image modified")
-    prior={p.name:file_hash(p) for p in output.iterdir()}
+    prior={p.relative_to(output):file_hash(p) for p in output.rglob('*') if p.is_file()}
     key=next(iter(truth))
     run(binary,"recover","--session",summary["session"],"--id",key,"--destination",output,"--json")
     check(all(file_hash(output/name)==digest for name,digest in prior.items()),"existing output overwritten")

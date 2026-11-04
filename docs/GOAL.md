@@ -61,3 +61,7 @@ alpha.6は[全4ネイティブ環境のタグCI](https://github.com/Xenoah/rescu
 ユーザー指定に合わせ、ディスクをGUIの既定入力にした。全パーティションの候補を集約し、元ディスクへの作業・復元を拒否する。CLIのsources / inspect / check-destinationと、明示的allowlistを維持したMCPも同じディスク読取を使う。各OSで新規仮想媒体を読み取り専用に接続する試験と、画像・技術UI・配布物の検証をリリース条件にする。
 
 alpha.7は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41879142077)で4ネイティブ環境が通過して[公開済み](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.7)。8配布物・37添付ファイルの実ダウンロード照合と、公開Linux GUIの36件ZIP復元も確認した。物理故障・読取マップ・イメージ取得・再開・RAID再構成・商用比較は後続工程。
+
+## alpha.8 元の場所と同じディスク
+
+ユーザー指定に従い、別ディスク限定を解除。元の場所・フォルダー・ZIP、連番／スキップ、同名フォルダーの統合を共通化した。選択データを全て先に読み出し、合計512 MiB上限では出力作成前に停止する。ローカル追加59項目と実GUIの元の場所への36件・ZIP36件・36日時を照合済み。4 OSネイティブの実削除・同じボリュームへの復元をリリース必須条件にする。詳細は[SAME-LOCATION.md](SAME-LOCATION.md)。公開済みのalpha.7とは区別して記録する。

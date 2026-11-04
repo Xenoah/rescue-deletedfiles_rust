@@ -125,6 +125,30 @@ fn parent<'a>(info: &'a Value, id: &'a str) -> &'a str {
         .or_else(|| info["PartOfWhole"].as_str())
         .unwrap_or(id)
 }
+pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result<Option<PathBuf>> {
+    let Some(id) = identifier(path) else {
+        return Ok(None);
+    };
+    let id = if let Some(region) = region {
+        format!("{id}s{}", region.index)
+    } else {
+        id
+    };
+    let info = query(&["info", "-plist", &id])?;
+    if let Some(region) = region {
+        let length = info["TotalSize"]
+            .as_u64()
+            .or_else(|| info["DiskSize"].as_u64());
+        let offset = info["PartitionMapPartitionOffset"].as_u64();
+        if length != Some(region.length) || offset != Some(region.offset) {
+            return Ok(None);
+        }
+    }
+    Ok(info["MountPoint"]
+        .as_str()
+        .filter(|s| !s.is_empty())
+        .map(PathBuf::from))
+}
 fn roots(
     id: &str,
     apfs: &Value,

@@ -7,6 +7,7 @@ mod fat;
 mod lznt1;
 mod ntfs;
 mod partitions;
+mod restore;
 mod search;
 mod source;
 mod timestamps;
@@ -21,6 +22,10 @@ pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device
 pub use disk_scan::scan_source;
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
+pub use restore::{
+    CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,
+    restore_files_with_roots, restore_zip, restore_zip_with_roots,
+};
 pub use search::{ScanMethod, SearchSettings, scan_with_settings};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -566,6 +571,38 @@ enum RecoverySource {
     Carved,
 }
 
+fn candidate_data(
+    source: &RecoverySource,
+    image: &mut Image,
+    candidate: &Candidate,
+    cancel: &AtomicBool,
+) -> Result<RecoveryData> {
+    match source {
+        RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, image, candidate),
+        RecoverySource::Carved => carve::recovery_data(image, candidate, cancel),
+        RecoverySource::Fat(entries) => {
+            let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
+            if candidate.record != entry.candidate.record
+                || candidate.record_sha256 != entry.candidate.record_sha256
+                || candidate.sequence != 0
+                || candidate.stream_name.is_some()
+            {
+                return Err(Error::SourceChanged);
+            }
+            Ok(RecoveryData {
+                data: entry
+                    .data
+                    .clone()
+                    .ok_or_else(|| Error::Unsupported(entry.candidate.warnings.join("; ")))?,
+                name: entry.candidate.name.clone(),
+                warnings: entry.candidate.warnings.clone(),
+                extent_evidence: entry.candidate.extent_evidence,
+                allocation_status: entry.candidate.allocation_status,
+            })
+        }
+    }
+}
+
 fn safe_name(name: &str) -> String {
     let mut value = name
         .chars()
@@ -792,6 +829,34 @@ pub fn save_report_to(
 ) -> Result<PathBuf> {
     destination.verify()?;
     session.guard_output(&destination.path)?;
+    write_report(destination, session, results)
+}
+/// Write a report after buffered restoration, including on the source volume.
+pub fn save_restore_report(
+    destination: &Path,
+    session: &Session,
+    results: &[RecoveryResult],
+) -> Result<PathBuf> {
+    write_report(&RecoveryDestination::open(destination)?, session, results)
+}
+pub fn save_restore_report_with_roots(
+    destination: &Path,
+    session: &Session,
+    results: &[RecoveryResult],
+    roots: &[OutputRoot],
+) -> Result<PathBuf> {
+    write_report(
+        &RecoveryDestination::within_create(destination, roots)?,
+        session,
+        results,
+    )
+}
+fn write_report(
+    destination: &RecoveryDestination,
+    session: &Session,
+    results: &[RecoveryResult],
+) -> Result<PathBuf> {
+    destination.verify()?;
     let dir = &destination.dir;
     let name = format!("rescue-report-{}.json", Uuid::new_v4());
     let mut file = dir.open_with(&name, OpenOptions::new().write(true).create_new(true))?;

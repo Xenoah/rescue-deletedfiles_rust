@@ -4,7 +4,7 @@ use cap_std::{ambient_authority, fs::Dir};
 use std::path::{Path, PathBuf};
 
 pub struct OutputRoot {
-    path: PathBuf,
+    pub(crate) path: PathBuf,
     dir: Dir,
 }
 impl OutputRoot {
@@ -12,6 +12,14 @@ impl OutputRoot {
         let path = path.canonicalize()?;
         let dir = Dir::open_ambient_dir(&path, ambient_authority())?;
         Ok(Self { path, dir })
+    }
+    /// Pin an existing subdirectory without broadening the approved roots.
+    pub fn narrow(path: &Path, roots: &[OutputRoot]) -> Result<Self> {
+        let destination = RecoveryDestination::within(path, roots)?;
+        Ok(Self {
+            path: destination.path,
+            dir: destination.dir,
+        })
     }
 }
 
@@ -33,12 +41,18 @@ impl RecoveryDestination {
     }
     pub fn open(path: &Path) -> Result<Self> {
         std::fs::create_dir_all(path)?;
+        Self::open_existing(path)
+    }
+    pub(crate) fn open_existing(path: &Path) -> Result<Self> {
         let path = path.canonicalize()?;
         let dir = Dir::open_ambient_dir(&path, ambient_authority())?;
         Self::pinned(path, dir)
     }
     /// Resolution is confined by the pinned root, even if a path is swapped.
     pub fn within(path: &Path, roots: &[OutputRoot]) -> Result<Self> {
+        for root in roots {
+            Self::pinned(root.path.clone(), root.dir.try_clone()?)?;
+        }
         let path = path.canonicalize()?;
         for root in roots {
             if let Ok(relative) = path.strip_prefix(&root.path) {
@@ -54,6 +68,39 @@ impl RecoveryDestination {
         Err(Error::Request(
             "destination is outside allowed existing directories".into(),
         ))
+    }
+    // Called only after the entire selected batch has been read. Creation is
+    // confined to an already pinned MCP output root, including symlink checks.
+    pub(crate) fn within_create(path: &Path, roots: &[OutputRoot]) -> Result<Self> {
+        let absolute = if path.is_absolute() {
+            path.to_owned()
+        } else {
+            std::env::current_dir()?.join(path)
+        };
+        if absolute
+            .components()
+            .any(|c| matches!(c, std::path::Component::ParentDir))
+        {
+            return Err(Error::Request("parent traversal in output path".into()));
+        }
+        for root in roots {
+            if let Ok(relative) = absolute.strip_prefix(&root.path) {
+                Self::pinned(root.path.clone(), root.dir.try_clone()?)?;
+                root.dir.create_dir_all(relative)?;
+                return Self::within(&absolute, roots);
+            }
+        }
+        Err(Error::Request(
+            "destination is outside allowed output roots".into(),
+        ))
+    }
+    pub(crate) fn child(&self, name: &str) -> Result<Self> {
+        self.verify()?;
+        Self::pinned(self.path.join(name), self.dir.open_dir(name)?)
+    }
+    pub(crate) fn try_clone(&self) -> Result<Self> {
+        self.verify()?;
+        Self::pinned(self.path.clone(), self.dir.try_clone()?)
     }
     pub(crate) fn verify(&self) -> Result<()> {
         let current = Dir::open_ambient_dir(&self.path, ambient_authority())

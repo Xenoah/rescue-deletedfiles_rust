@@ -34,7 +34,7 @@ def verify_zip(path, outcome, truth):
         check(len(archive.namelist())==len(truth)+1,'unexpected ZIP entry')
         for result in report['results']:
             entry=result['archive_entry']
-            check('/' not in entry and '\\' not in entry,'archive path traversal')
+            check(not entry.startswith(('/', '\\')) and '..' not in Path(entry).parts and '\\' not in entry and ':' not in entry,'archive path traversal')
             data=archive.read(entry)
             expected=truth[result['candidate_id']]['data']
             check(data==expected and hashlib.sha256(data).hexdigest()==result['sha256'],'ZIP bytes differ')
@@ -100,7 +100,8 @@ def main(binary):
         result=run(binary,'recover','--session',all_session,'--all','--archive',archive,'--work-dir',root/'stage','--json')['result']
         verify_zip(archive,result,all_truth);checks+=len(all_truth)+2
         before=archive.read_bytes()
-        run(binary,'recover','--session',all_session,'--all','--archive',archive,'--json',expected=4)
+        duplicate=run(binary,'recover','--session',all_session,'--all','--archive',archive,'--json')['result']
+        check(duplicate['status']=='completed' and Path(duplicate['archive'])!=archive,'duplicate ZIP was not renamed')
         check(archive.read_bytes()==before,'existing ZIP overwritten');checks+=1
         # An old session without the optional new date/search fields still works.
         legacy=json.loads(session.read_text(encoding='utf-8'));legacy.pop('search',None)

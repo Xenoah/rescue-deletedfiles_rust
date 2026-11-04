@@ -104,6 +104,57 @@ pub fn source_disks(path: &Path) -> Result<BTreeSet<String>> {
 pub fn output_disks(path: &Path) -> Result<BTreeSet<String>> {
     from_device(path.metadata()?.dev())
 }
+pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result<Option<PathBuf>> {
+    let device = path.metadata()?.rdev();
+    let source_node = PathBuf::from(format!(
+        "/sys/dev/block/{}:{}",
+        libc::major(device),
+        libc::minor(device)
+    ))
+    .canonicalize()?;
+    let target = if let Some(region) = region {
+        let mut found = None;
+        for entry in fs::read_dir(&source_node)? {
+            let node = entry?.path();
+            let number = fs::read_to_string(node.join("partition"))
+                .ok()
+                .and_then(|n| n.trim().parse::<u32>().ok());
+            let offset = fs::read_to_string(node.join("start"))
+                .ok()
+                .and_then(|n| n.trim().parse::<u64>().ok())
+                .and_then(|n| n.checked_mul(512));
+            let length = fs::read_to_string(node.join("size"))
+                .ok()
+                .and_then(|n| n.trim().parse::<u64>().ok())
+                .and_then(|n| n.checked_mul(512));
+            if number == Some(region.index)
+                && offset == Some(region.offset)
+                && length == Some(region.length)
+            {
+                found = Some(fs::read_to_string(node.join("dev"))?.trim().to_owned());
+                break;
+            }
+        }
+        match found {
+            Some(value) => value,
+            None => return Ok(None),
+        }
+    } else {
+        format!("{}:{}", libc::major(device), libc::minor(device))
+    };
+    for line in fs::read_to_string("/proc/self/mountinfo")?.lines() {
+        let fields: Vec<_> = line.split_whitespace().collect();
+        if fields.len() > 5 && fields[2] == target && fields[3] == "/" {
+            let mount = fields[4]
+                .replace("\\040", " ")
+                .replace("\\011", "\t")
+                .replace("\\012", "\n")
+                .replace("\\134", "\\");
+            return Ok(Some(PathBuf::from(mount)));
+        }
+    }
+    Ok(None)
+}
 pub fn list() -> Result<Vec<DiskSource>> {
     let mut disks = Vec::new();
     for item in fs::read_dir("/sys/class/block")? {

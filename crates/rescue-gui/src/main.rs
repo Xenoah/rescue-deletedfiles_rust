@@ -3,9 +3,10 @@ mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
 use rescue_core::{
-    AllocationStatus, Candidate, DiskSource, FileSystem, Progress, RecoveryResult, ScanMethod,
-    ScanOptions, SearchSettings, Session, guard_output_path, list_disks, recover, recover_zip,
-    save_report, scan_with_settings,
+    AllocationStatus, Candidate, CollisionPolicy, DiskSource, FileSystem, Progress, RecoveryResult,
+    RestoreOptions, RestoreTarget, ScanMethod, ScanOptions, SearchSettings, Session, VolumeRoot,
+    guard_output_path, list_disks, restore_files, restore_zip, save_restore_report,
+    scan_with_settings,
 };
 use std::{
     collections::BTreeSet,
@@ -32,6 +33,7 @@ enum SaveMode {
     #[default]
     Directory,
     Zip,
+    Original,
 }
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum SourceMode {
@@ -58,6 +60,8 @@ struct App {
     work: String,
     destination: String,
     save_mode: SaveMode,
+    collision: CollisionPolicy,
+    original_root: String,
     carve: bool,
     extensions: String,
     path_prefix: String,
@@ -155,6 +159,8 @@ impl App {
             work: String::new(),
             destination: String::new(),
             save_mode: SaveMode::Directory,
+            collision: CollisionPolicy::KeepBoth,
+            original_root: String::new(),
             carve: false,
             extensions: String::new(),
             path_prefix: String::new(),
@@ -291,7 +297,11 @@ impl App {
         self.rows.clear();
         self.view_dirty = true;
         self.stage = Stage::Selecting;
-        self.report = format!("セッション: {}", path.display());
+        self.report = if path.as_os_str().is_empty() {
+            "スキャン結果をメモリーに保持しています。".into()
+        } else {
+            format!("セッション: {}", path.display())
+        };
     }
     fn invalidate_changed_source(&mut self) {
         let changed = self.session.as_ref().is_some_and(|s| {
@@ -317,7 +327,9 @@ impl App {
         }
     }
     fn start_scan(&mut self) {
-        if self.source.trim().is_empty() || self.destination.trim().is_empty() {
+        if self.source.trim().is_empty()
+            || (self.save_mode != SaveMode::Original && self.destination.trim().is_empty())
+        {
             self.status = "ディスクと保存先を指定してください。".into();
             return;
         }
@@ -330,16 +342,7 @@ impl App {
         };
         let source = PathBuf::from(&self.source);
         let work = self.work_path();
-        let destination = PathBuf::from(&self.destination);
-        let output = if self.save_mode == SaveMode::Zip {
-            destination
-                .parent()
-                .filter(|p| !p.as_os_str().is_empty())
-                .unwrap_or(Path::new("."))
-                .to_owned()
-        } else {
-            destination
-        };
+        let persist = !self.work.trim().is_empty() && guard_output_path(&source, &work).is_ok();
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -355,17 +358,17 @@ impl App {
         self.progress = Progress::default();
         self.status = "スキャン中…".into();
         thread::spawn(move || {
-            let r = guard_output_path(&source, &work)
-                .and_then(|()| guard_output_path(&source, &output))
-                .and_then(|()| {
-                    scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
-                        let _ = tx.try_send(Message::Progress(p));
-                    })
-                })
-                .and_then(|s| {
-                    let path = s.save(&work)?;
-                    Ok((s, path))
-                });
+            let r = scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
+                let _ = tx.try_send(Message::Progress(p));
+            })
+            .and_then(|s| {
+                let path = if persist {
+                    s.save(&work)?
+                } else {
+                    PathBuf::new()
+                };
+                Ok((s, path))
+            });
             let _ = tx.send(match r {
                 Ok((s, p)) => Message::Scanned(Box::new(s), p),
                 Err(e) => Message::Error(e.to_string()),
@@ -374,7 +377,7 @@ impl App {
     }
     fn start_recovery(&mut self) {
         self.invalidate_changed_source();
-        if self.destination.trim().is_empty() {
+        if self.save_mode != SaveMode::Original && self.destination.trim().is_empty() {
             self.status = "設定画面で保存先を指定してください。".into();
             return;
         }
@@ -386,8 +389,16 @@ impl App {
         }
         let ids = self.selected.iter().cloned().collect::<Vec<_>>();
         let dest = PathBuf::from(&self.destination);
-        let work = self.work_path();
         let mode = self.save_mode;
+        let collision = self.collision;
+        let mappings = if self.original_root.trim().is_empty() {
+            Vec::new()
+        } else {
+            vec![VolumeRoot {
+                partition: None,
+                path: PathBuf::from(&self.original_root),
+            }]
+        };
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -396,7 +407,7 @@ impl App {
         self.status = "選択したファイルを復元中…".into();
         thread::spawn(move || {
             let r = if mode == SaveMode::Zip {
-                recover_zip(&session, &ids, &work, &dest, &cancel).map(|r| Message::Finished {
+                restore_zip(&session, &ids, &dest, collision, &cancel).map(|r| Message::Finished {
                     status: format!(
                         "ZIP保存: {} / {} ファイル",
                         status_label(&r.status),
@@ -419,8 +430,23 @@ impl App {
                     results: r.results,
                 })
             } else {
-                recover(&session, &ids, &dest, &cancel).and_then(|results| {
-                    let path = save_report(&dest, &session, &results)?;
+                let options = RestoreOptions {
+                    target: if mode == SaveMode::Original {
+                        RestoreTarget::Original(mappings)
+                    } else {
+                        RestoreTarget::Directory(dest.clone())
+                    },
+                    collision,
+                };
+                restore_files(&session, &ids, &options, &cancel).and_then(|results| {
+                    let detail = if mode == SaveMode::Original {
+                        "元の場所への復元結果を下に表示しています。".into()
+                    } else {
+                        format!(
+                            "レポート: {}",
+                            save_restore_report(&dest, &session, &results)?.display()
+                        )
+                    };
                     let n = results.iter().filter(|r| r.status == "completed").count();
                     Ok(Message::Finished {
                         status: format!(
@@ -428,7 +454,7 @@ impl App {
                             results.len() - n,
                             cancel.load(Ordering::Relaxed)
                         ),
-                        detail: format!("レポート: {}", path.display()),
+                        detail,
                         results,
                     })
                 })
@@ -573,7 +599,11 @@ impl App {
                 },
             );
             ui.small("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。");
-            ui.small(if cfg!(windows) { "アクセス拒否の場合は管理者として起動してください。復元先と作業フォルダーには別ディスクが必要です。" } else { "ディスクを読み取れる権限が必要です。元ディスクをアンマウントすると他のアプリによる書き換えを抑えられます。" });
+            ui.small(if cfg!(windows) {
+                "アクセス拒否の場合は管理者として起動してください。"
+            } else {
+                "ディスクを読み取れる権限が必要です。"
+            });
         } else {
             path_row(ui, "イメージファイル", &mut self.source, Picker::Open);
             ui.small("RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。");
@@ -582,16 +612,19 @@ impl App {
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
         egui::ScrollArea::vertical().show(ui,|ui|{
   ui.set_max_width(950.0);ui.add_space(14.0);ui.heading("保存方法と検索条件");ui.label("復元するファイルは、スキャン後に選択できます。");ui.add_space(16.0);self.source_ui(ui);
-  ui.add_space(16.0);ui.strong("2  保存方法");ui.horizontal(|ui|{ui.selectable_value(&mut self.save_mode,SaveMode::Directory,"フォルダーに保存");if ui.selectable_value(&mut self.save_mode,SaveMode::Zip,"ZIPファイルに保存").changed()&&!self.destination.to_lowercase().ends_with(".zip"){self.destination.clear();}});let picker=if self.save_mode==SaveMode::Zip{Picker::Zip}else{Picker::Folder};path_row(ui,"保存先",&mut self.destination,picker);ui.small(if self.save_mode==SaveMode::Zip{"ファイルと復元レポートを1つのZIPにまとめます。既存ZIPは上書きしません。"}else{"任意のフォルダーに保存します。名前の衝突時も既存ファイルは上書きしません。"});
+  ui.add_space(16.0);ui.strong("2  保存方法");ui.horizontal(|ui|{ui.selectable_value(&mut self.save_mode,SaveMode::Original,"元の場所へ戻す");ui.selectable_value(&mut self.save_mode,SaveMode::Directory,"フォルダーに保存");if ui.selectable_value(&mut self.save_mode,SaveMode::Zip,"ZIPファイルに保存").changed()&&!self.destination.to_lowercase().ends_with(".zip"){self.destination.clear();}});
+  if self.save_mode!=SaveMode::Original {let picker=if self.save_mode==SaveMode::Zip{Picker::Zip}else{Picker::Folder};path_row(ui,"保存先",&mut self.destination,picker);}else{ui.label("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補は、フォルダー保存を選んでください。");}
+  ui.horizontal(|ui|{ui.label("同じ名前がある場合");ui.selectable_value(&mut self.collision,CollisionPolicy::KeepBoth,"両方を残す（復元 1）");ui.selectable_value(&mut self.collision,CollisionPolicy::Skip,"スキップ");});ui.small("既存ファイルは上書きしません。同名フォルダーは統合します。");
   ui.add_space(16.0);ui.collapsing("詳細設定 — 検索方式・範囲・深度・拡張子",|ui|{
    ui.horizontal(|ui|{ui.label("検索方式");ui.selectable_value(&mut self.carve,false,"管理情報 / Quick");ui.selectable_value(&mut self.carve,true,"PNG / Carving");});text_row(ui,"探す拡張子",&mut self.extensions,"空欄: すべて / 例: jpg, png, docx, zip");
    if self.carve{ui.label("連続配置の静止PNGをCRC・画素まで検証します。PNG以外のcarvingは未対応です。");text_row(ui,"開始バイト",&mut self.range_start,"空欄: 0（イメージ先頭）");text_row(ui,"終了バイト",&mut self.range_end,"空欄: 末尾 / この位置は範囲に含みません");}else{text_row(ui,"検索フォルダー",&mut self.path_prefix,"空欄: 全体 / イメージ内のパス（例: 写真/旅行）");text_row(ui,"検索深度",&mut self.depth,"空欄: 上限なし / 0: 指定フォルダー直下 / 最大256");ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");}
-   path_row(ui,"作業フォルダー",&mut self.work,Picker::Folder);ui.small("空欄なら保存先の .rescue-work を使用。セッションとZIP作成中のファイルを置きます。");
+   path_row(ui,"セッションの保存先（任意）",&mut self.work,Picker::Folder);ui.small("空欄・同じディスクの場合、スキャン結果はメモリーに保持します。");
+   if self.save_mode==SaveMode::Original {path_row(ui,"元ボリュームのルート（任意）",&mut self.original_root,Picker::Folder);ui.small("通常は自動判定します。イメージや判定できないボリュームでは、元のボリュームのルートを指定してください。ディスク全体の複数パーティションはCLIで個別に指定できます。");}
   });self.invalidate_changed_source();ui.add_space(18.0);ui.horizontal(|ui|{
    if ui.add_sized([170.0,38.0],egui::Button::new("スキャン開始")).clicked(){self.start_scan();}
  if self.session.is_some()&&ui.button("スキャン結果へ戻る").clicked(){self.stage=Stage::Selecting;}
    if ui.button("保存したセッションを開く").clicked()&&let Some(p)=rfd::FileDialog::new().add_filter("Rescue session",&["json"]).pick_file(){match Session::load(&p){Ok(s)=>{self.install_session(s,&p);self.status="セッションを読み込みました。保存先は設定で確認してください。".into();},Err(e)=>self.status=e.to_string()}}
-  });ui.add_space(14.0);ui.small("保存先はスキャンするディスクとは別の物理ディスクを指定してください。保存にはハードリンク対応のファイルシステムが必要です。");
+  });ui.add_space(14.0);ui.small("同じディスクにも保存できます。選択したファイルをすべて先に読み出します（合計512 MiBまで）。同じディスクへの保存は、未選択の削除データを上書きする可能性があります。");
  });
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
@@ -701,12 +734,16 @@ impl App {
         });
         ui.small(format!(
             "{} → {}",
-            if self.save_mode == SaveMode::Zip {
-                "ZIPに保存"
-            } else {
-                "フォルダーに保存"
+            match self.save_mode {
+                SaveMode::Zip => "ZIPに保存",
+                SaveMode::Directory => "フォルダーに保存",
+                SaveMode::Original => "元の場所へ戻す",
             },
-            self.destination
+            if self.save_mode == SaveMode::Original {
+                "確認済みの元のパス"
+            } else {
+                &self.destination
+            }
         ));
     }
     fn details_ui(&mut self, ui: &mut egui::Ui) {
@@ -1094,6 +1131,7 @@ fn status_label(status: &str) -> &str {
         "cancelled" => "取消",
         "failed" => "失敗",
         "incomplete" => "不完全",
+        "skipped" => "スキップ",
         _ => status,
     }
 }

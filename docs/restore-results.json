@@ -1,0 +1,6 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "checks": 59,
+  "scope": "CLI/MCP original paths, PDF bytes, 36-file folder merge, keep-both/skip, case and link collisions, untrusted sessions, ZIP CRC; disposable regular images"
+}

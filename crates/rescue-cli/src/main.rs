@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
 use rescue_core::{
-    Error, ScanMethod, ScanOptions, SearchSettings, Session, recover, recover_zip, save_report,
-    scan_with_settings,
+    CollisionPolicy, Error, RestoreOptions, RestoreTarget, ScanMethod, ScanOptions, SearchSettings,
+    Session, VolumeRoot, recover, recover_zip, restore_files, restore_zip, save_report,
+    save_restore_report, scan_with_settings,
 };
 use serde_json::json;
 use std::{
@@ -83,14 +84,49 @@ enum Command {
         all: bool,
         #[arg(long)]
         destination: Option<PathBuf>,
+        /// Restore verified original paths on the mounted source volume.
+        #[arg(long, conflicts_with_all = ["destination", "archive", "stream"])]
+        original: bool,
+        /// Override mounted volume root: PATH, or PARTITION=PATH for a disk scan.
+        #[arg(long, requires = "original")]
+        volume_root: Vec<String>,
+        #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
+        collision: String,
+        /// Legacy streaming into a separate physical disk, without the 512 MiB batch limit.
+        #[arg(long)]
+        stream: bool,
         #[arg(
             long,
             conflicts_with = "destination",
-            required_unless_present = "destination"
+            required_unless_present_any = ["destination", "original"]
         )]
         archive: Option<PathBuf>,
         #[arg(long)]
         work_dir: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Scan and recover in memory, without saving a session on the source disk.
+    Restore {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(
+            long,
+            required_unless_present = "original",
+            conflicts_with = "original"
+        )]
+        destination: Option<PathBuf>,
+        #[arg(long)]
+        original: bool,
+        #[arg(long, requires = "original")]
+        volume_root: Vec<String>,
+        /// Exact filename (case-insensitive); repeat to select multiple names.
+        #[arg(long, required_unless_present = "all", conflicts_with = "all")]
+        name: Vec<String>,
+        #[arg(long)]
+        all: bool,
+        #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
+        collision: String,
         #[arg(long)]
         json: bool,
     },
@@ -116,6 +152,60 @@ fn print(value: serde_json::Value, compact: bool) {
         println!("{value}");
     } else {
         println!("{}", serde_json::to_string_pretty(&value).unwrap());
+    }
+}
+fn restore_options(
+    original: bool,
+    destination: Option<PathBuf>,
+    mappings: Vec<String>,
+    collision: &str,
+) -> Result<RestoreOptions, Error> {
+    let target = if original {
+        let roots = mappings
+            .into_iter()
+            .map(|value| {
+                let (partition, path) = if let Some((n, path)) = value.split_once('=') {
+                    (
+                        Some(n.parse::<u32>().map_err(|_| {
+                            Error::Request("volume root must be PATH or PARTITION=PATH".into())
+                        })?),
+                        PathBuf::from(path),
+                    )
+                } else {
+                    (None, PathBuf::from(value))
+                };
+                if path.as_os_str().is_empty() {
+                    return Err(Error::Request("empty volume root".into()));
+                }
+                Ok(VolumeRoot { partition, path })
+            })
+            .collect::<Result<Vec<_>, Error>>()?;
+        RestoreTarget::Original(roots)
+    } else {
+        RestoreTarget::Directory(
+            destination
+                .ok_or_else(|| Error::Request("choose a destination or --original".into()))?,
+        )
+    };
+    Ok(RestoreOptions {
+        target,
+        collision: if collision == "skip" {
+            CollisionPolicy::Skip
+        } else {
+            CollisionPolicy::KeepBoth
+        },
+    })
+}
+fn recovery_code(results: &[rescue_core::RecoveryResult], cancel: &AtomicBool) -> i32 {
+    if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+        130
+    } else if results
+        .iter()
+        .any(|r| !matches!(r.status.as_str(), "completed" | "skipped"))
+    {
+        5
+    } else {
+        0
     }
 }
 fn run() -> Result<i32, Error> {
@@ -247,6 +337,10 @@ fn run() -> Result<i32, Error> {
             mut id,
             all,
             destination,
+            original,
+            volume_root,
+            collision,
+            stream,
             archive,
             work_dir,
             json: compact,
@@ -267,10 +361,24 @@ fn run() -> Result<i32, Error> {
                     .collect();
             }
             if let Some(archive) = archive {
-                let result = recover_zip(&session, &id, &archive_work, &archive, &cancel)?;
+                let result = if stream {
+                    recover_zip(&session, &id, &archive_work, &archive, &cancel)?
+                } else {
+                    restore_zip(
+                        &session,
+                        &id,
+                        &archive,
+                        if collision == "skip" {
+                            CollisionPolicy::Skip
+                        } else {
+                            CollisionPolicy::KeepBoth
+                        },
+                        &cancel,
+                    )?
+                };
                 let code = if result.status == "cancelled" {
                     130
-                } else if result.status == "completed" {
+                } else if matches!(result.status.as_str(), "completed" | "skipped") {
                     0
                 } else {
                     5
@@ -281,21 +389,69 @@ fn run() -> Result<i32, Error> {
                 );
                 return Ok(code);
             }
-            let destination = destination
-                .ok_or_else(|| Error::Request("choose --destination or --archive".into()))?;
-            let results = recover(&session, &id, &destination, &cancel)?;
-            let report = save_report(&destination, &session, &results)?;
+            let options = restore_options(original, destination.clone(), volume_root, &collision)?;
+            let results = if stream {
+                recover(&session, &id, destination.as_ref().unwrap(), &cancel)?
+            } else {
+                restore_files(&session, &id, &options, &cancel)?
+            };
+            let report = destination
+                .as_ref()
+                .map(|path| {
+                    if stream {
+                        save_report(path, &session, &results)
+                    } else {
+                        save_restore_report(path, &session, &results)
+                    }
+                })
+                .transpose()?;
             print(
                 json!({"event":"recovery_finished","schema_version":1,"report":report,"results":results}),
                 compact,
             );
-            Ok(if cancel.load(std::sync::atomic::Ordering::Relaxed) {
-                130
-            } else if results.iter().any(|r| r.status != "completed") {
-                5
-            } else {
-                0
-            })
+            Ok(recovery_code(&results, &cancel))
+        }
+        Command::Restore {
+            source,
+            destination,
+            original,
+            volume_root,
+            name,
+            all,
+            collision,
+            json: compact,
+        } => {
+            let session = scan_with_settings(
+                &source,
+                ScanOptions::default(),
+                &SearchSettings::default(),
+                &cancel,
+                |_| {},
+            )?;
+            let ids = session
+                .candidates
+                .iter()
+                .filter(|c| {
+                    c.supported && (all || name.iter().any(|n| c.name.eq_ignore_ascii_case(n)))
+                })
+                .map(|c| c.id.clone())
+                .collect::<Vec<_>>();
+            if ids.is_empty() {
+                return Err(Error::Request(
+                    "no supported deleted files match the requested names".into(),
+                ));
+            }
+            let options = restore_options(original, destination.clone(), volume_root, &collision)?;
+            let results = restore_files(&session, &ids, &options, &cancel)?;
+            let report = destination
+                .as_ref()
+                .map(|path| save_restore_report(path, &session, &results))
+                .transpose()?;
+            print(
+                json!({"event":"recovery_finished","schema_version":1,"report":report,"results":results}),
+                compact,
+            );
+            Ok(recovery_code(&results, &cancel))
         }
         Command::Report {
             session,

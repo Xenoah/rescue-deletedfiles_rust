@@ -150,12 +150,13 @@ def native_test(binary,disk,truth,root,rows):
         unsafe=json.loads(original.read_text(encoding='utf-8'));unsafe['source']=host_same
         unsafe_session=root/'same-disk-session.json';unsafe_session.write_text(json.dumps(unsafe),encoding='utf-8')
         for args in [
-            ['recover','--session',unsafe_session,'--all','--destination',forbidden,'--json'],
-            ['recover','--session',unsafe_session,'--all','--archive',forbidden/'output.zip','--work-dir',forbidden/'work','--json'],
-            ['mcp','--stdio','--allow-source',host_same,'--work-dir',forbidden,'--allow-output-root',root],
+            ['recover','--session',unsafe_session,'--all','--destination',forbidden,'--stream','--json'],
+            ['recover','--session',unsafe_session,'--all','--archive',forbidden/'output.zip','--work-dir',forbidden/'work','--stream','--json'],
         ]:
             p=subprocess.run([str(executable),*map(str,args)],input='',capture_output=True,text=True,encoding='utf-8',timeout=60)
             check(p.returncode!=0 and 'UNSAFE_DESTINATION' in p.stdout+p.stderr and not forbidden.exists(),'unsafe recovery/ZIP/MCP created output')
+        p=subprocess.run([str(executable),'mcp','--stdio','--allow-source',str(host_same),'--work-dir',str(forbidden),'--allow-output-root',str(root)],input='',capture_output=True,text=True,encoding='utf-8',timeout=60)
+        check(p.returncode==0 and not forbidden.exists(),'same-disk MCP must keep sessions in memory without creating work directories')
         check(file_hash(backing)==backing_before,'read-only backing file changed while attached')
     check(file_hash(backing)==backing_before,'backing file changed on detach')
     check(file_hash(disk)==before,'native source changed')

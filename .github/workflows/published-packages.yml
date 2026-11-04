@@ -1,18 +1,15 @@
 name: Verify actual published packages
 on:
-  push:
-    branches: [work]
-    paths: ['scripts/test_published_packages.py']
   workflow_dispatch:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.7
+        default: v0.2.0-alpha.8
         required: true
 permissions:
   contents: read
 env:
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.7' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.8' }}
 jobs:
   test:
     strategy:

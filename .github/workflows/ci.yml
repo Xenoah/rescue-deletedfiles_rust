@@ -1,7 +1,7 @@
 name: Verify and release
 on:
   push:
-    branches: [main]
+    branches: [main, work]
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -68,7 +68,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all six suites)
+      - name: Debug CLI and MCP integration (all seven suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -78,7 +78,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all six suites)
+      - name: Release CLI and MCP integration (all seven suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
       - name: Release all-format byte verification
         run: python scripts/ci_command.py python scripts/e2e_formats.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output format-results/release
@@ -88,6 +88,11 @@ jobs:
       - name: Native read-only virtual disks and partition recovery
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_disks.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output disk-results --native
+      - name: Delete PDF and restore to original location on owned virtual volume
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_restore_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output restore-native-results.json
+      - name: Record original paths and collision evidence
+        run: python scripts/ci_command.py python scripts/e2e_restore.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output restore-results.json
       - name: Collect target-specific third-party licenses
         run: python scripts/ci_command.py python scripts/notices.py --target ${{ matrix.target }} --output dist/THIRD_PARTY_NOTICES.txt
       - name: Build installer and portable
@@ -105,6 +110,8 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('format-results/independent/results.json','dist/format-results-linux-independent.json')"
       - name: Collect disk access evidence
         run: python -c "import shutil;shutil.copyfile('disk-results/results.json','dist/disk-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect original-location evidence
+        run: python -c "import shutil;shutil.copyfile('restore-native-results.json','dist/restore-native-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('restore-results.json','dist/restore-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.platform }}-${{ matrix.arch }}
@@ -118,6 +125,7 @@ jobs:
             dist/verification-*.json
             dist/format-results-*.json
             dist/disk-results-*.json
+            dist/restore-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

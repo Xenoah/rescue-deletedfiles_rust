@@ -209,6 +209,92 @@ pub fn output_disks(path: &Path) -> Result<BTreeSet<String>> {
         &String::from_utf16_lossy(&volume[..end]).trim_end_matches('\\'),
     ))
 }
+pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result<Option<PathBuf>> {
+    use windows_sys::Win32::{
+        Foundation::INVALID_HANDLE_VALUE,
+        Storage::FileSystem::{
+            FindFirstVolumeW, FindNextVolumeW, FindVolumeClose, GetVolumePathNamesForVolumeNameW,
+        },
+    };
+    let source = canonical(path)?;
+    let source_file = device_file(&source)?;
+    let disk = if region.is_some() {
+        Some(u32_at(
+            &control(&source_file, IOCTL_STORAGE_GET_DEVICE_NUMBER, &[], 12)?,
+            4,
+        )?)
+    } else {
+        None
+    };
+    let extents = if region.is_none() {
+        Some(control(
+            &source_file,
+            IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS,
+            &[],
+            65536,
+        )?)
+    } else {
+        None
+    };
+    let mut name = vec![0u16; 32768];
+    let handle = unsafe { FindFirstVolumeW(name.as_mut_ptr(), name.len() as u32) };
+    if handle == INVALID_HANDLE_VALUE {
+        return Err(std::io::Error::last_os_error().into());
+    }
+    struct Volumes(windows_sys::Win32::Foundation::HANDLE);
+    impl Drop for Volumes {
+        fn drop(&mut self) {
+            unsafe {
+                FindVolumeClose(self.0);
+            }
+        }
+    }
+    let _volumes = Volumes(handle);
+    loop {
+        let end = name
+            .iter()
+            .position(|c| *c == 0)
+            .ok_or_else(|| Error::Invalid("volume name".into()))?;
+        let text = String::from_utf16_lossy(&name[..end]);
+        let matches = (|| -> Result<bool> {
+            let file = device_file(Path::new(text.trim_end_matches('\\')))?;
+            let value = control(&file, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, &[], 65536)?;
+            if let Some(region) = region {
+                if value.len() < 32 || u32_at(&value, 0)? != 1 || Some(u32_at(&value, 8)?) != disk {
+                    return Ok(false);
+                }
+                let offset = u64::from_le_bytes(value[16..24].try_into().unwrap());
+                let length = u64::from_le_bytes(value[24..32].try_into().unwrap());
+                Ok(offset == region.offset && length == region.length)
+            } else {
+                Ok(extents.as_ref() == Some(&value))
+            }
+        })()
+        .unwrap_or(false);
+        if matches {
+            let mut paths = vec![0u16; 32768];
+            let mut length = 0;
+            if unsafe {
+                GetVolumePathNamesForVolumeNameW(
+                    name.as_ptr(),
+                    paths.as_mut_ptr(),
+                    paths.len() as u32,
+                    &mut length,
+                )
+            } != 0
+            {
+                let end = paths.iter().position(|c| *c == 0).unwrap_or(0);
+                if end > 0 {
+                    return Ok(Some(PathBuf::from(String::from_utf16_lossy(&paths[..end]))));
+                }
+            }
+        }
+        if unsafe { FindNextVolumeW(handle, name.as_mut_ptr(), name.len() as u32) } == 0 {
+            break;
+        }
+    }
+    Ok(None)
+}
 pub fn list() -> Result<Vec<DiskSource>> {
     // No source path or user text is interpolated into this fixed inventory query.
     let script = r#"[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new($false); $d=@(Get-CimInstance Win32_DiskDrive -ErrorAction Stop | ForEach-Object {[pscustomobject]@{path=$_.DeviceID;name=$_.Model;kind='disk';bytes=[uint64]$_.Size;sector_size=[uint32]$_.BytesPerSector;read_only=$false;mounts=@()}}); $v=@(Get-CimInstance Win32_LogicalDisk -Filter 'DriveType=2 OR DriveType=3' | ForEach-Object {[pscustomobject]@{path=('\\.\'+$_.DeviceID);name=($_.DeviceID+' '+$_.VolumeName);kind='volume';bytes=[uint64]$_.Size;sector_size=[uint32]512;read_only=$false;mounts=@($_.DeviceID+'\')}}); ConvertTo-Json -InputObject @($d+$v) -Depth 4 -Compress"#;

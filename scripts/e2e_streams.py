@@ -137,7 +137,7 @@ def main(binary):
         result = run(binary, "recover", "--session", session, "--all", "--destination", root/"out", "--json")
         for item in result["results"]:
             recovered = Path(item["path"])
-            check(recovered.parent.samefile(root/"out"), "ADS escaped destination")
+            check(recovered.resolve().is_relative_to((root/"out").resolve()), "ADS escaped destination")
             check(":" not in recovered.name, "ADS became an actual output stream")
             check(recovered.read_bytes().hex() == truth[item["candidate_id"]]["hex"], item)
             check(item["sha256"] == truth[item["candidate_id"]]["sha256"], item)
@@ -191,8 +191,8 @@ def main(binary):
         check(len(mixed) == 2 and sum(c["supported"] for c in mixed) == 1, "unsupported ADS blocked the main stream")
         result = run(binary, "recover", "--session", scan["session"], "--id", "mft-30-7", "--destination", root/"bad-out", "--json", expected=5)
         item = result["results"][0]
-        check(item["status"] == "incomplete" and item["sha256"] is None, item)
-        check(Path(item["path"]).suffix == ".partial", "corrupt stream published as complete")
+        check(item["status"] == "failed" and item["sha256"] is None and item["path"] is None, item)
+        check(not list((root/"bad-out").rglob('*.partial')), "corrupt stream created an output payload")
         print(json.dumps({"status": "passed", "byte_exact_streams": len(truth), "native_windows_vectors": native,
                           "scope": "LZNT1 mixed/sparse/fragmented units, ADS, MCP, tamper and corrupt-data rejection"}))
 

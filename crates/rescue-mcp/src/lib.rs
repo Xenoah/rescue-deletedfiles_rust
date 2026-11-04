@@ -1,6 +1,7 @@
 use rescue_core::{
-    Error, OutputRoot, Progress, RecoveryDestination, ScanMethod, ScanOptions, SearchSettings,
-    Session, recover_to, recover_zip_to, save_report_to, scan_with_settings,
+    CollisionPolicy, Error, OutputRoot, Progress, RestoreOptions, RestoreTarget, ScanMethod,
+    ScanOptions, SearchSettings, Session, VolumeRoot, restore_files_with_roots,
+    restore_zip_with_roots, save_restore_report_with_roots, scan_with_settings,
 };
 use serde_json::{Value, json};
 use std::{
@@ -38,7 +39,8 @@ struct Server {
     threads: Vec<JoinHandle<()>>,
     requests: BTreeMap<String, (Value, Value)>,
     initialized: bool,
-    output_roots: Vec<OutputRoot>,
+    output_roots: Arc<Vec<OutputRoot>>,
+    persist_sessions: bool,
 }
 type ToolResult = std::result::Result<Value, String>;
 fn field<'a>(v: &'a Value, key: &str) -> std::result::Result<&'a str, String> {
@@ -95,10 +97,11 @@ fn tools() -> Value {
         ),
         tool(
             "recover_files",
-            "Recover explicitly selected IDs into an allowed existing directory.",
+            "Read the selected batch before writing. Restore to a directory, ZIP, or verified original paths. Same-disk output allowed, 512 MiB selected payload limit. Existing files are kept or skipped; same-name directories merge. All output remains inside allowed roots.",
             json!({"session_id":string,"ids":{"type":"array","items":string,"minItems":1,"maxItems":10000},
-                "destination":string,"request_id":string,"output_format":{"type":"string","enum":["directory","zip"],"default":"directory"}}),
-            &["session_id", "ids", "destination", "request_id"],
+                "destination":string,"request_id":string,"output_format":{"type":"string","enum":["directory","zip","original"],"default":"directory"},
+                "collision":{"type":"string","enum":["keep_both","skip"],"default":"keep_both"},"volume_roots":{"type":"array","maxItems":256,"items":{"type":"object","properties":{"partition":{"type":["integer","null"],"minimum":1},"path":string},"required":["path"],"additionalProperties":false}}}),
+            &["session_id", "ids", "request_id"],
             false
         ),
         tool(
@@ -124,19 +127,24 @@ impl Server {
             .iter()
             .map(|p| rescue_core::canonical_source_path(p))
             .collect::<rescue_core::Result<Vec<_>>>()?;
-        for source in &config.sources {
-            rescue_core::guard_output_path(source, &config.work_dir)?;
-            for output in &config.output_roots {
-                rescue_core::guard_output_path(source, output)?;
-            }
-        }
+        let persist_sessions = config
+            .sources
+            .iter()
+            .all(|source| rescue_core::guard_output_path(source, &config.work_dir).is_ok());
         for source in &config.sources {
             rescue_core::inspect_image(source)?;
         }
-        fs::create_dir_all(&config.work_dir)?;
-        config.work_dir = config.work_dir.canonicalize()?;
+        if persist_sessions {
+            fs::create_dir_all(&config.work_dir)?;
+            config.work_dir = config.work_dir.canonicalize()?;
+        }
         for path in &config.output_roots {
-            fs::create_dir_all(path)?;
+            if !path.exists() {
+                for source in &config.sources {
+                    rescue_core::guard_output_path(source, path)?;
+                }
+                fs::create_dir_all(path)?;
+            }
         }
         config.output_roots = config
             .output_roots
@@ -149,7 +157,8 @@ impl Server {
             .map(|p| OutputRoot::open(p))
             .collect::<rescue_core::Result<Vec<_>>>()?;
         Ok(Self {
-            output_roots,
+            output_roots: Arc::new(output_roots),
+            persist_sessions,
             config,
             state: Arc::new(Mutex::new(State::default())),
             threads: Vec::new(),
@@ -272,11 +281,12 @@ impl Server {
                 let shared = self.state.clone();
                 let job_id = id.clone();
                 let work = self.config.work_dir.clone();
+                let persist = self.persist_sessions;
                 self.threads.push(thread::spawn(move || {
                     let operation = scan_with_settings(&path, ScanOptions::default(), &settings, &cancel, |progress| {
                         shared.lock().unwrap().jobs.get_mut(&job_id).unwrap().progress = progress;
                     }).and_then(|session| {
-                        let path = session.save(&work)?;
+                        let path = if persist {Some(session.save(&work)?)}else{None};
                         Ok((session, path))
                     });
                     let mut state = shared.lock().unwrap();
@@ -349,34 +359,74 @@ impl Server {
                 )
             }
             "recover_files" => {
-                let zip = match args.get("output_format").and_then(Value::as_str) {
-                    None if !args.as_object().unwrap().contains_key("output_format") => false,
-                    Some("directory") => false,
-                    Some("zip") => true,
-                    _ => return Err("output_format must be directory or zip".into()),
+                let format = args
+                    .get("output_format")
+                    .map(|v| v.as_str().ok_or("invalid output_format"))
+                    .transpose()?
+                    .unwrap_or("directory");
+                if !["directory", "zip", "original"].contains(&format) {
+                    return Err("output_format must be directory, zip or original".into());
+                }
+                let zip = format == "zip";
+                let original = format == "original";
+                let collision = match args.get("collision").and_then(Value::as_str) {
+                    None | Some("keep_both") => CollisionPolicy::KeepBoth,
+                    Some("skip") => CollisionPolicy::Skip,
+                    _ => return Err("collision must be keep_both or skip".into()),
                 };
-                let requested = Path::new(field(args, "destination")?);
-                let archive_name = if zip {
-                    Some(
-                        requested
-                            .file_name()
-                            .and_then(|v| v.to_str())
-                            .ok_or("invalid ZIP filename")?
-                            .to_owned(),
-                    )
-                } else {
+                let requested = if original {
                     None
-                };
-                let parent = if zip {
-                    requested
-                        .parent()
-                        .filter(|v| !v.as_os_str().is_empty())
-                        .unwrap_or_else(|| Path::new("."))
                 } else {
-                    requested
+                    Some(PathBuf::from(field(args, "destination")?))
                 };
-                let destination =
-                    RecoveryDestination::within(parent, &self.output_roots).map_err(err)?;
+                let mappings: Vec<VolumeRoot> = args
+                    .get("volume_roots")
+                    .map(|v| serde_json::from_value(v.clone()).map_err(err))
+                    .transpose()?
+                    .unwrap_or_default();
+                let options = RestoreOptions {
+                    target: if original {
+                        RestoreTarget::Original(mappings)
+                    } else {
+                        RestoreTarget::Directory(requested.clone().unwrap())
+                    },
+                    collision,
+                };
+                let roots = if let Some(requested) = &requested {
+                    let parent = if zip {
+                        requested
+                            .parent()
+                            .filter(|p| !p.as_os_str().is_empty())
+                            .unwrap_or(Path::new("."))
+                    } else {
+                        requested.as_path()
+                    };
+                    if parent.exists() {
+                        Arc::new(vec![
+                            OutputRoot::narrow(parent, &self.output_roots).map_err(err)?,
+                        ])
+                    } else {
+                        let absolute = if parent.is_absolute() {
+                            parent.to_owned()
+                        } else {
+                            std::env::current_dir().map_err(err)?.join(parent)
+                        };
+                        if !self
+                            .config
+                            .output_roots
+                            .iter()
+                            .any(|r| absolute.starts_with(r))
+                            || absolute
+                                .components()
+                                .any(|c| matches!(c, std::path::Component::ParentDir))
+                        {
+                            return Err("destination is outside allowed output roots".into());
+                        }
+                        self.output_roots.clone()
+                    }
+                } else {
+                    self.output_roots.clone()
+                };
                 let session = self
                     .state
                     .lock()
@@ -399,11 +449,16 @@ impl Server {
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
-                let work = self.config.work_dir.clone();
                 self.threads.push(thread::spawn(move || {
-                    if let Some(name) = archive_name {
-                        let operation =
-                            recover_zip_to(&session, &ids, &work, &destination, &name, &cancel);
+                    if zip {
+                        let operation = restore_zip_with_roots(
+                            &session,
+                            &ids,
+                            requested.as_ref().unwrap(),
+                            collision,
+                            &roots,
+                            &cancel,
+                        );
                         let mut state = shared.lock().unwrap();
                         let job = state.jobs.get_mut(&job_id).unwrap();
                         match operation {
@@ -425,17 +480,30 @@ impl Server {
                         return;
                     }
                     let operation =
-                        recover_to(&session, &ids, &destination, &cancel).and_then(|results| {
-                            let report = save_report_to(&destination, &session, &results)?;
-                            Ok((results, report))
-                        });
+                        restore_files_with_roots(&session, &ids, &options, &roots, &cancel)
+                            .and_then(|results| {
+                                let report = if original {
+                                    None
+                                } else {
+                                    Some(save_restore_report_with_roots(
+                                        requested.as_ref().unwrap(),
+                                        &session,
+                                        &results,
+                                        &roots,
+                                    )?)
+                                };
+                                Ok((results, report))
+                            });
                     let mut state = shared.lock().unwrap();
                     let job = state.jobs.get_mut(&job_id).unwrap();
                     match operation {
                         Ok((results, report)) => {
                             job.state = if cancel.load(Ordering::Relaxed) {
                                 "cancelled"
-                            } else if results.iter().any(|r| r.status != "completed") {
+                            } else if results
+                                .iter()
+                                .any(|r| !matches!(r.status.as_str(), "completed" | "skipped"))
+                            {
                                 "partial"
                             } else {
                                 "completed"

@@ -14,6 +14,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if data['version']!=VERSION or (prefix=='verification' and data['status']!='passed'):raise SystemExit('Unverified or mismatched distribution')
     disk=json.loads((dist/f'disk-results-{platform}-{arch}.json').read_text())
     if disk['version']!=f'rescue {VERSION}' or disk['status']!='passed' or not disk['native_virtual_disk'] or disk['byte_exact']!=864:raise SystemExit('Native disk recovery proof mismatch')
+    restore=json.loads((dist/f'restore-native-{platform}-{arch}.json').read_text())
+    if restore['version']!=f'rescue {VERSION}' or restore['status']!='passed' or not all(restore[k] for k in ['native_same_volume','actual_deletion','original_root_auto_detected','cli_pdf_byte_exact','mcp_pdf_byte_exact','session_work_never_created']):raise SystemExit('Native original-location recovery proof mismatch')
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
@@ -30,7 +32,7 @@ def embedded(match):
     return 'src="data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode('ascii')+'"'
 html=re.sub(r'src="(images/[^"<>]+\.png)"',embedded,html)
 (dist/'intelligence.html').write_text(html,encoding='utf-8')
-for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v7.png','disk-selection.png']:
+for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v8.png','disk-selection.png','original-location.png','original-restored.png']:
     shutil.copy2(ROOT/'docs/images'/name,dist/name)
 assets=sorted(path for path in dist.iterdir() if path.is_file() and path.name!='SHA256SUMS.txt')
 (dist/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets),encoding='ascii')

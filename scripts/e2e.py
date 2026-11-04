@@ -91,14 +91,14 @@ def main(binary):
         for item in result["results"]:
             check(item["status"] == "completed", item)
             path = Path(item["path"])
-            check(path.parent.samefile(root/"out"), "path escaped destination")
+            check(path.resolve().is_relative_to((root/"out").resolve()), "path escaped destination")
             data = path.read_bytes()
             expected = truth[item["candidate_id"]]
             check(data.hex() == expected["hex"], f"byte mismatch: {item['candidate_id']}")
             check(item["sha256"] == expected["sha256"], "output SHA-256 mismatch")
         check(hashlib.sha256(source.read_bytes()).hexdigest() == original_hash, "source was modified")
         cases += len(truth)
-        prior = {p.name: p.read_bytes() for p in (root/"out").iterdir()}
+        prior = {p.relative_to(root/"out"): p.read_bytes() for p in (root/"out").rglob('*') if p.is_file()}
         run(binary, "recover", "--session", session_path, "--id", "mft-20-7", "--destination", root/"out", "--json")
         check(all((root/"out"/name).read_bytes() == data for name, data in prior.items()), "existing file overwritten")
         cases += 1

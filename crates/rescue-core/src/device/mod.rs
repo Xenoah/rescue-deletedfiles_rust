@@ -50,6 +50,15 @@ impl DeviceInfo {
 pub fn list_disks() -> Result<Vec<DiskSource>> {
     native::list()
 }
+pub(crate) fn mounted_root(
+    path: &Path,
+    region: Option<&crate::SourceRegion>,
+) -> Result<Option<PathBuf>> {
+    if !is_device(path) {
+        return Ok(None);
+    }
+    native::mounted_root(path, region)
+}
 pub fn canonical_source_path(path: &Path) -> Result<PathBuf> {
     native::canonical(path)
 }
