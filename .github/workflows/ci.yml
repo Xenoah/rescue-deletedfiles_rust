@@ -37,7 +37,7 @@ jobs:
             executable: rescue
     runs-on: ${{ matrix.os }}
     env:
-      RUSTFLAGS: ${{ runner.os == 'Windows' && '-C target-feature=+crt-static' || '' }}
+      RUSTFLAGS: ${{ matrix.platform == 'windows' && '-C target-feature=+crt-static' || '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -759,87 +759,106 @@ impl App {
             tiles.push(chunk);
         }
         let mut toggle = None;
-        egui::ScrollArea::vertical().show_rows(ui, 118.0, tiles.len(), |ui, range| {
-            for i in range {
-                ui.horizontal(|ui| {
-                    for row in &tiles[i] {
-                        match row {
-                            Row::Group(name, count) => {
-                                folder_icon(ui, 30.0);
-                                if ui
-                                    .selectable_label(
-                                        false,
-                                        format!(
-                                            "{} {name}  ({count})",
-                                            if self.closed.contains(name) {
-                                                "+"
-                                            } else {
-                                                "−"
-                                            }
-                                        ),
-                                    )
-                                    .clicked()
-                                {
-                                    toggle = Some(name.clone());
+        let heights = tiles
+            .iter()
+            .map(|row| {
+                if matches!(row[0], Row::Group(..)) {
+                    30.0
+                } else {
+                    126.0
+                }
+            })
+            .collect::<Vec<_>>();
+        TableBuilder::new(ui)
+            .id_salt("icon-table")
+            .column(Column::remainder())
+            .body(|body| {
+                body.heterogeneous_rows(heights, |mut table_row| {
+                    let i = table_row.index();
+                    table_row.col(|ui| {
+                        ui.horizontal(|ui| {
+                            for row in &tiles[i] {
+                                match row {
+                                    Row::Group(name, count) => {
+                                        folder_icon(ui, 30.0);
+                                        if ui
+                                            .selectable_label(
+                                                false,
+                                                format!(
+                                                    "{} {name}  ({count})",
+                                                    if self.closed.contains(name) {
+                                                        "+"
+                                                    } else {
+                                                        "−"
+                                                    }
+                                                ),
+                                            )
+                                            .clicked()
+                                        {
+                                            toggle = Some(name.clone());
+                                        }
+                                    }
+                                    Row::File(index) => {
+                                        let c = &s.candidates[*index];
+                                        ui.allocate_ui(egui::vec2(124.0, 112.0), |ui| {
+                                            egui::Frame::new()
+                                                .fill(if self.selected.contains(&c.id) {
+                                                    ui.visuals().selection.bg_fill
+                                                } else {
+                                                    egui::Color32::TRANSPARENT
+                                                })
+                                                .inner_margin(6.0)
+                                                .show(ui, |ui| {
+                                                    ui.set_width(108.0);
+                                                    ui.vertical_centered(|ui| {
+                                                        file_icon(ui, 40.0);
+                                                        let label = ui
+                                                            .add(
+                                                                egui::Label::new(&c.name)
+                                                                    .truncate()
+                                                                    .sense(egui::Sense::click()),
+                                                            )
+                                                            .on_hover_text(&c.original_path);
+                                                        if label.clicked() {
+                                                            self.focused = Some(c.id.clone());
+                                                            if c.supported && !busy {
+                                                                let selected =
+                                                                    !self.selected.contains(&c.id);
+                                                                set_selected(
+                                                                    &mut self.selected,
+                                                                    &c.id,
+                                                                    selected,
+                                                                );
+                                                            }
+                                                        }
+                                                        ui.small(view::size_text(c.size));
+                                                        let mut selected =
+                                                            self.selected.contains(&c.id);
+                                                        if ui
+                                                            .add_enabled(
+                                                                c.supported && !busy,
+                                                                egui::Checkbox::without_text(
+                                                                    &mut selected,
+                                                                ),
+                                                            )
+                                                            .changed()
+                                                        {
+                                                            set_selected(
+                                                                &mut self.selected,
+                                                                &c.id,
+                                                                selected,
+                                                            );
+                                                        }
+                                                    });
+                                                });
+                                        });
+                                    }
                                 }
                             }
-                            Row::File(index) => {
-                                let c = &s.candidates[*index];
-                                ui.allocate_ui(egui::vec2(124.0, 112.0), |ui| {
-                                    egui::Frame::new()
-                                        .fill(if self.selected.contains(&c.id) {
-                                            ui.visuals().selection.bg_fill
-                                        } else {
-                                            egui::Color32::TRANSPARENT
-                                        })
-                                        .inner_margin(6.0)
-                                        .show(ui, |ui| {
-                                            ui.set_width(108.0);
-                                            ui.vertical_centered(|ui| {
-                                                file_icon(ui, 40.0);
-                                                let label = ui
-                                                    .add(
-                                                        egui::Label::new(&c.name)
-                                                            .truncate()
-                                                            .sense(egui::Sense::click()),
-                                                    )
-                                                    .on_hover_text(&c.original_path);
-                                                if label.clicked() {
-                                                    self.focused = Some(c.id.clone());
-                                                    if c.supported && !busy {
-                                                        let selected =
-                                                            !self.selected.contains(&c.id);
-                                                        set_selected(
-                                                            &mut self.selected,
-                                                            &c.id,
-                                                            selected,
-                                                        );
-                                                    }
-                                                }
-                                                ui.small(view::size_text(c.size));
-                                                let mut selected = self.selected.contains(&c.id);
-                                                if ui
-                                                    .add_enabled(
-                                                        c.supported && !busy,
-                                                        egui::Checkbox::without_text(&mut selected),
-                                                    )
-                                                    .changed()
-                                                {
-                                                    set_selected(
-                                                        &mut self.selected,
-                                                        &c.id,
-                                                        selected,
-                                                    );
-                                                }
-                                            });
-                                        });
-                                });
-                            }
-                        }
-                    }
+                        });
+                    });
                 });
-            }
-        });
+            });
         if let Some(key) = toggle {
             if !self.closed.remove(&key) {
                 self.closed.insert(key);
