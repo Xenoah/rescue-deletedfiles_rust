@@ -47,7 +47,7 @@ def main():
     if version_output!='rescue '+version:raise RuntimeError('released CLI version mismatch')
     features(binary)
     result=formats(binary,Path(__file__).resolve().parent.parent/'tests/corpus',a.output,a.independent)
-    disks(binary,a.output/'native-disk-proof',True)
+    disks(binary,(a.output/'native-disk-proof').resolve(),True)
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))
     result['published_release']={'tag':a.tag,'platform':a.platform,'arch':a.arch,'portable_sha256':hashlib.sha256(archive).hexdigest(),'executable_sha256':digest,'download_url':base+name,'tested_after_packaging_and_signing':True,'package_feature_suite_checks':60}
     (a.output/'results.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

@@ -1,5 +1,8 @@
 name: Verify actual published packages
 on:
+  push:
+    branches: [work]
+    paths: ['scripts/test_published_packages.py']
   workflow_dispatch:
     inputs:
       release_tag:
