@@ -163,7 +163,7 @@ def main(binary,output,native):
     with overlap.open('r+b') as f:f.seek(446+16+8);f.write(struct.pack('<I',2049))
     run(binary,'inspect','--source',overlap,'--json',expected=4)
     scan=run(binary,'scan','--source',disk,'--work-dir',output/'tamper-work','--json')
-    session=json.loads(Path(scan['session']).read_text());session['volumes'][1]['region']['offset']+=512
+    session=json.loads(Path(scan['session']).read_text(encoding='utf-8'));session['volumes'][1]['region']['offset']+=512
     changed=output/'tampered-session.json';changed.write_text(json.dumps(session))
     run(binary,'recover','--session',changed,'--all','--destination',output/'tamper-out','--json',expected=4)
     check(not list((output/'tamper-out').glob('*')),'tampered session published data')
