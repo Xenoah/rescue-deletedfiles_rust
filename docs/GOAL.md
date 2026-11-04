@@ -46,3 +46,10 @@ v0.2.0-alpha.4はPNG 23項目・23ファイルの正解一致、実GUIの3ファ
 
 alpha.5は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41812660512)が4分46秒で成功。
 ZIP内14ファイル、x64 PE、監査修正記録、実画面、単体HTMLの動作を検証済み。
+
+
+2026-11-04：ユーザーから表示と配布要件を追加。alpha.6では起動時の保存／詳細検索設定、Explorer風の詳細列・並べ替え・グループ化、アイコン表示、実ZIP保存を実装した。
+Windows x64、Linux x64、macOS Intel/Apple Siliconの4ネイティブビルドと、全OSのインストール／ポータブル配布を必須に変更した。
+ローカルはRust 25項目、既存5群、追加の検索・日時・ZIP統合60項目、Linux全形式・独立FS検証、GUIからの36ファイルZIP照合を通過。
+各OSのCI・インストーラー検証、公開成果物の取得確認を経てalpha.6を公開する。実装済みと公開済みは区別して記録する。
+新しい画面とSHA-256付きのGUI検証は[UI-FLOW.md](UI-FLOW.md)。従来の監査修正と形式別試験を継続する。

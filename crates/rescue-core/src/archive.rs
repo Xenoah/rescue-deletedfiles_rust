@@ -239,7 +239,22 @@ mod tests {
         let session = fixture(root.path());
         let parent = root.path().join("out");
         let destination = RecoveryDestination::open(&parent).unwrap();
-        std::fs::rename(&parent, root.path().join("moved")).unwrap();
+        let moved = root.path().join("moved");
+        match std::fs::rename(&parent, &moved) {
+            Ok(()) => {}
+            Err(error) if cfg!(windows) && matches!(error.raw_os_error(), Some(5) | Some(32)) => {
+                // Windows can prevent replacement while the capability is held.
+                // Releasing it must permit the same rename, proving that this
+                // is the handle's protection, not a broken test directory.
+                assert_eq!(std::fs::read_dir(&parent).unwrap().count(), 0);
+                assert!(!moved.exists());
+                drop(destination);
+                std::fs::rename(&parent, &moved).unwrap();
+                assert_eq!(std::fs::read_dir(&moved).unwrap().count(), 0);
+                return;
+            }
+            Err(error) => panic!("unexpected parent rename failure: {error}"),
+        }
         std::fs::create_dir(&parent).unwrap();
         let result = recover_zip_to(
             &session,

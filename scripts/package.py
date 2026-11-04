@@ -32,6 +32,12 @@ def copy_docs(target,notices):
     shutil.copytree(ROOT/'docs',target/'docs')
 
 
+def permissions(root,executables):
+    for path in [root,*root.rglob('*')]:
+        if path.is_symlink():continue
+        path.chmod(0o755 if path.is_dir() or path in executables else 0o644)
+
+
 def zip_tree(source,output):
     with zipfile.ZipFile(output,'x',zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(source.rglob('*')):
@@ -51,6 +57,7 @@ def main():
     suffix='.exe' if a.platform=='windows' else ''
     for name in ['rescue','rescue-gui']:
         if not (a.binaries/(name+suffix)).is_file():raise SystemExit('Missing native executable '+name)
+    os.umask(0o022)
     assets=[]
     if a.platform in ['windows','linux']:
         portable=stage/stem;copy_docs(portable,a.notices)
@@ -89,6 +96,7 @@ Filename: "{{app}}\\rescue-gui.exe"; Description: "Launch Rescue"; Flags: nowait
             iscc=shutil.which('ISCC') or str(Path(os.environ.get('ProgramFiles(x86)',r'C:\Program Files (x86)'))/'Inno Setup 6'/'ISCC.exe')
             command(iscc,'/Qp',script);assets.append(installer)
         else:
+            permissions(portable,{portable/'rescue',portable/'rescue-gui'})
             archive=dist/(stem+'-portable.tar.gz')
             with tarfile.open(archive,'x:gz') as tar:tar.add(portable,arcname=stem)
             assets.append(archive)
@@ -101,7 +109,7 @@ Priority: optional
 Architecture: amd64
 Maintainer: Xenoah <noreply@users.noreply.github.com>
 Homepage: https://github.com/Xenoah/rescue-deletedfiles_rust
-Depends: libc6 (>= 2.35), libgcc-s1, libstdc++6, libx11-6, libxcursor1, libxrandr2, libxi6, libxkbcommon0, libwayland-client0, libgl1
+Depends: libc6 (>= 2.35), libgcc-s1, libstdc++6, libx11-6, libxcursor1, libxrandr2, libxi6, libxkbcommon0, libxkbcommon-x11-0, libwayland-client0, libgl1, libegl1
 Recommends: xdg-desktop-portal, xdg-desktop-portal-gtk, fonts-noto-cjk
 Description: Read-only RAW-image recovery GUI, CLI and MCP server
  NTFS, FAT32, exFAT metadata recovery and contiguous PNG carving.
@@ -112,6 +120,7 @@ Description: Read-only RAW-image recovery GUI, CLI and MCP server
             (desktop/'rescue.desktop').write_text('[Desktop Entry]\nType=Application\nName=Rescue\nComment=Recover files from RAW images\nExec=/opt/rescue/rescue-gui\nIcon=rescue\nTerminal=false\nCategories=Utility;System;\n',encoding='utf-8')
             icons=debroot/'usr/share/icons/hicolor/scalable/apps';icons.mkdir(parents=True)
             (icons/'rescue.svg').write_text('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="24" fill="#191919"/><path d="M35 92V32h32q28 0 28 21 0 15-16 20l20 19H78L58 73h-6v19zm17-35h15q10 0 10-6t-10-6H52z" fill="#70c7ff"/></svg>')
+            permissions(debroot,{debroot/'opt/rescue/rescue',debroot/'opt/rescue/rescue-gui'})
             installer=dist/(stem+'.deb');command('dpkg-deb','--root-owner-group','--build',debroot,installer);assets.append(installer)
     else:
         app=stage/'Rescue.app';macos=app/'Contents/MacOS';macos.mkdir(parents=True)
@@ -120,6 +129,7 @@ Description: Read-only RAW-image recovery GUI, CLI and MCP server
         build_version='.'.join(VERSION.split('-')[0].split('.')[:2]+[VERSION.rsplit('.',1)[1]])
         plist={'CFBundleName':'Rescue','CFBundleDisplayName':'Rescue','CFBundleIdentifier':'org.xenoah.rescue','CFBundleExecutable':'rescue-gui','CFBundlePackageType':'APPL','CFBundleShortVersionString':VERSION.split('-')[0],'CFBundleVersion':build_version,'LSMinimumSystemVersion':'13.0','NSHighResolutionCapable':True,'NSHumanReadableCopyright':'MIT License · Xenoah'}
         with (app/'Contents/Info.plist').open('wb') as f:plistlib.dump(plist,f)
+        permissions(app,{macos/'rescue',macos/'rescue-gui'})
         for name in ['rescue','rescue-gui']:command('codesign','--force','--sign','-',macos/name)
         command('codesign','--force','--sign','-',app)
         command('codesign','--verify','--deep','--strict',app)

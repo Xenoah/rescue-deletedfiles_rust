@@ -16,6 +16,12 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
         if Path(name).name!=name or hashlib.sha256((dist/name).read_bytes()).hexdigest()!=expected:raise SystemExit('Native checksum mismatch: '+name)
+proof=json.loads((ROOT/'docs/ui-flow-results.json').read_text())
+if proof['application_version']!=VERSION or proof['files_byte_exact']!=36:raise SystemExit('GUI flow proof mismatch')
+for shot in proof['screenshots']:
+    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('GUI screenshot proof mismatch')
+shutil.copy2(ROOT/'docs/ui-flow-results.json',dist/'gui-flow-results.json')
+shutil.copy2(ROOT/'docs/ui-demo-manifest.json',dist/'gui-demo-manifest.json')
 html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
 def embedded(match):
     path=ROOT/'docs'/match.group(1)

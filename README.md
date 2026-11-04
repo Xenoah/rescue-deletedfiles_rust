@@ -1,109 +1,124 @@
 # Rescue
 
-Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで共通の復元エンジンを使います。
-復元できるファイル数と内容の完全性を最優先に、NTFS、FAT32/exFAT、破損媒体、RAIDへ段階的に対応します。
+Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
+復元できるファイル数と内容の完全性を優先して開発しています。
 
-現在の実装は **v0.2.0-alpha.5：NTFS・FAT32・exFATのRAWイメージ復元とPNG carving** です。
-[この版の対応範囲と制限](docs/ALPHA.md)を確認してください。
-実ディスク・RAIDとPNG以外のcarvingはまだ未対応です。有料製品を上回る性能は未検証です。
+**v0.2.0-alpha.6：詳細・アイコン表示、検索条件、フォルダー／ZIP保存、3 OSのインストール版とポータブル版。**
+現在の入力はNTFS・FAT32・exFATボリュームのRAWイメージです。静止PNGのcarvingにも対応します。
+実デバイス、RAID、PNG以外のcarvingは未対応です。有料製品との性能比較は未検証です。
+[対応範囲](docs/ALPHA.md)・[製品仕様](docs/SPEC.md)・[進捗](docs/GOAL.md)
 
-- [製品仕様](docs/SPEC.md)
-- [フェーズと進捗](docs/GOAL.md)
-- [リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases)
+![名前・作成日時・更新日時・種類・サイズを列で表示する実GUI](docs/images/details-view.png)
 
-監査で確認した8件を修正しました。探索順による誤復元、使用中領域の見落とし、MCPの保存先差替え、
-PNGの不完全な圧縮データ、大容量セッション、割当警告、GUIの入力同期・根拠表示を改善しています。
-[修正内容と回帰テスト](docs/AUDIT-FIXES.md)を参照してください。
+列の見出しで昇順／降順を切り替え、境界をドラッグして列幅を変更できます。
+元のフォルダー、種類、作成日、更新日、サイズ、名前の先頭、復元可否でグループ化できます。
+画像はLinux / Xvfb上の実GUIと、35形式の実ファイルを入れた合成NTFSイメージです。表示日時はテスト用の値です。
 
-## クラウドでの形式別復元テスト
+## ダウンロード
 
-35種類・36ファイルを元データと照合しました。管理情報が残る8条件ではCLI/MCP計576件が全バイト一致。
-実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。チェーン喪失や上書きがあると結果は変わります。
-[条件・全形式の結果表](docs/CLOUD-TESTS.md)と[操作できる検証レポート](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)を参照してください。
+[この版のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.6)
 
-![35種類36ファイルを保存したクラウドGUIの実画面](docs/images/format-matrix.png)
+| OS / CPU | インストール版 | ポータブル版 |
+| --- | --- | --- |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-windows-x64-portable.zip) |
+| Linux x64 | [Debian/Ubuntu用DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64-portable.zip) |
 
-## Recovery Intelligence
+Windows版はユーザー単位でインストールし、スタートメニューから起動できます。VCランタイムを静的リンクしています。
+Linux版はglibc 2.35以降（Ubuntu 22.04相当）、X11／Wayland・OpenGL環境が必要です。DEBはGUIメニューとCLIを登録します。
+macOS版は13以降。PKGはApplicationsにRescue.appを置き、`rescue`コマンドを登録します。
+macOSはアドホック署名のみで、Developer ID署名・公証はありません。初回起動時のOSの許可が必要になる場合があります。
+[インストール・削除方法](docs/INSTALL.md)を参照してください。
 
-![PNG carvingと検証根拠を表示する実際のRescue GUI](docs/images/intelligence.png)
+## 操作の流れ
 
-Linux / Xvfb上の実GUIで合成イメージを操作した画面です。PNGの3ファイルを保存し、正解バイト列との一致を確認。
-Windows GUIの手動試験は別途必要です。
+1. **設定**：入力イメージと保存方法を選択。任意のフォルダー、または新しいZIPの保存先を指定します。
+2. **詳細設定**：必要なら検索方式、検索フォルダー、深度、拡張子、carvingのバイト範囲を指定します。
+3. **スキャン**：処理後に詳細ビューへ進みます。日時が残っていない候補は「—」です。
+4. **ファイル選択**：検索・並べ替え・グループ化で絞り、チェックを付けます。アイコン表示にも切り替えられます。
+5. **復元**：選択ファイルを保存。ZIPにはファイルと`rescue-report.json`が入り、SHA-256も記録します。
 
-右側のパネルに**配置・形式の根拠 → 割当と元の名前 → 保存と照合**を表示します。
-PNGの「検証済み」はチャンクCRC、zlib終端・Adler-32・展開長、パレット、画素展開の成功、「completed」は保存完了を示します。
-どちらも削除前の内容との一致率ではありません。
+![スキャン前にZIP保存先と詳細検索条件を設定する実GUI](docs/images/settings-view.png)
 
-[技術説明のインテリジェンスUIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/intelligence.html)してブラウザーで開くと、
-Quick / Carvingの探索手順と制限を切り替えて確認できます。配布ZIPにも収録し、リリースには単体HTMLも添付します。
-GitHubのREADME・リリース本文にはスクリーンショットと説明を掲載します（本文内ではHTMLの操作はできません）。
+Quickの検索範囲はイメージ内のフォルダーです。深度0は指定フォルダー直下、空欄は追加の深度制限なし。
+範囲・深度・拡張子は検出結果を絞り、使用中領域との競合確認はボリューム全体を調べます。
+Carvingは指定バイト範囲の静止PNGを探索します。終了位置は範囲に含めず、範囲外へはみ出すPNGを対応済みにしません。
 
-![QuickとPNG carvingの技術説明UI](docs/images/technical-ui.png)
+![フォルダーでグループ化したアイコン表示](docs/images/icons-view.png)
 
-| 方式 | 検出根拠 | 検証範囲 | 分からないこと |
-| --- | --- | --- | --- |
-| Quick | MFT / FAT / NoFatChain | 管理情報・配置・一部の割当競合 | 一般の内容の完全性、NTFS割当競合 |
-| PNG carving | PNG署名と連続したチャンク | 全チャンクCRC・画素展開・復元時のPNG全体ハッシュ | 元の名前・階層・割当・削除状態 |
+元イメージは読み取り専用です。入力・検索条件を変えると古い候補を無効化します。
+出力はUUID付きの名前で平坦に保存し、元の階層はレポートに残します。既存ファイル・ZIPは上書きしません。
+保存先は別媒体のハードリンク対応ファイルシステムを使用してください。
+ZIPはZIP64対応・無圧縮で、作成中は作業領域にも空き容量が必要です。取消・失敗時は一時ファイルの場所を表示します。
 
-## Windowsで使う
+## 技術説明のインテリジェンスUI
 
-配布ZIPを展開し、rescue-gui.exeを起動します。ボリュームイメージ、作業フォルダー、復元先を選択し、
-スキャン結果からファイルを選んで復元します。元イメージは読み取り専用です。入力・探索方式を変更すると古い候補を無効化します。
-通常ファイル、LZNT1圧縮、ADSの別ファイル保存に対応しています。
-FAT32/exFATは残存チェーン、既知の先頭クラスター、exFATの連続割当を使います。
-失われた断片位置は推測しません。候補の「要確認」「復元不可」に理由を表示します。
-PNGは探索方式から「PNG / Carving」を選びます。ファイルシステムに依存せず通常のイメージ全体を探索します。
-使用中ファイルや埋込画像も検出します。静止PNGの連続配置に限定し、APNG・断片の再構成は未対応です。
-復元先にはNTFS等のハードリンク対応媒体を使います。
-Windows x64と[Microsoft Visual C++ v14 x64ランタイム](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)が必要です。
+[通信不要の操作できる技術説明HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/intelligence.html)で、
+操作の流れ、実画面、検索と保存の根拠・制限を確認できます。READMEとリリースには毎回、実画面と技術説明を掲載します。
+GUIでも「復元の根拠」を開くと、候補の配置・割当状態・警告・保存結果を確認できます。
 
-CLIの例（PowerShell）:
+![操作フローと技術的根拠を切り替えて確認するインテリジェンスUI](docs/images/technical-ui-v6.png)
 
-    .\rescue.exe scan --source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --json
-    .\rescue.exe results --session 'E:\RescueWork\<id>.rescue-session.json' --json
-    .\rescue.exe recover --session 'E:\RescueWork\<id>.rescue-session.json' --id mft-20-7 --destination 'E:\Recovered' --json
+| 方式 | 根拠と検証 | 分からないこと |
+| --- | --- | --- |
+| Quick | MFT / FAT / NoFatChainの配置、親参照、一部の割当競合 | 一般の形式の内容の完全性、NTFSの割当競合 |
+| PNG carving | 全チャンクCRC、zlib終端・Adler-32・展開長、パレット・画素、再読込ハッシュ | 元の名前・階層・割当・削除状態 |
+| 日時表示 | NTFS FILETIME、FAT DOS時刻、exFATのUTCオフセット | 記録のない日時、FATのタイムゾーン |
+| ZIP保存 | ファイル別SHA-256、ZIPのCRC、ZIP全体SHA-256、結果レポート | 削除前の内容との一致は正解データの照合が必要 |
 
-PNG探索の例：
+## クラウドでの復元検証
 
-    .\rescue.exe scan --mode carve --source 'D:\Images\disk.raw' --work-dir 'E:\RescueWork' --json
+35種類・36ファイルを正解データと照合します。管理情報が残る8条件ではCLI/MCP計576件がバイト一致しました。
+実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
+新GUIからZIP保存した36ファイルも、独立したPython ZIP展開で正解バイトと一致しました。
 
-scanが返すsessionと、resultsが返す候補IDを使います。全対応候補を選ぶ場合は--idの代わりに--allを指定します。
-セッションは128MiB以内に収めます。上限到達時は候補の省略とtruncatedを明示し、保存済みの途中結果を読み込めます。
-出力ファイル名にはUUIDが付き、既存ファイルを上書きしません。結果とSHA-256はJSONレポートに保存します。
-処理が完了しても、上書きやTRIMで失われた元データを復元できたとは限りません。
+[全形式と条件の結果表](docs/CLOUD-TESTS.md)、[GUI操作の検証記録](docs/UI-FLOW.md)、[検証履歴](docs/VALIDATION.md)を公開しています。
+公開済みalpha.5の実行ファイルそのものを使った[クラウド検証HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)も参照できます。
+実SSDのTRIMや物理障害、有料製品比較を検証した結果ではありません。
 
-## MCP
+## CLI / MCP
 
-MCPクライアントから次のローカルstdioコマンドを起動します:
+PowerShellでの例。`scan`の返すセッションと、`results`の候補IDを使います。
 
-    rescue.exe mcp --stdio --allow-source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --allow-output-root 'E:\Recovered'
+```powershell
+.\rescue.exe scan --source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --extension jpg,png,docx --path-prefix '写真' --max-depth 2 --json
+.\rescue.exe results --session 'E:\RescueWork\<id>.rescue-session.json' --json
+.\rescue.exe recover --session 'E:\RescueWork\<id>.rescue-session.json' --all --archive 'E:\Recovered\files.zip' --json
+```
 
-list_sources、start_scan、get_job、list_candidates、recover_files、cancel_job、get_reportを提供します。
-start_scanとrecover_filesはrequest_idを要求し、job_idを即座に返します。get_jobで終了を確認します。
-start_scanのmodeはquick（既定）またはcarve。progress.unitでrecords / bytesを識別します。
-許可した入力と出力先だけを使い、復元ファイルの内容はMCPの結果へ送りません。
+フォルダー保存は`--archive`の代わりに`--destination 'E:\Recovered'`。
+個別選択は`--all`の代わりに`--id <候補ID>`を繰り返します。
+PNG探索は`scan --mode carve --range-start 0 --range-end 10485760`。終了位置を省略するとイメージ末尾です。
+Linux/macOSでも同じ引数を`rescue`に渡します。
 
-## 開発
+MCPクライアントから、ローカルstdioサーバーを起動します。
 
-Rust 1.99.1、Python 3.12以降。WindowsではMSVCのC++ Build Toolsが必要です。
-依存関係はCargo.lockに固定しています。
+```powershell
+.\rescue.exe mcp --stdio --allow-source 'D:\Images\volume.raw' --work-dir 'E:\RescueWork' --allow-output-root 'E:\Recovered'
+```
 
-    cargo build --workspace --locked
-    cargo test --workspace --locked
-    cargo clippy --workspace --all-targets --locked -- -D warnings
-    python scripts/e2e.py --binary target/debug/rescue.exe
-    python scripts/e2e_streams.py --binary target/debug/rescue.exe
-    python scripts/e2e_fat.py --binary target/debug/rescue.exe
-    python scripts/e2e_carve.py --binary target/debug/rescue.exe
-    python scripts/e2e_audit.py --binary target/debug/rescue.exe
-    cargo run -p rescue-gui --locked
+`list_sources`、`start_scan`、`get_job`、`list_candidates`、`recover_files`、`cancel_job`、`get_report`を提供します。
+`start_scan`は`mode`、`extensions`配列、`path_prefix`、`max_depth`、`range_start`／`range_end`に対応。
+`recover_files`は`output_format: "directory"`または`"zip"`を指定できます。ZIPの`destination`はZIPのフルパスです。
+開始操作には`request_id`が必要で、返された`job_id`を`get_job`で確認します。許可済みの入力・出力だけを使用します。
 
-Linuxでは統合テストの実行ファイルをtarget/debug/rescueにします。
-テスト用イメージは人工生成し、実媒体を変更しません。製品の主対象はWindowsです。
+## 開発・配布
 
-タグによるGitHub ActionsはLinux/Windowsの検証後にWindows用ZIPとSHA-256一覧をプレリリースします。
-ソースのみのpushを、実行ファイルの公開完了とは扱いません。
+Rust 1.99.1、Python 3.12以降。WindowsはMSVC Build Tools、macOSはXcode Command Line Toolsが必要です。
+LinuxのGUIビルド依存は[CI設定](.github/workflows/ci.yml)を参照してください。
 
-## ライセンス
+```sh
+cargo build --workspace --locked
+cargo test --workspace --locked
+cargo clippy --workspace --all-targets --locked -- -D warnings
+python scripts/run_integration.py --binary target/debug/rescue
+python scripts/e2e_formats.py --binary target/debug/rescue --output format-results/local
+cargo run -p rescue-gui --locked
+```
 
-[MIT](LICENSE)。依存ライブラリのライセンスは配布ZIPのTHIRD_PARTY_NOTICES.txtに収録します。
+Windowsでは実行ファイルを`target/debug/rescue.exe`にします。テストは新しい通常ファイルのイメージだけを変更します。
+タグのCIは4つのネイティブ環境で検証し、インストール版・ポータブル版を検査してから公開します。
+配布物、検証JSON、実画面、単体HTMLのチェックサムは`SHA256SUMS.txt`に記録します。
+
+[MITライセンス](LICENSE)。各配布物に依存ライブラリの`THIRD_PARTY_NOTICES.txt`を同梱します。

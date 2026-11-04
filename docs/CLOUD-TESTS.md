@@ -98,3 +98,10 @@ python scripts/e2e_formats.py --binary target/debug/rescue --output /tmp/rescue-
 
 NTFS/exFATの削除エントリー合成と、mtoolsによる実際のFAT32削除は別の条件。GUI試験はLinuxのみ。
 固定データは生成用で、実ユーザーのファイルや媒体イメージは含めていない。
+
+
+## alpha.6での継続検証
+
+表示・ZIP・検索設定を追加したalpha.6でも同じ固定コーパスを使用する。ローカルLinuxで全形式・独立FSの全条件を再実行し、上表と同じ結果を得た。
+新GUIは[UI-FLOW.md](UI-FLOW.md)の通り36ファイルを実ZIPへ保存・照合した。3 OS・4 CPU/OSターゲットのネイティブCIと配布物にも、同じ形式別テストを追加した。
+alpha.5の公開バイナリを検証した上記レポートと、新しい版の実行記録は混同せず、各リリースの`format-results-*.json`に版・バイナリSHA-256を残す。

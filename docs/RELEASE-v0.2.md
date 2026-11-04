@@ -1,52 +1,64 @@
-# Rescue v0.2.0-alpha.5
+# Rescue v0.2.0-alpha.6
 
-実装監査で見つかった8件をすべて修正しました。誤復元・MCPの出力先制約・PNG検証・セッション・GUIの修正版です。
+Explorer風の詳細ビューと、**設定 → スキャン → ファイル選択 → 復元**の流れを追加しました。
+保存方法は任意のフォルダー、または実際のZIPファイル。Windows・Linux・macOSのインストール版とポータブル版を配布します。
 
-![修正版のPNG復元と検証根拠を表示するGUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.5/docs/images/intelligence.png)
+![列とグループで選択する実際の詳細ビュー](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.6/docs/images/details-view.png)
 
-実際のLinux / Xvfb GUIで、入力変更による候補の無効化と、PNG 3ファイルの保存・正解バイト一致を確認しました。
-Windows GUIの手動操作を示す画面ではありません。
+## 表示と操作
 
-## 8件の修正
+- 名前・作成日時・更新日時・種類・サイズ・状態の列。見出しで昇順／降順、境界で幅を変更。
+- 元のフォルダー、種類、作成日、更新日、サイズ、名前の先頭、復元可否のグループ化と折り畳み。
+- アイコン表示へ切り替えても選択を保持。結果の名前・元パスで検索可能。
+- スキャン前に保存方式と保存先を指定。詳細設定で方式・フォルダー範囲・深度・拡張子、PNG探索の開始／終了バイトを設定。
+- 日時は残った管理情報から取得。不明な日時やFATのタイムゾーンを推測しません。
+- CLI・MCPも同じ検索設定とZIP保存を使用します。
 
-| 対象 | 修正した動作 |
-| --- | --- |
-| FAT32/exFATの誤復元 | 後から判明した使用中領域との競合を、由来ディレクトリーと子孫の候補へ反映 |
-| MCPの出力先 | 許可ルート・出力フォルダーをハンドルで保持。保存先の実体が変わった場合は停止 |
-| 壊れた使用中FATチェーン | 先頭・解析済みのクラスターを、解析失敗後も保護 |
-| PNGの完全性 | zlib終端・Adler-32・入力消費量・展開長、パレットとインデックスを検証 |
-| 大きなセッション | 保存・読込の上限を128MiBで統一。上限時は候補の省略とtruncatedを明示 |
-| exFATの割当警告 | 使用中エントリーの解析失敗・未対応critical entry等をunknown判定と警告へ反映 |
-| GUIの復元元 | 入力・方式変更時に古い候補を無効化。セッション読込時は入力表示を同期 |
-| GUIの根拠表示 | FAT値、exFAT bitmap、空ファイルの割当なしを区別 |
+![保存方法と詳細検索の実画面](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.6/docs/images/settings-view.png)
 
-![FAT32の割当根拠を正しく表示する実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.5/docs/images/audit-fat32.png)
+![同じ候補を表示するアイコンビュー](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.6/docs/images/icons-view.png)
 
-FAT32の空き判定を「FAT値0」と表示します。出力SHA-256や形式検証成功は、削除前の内容との一致率ではありません。
-詳しい修正と検証条件はZIP内のdocs/AUDIT-FIXES.mdに収録しています。
+画像はLinux / Xvfbで実際に操作したGUIです。35形式・36ファイルの合成NTFSで、日時・フォルダーはフィクスチャ値です。
+Windows/macOSの手動GUI操作を示す画像ではありません。
+
+## ダウンロード
+
+| OS / CPU | インストール版 | ポータブル版 |
+| --- | --- | --- |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64.pkg) | [.app ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64.pkg) | [.app ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.6/rescue-0.2.0-alpha.6-macos-x64-portable.zip) |
+
+Windowsはユーザー単位のインストールで、VCランタイムを静的リンク。Linuxはglibc 2.35以降、DEBはDebian/Ubuntu系向けです。
+macOSは13以降で、アドホック署名のみ。Developer ID署名・公証はありません。Windowsも発行者署名はありません。
+[インストール方法](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.6/docs/INSTALL.md)を参照してください。
 
 ## 技術説明のインテリジェンスUI
 
-![更新した技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.5/docs/images/technical-ui.png)
+![検索・保存の根拠を確認する技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.6/docs/images/technical-ui-v6.png)
 
-添付の **intelligence.html** を保存しブラウザーで開くと、Quick / Carvingの手順・根拠・制限と監査への対応を確認できます。
-通信不要の単体HTMLです。ZIPにはHTML、実画面、技術説明・修正記録を同梱しています。
-GitHub本文にはスクリーンショットを掲載し、操作可能なUIは添付HTMLで配布します。
+添付の **intelligence.html** は通信不要の単体HTML。設定・詳細・アイコン画面の切り替え、Quick / PNG carvingの根拠と制限を確認できます。
+各配布物にも文書、実画面、MITライセンス、ターゲット別の依存ライセンスを同梱します。
+
+ZIP復元は作業領域へ復元してから、無圧縮ZIP64と結果レポートを作成します。既存ZIPは上書きしません。
+CRC、各ファイルのSHA-256、ZIP全体のSHA-256を記録。取消・失敗時は完了にせず、一時保存場所を残します。
+出力ハッシュやPNGの形式検証は、削除前の内容との一致率ではありません。
 
 ## 検証
 
-監査の再現条件をWindows/Linux CIに追加しました。
+4つのネイティブ環境すべてで、Rustテスト・debug/releaseのCLI/MCP統合・形式別復元・配布パッケージを検証するCIを公開条件にしました。
 
-- 監査回帰16ケース：両FSの探索順・子孫、壊れた使用中チェーン、exFATの解析失敗、MCPの保存先差替え、深い階層の7,000ファイル。
-- PNG統合30ケース・23ファイルの正解バイト一致：zlib末尾欠落・余剰データ・パレット不整合の7ケースを追加。
-- Rust 19テスト：GUIの読込・入力変更・割当根拠の3テストを追加。
-- 既存NTFS・圧縮/ADS・FAT32/exFAT・独立ツール由来メタデータの復元も継続検証。
-- Windowsはdebug/release両方で5つの統合テスト群を実行し、成功後にこのリリースを公開します。
+- Rust 25テスト：ZIPの取消・保存先差替え、日時変換、GUIの入力同期・検索条件・選択・数値／日時の並べ替え等。
+- 新規統合60項目：35形式の実ZIP出力、CRC・正解バイト・SHA-256、範囲・深度・拡張子、SI日時、FAT/exFAT時刻、MCP、旧セッション互換、既存保護。
+- 既存のNTFS、LZNT1/ADS、FAT32/exFAT、PNG30項目、監査回帰16項目を継続。
+- 35形式・36ファイル、管理情報が残る8条件×CLI/MCPの576照合を各ネイティブ版で実行。
+- Linuxでは独立ツール由来のNTFS/exFAT、実際にmcopy+mdelしたFAT32も検証。削除後のFAT32は512Bクラスターで14/36、4KiBで27/36が一致。
+- 新GUIからZIP保存した36ファイルも、独立したPythonで全ファイルの正解SHA-256と一致。元イメージの全体SHA-256も操作前後で一致。
+- Windowsセットアップは実際にインストールしてバイト・バージョンを確認し削除。Linux DEBは展開、macOS PKGは展開とアドホック署名検証。ポータブル内CLIの再実行とGUIの起動維持も確認。
 
-Windows x64用ZIPにはGUI・CLI・MCP、MITライセンス、依存通知を含みます。Microsoft Visual C++ v14 x64ランタイムが必要です。
-ZIP・単体HTML・3枚の画像のSHA-256は添付のSHA256SUMS.txtで確認できます。
+添付の`verification-*.json`に配布物の検査結果、`format-results-*.json`に形式別の実行結果を収録します。
+`SHA256SUMS.txt`は全配布物と実画面・単体HTMLの照合に使用できます。
 
-PNGは連続配置の静止画像が対象です。元の名前・階層・割当・削除状態は不明で、使用中ファイルや埋込画像も検出します。
-APNG・断片再構成・PNG以外のcarving、実デバイス、RAID、EFS、TexFAT、属性リストの追加extentsは未対応です。
-入力は読み取り専用の通常ファイル、復元先はNTFS等のハードリンク対応媒体を使用します。
-有料ソフトとの性能比較・実媒体での復元率は引き続き未検証です。
+入力は通常ファイルのRAWイメージです。実デバイス・RAID・APFS/ext4・PNG以外のcarving・実SSDのTRIM・有料製品比較は未対応または未検証です。
+[対応範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.6/docs/ALPHA.md)と[全形式の検証条件](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.6/docs/CLOUD-TESTS.md)を明記しています。
