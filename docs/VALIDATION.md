@@ -112,5 +112,17 @@ Windows GUIの手動操作、実媒体、有料製品との比較は引き続き
   横はみ出しなし・JavaScriptエラーなしを確認。1280px幅の実表示を`docs/images/technical-ui.png`に保存。
 - 依存ライブラリの通知は引き続き170パッケージ。PNG/CRCのバージョンは既存のCargo.lockから変更なし。
 
-Windows実行時の結果と公開成果物の照合は、公開後に追記する。
+2026-11-04、[タグのWindows/Linux CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41767420831)は5分52秒で成功。
+Windows debug/releaseの4統合テスト群と配布処理を通過し、v0.2.0-alpha.4を公開した。
+
+公開ZIP・単体HTML・2枚の画像をダウンロードし、全4ファイルのSHA256SUMS.txtとの一致を確認。
+ZIPのCRC、12ファイルの構成、GUI/CLIのx64 PE形式、MIT・依存通知・文書・画像の同梱を検証。
+単体HTMLもChromiumで両方式の切替・画像表示・外部通信ゼロ・JavaScriptエラーなしを確認した。
+リリース本文に2枚の画像と技術説明が掲載されていることも確認。
+ZIPは3,871,853バイト。SHA-256:
+
+    36eaff3d9192488dbaa47a6c619ca1a1f66c9e5eeae73818165554fe471ae370
+
+画面の入力は `python3 scripts/make_carve_fixture.py /tmp/<new-name>.raw` で独立生成できる。
+GUIでPNG / Carvingを選び、対応候補3件を保存して正解バイト列と照合する。
 Windows GUIの手動操作・実媒体・有料製品比較は未検証。

@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 仕様 | 対象全カテゴリ、GUI/CLI/MCP、比較・受入基準 | mainに公開済み |
 | v0.1 alpha | NTFS RAWの基本復元、GUI/CLI/MCP、正解付きテスト、Windows成果物 | v0.1.0-alpha.2公開済み。Windows/Linux CI成功、公開ZIPのSHA-256一致 |
-| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをalpha.4として実装中 |
+| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。JPEG等は未完了 |
 | v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | 未着手 |
 | v0.4 alpha | 対応RAIDの仮想再構成 | 未着手 |
 | v0.9 beta | 統合、異常系、大容量、Windows操作性 | 未着手 |
@@ -28,10 +28,14 @@ Windows debug/releaseのCLI/MCP実行は[公開CI](https://github.com/Xenoah/res
 各小区切りでも検証後にタグを追加し、既存タグは付け替えない。
 v0.2.0-alpha.1は[CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41664246239)成功、
 公開ZIPのSHA-256一致を確認済み。alpha.3ではFAT32/exFATの13ファイルと異常系・取消17項目を検証。
-最新の[Windows版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.3)と
-[成功したCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41731219100)を確認済み。
-次はPNG carvingの公開後、JPEG/PDF/ZIP/MP4等の主要形式へ拡張する。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
+最新の[Windows版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.4)と
+[成功したCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41767420831)を確認済み。
+次はJPEG/PDF/ZIP/MP4等の主要形式へcarvingを拡張する。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
 この環境には/goalの登録・継続実行ツールがないため、会話終了後の自動実行は登録していない。
 
 README・リリースには毎回、実際の画面、技術的根拠、検証環境・制限を掲載する。
 操作可能な技術説明UIはdocs/intelligence.htmlを更新し、ZIPと単体HTMLで公開する。
+
+v0.2.0-alpha.4はPNG 23項目・23ファイルの正解一致、実GUIの3ファイル照合を確認。
+公開ZIP（12ファイル）、単体HTML、2枚のスクリーンショットを取得して全チェックサムを検証済み。
+技術説明HTMLは公開ファイルでも両方式の切替・画像表示・外部通信なしを確認。

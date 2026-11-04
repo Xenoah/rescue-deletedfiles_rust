@@ -22,7 +22,7 @@ Windows GUIの手動試験は別途必要です。
 PNGの「検証済み」はチャンクCRCと画素展開の成功、「completed」は保存完了を示します。
 どちらも削除前の内容との一致率ではありません。
 
-[技術説明のインテリジェンスUI](docs/intelligence.html)をダウンロードしてブラウザーで開くと、
+[技術説明のインテリジェンスUIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.4/intelligence.html)してブラウザーで開くと、
 Quick / Carvingの探索手順と制限を切り替えて確認できます。配布ZIPにも収録し、リリースには単体HTMLも添付します。
 GitHubのREADME・リリース本文にはスクリーンショットと説明を掲載します（本文内ではHTMLの操作はできません）。
 
