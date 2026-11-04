@@ -104,6 +104,11 @@ def mounted_fixture(root):
 
 def sync_volume(mount):
     if platform.system() == 'Linux':
+        # syncfs alone does not call this older FUSE driver's fsyncdir hook.
+        # Persist its cached allocation bitmap as well as the deleted entries.
+        directory=os.open(mount,os.O_RDONLY|os.O_DIRECTORY)
+        try:os.fsync(directory)
+        finally:os.close(directory)
         call('sync', '-f', mount)
     elif platform.system() == 'Darwin':
         call('/bin/sync')

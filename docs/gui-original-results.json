@@ -2,12 +2,12 @@
   "schema_version": 1,
   "application_version": "0.2.0-alpha.8",
   "status": "passed",
-  "scope": "actual Linux Xvfb GUI; synthetic NTFS metadata with real 35-format corpus; explicit original volume mapping",
+  "scope": "actual final Linux Xvfb GUI; synthetic NTFS metadata with real 35-format corpus; explicit original volume mapping",
   "original_files_byte_exact": 36,
   "existing_pdf_preserved": true,
   "pdf_renamed": "sample (復元 1).pdf",
   "source_unchanged": true,
-  "gui_binary_sha256": "19ef9101e6141927a13fc3c25d2eb07ffbdc54b2e7a62c11df15176fed48dbec",
+  "gui_binary_sha256": "4e6f1c249fe3b9d022d08b338d1706c149729ac2d45b6e59beb239f528a78e0b",
   "files": [
     {
       "candidate_id": "mft-20-7",

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "time_utc": "2026-11-04T22:37:10.381093+00:00",
+  "time_utc": "2026-11-04T23:05:10.157066+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "application_version": "0.2.0-alpha.8",
   "scope": "GUI settings/scan/selection/ZIP recovery on Linux Xvfb; synthetic NTFS dates/folders; real corpus bytes",
-  "gui_binary_sha256": "19ef9101e6141927a13fc3c25d2eb07ffbdc54b2e7a62c11df15176fed48dbec",
+  "gui_binary_sha256": "4e6f1c249fe3b9d022d08b338d1706c149729ac2d45b6e59beb239f528a78e0b",
   "gui_build": "Linux debug, separate from release native package startup checks",
   "source_sha256_before_and_after": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
-  "archive_sha256": "787e925c2e84823bd6efe0532ef568799f89b4d36b47e9c43a01837c9b0810f9",
+  "archive_sha256": "5f1f752d76b95bbfcad76d4bc53a3ecb47ee049d16e59e3624674c9fccd6a1a7",
   "files_byte_exact": 36,
   "recorded_dates_matched": 36,
   "windows_manual_gui_test": false,
@@ -23,7 +23,7 @@
       "file": "images/settings-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "353e354b1ca95dca7c6656db2db1238cfefbef6ec5dcd64d82b6ff5db7aff622"
+      "sha256": "5e85e2af602982fcf94fc5a0c01bfd98b6086299dc52a08af4e8a09cf1709920"
     },
     {
       "file": "images/details-view.png",
@@ -41,13 +41,13 @@
       "file": "images/original-location.png",
       "width": 1260,
       "height": 820,
-      "sha256": "71b7130e004be6a0fce3e5cbf3aeee8bbd0ac230437e34ce2c179a1cf5ca6fcc"
+      "sha256": "ec7e46c9df367a21973d2c779719d5dfbc985b0638d7dacd29383143d7a33634"
     },
     {
       "file": "images/original-restored.png",
       "width": 1260,
       "height": 820,
-      "sha256": "d7357cbf4ca1cab9c513c1273199f16e6f39c110534e18a3c2cf0fcb0fbd9d6e"
+      "sha256": "3e51b0e69f2a7b59ed2405e0cae2351a94a41fa864e5e1739e5c4bda4211bc63"
     }
   ],
   "files": [
