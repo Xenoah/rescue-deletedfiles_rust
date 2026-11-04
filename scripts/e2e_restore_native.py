@@ -43,7 +43,7 @@ def mounted_fixture(root):
         mount.mkdir()
         attached = False
         try:
-            call('sudo', 'mount', '-t', 'exfat', '-o', f'uid={os.getuid()},gid={os.getgid()}', device, mount)
+            call('sudo', 'mount.exfat-fuse', '-o', f'uid={os.getuid()},gid={os.getgid()}', device, mount)
             attached = True
             yield Path(device), mount, 'exfat'
         finally:
@@ -53,17 +53,18 @@ def mounted_fixture(root):
     elif system == 'Darwin':
         image = root/'owned-volume.dmg'
         label = 'RESCUE_'+uuid.uuid4().hex[:8]
-        call('/usr/bin/hdiutil', 'create', '-size', '64m', '-fs', 'ExFAT', '-volname', label,
+        call('sudo', '/usr/bin/hdiutil', 'create', '-size', '64m', '-fs', 'ExFAT', '-volname', label,
              '-layout', 'MBRSPUD', image)
-        p = subprocess.run(['/usr/bin/hdiutil', 'attach', '-nobrowse', '-plist', str(image)],
+        p = subprocess.run(['sudo', '/usr/bin/hdiutil', 'attach', '-nobrowse', '-plist', str(image)],
                            capture_output=True, check=True, timeout=120)
         nodes = plistlib.loads(p.stdout)['system-entities']
         mounted = next(n for n in nodes if n.get('mount-point'))
         whole = next(n['dev-entry'] for n in nodes if n.get('dev-entry', '').startswith('/dev/disk') and n['dev-entry'][9:].isdigit())
         try:
+            call('sudo','chmod','a+rwx',mounted['mount-point'])
             yield Path('/dev/r'+mounted['dev-entry'][5:]), Path(mounted['mount-point']), 'exfat'
         finally:
-            call('/usr/bin/hdiutil', 'detach', whole)
+            call('sudo','/usr/bin/hdiutil', 'detach', whole)
     elif system == 'Windows':
         image = root/'owned-volume.vhd'
         check(not image.exists() and image.is_absolute(), 'fixture must be new and absolute')

@@ -43,7 +43,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs
+          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse
       - name: Test public CLI after packaging and signing
         if: runner.os != 'Linux'
         shell: bash

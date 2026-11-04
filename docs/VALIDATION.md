@@ -221,3 +221,9 @@ macOSの署名でCLIハッシュが変わるため、公開署名後の実ファ
 公開37添付ファイルを再取得してSHA-256を照合し、8配布物の構造・実行ファイルを検査した。記録は[公開配布物JSON](public-release-v0.2.0-alpha.7.json)。公開Linux GUIのSHA-256 `72f6c0f9877eef18d00938215b654cf4cf1349fbffa9bd0b53550ac23963a9bd`はパッケージの検証値と一致。実GUIからGPTイメージをスキャンして36件を選択・ZIP保存し、独立したPythonで全バイト・SHA-256・36日時が一致した。[GUI JSON](public-gui-v0.2.0-alpha.7.json)と実画面を保持する。これはイメージ補助モードのGUI操作で、デバイスAPIは別途CIの仮想媒体で検証した。
 
 公開`intelligence.html`もブラウザーで4画面・3方式の切替、390px幅、JavaScriptエラー・外部通信なしを確認した。[ブラウザーJSON](public-browser-v0.2.0-alpha.7.json)。
+
+## alpha.8 元の場所・同名処理（ローカル）
+
+2026-11-04、Rust28テスト、clippy全workspace/all-targets、7つのCLI/MCP統合群を通過。追加59項目はPDFの元パス・36件の階層保存・既存保護・大小文字・リンク・JSON改変・512 MiB上限・ZIP CRC・MCP出力範囲を検証した。GUIでも元の場所へ36件、既存PDF保持、ZIP36件と日時36件、入力無変更を照合済み。技術説明HTMLは5画面・4方式・390px幅を外部通信/JSエラーなしで確認。
+
+各OSのネイティブ実削除・同じボリュームへの復元と、公開した配布物の確認はそれぞれ完了後に記録する。GUIはLinux/Xvfb上の実操作で、Windows/macOSの手動GUI検証ではない。[保存仕様](SAME-LOCATION.md)、[追加結果](restore-results.json)、[GUI元の場所](gui-original-results.json)を参照。

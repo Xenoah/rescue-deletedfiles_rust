@@ -144,7 +144,26 @@ pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result
     };
     for line in fs::read_to_string("/proc/self/mountinfo")?.lines() {
         let fields: Vec<_> = line.split_whitespace().collect();
-        if fields.len() > 5 && fields[2] == target && fields[3] == "/" {
+        let decode = |value: &str| {
+            value
+                .replace("\\040", " ")
+                .replace("\\011", "\t")
+                .replace("\\012", "\n")
+                .replace("\\134", "\\")
+        };
+        // exfat-fuse/ntfs-3g expose a virtual st_dev. Match their declared block
+        // source by rdev, never by an unverified mount label or a path prefix.
+        let fuse_source = fields
+            .iter()
+            .position(|f| *f == "-")
+            .and_then(|i| fields.get(i + 2))
+            .filter(|s| s.starts_with("/dev/"))
+            .and_then(|s| fs::metadata(decode(s)).ok())
+            .filter(|m| m.file_type().is_block_device())
+            .is_some_and(|m| {
+                format!("{}:{}", libc::major(m.rdev()), libc::minor(m.rdev())) == target
+            });
+        if fields.len() > 5 && (fields[2] == target || fuse_source) && fields[3] == "/" {
             let mount = fields[4]
                 .replace("\\040", " ")
                 .replace("\\011", "\t")
