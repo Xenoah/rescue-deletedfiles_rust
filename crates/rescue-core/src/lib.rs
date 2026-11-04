@@ -1,4 +1,5 @@
 mod carve;
+mod destination;
 mod fat;
 mod lznt1;
 mod ntfs;
@@ -8,6 +9,7 @@ use cap_std::{
     ambient_authority,
     fs::{Dir, OpenOptions},
 };
+pub use destination::{OutputRoot, RecoveryDestination};
 use ntfs::Ntfs;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -24,6 +26,8 @@ use uuid::Uuid;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_SESSION_BYTES: u64 = 128 * 1024 * 1024;
+// Keep room for source identity, session fields, bounded warnings and separators.
+const CANDIDATE_BYTES: u64 = MAX_SESSION_BYTES - 1024 * 1024;
 pub use carve::scan_carving;
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -74,6 +78,8 @@ pub enum Error {
     Limit(String),
     #[error("source identity or metadata changed; rescan the image")]
     SourceChanged,
+    #[error("destination directory changed; select the output folder again")]
+    DestinationChanged,
     #[error("operation cancelled")]
     Cancelled,
     #[error("invalid request: {0}")]
@@ -88,6 +94,7 @@ impl Error {
             Self::Unsupported(_) => "UNSUPPORTED",
             Self::Limit(_) => "RESOURCE_LIMIT",
             Self::SourceChanged => "SOURCE_CHANGED",
+            Self::DestinationChanged => "DESTINATION_CHANGED",
             Self::Cancelled => "CANCELLED",
             Self::Request(_) => "INVALID_REQUEST",
         }
@@ -132,6 +139,9 @@ pub struct Session {
 }
 impl Session {
     pub fn save(&self, work_dir: &Path) -> Result<PathBuf> {
+        if serialized_size(self)? + 1 > MAX_SESSION_BYTES {
+            return Err(Error::Limit("serialized session exceeds 128 MiB".into()));
+        }
         fs::create_dir_all(work_dir)?;
         let dir = Dir::open_ambient_dir(work_dir, ambient_authority())?;
         let name = format!("{}.rescue-session.json", self.id);
@@ -157,6 +167,46 @@ impl Session {
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
         Ok(session)
+    }
+}
+
+#[derive(Default)]
+struct ByteCounter(u64);
+impl Write for ByteCounter {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0 = self
+            .0
+            .checked_add(bytes.len() as u64)
+            .ok_or_else(|| std::io::Error::other("serialized size overflow"))?;
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+fn serialized_size(value: &impl Serialize) -> Result<u64> {
+    let mut count = ByteCounter::default();
+    serde_json::to_writer(&mut count, value)?;
+    Ok(count.0)
+}
+impl Session {
+    fn bound_candidates(&mut self) -> Result<()> {
+        let mut bytes = 0;
+        let mut keep = 0;
+        for candidate in &self.candidates {
+            bytes += serialized_size(candidate)? + 1;
+            if bytes > CANDIDATE_BYTES {
+                break;
+            }
+            keep += 1;
+        }
+        if keep < self.candidates.len() {
+            let omitted = self.candidates.len() - keep;
+            self.candidates.truncate(keep);
+            self.truncated = true;
+            self.warnings.push(format!("RESOURCE_LIMIT: {omitted} candidates omitted to keep the saved session within 128 MiB"));
+        }
+        Ok(())
     }
 }
 
@@ -208,7 +258,7 @@ pub fn scan_image(
         if image.fingerprint()? != fingerprint {
             return Err(Error::SourceChanged);
         }
-        return Ok(Session {
+        let mut session = Session {
             schema_version: 3,
             filesystem: result.filesystem,
             id: Uuid::new_v4().to_string(),
@@ -221,7 +271,9 @@ pub fn scan_image(
             truncated: result.truncated,
             invalid_records: result.invalid_records,
             warnings: result.warnings,
-        });
+        };
+        session.bound_candidates()?;
+        return Ok(session);
     }
     let ntfs = Ntfs::open(&mut image)?;
     let mut session = Session {
@@ -323,6 +375,9 @@ pub fn scan_image(
     if session.scanned_records < ntfs.records && !session.cancelled {
         session.truncated = true;
     }
+    let candidate_count = session.candidates.len();
+    let mut path_bytes = 0;
+    let mut retained = 0;
     for (candidate, (mut parent, mut sequence)) in session.candidates.iter_mut().zip(parents) {
         let mut parts = vec![candidate.name.clone()];
         let mut visited = BTreeSet::new();
@@ -343,6 +398,16 @@ pub fn scan_image(
         }
         parts.reverse();
         candidate.original_path = parts.join("/");
+        path_bytes += serialized_size(candidate)? + 1;
+        if path_bytes > CANDIDATE_BYTES {
+            break;
+        }
+        retained += 1;
+    }
+    if retained < candidate_count {
+        session.candidates.truncate(retained);
+        session.truncated = true;
+        session.warnings.push(format!("RESOURCE_LIMIT: {} candidates omitted to keep paths and the saved session within 128 MiB", candidate_count - retained));
     }
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
@@ -467,6 +532,16 @@ pub fn recover(
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
+    let destination = RecoveryDestination::open(destination)?;
+    recover_to(session, ids, &destination, cancel)
+}
+
+pub fn recover_to(
+    session: &Session,
+    ids: &[String],
+    destination: &RecoveryDestination,
+    cancel: &AtomicBool,
+) -> Result<Vec<RecoveryResult>> {
     if ![1, 2, 3, 4].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
@@ -510,9 +585,9 @@ pub fn recover(
                 .collect(),
         )
     };
-    fs::create_dir_all(destination)?;
-    let destination = destination.canonicalize()?;
-    let dir = Dir::open_ambient_dir(&destination, ambient_authority())?;
+    destination.verify()?;
+    let dir = &destination.dir;
+    let output_path = &destination.path;
     let mut results = Vec::new();
     for candidate in selected {
         if cancel.load(Ordering::Relaxed) {
@@ -541,6 +616,7 @@ pub fn recover(
             allocation_status: AllocationStatus::Unknown,
         };
         let attempt = (|| -> Result<()> {
+            destination.verify()?;
             let fresh = match &source {
                 RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
                 RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
@@ -578,7 +654,7 @@ pub fn recover(
             let partial = format!("{filename}.partial");
             let mut output =
                 dir.open_with(&partial, OpenOptions::new().write(true).create_new(true))?;
-            result.path = Some(destination.join(&partial));
+            result.path = Some(output_path.join(&partial));
             let mut hash = Sha256::new();
             let mut offset = 0;
             while offset < data.size() {
@@ -597,10 +673,11 @@ pub fn recover(
             if image.fingerprint()? != session.fingerprint {
                 return Err(Error::SourceChanged);
             }
+            destination.verify()?;
             // Atomic no-clobber publication. NTFS and ordinary Linux filesystems support this.
             // Filesystems without hard links fail safely, retaining a named .partial file.
-            dir.hard_link(&partial, &dir, &filename)?;
-            result.path = Some(destination.join(&filename));
+            dir.hard_link(&partial, dir, &filename)?;
+            result.path = Some(output_path.join(&filename));
             dir.remove_file(&partial)?;
             result.sha256 = Some(format!("{:x}", hash.finalize()));
             result.status = "completed".into();
@@ -627,7 +704,17 @@ pub fn save_report(
     session: &Session,
     results: &[RecoveryResult],
 ) -> Result<PathBuf> {
-    let dir = Dir::open_ambient_dir(destination, ambient_authority())?;
+    let destination = RecoveryDestination::open(destination)?;
+    save_report_to(&destination, session, results)
+}
+
+pub fn save_report_to(
+    destination: &RecoveryDestination,
+    session: &Session,
+    results: &[RecoveryResult],
+) -> Result<PathBuf> {
+    destination.verify()?;
+    let dir = &destination.dir;
     let name = format!("rescue-report-{}.json", Uuid::new_v4());
     let mut file = dir.open_with(&name, OpenOptions::new().write(true).create_new(true))?;
     serde_json::to_writer_pretty(
@@ -641,7 +728,7 @@ pub fn save_report(
     )?;
     file.write_all(b"\n")?;
     file.sync_all()?;
-    Ok(destination.canonicalize()?.join(name))
+    Ok(destination.path.join(name))
 }
 
 #[cfg(test)]

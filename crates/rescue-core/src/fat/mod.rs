@@ -155,6 +155,26 @@ impl Volume {
         freed_first: bool,
         cancel: &AtomicBool,
     ) -> Result<Vec<u32>> {
+        self.chain_observed(image, first, expected, freed_first, cancel, &mut |_| {})
+    }
+    fn file_clusters(
+        &mut self,
+        image: &mut Image,
+        entry: &Entry,
+        deleted: bool,
+        cancel: &AtomicBool,
+    ) -> Result<Vec<u32>> {
+        self.file_clusters_observed(image, entry, deleted, cancel, &mut |_| {})
+    }
+    fn chain_observed(
+        &mut self,
+        image: &mut Image,
+        first: u32,
+        expected: Option<u64>,
+        freed_first: bool,
+        cancel: &AtomicBool,
+        observe: &mut impl FnMut(u32),
+    ) -> Result<Vec<u32>> {
         if expected.is_some_and(|n| n == 0 || n > MAX_CHAIN) {
             return Err(Error::Limit("cluster chain size limit".into()));
         }
@@ -167,6 +187,7 @@ impl Volume {
             if !seen.insert(current) {
                 return Err(invalid("cluster-chain loop"));
             }
+            observe(current);
             clusters.push(current);
             let next = self.next(image, current)?;
             if next == 0 && clusters.len() == 1 && freed_first && expected.is_none_or(|n| n == 1) {
@@ -198,12 +219,13 @@ impl Volume {
         }
         Ok(clusters)
     }
-    fn file_clusters(
+    fn file_clusters_observed(
         &mut self,
         image: &mut Image,
         entry: &Entry,
         deleted: bool,
         cancel: &AtomicBool,
+        observe: &mut impl FnMut(u32),
     ) -> Result<Vec<u32>> {
         if entry.size == 0 {
             if entry.first != 0 {
@@ -228,11 +250,12 @@ impl Volume {
             let mut clusters = Vec::with_capacity(count as usize);
             for cluster in u64::from(entry.first)..=last {
                 self.visit(cancel)?;
+                observe(cluster as u32);
                 clusters.push(cluster as u32);
             }
             Ok(clusters)
         } else {
-            self.chain(image, entry.first, Some(count), deleted, cancel)
+            self.chain_observed(image, entry.first, Some(count), deleted, cancel, observe)
         }
     }
     fn data(&self, clusters: &[u32], size: u64, initialized: u64) -> Result<Data> {
@@ -467,6 +490,7 @@ struct Folder {
     verified: bool,
     deleted: bool,
     depth: usize,
+    parent: Option<usize>,
 }
 
 fn candidate(
@@ -504,6 +528,22 @@ fn candidate(
     }
 }
 
+fn invalid_origin(
+    mut origin: usize,
+    parents: &[Option<usize>],
+    conflicted: &BTreeSet<usize>,
+) -> bool {
+    loop {
+        if conflicted.contains(&origin) {
+            return true;
+        }
+        let Some(parent) = parents[origin] else {
+            return false;
+        };
+        origin = parent;
+    }
+}
+
 pub(crate) fn scan(
     image: &mut Image,
     options: ScanOptions,
@@ -529,6 +569,7 @@ pub(crate) fn scan(
         verified: true,
         deleted: false,
         depth: 0,
+        parent: None,
     }]);
     let mut deleted = VecDeque::new();
     let mut volume = Volume {
@@ -555,7 +596,9 @@ pub(crate) fn scan(
         }
     }
     let mut entries = Vec::new();
-    let mut directory_clusters: BTreeSet<u32> = BTreeSet::new();
+    let mut directory_clusters: BTreeMap<u32, usize> = BTreeMap::new();
+    let mut parents = Vec::new();
+    let mut conflicted = BTreeSet::new();
     let mut live_clusters = Owners::default();
     live_clusters.extend(&volume.system_clusters);
     let mut live_complete = true;
@@ -573,7 +616,18 @@ pub(crate) fn scan(
             live_complete = false;
             break;
         }
+        let origin = parents.len();
+        parents.push(folder.parent);
         folders_seen += 1;
+        if folder
+            .parent
+            .is_some_and(|id| invalid_origin(id, &parents, &conflicted))
+        {
+            if !folder.deleted {
+                live_complete = false;
+            }
+            continue;
+        }
         let clusters = if folder.contiguous {
             let pseudo = Entry {
                 candidate: candidate(
@@ -640,7 +694,7 @@ pub(crate) fn scan(
         };
         if clusters
             .iter()
-            .any(|c| directory_clusters.contains(c) || live_clusters.contains(c))
+            .any(|c| directory_clusters.contains_key(c) || live_clusters.contains(c))
             || bitmap_conflict
         {
             scan.problem(format!(
@@ -652,7 +706,7 @@ pub(crate) fn scan(
             }
             continue;
         }
-        directory_clusters.extend(&clusters);
+        directory_clusters.extend(clusters.iter().map(|c| (*c, origin)));
         if !folder.deleted {
             live_clusters.extend(&clusters);
         }
@@ -725,11 +779,17 @@ pub(crate) fn scan(
             } else if [5, 0x85].contains(&slot.raw[0]) {
                 let count = usize::from(slot.raw[1]);
                 if !(2..=18).contains(&count) {
+                    if !folder.deleted && slot.raw[0] & 0x80 != 0 {
+                        live_complete = false;
+                    }
                     scan.problem("unsupported exFAT file-entry set size".into());
                     continue;
                 }
                 if scan.scanned_records + count as u64 > options.max_records {
                     scan.truncated = true;
+                    if !folder.deleted {
+                        live_complete = false;
+                    }
                     break;
                 }
                 let mut set = vec![slot.raw];
@@ -766,12 +826,18 @@ pub(crate) fn scan(
                         Some((entry, parsed.directory, parsed.deleted || folder.deleted))
                     }
                     Err(error) => {
+                        if !folder.deleted && slot.raw[0] & 0x80 != 0 {
+                            live_complete = false;
+                        }
                         scan.problem(format!("entry {}: {error}", slot.offset));
                         None
                     }
                 }
             } else {
                 if slot.raw[0] & 0xe0 == 0x80 && ![0x81, 0x82, 0x83].contains(&slot.raw[0]) {
+                    if !folder.deleted {
+                        live_complete = false;
+                    }
                     scan.problem(format!(
                         "unknown critical exFAT directory entry: {:#x}",
                         slot.raw[0]
@@ -786,6 +852,9 @@ pub(crate) fn scan(
                             || entry.initialized != entry.size
                             || !entry.size.is_multiple_of(volume.geometry.cluster))
                     {
+                        if !is_deleted {
+                            live_complete = false;
+                        }
                         scan.problem("invalid exFAT directory length".into());
                         continue;
                     }
@@ -808,6 +877,7 @@ pub(crate) fn scan(
                         verified: entry.candidate.path_verified,
                         deleted: is_deleted,
                         depth: folder.depth + 1,
+                        parent: Some(origin),
                     };
                     if is_deleted {
                         deleted.push_back(child);
@@ -815,7 +885,7 @@ pub(crate) fn scan(
                         live.push_back(child);
                     }
                 } else if is_deleted {
-                    entries.push(entry);
+                    entries.push((entry, origin));
                 } else if scan.filesystem == FileSystem::Exfat && entry.contiguous && entry.size > 0
                 {
                     let count = entry.size.div_ceil(volume.geometry.cluster);
@@ -826,13 +896,38 @@ pub(crate) fn scan(
                         || volume.geometry.address(last as u32).is_err()
                     {
                         live_complete = false;
+                        if volume.geometry.address(entry.first).is_ok() {
+                            live_clusters.add(entry.first, entry.first);
+                            if let Some(id) = directory_clusters.get(&entry.first) {
+                                conflicted.insert(*id);
+                            }
+                        }
                         scan.problem("invalid live exFAT contiguous allocation".into());
                     } else {
                         live_clusters.add(entry.first, last as u32);
+                        conflicted.extend(
+                            directory_clusters
+                                .range(entry.first..=last as u32)
+                                .map(|(_, id)| *id),
+                        );
                     }
                 } else {
-                    match volume.file_clusters(image, &entry, false, cancel) {
-                        Ok(clusters) => live_clusters.extend(&clusters),
+                    // An active entry's known start remains owned even with a bad FAT.
+                    if entry.first != 0 && volume.geometry.address(entry.first).is_ok() {
+                        live_clusters.add(entry.first, entry.first);
+                        if let Some(id) = directory_clusters.get(&entry.first) {
+                            conflicted.insert(*id);
+                        }
+                    }
+                    let mut protect = |cluster| {
+                        live_clusters.add(cluster, cluster);
+                        if let Some(id) = directory_clusters.get(&cluster) {
+                            conflicted.insert(*id);
+                        }
+                    };
+                    match volume.file_clusters_observed(image, &entry, false, cancel, &mut protect)
+                    {
+                        Ok(_) => {}
                         Err(Error::Cancelled) => {
                             scan.cancelled = true;
                             break;
@@ -870,7 +965,23 @@ pub(crate) fn scan(
         scan.truncated = !scan.cancelled;
         live_complete = false;
     }
-    for mut entry in entries {
+    if !conflicted.is_empty() {
+        live_complete = false;
+        scan.problem(format!("{} previously parsed directories overlap active file allocations; their descendants are not trusted", conflicted.len()));
+    }
+    for (mut entry, origin) in entries {
+        if invalid_origin(origin, &parents, &conflicted) {
+            entry.candidate.allocation_status = AllocationStatus::Conflict;
+            entry.candidate.warnings.push(
+                "Directory provenance overlaps an active file allocation; candidate is not trusted"
+                    .into(),
+            );
+            scan.entries.push(RecoveredEntry {
+                candidate: entry.candidate,
+                data: None,
+            });
+            continue;
+        }
         let attempt = (|| -> Result<Data> {
             let clusters = volume.file_clusters(image, &entry, true, cancel)?;
             if scan.filesystem == FileSystem::Exfat {
@@ -911,6 +1022,10 @@ pub(crate) fn scan(
                     return Err(Error::Unsupported(
                         "deleted cluster chain overlaps a live file/directory".into(),
                     ));
+                }
+                if free && !live_complete && !clusters.is_empty() {
+                    entry.candidate.allocation_status = AllocationStatus::Unknown;
+                    return Err(Error::Unsupported("free FAT cluster cannot be trusted because live ownership traversal was incomplete".into()));
                 }
                 if free {
                     entry.candidate.allocation_status = AllocationStatus::Unallocated;

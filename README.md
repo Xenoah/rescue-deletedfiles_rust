@@ -3,13 +3,17 @@
 Rust製のWindows向けファイル復元ソフトウェア。GUI・CLI・MCPで共通の復元エンジンを使います。
 復元できるファイル数と内容の完全性を最優先に、NTFS、FAT32/exFAT、破損媒体、RAIDへ段階的に対応します。
 
-現在の実装は **v0.2.0-alpha.4：NTFS・FAT32・exFATのRAWイメージ復元とPNG carving** です。
+現在の実装は **v0.2.0-alpha.5：NTFS・FAT32・exFATのRAWイメージ復元とPNG carving** です。
 [この版の対応範囲と制限](docs/ALPHA.md)を確認してください。
 実ディスク・RAIDとPNG以外のcarvingはまだ未対応です。有料製品を上回る性能は未検証です。
 
 - [製品仕様](docs/SPEC.md)
 - [フェーズと進捗](docs/GOAL.md)
 - [リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases)
+
+監査で確認した8件を修正しました。探索順による誤復元、使用中領域の見落とし、MCPの保存先差替え、
+PNGの不完全な圧縮データ、大容量セッション、割当警告、GUIの入力同期・根拠表示を改善しています。
+[修正内容と回帰テスト](docs/AUDIT-FIXES.md)を参照してください。
 
 ## Recovery Intelligence
 
@@ -19,10 +23,10 @@ Linux / Xvfb上の実GUIで合成イメージを操作した画面です。PNG�
 Windows GUIの手動試験は別途必要です。
 
 右側のパネルに**配置・形式の根拠 → 割当と元の名前 → 保存と照合**を表示します。
-PNGの「検証済み」はチャンクCRCと画素展開の成功、「completed」は保存完了を示します。
+PNGの「検証済み」はチャンクCRC、zlib終端・Adler-32・展開長、パレット、画素展開の成功、「completed」は保存完了を示します。
 どちらも削除前の内容との一致率ではありません。
 
-[技術説明のインテリジェンスUIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.4/intelligence.html)してブラウザーで開くと、
+[技術説明のインテリジェンスUIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/intelligence.html)してブラウザーで開くと、
 Quick / Carvingの探索手順と制限を切り替えて確認できます。配布ZIPにも収録し、リリースには単体HTMLも添付します。
 GitHubのREADME・リリース本文にはスクリーンショットと説明を掲載します（本文内ではHTMLの操作はできません）。
 
@@ -36,7 +40,7 @@ GitHubのREADME・リリース本文にはスクリーンショットと説明�
 ## Windowsで使う
 
 配布ZIPを展開し、rescue-gui.exeを起動します。ボリュームイメージ、作業フォルダー、復元先を選択し、
-スキャン結果からファイルを選んで復元します。元イメージは読み取り専用です。
+スキャン結果からファイルを選んで復元します。元イメージは読み取り専用です。入力・探索方式を変更すると古い候補を無効化します。
 通常ファイル、LZNT1圧縮、ADSの別ファイル保存に対応しています。
 FAT32/exFATは残存チェーン、既知の先頭クラスター、exFATの連続割当を使います。
 失われた断片位置は推測しません。候補の「要確認」「復元不可」に理由を表示します。
@@ -56,6 +60,7 @@ PNG探索の例：
     .\rescue.exe scan --mode carve --source 'D:\Images\disk.raw' --work-dir 'E:\RescueWork' --json
 
 scanが返すsessionと、resultsが返す候補IDを使います。全対応候補を選ぶ場合は--idの代わりに--allを指定します。
+セッションは128MiB以内に収めます。上限到達時は候補の省略とtruncatedを明示し、保存済みの途中結果を読み込めます。
 出力ファイル名にはUUIDが付き、既存ファイルを上書きしません。結果とSHA-256はJSONレポートに保存します。
 処理が完了しても、上書きやTRIMで失われた元データを復元できたとは限りません。
 
@@ -82,6 +87,7 @@ Rust 1.99.1、Python 3.12以降。WindowsではMSVCのC++ Build Toolsが必要�
     python scripts/e2e_streams.py --binary target/debug/rescue.exe
     python scripts/e2e_fat.py --binary target/debug/rescue.exe
     python scripts/e2e_carve.py --binary target/debug/rescue.exe
+    python scripts/e2e_audit.py --binary target/debug/rescue.exe
     cargo run -p rescue-gui --locked
 
 Linuxでは統合テストの実行ファイルをtarget/debug/rescueにします。

@@ -1,5 +1,6 @@
 use rescue_core::{
-    Error, Progress, ScanOptions, Session, recover, save_report, scan_carving, scan_image,
+    Error, OutputRoot, Progress, RecoveryDestination, ScanOptions, Session, recover_to,
+    save_report_to, scan_carving, scan_image,
 };
 use serde_json::{Value, json};
 use std::{
@@ -37,6 +38,7 @@ struct Server {
     threads: Vec<JoinHandle<()>>,
     requests: BTreeMap<String, (Value, Value)>,
     initialized: bool,
+    output_roots: Vec<OutputRoot>,
 }
 type ToolResult = std::result::Result<Value, String>;
 fn field<'a>(v: &'a Value, key: &str) -> std::result::Result<&'a str, String> {
@@ -135,7 +137,13 @@ impl Server {
             .iter()
             .map(|p| p.canonicalize())
             .collect::<io::Result<Vec<_>>>()?;
+        let output_roots = config
+            .output_roots
+            .iter()
+            .map(|p| OutputRoot::open(p))
+            .collect::<rescue_core::Result<Vec<_>>>()?;
         Ok(Self {
+            output_roots,
             config,
             state: Arc::new(Mutex::new(State::default())),
             threads: Vec::new(),
@@ -295,18 +303,11 @@ impl Server {
                 )
             }
             "recover_files" => {
-                let destination = Path::new(field(args, "destination")?)
-                    .canonicalize()
-                    .map_err(err)?;
-                if !destination.is_dir()
-                    || !self
-                        .config
-                        .output_roots
-                        .iter()
-                        .any(|p| destination.starts_with(p))
-                {
-                    return Err("destination is outside allowed existing directories".into());
-                }
+                let destination = RecoveryDestination::within(
+                    Path::new(field(args, "destination")?),
+                    &self.output_roots,
+                )
+                .map_err(err)?;
                 let session = self
                     .state
                     .lock()
@@ -331,8 +332,8 @@ impl Server {
                 let job_id = id.clone();
                 self.threads.push(thread::spawn(move || {
                     let operation =
-                        recover(&session, &ids, &destination, &cancel).and_then(|results| {
-                            let report = save_report(&destination, &session, &results)?;
+                        recover_to(&session, &ids, &destination, &cancel).and_then(|results| {
+                            let report = save_report_to(&destination, &session, &results)?;
                             Ok((results, report))
                         });
                     let mut state = shared.lock().unwrap();

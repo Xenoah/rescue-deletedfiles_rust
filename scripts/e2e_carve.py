@@ -52,6 +52,13 @@ def main(binary):
         end = chunk(b'IEND', b'')
         bad_adler = compressed[:-1] + bytes([compressed[-1]^1])
         invalid = {
+            'missing_adler': SIGNATURE+header+chunk(b'IDAT',compressed[:-4])+end,
+            'cut_deflate_end': SIGNATURE+header+chunk(b'IDAT',compressed[:-5])+end,
+            'extra_pixels': SIGNATURE+header+chunk(b'IDAT',zlib.compress(b'\0\1\2\3'*2))+end,
+            'extra_zlib': SIGNATURE+header+chunk(b'IDAT',compressed+zlib.compress(b'junk'))+end,
+            'palette_index': SIGNATURE+chunk(b'IHDR',struct.pack('>IIBBBBB',1,1,8,3,0,0,0))+chunk(b'PLTE',bytes(3))+chunk(b'IDAT',zlib.compress(b'\0\xff'))+end,
+            'palette_depth': SIGNATURE+chunk(b'IHDR',struct.pack('>IIBBBBB',1,1,1,3,0,0,0))+chunk(b'PLTE',bytes(9))+chunk(b'IDAT',zlib.compress(b'\0\0'))+end,
+            'gray_palette': SIGNATURE+chunk(b'IHDR',struct.pack('>IIBBBBB',1,1,8,0,0,0,0))+chunk(b'PLTE',bytes(3))+chunk(b'IDAT',zlib.compress(b'\0\xff'))+end,
             'truncated': png()[:-3],
             'crc': png()[:-1] + bytes([png()[-1]^1]),
             'zlib': SIGNATURE+header+chunk(b'IDAT', b'broken')+end,

@@ -26,9 +26,11 @@ files = {
     "docs/SPEC.md": root/"docs/SPEC.md",
     "docs/GOAL.md": root/"docs/GOAL.md",
     "docs/VALIDATION.md": root/"docs/VALIDATION.md",
+    "docs/AUDIT-FIXES.md": root/"docs/AUDIT-FIXES.md",
     "docs/intelligence.html": root/"docs/intelligence.html",
     "docs/images/intelligence.png": root/"docs/images/intelligence.png",
     "docs/images/technical-ui.png": root/"docs/images/technical-ui.png",
+    "docs/images/audit-fat32.png": root/"docs/images/audit-fat32.png",
 }
 for name, path in files.items():
     if not path.is_file():
@@ -44,9 +46,9 @@ html = (root/"docs/intelligence.html").read_text(encoding="utf-8")
 encoded = base64.b64encode((root/"docs/images/intelligence.png").read_bytes()).decode("ascii")
 html = html.replace('src="images/intelligence.png"', f'src="data:image/png;base64,{encoded}"')
 (dist/"intelligence.html").write_text(html, encoding="utf-8")
-for name in ("intelligence.png", "technical-ui.png"):
+for name in ("intelligence.png", "technical-ui.png", "audit-fat32.png"):
     shutil.copyfile(root/"docs/images"/name, dist/name)
-assets = [archive, dist/"intelligence.html", dist/"intelligence.png", dist/"technical-ui.png"]
+assets = [archive, dist/"intelligence.html", dist/"intelligence.png", dist/"technical-ui.png", dist/"audit-fat32.png"]
 checksums = "".join(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}\n" for path in assets)
 (dist/"SHA256SUMS.txt").write_text(checksums, encoding="ascii")
 print(archive)

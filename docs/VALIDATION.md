@@ -126,3 +126,25 @@ ZIPは3,871,853バイト。SHA-256:
 画面の入力は `python3 scripts/make_carve_fixture.py /tmp/<new-name>.raw` で独立生成できる。
 GUIでPNG / Carvingを選び、対応候補3件を保存して正解バイト列と照合する。
 Windows GUIの手動操作・実媒体・有料製品比較は未検証。
+
+## v0.2.0-alpha.5：監査8件の修正（2026-11-04）
+
+修正の対応表は[AUDIT-FIXES.md](AUDIT-FIXES.md)に収録した。
+
+- Rust全体19テスト成功（既存core16件＋GUI3件）。Linuxのworkspace build/clippy成功。
+- Windows MSVC全ターゲットのclippy成功。これはWindowsでの実行とは区別する。
+- 新しい`e2e_audit.py`の16ケースがLinuxで成功。探索順反転・子孫、壊れた使用中チェーンの
+  先頭と途中、exFATの4種の解析失敗、MCP出力先の差替え、深い階層7,000ファイルを含む。
+- `e2e_carve.py`は30ケース・23ファイルの正解一致。PNGチャンクCRCが正しくても、zlib終端欠落、
+  Adler-32欠落、余分な画素やzlibストリーム、PLTE不整合・範囲外インデックスを拒否する。
+- NTFS CLI/MCP 24項目、LZNT1/ADS 13ストリーム、FAT32/exFAT 17項目・13ファイルも成功。
+- ntfs-3g、mkfs.fat/mtools、mkfs.exfatの独立メタデータ検証も成功。
+- Linux/Xvfbの最終GUIで、PNGスキャン・一括選択後に入力を変えると候補が消え、復元ボタンが
+  無効になることを確認。再スキャンしてPNG 3ファイルを保存し、正解バイト列・SHA-256と照合した。
+- FAT32のGUIで、根拠が「FAT値0」と表示されることを確認。
+- 最終GUI・FAT根拠・技術説明UIの実画面を更新。技術説明UIはChromiumで両方式、
+  aria状態、390px幅で横にはみ出さないこと、JavaScriptエラーなしを確認。
+- Windows配布用のnormal/build依存172パッケージのライセンス本文を収集できた。
+
+Windows実行時のCIと公開成果物の結果は、公開確認後に追記する。
+Windows GUIの手動操作、実媒体、有料製品比較は未検証。

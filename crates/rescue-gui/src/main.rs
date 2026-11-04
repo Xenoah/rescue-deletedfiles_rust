@@ -82,6 +82,7 @@ impl App {
                 .count(),
             self.selected.len()
         ));
+        ui.small(format!("解析元: {}", session.source.display()));
         ui.label(if session.filesystem == FileSystem::Raw {
             "探索方式：PNG carving / 連続配置"
         } else {
@@ -105,7 +106,7 @@ impl App {
             ui.colored_label(accent, "01  配置・形式の根拠");
             ui.label(match c.extent_evidence {
                 ExtentEvidence::PngValidated => {
-                    "PNG：全チャンクのCRC・画素の展開を通過。補助チャンクの内容の意味は未検証。"
+                    "PNG：CRC・zlib終端と長さ・パレット・画素を検証。補助チャンクの内容の意味は未検証。"
                 }
                 ExtentEvidence::Metadata => {
                     "ファイルシステムの管理情報から配置を取得。ファイル形式の内容検証は未実施。"
@@ -121,7 +122,7 @@ impl App {
             ui.colored_label(accent, "02  割当と元の名前");
             ui.label(match c.allocation_status {
                 AllocationStatus::Unknown => "割当状態：不明",
-                AllocationStatus::Unallocated => "割当ビットマップ：空き領域",
+                AllocationStatus::Unallocated => allocation_label(c, session.filesystem),
                 AllocationStatus::Unreferenced => "探索した使用中エントリーからの参照なし",
                 AllocationStatus::Conflict => "使用中領域と競合：復元不可",
             });
@@ -197,6 +198,9 @@ impl App {
                 break;
             }
         }
+        Self::blank()
+    }
+    fn blank() -> Self {
         Self {
             source: String::new(),
             work: String::new(),
@@ -214,6 +218,33 @@ impl App {
             carve: false,
             focused: None,
             results: Vec::new(),
+        }
+    }
+    fn install_session(&mut self, session: Session, path: &std::path::Path) {
+        self.source = session.source.to_string_lossy().into_owned();
+        self.carve = session.filesystem == FileSystem::Raw;
+        self.work = path
+            .parent()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        self.focused = session.candidates.first().map(|c| c.id.clone());
+        self.session = Some(session);
+        self.selected.clear();
+        self.results.clear();
+        self.filter.clear();
+        self.report = format!("セッション: {}", path.display());
+    }
+    fn invalidate_changed_source(&mut self) {
+        if self.session.as_ref().is_some_and(|s| {
+            self.source != s.source.to_string_lossy()
+                || self.carve != (s.filesystem == FileSystem::Raw)
+        }) {
+            self.session = None;
+            self.selected.clear();
+            self.focused = None;
+            self.results.clear();
+            self.report.clear();
+            self.status = "入力または探索方式が変更されました。スキャンを実行してください。".into();
         }
     }
     fn start_scan(&mut self) {
@@ -259,6 +290,7 @@ impl App {
         });
     }
     fn start_recovery(&mut self) {
+        self.invalidate_changed_source();
         if self.destination.is_empty() {
             self.status = "復元先フォルダーを指定してください。".into();
             return;
@@ -305,9 +337,7 @@ impl App {
                         session.truncated,
                         session.cancelled
                     );
-                    self.report = format!("セッション: {}", path.display());
-                    self.focused = session.candidates.first().map(|c| c.id.clone());
-                    self.session = Some(session);
+                    self.install_session(session, &path);
                 }
                 Message::Recovered(results, path) => {
                     self.busy = false;
@@ -341,6 +371,17 @@ impl App {
         }
     }
 }
+fn allocation_label(candidate: &rescue_core::Candidate, filesystem: FileSystem) -> &'static str {
+    if candidate.size == Some(0) {
+        return "データクラスターの割当なし（空ファイル）";
+    }
+    match filesystem {
+        FileSystem::Fat32 => "FAT値0：空きとして記録",
+        FileSystem::Exfat => "割当ビットマップ：空き領域",
+        _ => "割当なし",
+    }
+}
+
 fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, folder: bool) {
     ui.horizontal(|ui| {
         let label_id = ui.label(label).id;
@@ -432,13 +473,14 @@ impl eframe::App for App {
                 });
                 path_row(ui, "イメージ", &mut self.source, false);
                 path_row(ui, "作業フォルダー", &mut self.work, true);
+                self.invalidate_changed_source();
                 ui.horizontal(|ui| {
                     if ui.button("スキャン開始").clicked() { self.start_scan(); }
                     #[cfg(windows)]
                     if ui.button("保存したセッションを開く").clicked()
                         && let Some(path) = rfd::FileDialog::new().pick_file() {
                         match Session::load(&path) {
-                            Ok(session) => { self.carve = session.filesystem == FileSystem::Raw; self.focused = session.candidates.first().map(|c|c.id.clone()); self.session = Some(session); self.selected.clear(); self.results.clear(); self.status = "セッションを読み込みました。".into(); }
+                            Ok(session) => { self.install_session(session, &path); self.status = "セッションを読み込みました。".into(); }
                             Err(e) => self.status = format!("エラー: {e}"),
                         }
                     }
@@ -513,4 +555,92 @@ fn main() -> eframe::Result {
         },
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn session(filesystem: FileSystem) -> Session {
+        Session {
+            schema_version: 4,
+            filesystem,
+            id: "test".into(),
+            source: PathBuf::from("images/loaded.raw"),
+            fingerprint: rescue_core::Fingerprint {
+                length: 0,
+                modified_ns: "0".into(),
+                sample_sha256: String::new(),
+            },
+            candidates: Vec::new(),
+            scanned_records: 0,
+            total_records: 0,
+            cancelled: false,
+            truncated: false,
+            invalid_records: 0,
+            warnings: Vec::new(),
+        }
+    }
+    #[test]
+    fn loaded_session_updates_source_and_clears_previous_selection() {
+        let mut app = App::blank();
+        app.source = "images/old.raw".into();
+        app.selected.insert("old-candidate".into());
+        app.filter = "old-filter".into();
+        app.install_session(
+            session(FileSystem::Raw),
+            std::path::Path::new("work/session.json"),
+        );
+        assert_eq!(app.source, "images/loaded.raw");
+        assert_eq!(app.work, "work");
+        assert!(app.carve && app.selected.is_empty() && app.filter.is_empty());
+        app.invalidate_changed_source();
+        assert!(app.session.is_some());
+    }
+    #[test]
+    fn changed_source_or_mode_cannot_restore_old_candidates() {
+        for change_mode in [false, true] {
+            let mut app = App::blank();
+            app.install_session(
+                session(FileSystem::Fat32),
+                std::path::Path::new("work/session.json"),
+            );
+            app.selected.insert("old-candidate".into());
+            if change_mode {
+                app.carve = true;
+            } else {
+                app.source = "images/new.raw".into();
+            }
+            app.start_recovery();
+            assert!(app.session.is_none() && app.selected.is_empty() && app.report.is_empty());
+            assert!(!app.busy);
+        }
+    }
+    #[test]
+    fn allocation_text_matches_filesystem_and_empty_files() {
+        let c = rescue_core::Candidate {
+            id: String::new(),
+            record: 0,
+            sequence: 0,
+            stream_name: None,
+            name: String::new(),
+            original_path: String::new(),
+            path_verified: false,
+            size: Some(12),
+            supported: true,
+            warnings: Vec::new(),
+            record_sha256: String::new(),
+            extent_evidence: ExtentEvidence::SingleCluster,
+            allocation_status: AllocationStatus::Unallocated,
+        };
+        assert!(allocation_label(&c, FileSystem::Fat32).contains("FAT値0"));
+        assert!(!allocation_label(&c, FileSystem::Fat32).contains("ビットマップ"));
+        assert!(allocation_label(&c, FileSystem::Exfat).contains("ビットマップ"));
+        assert!(
+            allocation_label(
+                &rescue_core::Candidate { size: Some(0), ..c },
+                FileSystem::Fat32
+            )
+            .contains("空ファイル")
+        );
+    }
 }

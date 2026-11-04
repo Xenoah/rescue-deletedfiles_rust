@@ -40,3 +40,5 @@ python3 scripts/e2e_streams.py --binary target/debug/rescue
 python3 scripts/e2e_fat.py --binary target/debug/rescue
 
 python3 scripts/e2e_carve.py --binary target/debug/rescue
+
+python3 scripts/e2e_audit.py --binary target/debug/rescue

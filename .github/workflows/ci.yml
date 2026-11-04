@@ -45,6 +45,8 @@ jobs:
         run: python scripts/e2e_fat.py --binary target/debug/${{ matrix.executable }}
       - name: PNG carving integration
         run: python scripts/e2e_carve.py --binary target/debug/${{ matrix.executable }}
+      - name: Audit regressions
+        run: python scripts/e2e_audit.py --binary target/debug/${{ matrix.executable }}
       - name: Install independent filesystem tools
         if: runner.os == 'Linux'
         run: |
@@ -71,6 +73,9 @@ jobs:
       - name: Verify release PNG carving
         if: runner.os == 'Windows'
         run: python scripts/e2e_carve.py --binary target/release/rescue.exe
+      - name: Verify release audit regressions
+        if: runner.os == 'Windows'
+        run: python scripts/e2e_audit.py --binary target/release/rescue.exe
       - name: Collect third-party notices
         if: runner.os == 'Windows'
         run: python scripts/notices.py --output dist/THIRD_PARTY_NOTICES.txt
