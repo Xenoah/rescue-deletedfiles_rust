@@ -1,0 +1,88 @@
+name: Verify actual published packages
+on:
+  push:
+    branches: [main]
+    paths: ['scripts/test_published_packages.py', 'scripts/published_package_report.py', '.github/workflows/published-packages.yml']
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Published release to verify after packaging and signing
+        default: v0.2.0-alpha.6
+        required: true
+permissions:
+  contents: read
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.6' }}
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x64
+          - os: windows-2022
+            platform: windows
+            arch: x64
+          - os: macos-15-intel
+            platform: macos
+            arch: x64
+          - os: macos-15
+            platform: macos
+            arch: arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Match test driver and corpus to release
+        shell: bash
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py tests/corpus
+      - name: Independent filesystem tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs
+      - name: Test public CLI after packaging and signing
+        if: runner.os != 'Linux'
+        shell: bash
+        run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --output public-results
+      - name: Test public Linux CLI and independent deletion
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform linux --arch x64 --output public-results --independent
+      - name: Collect executed result
+        run: python -c "import shutil;shutil.copyfile('public-results/results.json','published-format-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-native-${{ matrix.platform }}-${{ matrix.arch }}
+          path: published-format-*.json
+          if-no-files-found: error
+  attach-evidence:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: published-native-*
+          merge-multiple: true
+          path: evidence
+      - name: Build report and append release evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release view "$RELEASE_TAG" --json body --jq .body > current-release.md
+          python scripts/published_package_report.py --tag "$RELEASE_TAG" --input-dir evidence --output report --body current-release.md --updated-body updated-release.md
+          gh release upload "$RELEASE_TAG" report/* --clobber
+          gh release edit "$RELEASE_TAG" --notes-file updated-release.md
+          cat report/published-format-verification.md >> "$GITHUB_STEP_SUMMARY"

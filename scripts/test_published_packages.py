@@ -1,0 +1,53 @@
+"""Test exact public portable CLI bytes, including macOS after ad-hoc signing."""
+import argparse
+import hashlib
+import io
+import json
+from pathlib import Path
+import re
+import subprocess
+import tarfile
+import urllib.request
+import zipfile
+from e2e_formats import main as formats
+from e2e_features import main as features
+from verify_package import architecture
+
+
+def main():
+    p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');a=p.parse_args()
+    if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-alpha\.\d+)?',a.tag):raise ValueError('invalid release tag')
+    base=f'https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/{a.tag}/'
+    def download(name,limit):
+        with urllib.request.urlopen(base+name,timeout=60) as response:data=response.read(limit+1)
+        if len(data)>limit:raise RuntimeError('release download too large')
+        return data
+    manifest={line.split('  ',1)[1]:line.split('  ',1)[0] for line in download('SHA256SUMS.txt',128*1024).decode('ascii').splitlines()}
+    def verified(name,limit):
+        data=download(name,limit)
+        if hashlib.sha256(data).hexdigest()!=manifest[name]:raise RuntimeError('published checksum mismatch: '+name)
+        return data
+    version=a.tag.removeprefix('v');stem=f'rescue-{version}-{a.platform}-{a.arch}'
+    name=stem+('-portable.tar.gz' if a.platform=='linux' else '-portable.zip')
+    archive=verified(name,192*1024*1024)
+    proof=json.loads(verified(f'verification-{a.platform}-{a.arch}.json',128*1024))
+    if proof['status']!='passed' or proof['version']!=version:raise RuntimeError('package verification mismatch')
+    if a.platform=='linux':
+        with tarfile.open(fileobj=io.BytesIO(archive),mode='r:gz') as tar:data=tar.extractfile(stem+'/rescue').read()
+    else:
+        with zipfile.ZipFile(io.BytesIO(archive)) as z:
+            if z.testzip() is not None:raise RuntimeError('portable ZIP CRC mismatch')
+            data=z.read('rescue.exe' if a.platform=='windows' else 'Rescue.app/Contents/MacOS/rescue')
+    digest=hashlib.sha256(data).hexdigest()
+    if digest!=proof['portable_cli_sha256']:raise RuntimeError('CLI differs from verified packaged executable')
+    a.output.mkdir(parents=True,exist_ok=True);binary=(a.output/('published-rescue.exe' if a.platform=='windows' else 'published-rescue')).resolve();binary.write_bytes(data);binary.chmod(0o755)
+    architecture(binary,a.platform,a.arch)
+    version_output=subprocess.check_output([str(binary),'--version'],text=True,encoding='utf-8').strip()
+    if version_output!='rescue '+version:raise RuntimeError('released CLI version mismatch')
+    features(binary)
+    result=formats(binary,Path(__file__).resolve().parent.parent/'tests/corpus',a.output,a.independent)
+    result['published_release']={'tag':a.tag,'platform':a.platform,'arch':a.arch,'portable_sha256':hashlib.sha256(archive).hexdigest(),'executable_sha256':digest,'download_url':base+name,'tested_after_packaging_and_signing':True,'package_feature_suite_checks':60}
+    (a.output/'results.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    print(json.dumps({'status':'passed','published_release':a.tag,'platform':a.platform,'arch':a.arch,'binary_sha256':digest,'signed_or_packaged_bytes_tested':True}))
+
+if __name__=='__main__':main()
