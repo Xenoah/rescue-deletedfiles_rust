@@ -336,15 +336,10 @@ impl App {
                 .parent()
                 .filter(|p| !p.as_os_str().is_empty())
                 .unwrap_or(Path::new("."))
+                .to_owned()
         } else {
-            &destination
+            destination
         };
-        if let Err(e) =
-            guard_output_path(&source, &work).and_then(|()| guard_output_path(&source, output))
-        {
-            self.status = format!("保存先を変更してください: {e}");
-            return;
-        }
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -360,13 +355,17 @@ impl App {
         self.progress = Progress::default();
         self.status = "スキャン中…".into();
         thread::spawn(move || {
-            let r = scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
-                let _ = tx.try_send(Message::Progress(p));
-            })
-            .and_then(|s| {
-                let path = s.save(&work)?;
-                Ok((s, path))
-            });
+            let r = guard_output_path(&source, &work)
+                .and_then(|()| guard_output_path(&source, &output))
+                .and_then(|()| {
+                    scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
+                        let _ = tx.try_send(Message::Progress(p));
+                    })
+                })
+                .and_then(|s| {
+                    let path = s.save(&work)?;
+                    Ok((s, path))
+                });
             let _ = tx.send(match r {
                 Ok((s, p)) => Message::Scanned(Box::new(s), p),
                 Err(e) => Message::Error(e.to_string()),
@@ -438,6 +437,25 @@ impl App {
         });
     }
     fn receive(&mut self) {
+        if let Some(result) = self
+            .disk_messages
+            .as_ref()
+            .and_then(|rx| rx.try_recv().ok())
+        {
+            self.disk_messages = None;
+            match result {
+                Ok(disks) => {
+                    self.disk_status = if disks.is_empty() {
+                        "ディスクを検出できませんでした。接続・アクセス権を確認してください。"
+                            .into()
+                    } else {
+                        format!("{} 個のディスク／ボリューム", disks.len())
+                    };
+                    self.disks = disks;
+                }
+                Err(e) => self.disk_status = format!("ディスク一覧を取得できません: {e}"),
+            }
+        }
         let messages = self
             .messages
             .as_ref()
@@ -494,25 +512,6 @@ impl App {
         });
     }
     fn source_ui(&mut self, ui: &mut egui::Ui) {
-        if let Some(result) = self
-            .disk_messages
-            .as_ref()
-            .and_then(|rx| rx.try_recv().ok())
-        {
-            self.disk_messages = None;
-            match result {
-                Ok(disks) => {
-                    self.disk_status = if disks.is_empty() {
-                        "ディスクを検出できませんでした。接続・アクセス権を確認してください。"
-                            .into()
-                    } else {
-                        format!("{} 個のディスク／ボリューム", disks.len())
-                    };
-                    self.disks = disks;
-                }
-                Err(e) => self.disk_status = format!("ディスク一覧を取得できません: {e}"),
-            }
-        }
         ui.strong("1  スキャンするディスク");
         ui.horizontal(|ui| {
             let previous = self.source_mode;
@@ -1191,7 +1190,7 @@ fn file_icon(ui: &mut egui::Ui, size: f32) {
 impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.receive();
-        if self.busy() {
+        if self.busy() || self.disk_messages.is_some() {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
@@ -1325,6 +1324,18 @@ mod tests {
             warnings: vec![],
             search: None,
         }
+    }
+    #[test]
+    fn inventory_completion_is_received_after_leaving_settings() {
+        let mut app = App::blank();
+        let (tx, rx) = mpsc::channel();
+        app.disk_messages = Some(rx);
+        app.install_session(session(FileSystem::Ntfs), Path::new("work/session.json"));
+        tx.send(Ok(vec![])).unwrap();
+        app.receive();
+        assert_eq!(app.stage, Stage::Selecting);
+        assert!(app.session.is_some() && app.disk_messages.is_none());
+        assert!(app.disk_status.contains("検出できません"));
     }
     #[test]
     fn loaded_session_updates_search_source_and_clears_selection() {
