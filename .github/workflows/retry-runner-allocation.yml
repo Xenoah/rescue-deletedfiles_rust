@@ -38,6 +38,10 @@ jobs:
           elif not branch.startswith('v'):
               print('Only current main and release tags are retried.')
               raise SystemExit(0)
+          run=api('repos/'+repo+'/actions/runs/'+run_id)
+          if int(run.get('run_attempt',3))>=3:
+              print('Retry limit reached; no further execution.')
+              raise SystemExit(0)
           data=api('repos/'+repo+'/actions/runs/'+run_id+'/jobs?filter=latest&per_page=100')
           failed=[job for job in data['jobs'] if job['conclusion']=='failure']
           if data['total_count']>100 or not failed or any(job.get('steps')!=[] for job in failed):
