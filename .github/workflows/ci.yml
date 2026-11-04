@@ -13,27 +13,6 @@ permissions:
 env:
   MACOSX_DEPLOYMENT_TARGET: '13.0'
 jobs:
-  cancel-obsolete-main:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-    continue-on-error: true
-    steps:
-      - name: Cancel superseded main builds, retaining tag releases
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          CURRENT_RUN_ID: ${{ github.run_id }}
-        run: |
-          gh run list --workflow ci.yml --branch main --limit 30 --json databaseId,status > runs.json
-          python3 - <<'PYCODE'
-          import json, os, subprocess
-          current=int(os.environ['CURRENT_RUN_ID'])
-          for run in json.load(open('runs.json')):
-              if run['databaseId'] < current and run['status'] != 'completed':
-                  subprocess.run(['gh','run','cancel',str(run['databaseId']),'--force'],check=True)
-          PYCODE
   verify:
     strategy:
       fail-fast: false

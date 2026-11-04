@@ -1,0 +1,35 @@
+name: Cancel superseded main builds
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  actions: write
+jobs:
+  cleanup:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Retain current commit and tag releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          CURRENT_SHA: ${{ github.sha }}
+          CURRENT_RUN_ID: ${{ github.run_id }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, subprocess
+          result=subprocess.run(['gh','run','list','--workflow','ci.yml','--branch','main','--limit','30','--json','databaseId,status,headSha'],capture_output=True,text=True,check=True,timeout=45)
+          for run in json.loads(result.stdout):
+              if run['headSha']==os.environ['CURRENT_SHA'] or run['databaseId']>=int(os.environ['CURRENT_RUN_ID']) or run['status']=='completed':
+                  continue
+              command=['gh','run','cancel',str(run['databaseId'])]
+              if run['status']=='in_progress':command.append('--force')
+              try:
+                  attempt=subprocess.run(command,timeout=15)
+                  if attempt.returncode and '--force' in command:
+                      subprocess.run(command[:-1],timeout=15)
+              except subprocess.TimeoutExpired:
+                  print('Cancellation request timed out:',run['databaseId'],flush=True)
+          PYCODE
