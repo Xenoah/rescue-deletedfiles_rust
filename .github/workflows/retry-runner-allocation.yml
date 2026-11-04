@@ -1,0 +1,48 @@
+name: Retry hosted runner allocation failures
+on:
+  workflow_run:
+    workflows: [Verify and release]
+    types: [completed]
+permissions:
+  actions: write
+  contents: read
+jobs:
+  retry:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.run_attempt < 3
+    runs-on: ubuntu-22.04
+    timeout-minutes: 2
+    steps:
+      - name: Retry only failures before any runner steps, at most three attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FAILED_RUN_ID: ${{ github.event.workflow_run.id }}
+          FAILED_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          python3 - <<'PYCODE'
+          import json, os, subprocess
+          repo=os.environ['GH_REPO']
+          run_id=str(int(os.environ['FAILED_RUN_ID']))
+          branch=os.environ['FAILED_BRANCH']
+          def api(path):
+              return json.loads(subprocess.check_output(['gh','api',path],text=True,timeout=30))
+          if branch=='main':
+              if api('repos/'+repo+'/commits/main')['sha']!=os.environ['FAILED_SHA']:
+                  print('Superseded main commit; no retry.')
+                  raise SystemExit(0)
+          elif not branch.startswith('v'):
+              print('Only current main and release tags are retried.')
+              raise SystemExit(0)
+          data=api('repos/'+repo+'/actions/runs/'+run_id+'/jobs?filter=latest&per_page=100')
+          failed=[job for job in data['jobs'] if job['conclusion']=='failure']
+          if data['total_count']>100 or not failed or any(job.get('steps')!=[] for job in failed):
+              print('A runner executed steps, or no allocation-only failure was identified; no automatic retry.')
+              raise SystemExit(0)
+          print('Retrying failed jobs that never acquired a runner:',run_id)
+          subprocess.run(['gh','run','rerun',run_id,'--failed'],check=True,timeout=30)
+          PYCODE
