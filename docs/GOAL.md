@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 仕様 | 対象全カテゴリ、GUI/CLI/MCP、比較・受入基準 | mainに公開済み |
 | v0.1 alpha | NTFS RAWの基本復元、GUI/CLI/MCP、正解付きテスト、Windows成果物 | v0.1.0-alpha.2公開済み。Windows/Linux CI成功、公開ZIPのSHA-256一致 |
-| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。alpha.9でJPEGの実装・ローカル検証済み。PDF／ZIP／MP4等は未完了 |
+| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。alpha.9でJPEGを4環境検証・公開済み。PDF／ZIP／MP4等は未完了 |
 | v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | alpha.7でデバイスの読み取り専用アクセスとMBR/EBR/GPTを先行実装。読取マップ・イメージ取得は未完了 |
 | v0.4 alpha | 対応RAIDの仮想再構成 | 未着手 |
 | v0.9 beta | 統合、異常系、大容量、Windows操作性 | 未着手 |
@@ -75,3 +75,5 @@ alpha.8は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/
 通常・プログレッシブJPEGを、独立した圧縮データ検査と画素展開で検証する。32枚＋埋込サムネイル33候補、追加58項目（破損33条件）、実GUIのJPEG ZIP33件を照合済み。PNGとの混在、旧セッション読込、元の場所／ZIP36件も維持。4環境のネイティブCIと公開配布物そのものの試験を経て公開する。詳細は[JPEG-CARVING.md](JPEG-CARVING.md)。以降のPDF／ZIP／MP4、読取マップ、RAID、商用比較は後続工程。
 
 alpha.9の[4ネイティブ環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)でWindows・Linux・macOS Intel／Apple Siliconの試験、インストール版とポータブル版、GUI起動が通過。JPEG追加58項目と新規仮想媒体の実削除・同じ場所へのPDF復元を含む。タグによる再検証と公開実ファイルの照合へ進む。
+
+alpha.9は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41939770021)を通過して[公開済み](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.9)。8配布物・55一次添付・6追加レポートを実取得で照合。[公開後の4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41940947569)は署名／梱包後CLIのJPEG33候補と破損33条件、既存機能、実削除PDFを確認。公開Linux GUIのJPEG33候補のZIPと単体HTML6画面・5方式も通過。今回のJPEGフェーズは完了。次はPDF／ZIP／MP4等のcarving、以降は読取マップ・イメージ取得・RAID・商用比較を進める。

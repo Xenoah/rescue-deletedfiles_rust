@@ -71,3 +71,7 @@ ZIP取消・出力先差替えとGUIの入力・選択・数値／日時の並�
 ## alpha.8 公開GUIの追加確認
 
 [公開ポータブル](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.8)のGUI本体を実取得し、nativeパッケージのSHA-256と一致を確認して起動した。元の場所へ36ファイルを復元、既存PDF保持・連番、36件スキップと37既存出力の全体無変更、ZIP36件・表示日時36件、入力全体ハッシュ無変更を照合。公開実行ファイルのハッシュと6実画面は[公開GUI記録](public-gui-v0.2.0-alpha.8.json)、元の場所の結果は[別JSON](public-gui-original-v0.2.0-alpha.8.json)に記録した。公開HTMLは5画面・4方式を390px幅も含め動作確認済み。
+
+## alpha.9 公開GUIそのものの検証
+
+公開ポータブルのGUI本体をダウンロードし、`verification-linux-x64.json`のGUI SHA-256と一致させて実行した。JPEGのみの指定で33候補を探索・選択・ZIP保存し、全バイト・CRC・SHA-256と入力不変を確認。名前・日時・削除状態が不明の表示と検証根拠も実操作した。[公開GUI照合と実画面のSHA-256](public-gui-v0.2.0-alpha.9.json)。Windows／macOSはネイティブ起動確認とCLI／MCP試験であり、手動GUI試験ではない。

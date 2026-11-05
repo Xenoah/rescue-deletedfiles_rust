@@ -82,6 +82,12 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 
 ## クラウドでの復元検証
 
+alpha.9は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41939770021)で4環境すべてが成功し公開済みです。実際に取得した8配布物・55一次添付・6追加レポートのSHA-256を照合しました。[公開版の4環境検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41940947569)では、署名・梱包後のCLIそのものでもJPEG33候補、破損33条件、35形式、ディスク864件、実削除PDFの元の場所への復元が成功。[公開ファイルの照合JSON](docs/public-release-v0.2.0-alpha.9.json)。
+
+公開Linux GUIからもJPEG33候補をZIP保存し、元バイト・CRC・SHA-256・入力不変を再確認しました。[公開GUIの記録](docs/public-gui-v0.2.0-alpha.9.json)・[公開した単体HTMLの確認](docs/public-browser-v0.2.0-alpha.9.json)。
+
+![公開Linux GUIからJPEG33候補を保存した実画面](docs/images/public-jpeg-restored-v9.png)
+
 alpha.9は追加58項目でJPEG32枚と埋込サムネイルの33候補をCLI／MCPで全バイト照合。破損33条件を拒否しました。Linux実GUIからのJPEG33件のZIP保存と、既存35形式36ファイルの元の場所／ZIP保存も照合しています。[JPEGの検証記録](docs/JPEG-CARVING.md)・[実GUIのJSON](docs/gui-jpeg-results.json)。[4ネイティブ環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)が通過。公開配布物そのものの再取得・照合もリリース手順に含めています。
 
 alpha.8の公開インストール／ポータブル8配布物、48添付ファイルと追加6レポートのSHA-256を実取得で照合しました。[照合JSON](docs/public-release-v0.2.0-alpha.8.json)を参照。

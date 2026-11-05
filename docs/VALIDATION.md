@@ -253,3 +253,5 @@ Rust 31項目、fmt、workspace/all-targets clippy（警告をエラー扱い）
 Linux実GUIでJPEG33候補のZIP、既存35形式36ファイルの元の場所／ZIP、既存PDF保持、36日時を照合。入力イメージ全体のSHA-256は不変。ネイティブ4環境と公開実行ファイルの検証はCIの機械可読記録に分けて記載する。
 
 [ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)の4環境すべてで追加JPEG58項目・既存8統合群・35形式・ディスク864件・仮想媒体の実削除PDF復元・配布物とGUI起動の検証が成功。4環境でJPEG33候補が一致し、破損33条件を拒否。公開後の実バイナリー試験は別記録にする。
+
+alpha.9公開照合：タグCI41939770021成功。[実配布物CLIの4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41940947569)で各JPEG33候補／58項目、破損33条件、管理情報576件、ディスク864件、ZIP／日時等60項目、実削除PDF2件が成功。macOSはアドホック署名後のCLIハッシュと一致を確認。公開55一次ファイル＋6追加レポート（チェックサム一覧2点を含む総添付63）を全照合。公開Linux GUIもJPEG33件のZIP、CRC／SHA-256、入力無変更を確認。単体HTMLは6画面・5方式を390px幅を含め動作確認し、JavaScriptエラー・外部通信なし。[機械可読の記録](public-release-v0.2.0-alpha.9.json)。
