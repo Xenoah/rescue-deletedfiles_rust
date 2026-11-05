@@ -28,7 +28,7 @@ v1.0に向けた開発版です。残る必須項目は[受入台帳](https://gi
 実GUIでは消失領域6件・残存レコード14件をZIP復元。720×520で全ボタンが見えることと、キーボードで閉じる操作も確認しました。
 既存の元の場所36件・ZIP36件・JPEG33件・文書/動画7件・NTFS21ストリーム・別名検索1件も正解と照合しました。
 512 MiBの取得・128範囲のマップ・再開照合・取得後の36件復元も実操作で検証しています。
-Windows・Linux・macOS Intel/ARMのネイティブCIと公開実物の結果は配布工程で記録します。
+Windows・Linux・macOS Intel/ARMの[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42004653478)を通過しました。各VMで新規作成したVHD/loop/hdiutilの読取と実際のPDF削除・同一場所復元も確認しています。公開・署名後の実物検証は別途添付します。
 
 `discovery-results-*.json`、`remnant-results-*.json`、`quickformat-results-linux-x64.json`、`gui-discovery-results.json`を添付します。
 
