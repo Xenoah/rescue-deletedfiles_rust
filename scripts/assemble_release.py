@@ -8,6 +8,7 @@ import shutil
 from package import ROOT, VERSION
 
 dist=ROOT/'dist'
+index_failures=[]
 for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos','arm64')]:
     for prefix in ['package','verification']:
         data=json.loads((dist/f'{prefix}-{platform}-{arch}.json').read_text())
@@ -35,12 +36,14 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
     for prefix,minimum,files in [('index',10 if platform=='windows' else 12,38),('index-carve',65,60),('index-fat',11 if platform=='windows' else 15,51),('index-remnants',8,13),('index-late',7,6),('index-discovery',6,76)]:
         proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
-        assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files
-        assert proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))
+        observed={key:proof.get(key) for key in ['version','status','checks','files_byte_exact','source_unchanged','source_bytes_unchanged']}
+        if not (proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files and proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))):
+            index_failures.append(f'{prefix}/{platform}/{arch}: expected checks >= {minimum}, files == {files}, version rescue {VERSION}; observed {observed}')
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
         if Path(name).name!=name or hashlib.sha256((dist/name).read_bytes()).hexdigest()!=expected:raise SystemExit('Native checksum mismatch: '+name)
+if index_failures:raise SystemExit('Native index proof mismatches:\n'+'\n'.join(index_failures))
 proof=json.loads((ROOT/'docs/ui-flow-results.json').read_text())
 if proof['application_version']!=VERSION or proof['files_byte_exact']!=36:raise SystemExit('GUI flow proof mismatch')
 for shot in proof['screenshots']:
