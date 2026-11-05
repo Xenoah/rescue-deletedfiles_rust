@@ -73,6 +73,18 @@ def attribute_diagnostics(binary,source,root,candidates):
             at+=attr_length
     return result
 
+def recovery_diagnostics(results,names,truth):
+    rows=[]
+    for item in results:
+        expected=truth[names[item['candidate_id']]]
+        actual=Path(item['path']).read_bytes() if item.get('path') else None
+        if item['status']!='completed' or actual!=expected:
+            rows.append({'id':item['candidate_id'],'status':item['status'],'error':item.get('error'),'warnings':item.get('warnings'),
+                'expected_bytes':len(expected),'actual_bytes':None if actual is None else len(actual),
+                'expected_sha256':hashlib.sha256(expected).hexdigest(),'actual_sha256':None if actual is None else hashlib.sha256(actual).hexdigest(),
+                'actual_prefix':None if actual is None else actual[:24].hex()})
+    return rows[:4]
+
 def main(binary,output):
     check(platform.system()=='Windows','native NTFS scenario requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
@@ -95,7 +107,7 @@ def main(binary,output):
             check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; before-list-bytes: '+str([d['list_bytes'] for d in before])+'; diagnostic: '+str(diagnosis))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
-            check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
+            check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch: '+str(recovery_diagnostics(result,names,truth)))
             client=Client(binary,source,root/'mcp-work',root/'mcp-out')
             try:
                 client.rpc('initialize',{'protocolVersion':'2025-11-25'})
