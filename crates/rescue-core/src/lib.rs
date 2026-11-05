@@ -13,6 +13,7 @@ mod mapped_source;
 mod ntfs;
 mod ntfs_remnants;
 mod partitions;
+mod preview;
 mod raid;
 mod read_map;
 mod restore;
@@ -44,6 +45,9 @@ pub use index::{
 pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
+pub use preview::{
+    Preview, PreviewExport, PreviewInfo, preview_candidate, preview_worker_entry, save_preview,
+};
 pub use raid::{
     RAID_SUFFIX, RaidConfig, RaidEvidence, RaidInspection, RaidLayout, RaidLevel, RaidMember,
     create_raid_manifest, inspect_raid, is_raid_path,

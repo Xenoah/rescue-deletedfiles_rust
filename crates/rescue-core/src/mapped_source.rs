@@ -87,6 +87,7 @@ impl MappedSource {
                 continue;
             }
             if !self.cache.iter().any(|(at, _)| *at == segment.offset) {
+                crate::preview::charge_read(segment.length as usize)?;
                 let mut bytes = vec![0; segment.length as usize];
                 image.seek(SeekFrom::Start(segment.offset))?;
                 image.read_exact(&mut bytes)?;

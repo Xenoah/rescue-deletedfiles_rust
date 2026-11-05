@@ -22,6 +22,18 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
+    /// Writes a derived PNG/text under destination; never opens a viewer.
+    Preview {
+        #[arg(long)]
+        session: PathBuf,
+        #[arg(long)]
+        id: String,
+        #[arg(long)]
+        destination: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     /// Inspect or save an explicit read-only RAID configuration. Members remain unchanged.
     Raid {
         #[arg(long)]
@@ -324,6 +336,31 @@ fn run() -> Result<i32, Error> {
             .map_err(|e| Error::Request(e.to_string()))?;
     }
     match cli.command {
+        Command::Preview {
+            session,
+            id,
+            destination,
+            json: compact,
+        } => {
+            let session = if rescue_core::CandidateIndex::is_index(&session)? {
+                rescue_core::CandidateIndex::open(&session)?
+                    .selected_session(std::slice::from_ref(&id))?
+            } else {
+                Session::load(&session)?
+            };
+            session.guard_output(&destination)?;
+            let preview = rescue_core::preview_candidate(session.clone(), &id, &cancel)?;
+            if cancel.load(std::sync::atomic::Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
+            let result = rescue_core::save_preview(&session, &preview, &destination, None)?;
+            if compact {
+                println!("{}", serde_json::to_string(&result)?);
+            } else {
+                println!("{}", serde_json::to_string_pretty(&result)?);
+            }
+            Ok(0)
+        }
         Command::Image {
             source,
             destination,
@@ -917,6 +954,9 @@ fn run() -> Result<i32, Error> {
     }
 }
 fn main() {
+    if let Some(code) = rescue_core::preview_worker_entry() {
+        std::process::exit(code);
+    }
     let code = match run() {
         Ok(code) => code,
         Err(error) => {

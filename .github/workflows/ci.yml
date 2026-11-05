@@ -72,7 +72,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all twenty suites)
+      - name: Debug CLI and MCP integration (all twenty-one suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -82,7 +82,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all twenty suites)
+      - name: Release CLI and MCP integration (all twenty-one suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --index-reports index-results
       - name: Record JPEG entropy and pixel verification
         run: python scripts/ci_command.py python scripts/e2e_jpeg.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output jpeg-results.json
@@ -190,6 +190,7 @@ jobs:
             dist/quickformat-*.json
             dist/raid-*.json
             dist/index-*.json
+            dist/preview-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

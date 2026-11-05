@@ -1,4 +1,5 @@
 mod indexed_jobs;
+mod preview_jobs;
 use rescue_core::{
     CollisionPolicy, Error, OutputRoot, Progress, RestoreOptions, RestoreTarget, ScanMethod,
     ScanOptions, SearchSettings, Session, VolumeRoot, restore_files_with_roots,
@@ -76,6 +77,13 @@ fn tools() -> Value {
         "recovery_boot":{"type":"object","properties":{"role":{"type":"string","enum":["primary","backup"]},"offset":{"type":"integer","minimum":0},"bytes":{"type":"integer","minimum":512,"maximum":49152},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}},"required":["role","offset","bytes","sha256"],"additionalProperties":false}},
         "required":["index","name","offset","length","filesystem","recovery_boot"],"additionalProperties":false});
     json!([
+        tool(
+            "preview_candidate",
+            "Create a bounded PNG/JPEG or UTF-8/BOM-UTF-16 text preview in an isolated worker. Explicit destination must be inside an allowed output root. Returns a job and derived file metadata/path, never file contents. No viewer, scripts or external links. Unsupported preview does not mean unsupported recovery.",
+            json!({"session_id":string,"candidate_id":string,"destination":string,"request_id":string}),
+            &["session_id", "candidate_id", "destination", "request_id"],
+            false
+        ),
         tool(
             "prepare_results",
             "Prepare a large compound group/sort order asynchronously in the work index. Poll get_job, then list_candidates with the same query. cancel_job rolls back an unfinished build; completed indexes are reused. Never writes to the source disk.",
@@ -301,6 +309,7 @@ impl Server {
                 | "search_raid"
                 | "resume_job"
                 | "prepare_results"
+                | "preview_candidate"
         ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
@@ -313,6 +322,7 @@ impl Server {
             }
         }
         let result = match name {
+            "preview_candidate" => self.preview_job(args),
             "prepare_results" => self.prepare_results(args),
             "open_session" => self.open_index(Path::new(field(args, "path")?)),
             "resume_job" => {
@@ -967,6 +977,7 @@ impl Server {
                 | "search_raid"
                 | "resume_job"
                 | "prepare_results"
+                | "preview_candidate"
         ) && let Ok(ref value) = result
         {
             self.requests.insert(

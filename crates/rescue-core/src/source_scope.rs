@@ -45,3 +45,10 @@ pub(crate) fn check(path: &Path) -> Result<()> {
         }
     })
 }
+pub(crate) fn snapshot() -> Option<Vec<PathBuf>> {
+    ALLOWED.with(|s| {
+        s.borrow()
+            .as_ref()
+            .map(|paths| paths.iter().cloned().collect())
+    })
+}

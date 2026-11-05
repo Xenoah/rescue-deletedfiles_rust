@@ -349,6 +349,7 @@ impl Image {
             }
             let count =
                 usize::try_from(end - start).map_err(|_| Error::Limit("disk read size".into()))?;
+            crate::preview::charge_read(count)?;
             // Raw Windows volumes require sector-aligned offset, length and buffer.
             // A padded allocation permits alignment using a safe slice, without raw allocation.
             let mut storage = vec![
@@ -364,6 +365,7 @@ impl Image {
             let skip = (absolute - start) as usize;
             return Ok(buffer[skip..skip + length].to_vec());
         }
+        crate::preview::charge_read(length)?;
         let mut bytes = vec![0; length];
         self.file.seek(SeekFrom::Start(absolute))?;
         self.file.read_exact(&mut bytes)?;

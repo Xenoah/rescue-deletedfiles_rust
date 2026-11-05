@@ -145,7 +145,7 @@ def main(binary):
             init = client.rpc("initialize", {"protocolVersion": "2025-11-25", "capabilities": {},
                                             "clientInfo": {"name": "rescue-integration", "version": "1"}})
             check(init["result"]["protocolVersion"] == "2025-11-25", "protocol negotiation")
-            check({t['name'] for t in client.rpc("tools/list")["result"]["tools"]} == {'list_sources','start_scan','get_job','list_candidates','recover_files','cancel_job','get_report','start_image','get_read_map','discover_volumes','create_raid','search_raid','open_session','pause_job','resume_job','prepare_results'}, "tool list")
+            check({t['name'] for t in client.rpc("tools/list")["result"]["tools"]} == {'list_sources','start_scan','get_job','list_candidates','recover_files','cancel_job','get_report','start_image','get_read_map','discover_volumes','create_raid','search_raid','open_session','pause_job','resume_job','prepare_results','preview_candidate'}, "tool list")
             allowed = client.tool("list_sources")["sources"]
             check(len(allowed) == 1 and Path(allowed[0]).samefile(mcp_source), "source scope")
             client.tool("start_scan", {"source": str(source), "request_id": "denied"}, error=True)

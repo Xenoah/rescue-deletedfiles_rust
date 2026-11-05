@@ -1,7 +1,7 @@
 //! Revalidate only selected metadata; never trust serialized paths or lengths.
 use super::*;
 
-pub(super) fn layout(session: &Session) -> Result<()> {
+pub(crate) fn layout(session: &Session) -> Result<()> {
     let mut image = Image::open_region(&session.source, session.region.as_ref())?;
     image.validate_raid(session)?;
     if image.fingerprint()? != session.fingerprint {
@@ -59,7 +59,7 @@ pub(crate) fn fat_selection(
     Ok(scan)
 }
 
-pub(super) fn candidate(
+pub(crate) fn candidate(
     source: &RecoverySource,
     image: &mut Image,
     old: &Candidate,

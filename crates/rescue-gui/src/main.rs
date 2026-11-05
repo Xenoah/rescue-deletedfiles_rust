@@ -2,6 +2,7 @@
 mod acquisition_ui;
 mod discovery_ui;
 mod index_ui;
+mod preview_ui;
 mod raid_ui;
 mod view;
 use eframe::egui;
@@ -65,6 +66,7 @@ enum Message {
     Error(String),
 }
 struct App {
+    preview: preview_ui::State,
     index: index_ui::State,
     raid: raid_ui::State,
     discovery_dialog: bool,
@@ -177,6 +179,11 @@ impl App {
                     .entry(egui::FontFamily::Proportional)
                     .or_default()
                     .insert(0, "japanese".into());
+                fonts
+                    .families
+                    .entry(egui::FontFamily::Monospace)
+                    .or_default()
+                    .push("japanese".into());
                 cc.egui_ctx.set_fonts(fonts);
                 break;
             }
@@ -239,6 +246,7 @@ impl App {
             rows: Vec::new(),
             view_dirty: true,
             show_evidence: false,
+            preview: preview_ui::State::default(),
             messages: None,
             cancel: Arc::new(AtomicBool::new(false)),
             progress: Progress::default(),
@@ -956,6 +964,16 @@ impl App {
                         }
                     });
                 ui.checkbox(&mut self.show_evidence, "復元の根拠");
+                if ui
+                    .add_enabled(
+                        !self.index.loading() && self.focused.is_some(),
+                        egui::Button::new("プレビュー"),
+                    )
+                    .clicked()
+                    && let (Some(session), Some(id)) = (&self.session, &self.focused)
+                {
+                    self.preview.start(session.clone(), id);
+                }
             });
             ui.horizontal_wrapped(|ui| {
                 ui.label("結果を検索");
@@ -1732,6 +1750,7 @@ impl App {
                 self.show_evidence = false;
             }
         }
+        self.preview.show(ctx);
     }
 }
 impl eframe::App for App {
@@ -1746,6 +1765,9 @@ impl Drop for App {
     }
 }
 fn main() -> eframe::Result {
+    if let Some(code) = rescue_core::preview_worker_entry() {
+        std::process::exit(code);
+    }
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
     let session = match args.as_slice() {
         [] => None,
