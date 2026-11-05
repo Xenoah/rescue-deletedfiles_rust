@@ -334,12 +334,14 @@ impl IndexWriter {
         let directory = work
             .canonicalize()?
             .join(format!("{}.rescue-index", uuid::Uuid::new_v4()));
-        let mut builder = fs::DirBuilder::new();
+        let builder = fs::DirBuilder::new();
         #[cfg(unix)]
-        {
+        let builder = {
             use std::os::unix::fs::DirBuilderExt;
+            let mut builder = builder;
             builder.mode(0o700);
-        }
+            builder
+        };
         builder.create(&directory)?;
         let path = directory.join("session.sqlite");
         let _file = File::options().write(true).create_new(true).open(&path)?;
