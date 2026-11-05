@@ -4,12 +4,12 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.11
+        default: v0.2.0-alpha.12
         required: true
 permissions:
   contents: read
 env:
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.11' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.12' }}
 jobs:
   test:
     strategy:
