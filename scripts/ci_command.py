@@ -3,6 +3,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 result=subprocess.run(sys.argv[1:],stdout=subprocess.PIPE,stderr=subprocess.STDOUT,text=True,encoding='utf-8',errors='replace')
 print(result.stdout,end='',flush=True)
 if result.returncode:
