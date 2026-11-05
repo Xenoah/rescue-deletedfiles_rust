@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "gui_binary_sha256": "066f143bba670e8af5bac49b5b4d90c003605615ed4db01afa6d200fbb77cf9b",
+  "scope": "Actual Linux GUI; synthetic RAID6 with both data slots absent; explicit selection among filesystem-validated alternatives, sealed manifest, scan and ZIP restoration.",
+  "level": "raid6",
+  "layout": "pq_last",
+  "stripe_bytes": 65536,
+  "missing_members": [
+    0,
+    1
+  ],
+  "search_candidates": 8,
+  "search_configurations": 9,
+  "files_byte_exact": 36,
+  "file_read_provenance_verified": true,
+  "source_unchanged": true,
+  "zip_crc_verified": true,
+  "archive_sha256": "6c5deea5bca6f5b807d65e5c9fc5e72fa9016d11dafffe308b795856dcfd7f33",
+  "member_sha256": {
+    "/tmp/rescue-ui-v14/raid-members/member-0.raw": "fec17556adfe6351e6ab34597120b2aa46cc4af97bb8177c8e3a7f14026886f4",
+    "/tmp/rescue-ui-v14/raid-members/member-1.raw": "a13c7b0a47edc8bf0bc8748de4164f0e387e2c65669d252080152a0d2e031198",
+    "/tmp/rescue-ui-v14/raid-members/member-3.raw": "72ea9134c25735a59e39bc4006e4ee79ba7a042331635ea5c081ccee04fb1b1d",
+    "/tmp/rescue-ui-v14/raid-members/member-2.raw": "616e583a35cfde8e2135e5adb2c4caabbfda44933c823d2c07fec7b5670500d5"
+  },
+  "screenshots": [
+    {
+      "file": "images/raid-members.png",
+      "sha256": "0a55ac537584abf7e682106e3da9cc5dcbe568f0b8f09ebebf1154cf4eb3f025"
+    },
+    {
+      "file": "images/raid-candidates.png",
+      "sha256": "fb5c42d65f9d535aa3afb4571e579dd9020a86911e80b495294ae51692b84118"
+    },
+    {
+      "file": "images/raid-settings.png",
+      "sha256": "5d14fce1b7253192100ca4b63c0516c45409b71c1c024df26e5945796bedf68b"
+    },
+    {
+      "file": "images/raid-files.png",
+      "sha256": "128904a7a0a9baf3bfe9dd2a9b3bea7663328cd19e034e2bcdb2ac70c472ad3a"
+    },
+    {
+      "file": "images/raid-restored.png",
+      "sha256": "baaee32ca791bfff4e3bb64c70ca0c05568706c01721a9972af379c761543cc2"
+    },
+    {
+      "file": "images/raid-small-window.png",
+      "sha256": "3d6e5df3ca918c546eed5e7d62c8ca40fcb4d041b9358a865dccedbe13280bcb"
+    }
+  ],
+  "open_dialog_resize_verified": true
+}

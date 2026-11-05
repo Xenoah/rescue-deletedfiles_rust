@@ -1,8 +1,8 @@
 {
-  "application_version": "0.2.0-alpha.13",
+  "application_version": "0.2.0-alpha.14",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "scope": "Actual Linux debug GUI original-location recovery; synthetic NTFS and independent 35-format corpus; explicit root on regular image.",
-  "gui_binary_sha256": "5eea5312e826449251873d37312bae479c2196acf09ea6b1416e52b1c6b82c91",
+  "gui_binary_sha256": "066f143bba670e8af5bac49b5b4d90c003605615ed4db01afa6d200fbb77cf9b",
   "original_files_byte_exact": 36,
   "existing_pdf_preserved": true,
   "source_unchanged": true,
