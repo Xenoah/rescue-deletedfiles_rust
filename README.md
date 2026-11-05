@@ -3,9 +3,9 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v0.2.0-alpha.13: 消失領域の探索・バックアップブート・残存MFTに対応。**
+**v0.2.0-alpha.14: RAIDの読み取り専用再構成・候補探索・ファイル単位の読取り記録を追加。**
 現在は開発版です。v1.0の全必須機能・レビュー・3 OS試験は [受入台帳](docs/V1_ACCEPTANCE.md) で追跡します。
-RAID、大容量索引、隔離プレビュー、Windows権限分離などは未完了です。
+大容量索引、隔離プレビュー、Windows権限分離などは未完了です。
 有料製品との性能比較は未測定です。
 
 ![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
@@ -15,14 +15,14 @@ RAID、大容量索引、隔離プレビュー、Windows権限分離などは未
 
 ## ダウンロード
 
-[v0.2.0-alpha.13のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.13)
+[v0.2.0-alpha.14のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.14)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-x64-portable.zip) |
 
 Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
 OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
@@ -44,6 +44,19 @@ OS対応とファイルシステムの解析対応は別です。APFS/ext4の直
 主要操作はスクロール領域の下に固定し、入力ラベルを常に表示します。
 Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/150%/200%の配置を検査しています。
 配置の判断根拠は [Microsoft/W3Cの公式資料と採用ルール](docs/UI_GUIDELINES.md) を参照。
+
+## RAIDのメンバーから復元する
+
+「RAIDを構成」でRAWイメージを追加し、順序・欠損位置・開始バイト・使用長を指定します。
+JBOD、RAID 0/1/5/6/10の[明示した配置](docs/RAID.md)に対応。元メンバーへ書き戻しません。
+
+![RAID6のメンバーと欠損位置を設定する実GUI](docs/images/raid-members.png)
+
+自動探索はMFT/FAT等の内部構造を照合した複数候補を示します。使用する構成を選び、通常のスキャンへ進みます。
+読めるミラー同士やパリティの不一致は利用不能として扱います。復元レポートには各ファイルの読取りに使った
+メンバー・欠損位置・P/Qの位置と論理範囲を記録します。
+
+![2台欠損のRAID6から実GUIで36ファイルを復元](docs/images/raid-restored.png)
 
 ## 消失した領域と残存MFTを探す
 
@@ -104,19 +117,23 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 
 [文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
 
-[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
+[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
 
-![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v13.png)
+![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v14.png)
 
 ## 検証
 
-- LinuxのRust 42項目、13統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
+- LinuxのRust 45項目、14統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
 - 35形式36ファイルの管理情報復元は8条件×CLI/MCPで576件一致。管理情報を失った連続配置は11/36、512B単位の断片配置は2/36。全900観測中755件が正解一致。上書き済み36件は元データとの一致0件で、管理情報から保存できても内容の同一性を保証しないことも確認。
 - NTFS追加27条件で不正参照、分割MFT、圧縮単位、割当3状態、別名検索を確認。独立ntfs-3gの4レコード・21ストリームも全バイト一致し、実GUIから同じ21件と別名の1データをZIP復元しました。
 - イメージ取得の15条件では強制終了・再開、マップ破損、元ソース変更、欠損位置、MCP取消・出力制限・ページ取得を検証。
 - Linux実GUIで512 MiBを全バイト一致で取得し、128範囲のマップ・再開照合・取得後の36ファイル復元を確認。
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
 - Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
+
+alpha.14のRAID試験は22条件、44論理像と73ファイルがバイト一致しました。
+RAID6のGUIではデータメンバー2台が欠損した構成から36ファイルを復元し、読取り記録も照合しています。
+4 OS/CPU環境のネイティブ実行・Linuxカーネルmdadmの独立配列試験・配布実物の検証を公開前に完了します。
 
 alpha.13のローカル試験では、消失領域20条件・64出力、残存MFT12条件・52出力、実クイックフォーマット100件×CLI/MCPを照合しました。
 実GUIでは消失領域6件・残存レコード14件をZIP復元し、720×520の候補ダイアログとキーボードで閉じる操作も確認しました。

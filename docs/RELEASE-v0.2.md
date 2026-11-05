@@ -1,59 +1,60 @@
-# Rescue v0.2.0-alpha.13
+# Rescue v0.2.0-alpha.14
 
-消失したNTFS/FAT32/exFAT領域を、ブートと内部構造の照合から選択できるようにしました。
-バックアップブートとMFTミラーの検証、現行MFTの外に残るレコードの探索をGUI・CLI・MCPに追加しました。
-v1.0に向けた開発版です。残る必須項目は[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.13/docs/V1_ACCEPTANCE.md)で管理しています。
+メンバーイメージからJBOD・RAID 0/1/5/6/10を読み取り専用で再構成できるようにしました。
+GUI・CLI・MCPで構成を検査し、候補から選んで通常のスキャン・選択・復元へ進めます。
+v1.0に向けた開発版です。[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.14/docs/V1_ACCEPTANCE.md)の必須項目を継続しています。
 
-![消失領域を比較・選択する実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.13/docs/images/volume-discovery.png)
+![欠損位置とメンバー順を指定する実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.14/docs/images/raid-members.png)
 
-## 探索と復元の根拠
+## 配置と復元の根拠
 
-- 主ブートとバックアップの配置・幾何情報を照合し、内部のMFT/FAT/Bitmap/Upcaseも検証。偽署名や範囲外を拒否します。
-- 重なる別候補は比較して選択できます。元ディスクの領域表やブートには書き戻しません。
-- MFTミラーはレコード0の初期読取に限定し、元MFTのrunlistとルートの整合性を確認します。
-- 残存MFTの探索は詳細設定から有効にします。旧クラスタ構成と元の階層が未確認であることを表示し、元の場所への自動復元を拒否します。
-- 復元直前にもブート・残存レコード・ソースの照合を行います。上限到達、欠損、取消は未探索として記録します。
+- 順序、欠損位置、開始バイト、使用長、セクター、ストライプを明示します。構成にメンバーの指紋を保持します。
+- RAID5は左右対称・左右非対称。RAID6は末尾固定P/Q、GF 0x11d、係数2^i。RAID10は隣接ミラーペアです。
+- 自動探索は最大128構成/5秒を既定とし、ファイルシステム内部構造を照合した複数候補を表示。使用する構成を明示して選びます。
+- 読めるコピーや残存パリティが一致しない範囲は利用不能として扱い、ゼロを正解データとして出力しません。
+- 各ファイルのJSON/ZIPレポートに使用メンバー・欠損・P/Q位置・論理読取範囲を記録します。上限による省略数も残ります。
+- 開いたまま縮小してもダイアログが画面内に収まるよう修正しました。主要操作は右、閉じるは左に固定しています。
 
-![残存レコードからの復元と不確実性の説明](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.13/docs/images/remnant-restored.png)
+![2台欠損のRAID6から36ファイルを復元した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.14/docs/images/raid-restored.png)
 
-[対応プロファイルと資源上限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.13/docs/DISCOVERY.md)。
-旧属性リストを現行MFTへ接続する推測はしません。TRIMや上書きで失われた内容は復元できません。
+[対応プロファイル・探索上限・読取記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.14/docs/RAID.md)。
+ライブメンバー、入れ子の配列、独自コントローラー配置は受け付けません。先にイメージを取得します。
+パリティやサンプルが一致しても、元の構成や削除前の内容との一致は保証しません。
 
 ## 検証
 
-ローカルのRust42項目・13統合群を実行。消失領域20条件で64出力、残存MFT12条件で52出力が正解と一致しました。
-独立したmkntfsで新規試験イメージを実クイックフォーマットし、旧100ファイル（resident/non-resident各50）をCLI/MCPでそれぞれ全バイト一致で復元しました。
-同一クラスタ構成のntfs-3gプロファイルであり、Windows format.exeやSSD TRIMの試験とは区別します。
+Rust45項目・14統合群を実行。独立エンコーダーによる22条件で44論理像、NTFS/FAT32/exFATの73復元ファイルを照合しました。
+全対応配置、欠損位置、P/Q、コピー不一致、4 KiBセクター、オフセット、読取マップ、構成改変、MCPの個別メンバー許可を検証。
+実GUIでもデータメンバー2台欠損のRAID6から36件をZIP復元し、読取り記録・CRC・SHA-256・メンバー無変更を照合しました。
 
-実GUIでは消失領域6件・残存レコード14件をZIP復元。720×520で全ボタンが見えることと、キーボードで閉じる操作も確認しました。
-既存の元の場所36件・ZIP36件・JPEG33件・文書/動画7件・NTFS21ストリーム・別名検索1件も正解と照合しました。
-512 MiBの取得・128範囲のマップ・再開照合・取得後の36件復元も実操作で検証しています。
-Windows・Linux・macOS Intel/ARMの[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42004653478)を通過しました。各VMで新規作成したVHD/loop/hdiutilの読取と実際のPDF削除・同一場所復元も確認しています。公開・署名後の実物検証は別途添付します。
+Windows・Linux・macOS Intel/ARMのネイティブ実行とLinuxカーネルmdadmの独立配列を公開前に検証します。
+既存の実削除PDF・元の場所・衝突・全形式・イメージ取得・消失領域・残存MFTも回帰試験に含みます。
+公開・署名後の実物検証は別途添付します。
 
-`discovery-results-*.json`、`remnant-results-*.json`、`quickformat-results-linux-x64.json`、`gui-discovery-results.json`を添付します。
+`raid-results-*.json`、`raid-native-linux-x64.json`、`gui-raid-results.json`を添付します。
 
 ## 技術説明UI
 
-[画像内蔵の技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/intelligence.html)は単一HTMLです。
-16実画面・10方式を通信なしで切り替えられます。390px幅、全切替、画像表示をChromiumで確認しています。
-[Microsoft/W3Cの公式資料と配置ルール](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.13/docs/UI_GUIDELINES.md)に従い、主要操作を画面下部に配置し、ラベルとキーボード操作を用意しています。
+[画像内蔵の技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/intelligence.html)は単一HTMLです。
+RAID構成・欠損からの復元を含む19実画面・11方式を通信なしで切り替えられます。390px幅と全切替を実ブラウザーで検証します。
+[Microsoft/W3Cの配置ルール](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.14/docs/UI_GUIDELINES.md)に従い、主要操作を固定し、ラベル・キーボード・幅に応じた配置を用意しています。
 
-![消失領域と残存MFTの技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.13/docs/images/technical-ui-v13.png)
+![RAIDの技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.14/docs/images/technical-ui-v14.png)
 
 ## ダウンロード
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.13/rescue-0.2.0-alpha.13-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.14/rescue-0.2.0-alpha.14-macos-x64-portable.zip) |
 
 `SHA256SUMS.txt` で照合できます。Linuxはglibc 2.35以降、macOSは13以降。
 macOSはアドホック署名で、Developer ID署名・公証はありません。
 
 同じディスクへの選択ファイル保存は全選択データを先に読み出します（合計512 MiBまで）。未選択の削除データには影響する可能性があります。
 TRIMや上書きで失われたバイトは復元できません。有料製品比較は未測定です。
-RAID、大容量索引、隔離プレビュー、Windows権限分離などはv1.0の残る必須工程です。
+大容量索引、隔離プレビュー、Windows権限分離などはv1.0の残る必須工程です。
 
-[対応表](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.13/docs/ALPHA.md) · [検証履歴](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.13/docs/VALIDATION.md)
+[対応表](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.14/docs/ALPHA.md) · [検証履歴](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.14/docs/VALIDATION.md)

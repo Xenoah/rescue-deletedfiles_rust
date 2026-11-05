@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "application_version": "0.2.0-alpha.13",
-  "gui_binary_sha256": "5eea5312e826449251873d37312bae479c2196acf09ea6b1416e52b1c6b82c91",
+  "application_version": "0.2.0-alpha.14",
+  "gui_binary_sha256": "066f143bba670e8af5bac49b5b4d90c003605615ed4db01afa6d200fbb77cf9b",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "lost_files_byte_exact": 6,
   "remnant_streams_byte_exact": 14,
@@ -15,35 +15,35 @@
   "screenshots": [
     {
       "file": "images/volume-discovery.png",
-      "sha256": "3ab1e37c06a720079ed780ffd537b2931f65e726aba053e52393e575350ca7ee"
+      "sha256": "815d4b981354512e1baee72e304ac7a620dfb98518b3cefc4087bbe6f514b908"
     },
     {
       "file": "images/discovered-settings.png",
-      "sha256": "0f31a38e101b5ce92fa1e0445b6560cd092ccd0f3de961a84bec1b69bfaace5a"
+      "sha256": "f5acc586b97d4a3b99f35254769bd34e96a74957e242108879c344f37b047cd6"
     },
     {
       "file": "images/discovered-files.png",
-      "sha256": "d412d8a5b38332979ebc8fd8db1643660355aea7db7ffb75df748e736ffda8f3"
+      "sha256": "3f11e4489eb0f3571ccc05b9c8e14fae91c939d0ce788ae7215da917abc5e42b"
     },
     {
       "file": "images/discovered-restored.png",
-      "sha256": "e5cc08b2b469c67ce8c488b90e89e843160432691807eb559a401941d9dbfe91"
+      "sha256": "031ed6e6f939c76dafccd508a95f03600f827de9486dadb584ac75922b6a3830"
     },
     {
       "file": "images/remnant-settings.png",
-      "sha256": "0ceceb67d951247650b80271c3fe90c9bec14d4fa53140078a909820df9c6cb1"
+      "sha256": "d189fbf57af888bdaee7946d8544b7c6a90d38ba8d1c1de6fb437820b42e1b44"
     },
     {
       "file": "images/remnant-files.png",
-      "sha256": "f2770e81788cfb6c691cc255de4ad2b242fb709d5eb11994c6d2fafc4a0bbc5e"
+      "sha256": "404b1b562eee94c16b7b4b5bf3462be480f3c5758993a52d282f5f955c2f2b33"
     },
     {
       "file": "images/remnant-restored.png",
-      "sha256": "3199a7c56e508e9e826e147c83fec1f5c1d6ee2a94c20cea27827ae93af8b601"
+      "sha256": "6771b950ad6f57d7bfc2b5a3b42baaae161c3201eb7a0d22972531bec3ba82c2"
     },
     {
       "file": "images/discovery-small-window.png",
-      "sha256": "e34941a5e4ed6db2482225ac5981edb9b1b0fa1cc5119345cbdd976482848215"
+      "sha256": "a5197c31279ce7ae8049abef3e603b5d48215bb7541de8d66b83e0030218d093"
     }
   ],
   "narrow_window": {
