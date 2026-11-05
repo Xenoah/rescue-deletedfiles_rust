@@ -35,7 +35,7 @@ pub fn scan_indexed(
     progress: impl FnMut(IndexedProgress),
 ) -> Result<PathBuf> {
     settings.validate()?;
-    if settings.method != ScanMethod::Quick || settings.fragments {
+    if settings.fragments {
         return Err(Error::Unsupported(
             "incremental engine for this scan mode is not available yet".into(),
         ));
@@ -48,6 +48,9 @@ pub fn scan_indexed(
         return Err(Error::Request(
             "indexed limits: 1..10M candidates, 1..100M records".into(),
         ));
+    }
+    if settings.method == ScanMethod::Carve {
+        return crate::carve::scan_indexed(source, work, options, settings, cancel, progress);
     }
     guard_output_path(source, work)?;
     let mut image = Image::open(source)?;
@@ -158,13 +161,16 @@ pub fn resume_indexed_scan(
 ) -> Result<PathBuf> {
     let writer = IndexWriter::resume(index)?;
     let status = writer.index().status()?;
-    if status.engine != "ntfs_records_v1"
+    if !["ntfs_records_v1", "carve_signatures_v1"].contains(&status.engine.as_str())
         || !status.resumable
         || matches!(status.state.as_str(), "completed" | "failed")
     {
         return Err(Error::Request(
             "this index has no resumable scan checkpoint".into(),
         ));
+    }
+    if status.engine == "carve_signatures_v1" {
+        return crate::carve::resume_indexed(writer, cancel, progress);
     }
     run(writer, cancel, progress)
 }

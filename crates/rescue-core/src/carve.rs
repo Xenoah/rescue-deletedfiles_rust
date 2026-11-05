@@ -1,5 +1,7 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
 mod container;
+mod indexed;
+pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 mod jpeg;
 mod movie;
 mod pdf;
