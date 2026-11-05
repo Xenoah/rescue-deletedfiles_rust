@@ -225,7 +225,7 @@ jobs:
         run: python scripts/package.py --validate-tag "$RELEASE_TAG"
       - name: Validate and assemble every native distribution
         run: |
-          python scripts/assemble_release.py
+          python scripts/ci_command.py python scripts/assemble_release.py
           cd dist
           sha256sum --check SHA256SUMS.txt
       - name: Upload fully assembled preview
