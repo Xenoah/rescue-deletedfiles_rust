@@ -28,6 +28,12 @@ from e2e_features import main as features
 from e2e_disks import main as disks
 from e2e_restore import main as restore_paths
 from e2e_restore_native import main as restore_native
+from e2e_index import main as index
+from e2e_index_carve import main as index_carve
+from e2e_index_fat import main as index_fat
+from e2e_index_remnants import main as index_remnants
+from e2e_index_late import main as index_late
+from e2e_index_discovery import main as index_discovery
 from verify_package import architecture
 
 
@@ -85,6 +91,9 @@ def main():
     result['document_verification']=documents(binary,(a.output/'document-results.json').resolve())
     result['imaging_verification']=imaging(binary,(a.output/'imaging-results.json').resolve())
     result['imaging_native_verification']=imaging_native(binary,(a.output/'imaging-native-results.json').resolve())
+    for name,suite in [('index',index),('index_carve',index_carve),('index_fat',index_fat),
+                       ('index_remnants',index_remnants),('index_late',index_late),('index_discovery',index_discovery)]:
+        result[name+'_verification']=suite(binary,(a.output/(name+'-results.json')).resolve())
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))

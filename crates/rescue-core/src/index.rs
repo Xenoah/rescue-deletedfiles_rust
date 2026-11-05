@@ -469,16 +469,27 @@ impl CandidateIndex {
         );
         let sql = if cursor.is_none() {
             format!("{select} {order}")
-        } else if !query.descending {
-            format!("{select} AND ({group},{rank},{column},seq)>(?7,?8,?4,?5) {order}")
-        } else if query.group == IndexGroup::None && rank == "zero_rank" {
-            format!("{select} AND empty_key=?7 AND zero_rank=?8 AND ({column},seq)<(?4,?5) {order}")
         } else {
-            // Three disjoint ranges preserve ascending group/rank and descending
-            // values without walking every preceding row for a deep cursor.
-            format!(
-                "{select} AND {group}=?7 AND {rank}=?8 AND ({column},seq)<(?4,?5) UNION ALL {select} AND {group}=?7 AND {rank}>?8 UNION ALL {select} AND {group}>?7 {order}"
-            )
+            // Split every tuple component, including the sequence tie-breaker.
+            // SQLite stops a row-value seek before an INTEGER PRIMARY KEY that
+            // is also explicitly present in this index. With millions of equal
+            // sizes/dates, `(key,seq) > (?,?)` still walks the preceding rows.
+            // Disjoint index ranges seek all the way to `seq` and
+            // preserve ascending group/rank even for descending value order.
+            let comparison = if query.descending { "<" } else { ">" };
+            let mut ranges = vec![
+                format!("{select} AND {group}=?7 AND {rank}=?8 AND {column}=?4 AND seq{comparison}?5"),
+                format!("{select} AND {group}=?7 AND {rank}=?8 AND {column}{comparison}?4"),
+            ];
+            // Do not scan impossible constant-key ranges: SQLite can prefer
+            // the equality constraint over the contradictory range predicate.
+            if rank != "zero_rank" {
+                ranges.push(format!("{select} AND {group}=?7 AND {rank}>?8"));
+            }
+            if query.group != IndexGroup::None {
+                ranges.push(format!("{select} AND {group}>?7"));
+            }
+            format!("{} {order}", ranges.join(" UNION ALL "))
         };
         let mut statement = budget.0.prepare(&sql)?;
         // Bind named indices only when present: first pages have no cursor parameters.

@@ -15,6 +15,8 @@ def rss(pid):
 
 
 def main(a):
+    if a.repetitions < 1:raise ValueError('--repetitions must be positive')
+    if any(rss(pid)==0 for pid in a.gui_pid):raise ValueError('GUI PID is not running at benchmark start')
     a.work.mkdir(exist_ok=True,parents=True)
     initial=a.source.stat();state={'index':None,'candidates':0};peaks=[];jobs=[]
     oracle=json.loads(a.source.with_suffix('.truth.json').read_text())
@@ -107,14 +109,16 @@ def main(a):
         if row['status']!='completed' or Path(row['path']).read_bytes()!=bytes.fromhex(oracle['examples'][row['candidate_id']]['hex']):
             raise RuntimeError('large-index selected bytes mismatch')
     final=a.source.stat()
-    report={'status':'completed','version':subprocess.check_output([str(a.binary),'--version'],text=True).strip(),
+    passed=all(not query['failures'] for query in queries.values())
+    report={'status':'passed' if passed else 'failed','version':subprocess.check_output([str(a.binary),'--version'],text=True).strip(),
         'binary_sha256':hashlib.sha256(a.binary.read_bytes()).hexdigest(),'logical_source_bytes':initial.st_size,
         'allocated_source_bytes':initial.st_blocks*512,'candidates':oracle['candidates'],'index':state['index'],
         'index_bytes':Path(state['index']).stat().st_size,'jobs':jobs,'aggregate_peak_rss_bytes':max(peaks),
         'gui_pids_included':a.gui_pid,'queries_only':a.queries_only,'queries':queries,'selected_files_byte_exact':len(results),
         'source_size_and_mtime_unchanged':(initial.st_size,initial.st_mtime_ns)==(final.st_size,final.st_mtime_ns),
         'scope':'Sparse synthetic NTFS, resident data, Linux. RSS sampled every 25 ms (5 ms for query processes); CLI latency includes process startup and JSON. GUI frame/keyboard latency and physical 1 TiB throughput are not measured. Source identity and metadata revalidated; no full 1 TiB hash claim.'}
-    a.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'status':'completed','report':str(a.output)}))
+    a.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'status':report['status'],'report':str(a.output)}))
+    if not passed:raise SystemExit(1)
 
 
 if __name__=='__main__':

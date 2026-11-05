@@ -56,6 +56,17 @@ def main(binary,output=None):
                 common=run(binary,'results','--session',order_path,'--sort','name','--name','file-','--limit','500','--json')
                 check(len(rare['candidates'])==1 and len(common['candidates'])==500,'adaptive trigram result mismatch')
                 checks.extend(['large_compound_order_and_cursor','selective_and_common_trigram_queries'])
+                # Equal sort keys must seek by the final sequence, even deep in
+                # an index; exercise both directions and compound grouping.
+                for args,first_id in [(['--sort','size','--descending'],50014),
+                                      (['--sort','size','--group','folder'],50016)]:
+                    seed=run(binary,'results','--session',order_path,*args,'--limit','2','--json')
+                    cursor=seed['next_cursor'];cursor['last_sequence']=50000
+                    deep=run(binary,'results','--session',order_path,*args,'--limit','3',
+                             '--cursor',json.dumps(cursor),'--json')
+                    direction=-1 if '--descending' in args else 1
+                    check([c['id'] for c in deep['candidates']]==[f'mft-{first_id+direction*i}-7' for i in range(3)],'deep equal-key cursor mismatch')
+                checks.append('deep_equal_key_ascending_and_descending_cursors')
                 query={'group':'folder','sort':'modified','descending':True}
                 client=Client(binary,source,root/'orders',root/'order-output')
                 try:
