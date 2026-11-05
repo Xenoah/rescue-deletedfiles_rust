@@ -79,3 +79,6 @@ alpha.9の[4ネイティブ環境CI](https://github.com/Xenoah/rescue-deletedfil
 alpha.9は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41939770021)を通過して[公開済み](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.9)。8配布物・55一次添付・6追加レポートを実取得で照合。[公開後の4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41940947569)は署名／梱包後CLIのJPEG33候補と破損33条件、既存機能、実削除PDFを確認。公開Linux GUIのJPEG33候補のZIPと単体HTML6画面・5方式も通過。今回のJPEGフェーズは完了。次はPDF／ZIP／MP4等のcarving、以降は読取マップ・イメージ取得・RAID・商用比較を進める。
 
 2026-11-05: v1.0全必須機能を完了する追加指示を受け、[受入台帳](V1_ACCEPTANCE.md)と[UIの公式資料・採用規則](UI_GUIDELINES.md)を作成。各OSの実VMと使い捨てディスクで共通・固有シナリオを検証する。
+
+
+alpha.11で読取マップ付き取得と再開を追加。Rust38項目、10統合群、取得追加15条件、実GUIの512MiB取得と取得後36ファイルを確認。各OSの新規読取専用仮想ディスク取得、容量不足からの再開、権限拒否をCIへ追加。v1.0の残作業は受入台帳を維持する。

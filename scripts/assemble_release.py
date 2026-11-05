@@ -46,13 +46,18 @@ if document_gui['application_version']!=VERSION or document_gui['document_files_
 for shot in document_gui['screenshots']:
     if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Document screenshot proof mismatch')
 shutil.copy2(ROOT/'docs/gui-document-results.json',dist/'gui-document-results.json')
+imaging_gui=json.loads((ROOT/'docs/gui-imaging-results.json').read_text())
+if imaging_gui['application_version']!=VERSION or imaging_gui['source_bytes']!=512*1024*1024 or imaging_gui['copied_ranges']!=128 or imaging_gui['recovered_files_byte_exact']!=36 or imaging_gui['gui_map_pages_exercised']<2 or not all(imaging_gui[k] for k in ['image_source_byte_exact','source_unchanged','map_digest_unchanged_after_gui_resume','zip_crc_verified']):raise SystemExit('Imaging GUI proof mismatch')
+for shot in imaging_gui['screenshots']:
+    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Imaging screenshot proof mismatch')
+shutil.copy2(ROOT/'docs/gui-imaging-results.json',dist/'gui-imaging-results.json')
 html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
 def embedded(match):
     path=ROOT/'docs'/match.group(1)
     return 'src="data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode('ascii')+'"'
 html=re.sub(r'src="(images/[^"<>]+\.png)"',embedded,html)
 (dist/'intelligence.html').write_text(html,encoding='utf-8')
-for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v10.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
+for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v11.png','imaging-settings.png','imaging-progress.png','read-map.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
     shutil.copy2(ROOT/'docs/images'/name,dist/name)
 assets=sorted(path for path in dist.iterdir() if path.is_file() and path.name!='SHA256SUMS.txt')
 (dist/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets),encoding='ascii')

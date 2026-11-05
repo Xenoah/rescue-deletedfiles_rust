@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "version": "0.2.0-alpha.11",
+  "source": "repository HTML",
+  "sha256": "761e4e865d5e6fb48ef4f04fa1fdf967d566a8ab79e72776a95e8eb6425294f6",
+  "screen_toggles": 11,
+  "method_toggles": 7,
+  "mobile_width": 390,
+  "javascript_errors": [],
+  "external_requests": []
+}

@@ -3,9 +3,9 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v0.2.0-alpha.10: PDF・ZIP/Office・MP4/MOVの探索と、画面幅に合わせたGUI配置を追加。**
+**v0.2.0-alpha.11: 読取マップ付きイメージ取得・再開をGUI／CLI／MCPへ追加。**
 現在は開発版です。v1.0の全必須機能・レビュー・3 OS試験は [受入台帳](docs/V1_ACCEPTANCE.md) で追跡します。
-RAID、読取マップ付きイメージ取得、消失領域探索、大容量索引などは未完了です。
+RAID、消失領域探索、大容量索引、隔離プレビュー、Windows権限分離などは未完了です。
 有料製品との性能比較は未測定です。
 
 ![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
@@ -15,14 +15,14 @@ RAID、読取マップ付きイメージ取得、消失領域探索、大容量�
 
 ## ダウンロード
 
-[v0.2.0-alpha.10のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.10)
+[v0.2.0-alpha.11のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.11)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/rescue-0.2.0-alpha.11-macos-x64-portable.zip) |
 
 Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
 OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
@@ -45,6 +45,22 @@ OS対応とファイルシステムの解析対応は別です。APFS/ext4の直
 Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/150%/200%の配置を検査しています。
 配置の判断根拠は [Microsoft/W3Cの公式資料と採用ルール](docs/UI_GUIDELINES.md) を参照。
 
+## イメージを取得して解析する
+
+「ディスクのイメージを作成・再開」から、RAWと読取マップを保存します。
+読めた範囲を同期してから記録し、失敗範囲だけセクター単位で再試行。取消・強制終了後は
+ソースの識別と保存済みSHA-256を確認して再開します。
+
+![イメージ取得の設定](docs/images/imaging-settings.png)
+
+取得したRAWと `.rmap` を一緒に保管してください。未読・失敗範囲を含むファイルは不完全とし、
+元媒体とファイル内の欠損位置をレポートへ記録します。マップは範囲・状態・UTC時刻・試行回数・エラーを表示します。
+
+![取得範囲と読取状態](docs/images/read-map.png)
+
+物理元ディスクからの取得には別媒体を使用します。選択ファイルの同一場所復元とは別の設定です。
+[取得・再開・欠損の扱いと上限](docs/IMAGING.md)
+
 ## 復元の根拠
 
 | 方式 | 確認する内容 | 限界 |
@@ -59,18 +75,20 @@ Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/15
 
 [文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
 
-[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
+[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.11/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
 
-![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v10.png)
+![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v11.png)
 
 ## 検証
 
-- LinuxのRust 33項目、9統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
+- LinuxのRust 38項目、10統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
 - 35形式36ファイルの管理情報復元は8条件×CLI/MCPで576件一致。管理情報を失った連続配置は11/36、512B単位の断片配置は2/36。全900観測中755件が正解一致。上書き済み36件は元データとの一致0件で、管理情報から保存できても内容の同一性を保証しないことも確認。
+- イメージ取得の15条件では強制終了・再開、マップ破損、元ソース変更、欠損位置、MCP取消・出力制限・ページ取得を検証。
+- Linux実GUIで512 MiBを全バイト一致で取得し、128範囲のマップ・再開照合・取得後の36ファイル復元を確認。
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
 - Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
 
-[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41971886923)がすべて成功しました。[公開パッケージの4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41974636495)も成功し、署名・梱包後の実CLI、公開Linux GUIの7形式復元、配布71資産の照合まで完了しました。[公開実物の検証記録](docs/public-release-v0.2.0-alpha.10.json) · [公開GUIの記録](docs/public-gui-v0.2.0-alpha.10.json) · [検証履歴](docs/VALIDATION.md)
+alpha.11の4環境ネイティブCIと公開パッケージ検証は、完了した実測結果を [検証履歴](docs/VALIDATION.md) とリリース添付JSONへ追記します。前版alpha.10の公開実物は [記録](docs/public-release-v0.2.0-alpha.10.json) を参照。
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
@@ -78,6 +96,8 @@ GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシ�
 
 ```sh
 rescue sources --json
+rescue image --source disk.raw --destination acquired --progress --json
+rescue read-map --image acquired/image.rescue.raw --limit 100 --json
 rescue scan --source volume.raw --work-dir work --json
 rescue scan --source disk.raw --mode carve --extension pdf,docx,mp4 --work-dir work --json
 rescue results --session work/SESSION.rescue-session.json --json
