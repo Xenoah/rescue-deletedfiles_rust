@@ -47,6 +47,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install independent preview test decoder
+        run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - name: Install Linux GUI and independent filesystem tools
         if: runner.os == 'Linux'
         run: |
@@ -226,7 +228,7 @@ jobs:
         run: python scripts/package.py --validate-tag "$RELEASE_TAG"
       - name: Validate and assemble every native distribution
         run: |
-          python scripts/assemble_release.py
+          python scripts/ci_command.py python scripts/assemble_release.py
           cd dist
           sha256sum --check SHA256SUMS.txt
       - name: Upload fully assembled preview

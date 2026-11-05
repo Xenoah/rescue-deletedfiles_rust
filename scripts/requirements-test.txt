@@ -1,0 +1,2 @@
+# Independent PNG/JPEG preview decoder and expected-image generator.
+Pillow==12.0.0

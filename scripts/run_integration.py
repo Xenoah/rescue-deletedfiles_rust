@@ -9,4 +9,5 @@ for name in ['e2e.py','e2e_streams.py','e2e_fat.py','e2e_carve.py','e2e_jpeg.py'
     arguments=[sys.executable,str(Path(__file__).parent/name),'--binary',str(a.binary)]
     if a.index_reports and (name.startswith('e2e_index') or name=='e2e_preview.py'):
         arguments.extend(['--output',str(a.index_reports/(Path(name).stem+'.json'))])
+    print('Running '+name,flush=True)
     subprocess.run(arguments,check=True)
