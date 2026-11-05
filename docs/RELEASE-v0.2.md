@@ -23,7 +23,7 @@ PDF・ZIP/Office・MP4/MOVの連続配置探索をGUI・CLI・MCPに追加しま
 
 ![7形式をZIP保存した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.10/docs/images/document-restored.png)
 
-3 OS/4 CPU環境のネイティブVMでRust・9統合群・35形式・読取専用仮想ディスク864件・実削除PDFの元の場所復元・GUI起動・8配布物を確認して公開します。
+[3 OS/4 CPU環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41971886923)がすべて成功しました。Rust・9統合群・35形式・読取専用仮想ディスク864件・実削除PDFの元の場所復元・GUI起動・8配布物と全体アセンブルを確認済みです。
 `document-results-*.json`、`gui-document-results.json`、`restore-native-*.json`、`disk-results-*.json`、`verification-*.json` に証拠を収録。
 署名・梱包後の公開CLIの追加検証は、その完了後のレポートに記録します。
 
