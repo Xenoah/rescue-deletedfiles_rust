@@ -82,7 +82,7 @@ GUIでも「復元の根拠」を開くと、候補の配置・割当状態・�
 
 ## クラウドでの復元検証
 
-alpha.9は追加58項目でJPEG32枚と埋込サムネイルの33候補をCLI／MCPで全バイト照合。破損33条件を拒否しました。Linux実GUIからのJPEG33件のZIP保存と、既存35形式36ファイルの元の場所／ZIP保存も照合しています。[JPEGの検証記録](docs/JPEG-CARVING.md)・[実GUIのJSON](docs/gui-jpeg-results.json)。4ネイティブ環境の検証と実配布物の照合をリリース条件にしています。
+alpha.9は追加58項目でJPEG32枚と埋込サムネイルの33候補をCLI／MCPで全バイト照合。破損33条件を拒否しました。Linux実GUIからのJPEG33件のZIP保存と、既存35形式36ファイルの元の場所／ZIP保存も照合しています。[JPEGの検証記録](docs/JPEG-CARVING.md)・[実GUIのJSON](docs/gui-jpeg-results.json)。[4ネイティブ環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)が通過。公開配布物そのものの再取得・照合もリリース手順に含めています。
 
 alpha.8の公開インストール／ポータブル8配布物、48添付ファイルと追加6レポートのSHA-256を実取得で照合しました。[照合JSON](docs/public-release-v0.2.0-alpha.8.json)を参照。
 [公開後の4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)では、署名・梱包後のCLIそのもので35形式、864件のディスク試験、元の場所・同名処理の追加試験、新規仮想媒体で実際に削除したPDFのCLI／MCP復元が成功しています。実HDD／SSD一般の復元率を示すものではありません。

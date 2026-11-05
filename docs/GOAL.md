@@ -73,3 +73,5 @@ alpha.8は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/
 ## alpha.9 JPEG探索
 
 通常・プログレッシブJPEGを、独立した圧縮データ検査と画素展開で検証する。32枚＋埋込サムネイル33候補、追加58項目（破損33条件）、実GUIのJPEG ZIP33件を照合済み。PNGとの混在、旧セッション読込、元の場所／ZIP36件も維持。4環境のネイティブCIと公開配布物そのものの試験を経て公開する。詳細は[JPEG-CARVING.md](JPEG-CARVING.md)。以降のPDF／ZIP／MP4、読取マップ、RAID、商用比較は後続工程。
+
+alpha.9の[4ネイティブ環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)でWindows・Linux・macOS Intel／Apple Siliconの試験、インストール版とポータブル版、GUI起動が通過。JPEG追加58項目と新規仮想媒体の実削除・同じ場所へのPDF復元を含む。タグによる再検証と公開実ファイルの照合へ進む。
