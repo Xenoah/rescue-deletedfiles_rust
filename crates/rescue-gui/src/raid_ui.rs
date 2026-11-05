@@ -12,6 +12,8 @@ struct MemberInput {
 pub(super) struct State {
     pub dialog: bool,
     pub running: bool,
+    #[cfg(test)]
+    dialog_rect: Option<egui::Rect>,
     level: RaidLevel,
     layout: RaidLayout,
     stripe: u32,
@@ -29,6 +31,8 @@ impl Default for State {
         Self {
             dialog: false,
             running: false,
+            #[cfg(test)]
+            dialog_rect: None,
             level: RaidLevel::Raid5,
             layout: RaidLayout::LeftSymmetric,
             stripe: 65536,
@@ -291,7 +295,7 @@ impl App {
         let mut search = false;
         let mut save = false;
         let mut selected = None;
-        let response = egui::Modal::new(egui::Id::new("raid-configuration")).show(ctx, |ui| {
+        let response = responsive_modal(ctx, "raid-configuration", 1000.0).show(ctx, |ui| {
             ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 1000.0));
             ui.heading("RAIDのメンバーイメージを構成");
             ui.label("順序・欠損位置・使用範囲を指定します。元メンバーは読み取り専用です。");
@@ -323,6 +327,10 @@ impl App {
                 });
             });
         });
+        #[cfg(test)]
+        {
+            self.raid.dialog_rect = Some(response.response.rect);
+        }
         if let Some(index) = selected {
             let report = self.raid.search.as_ref().unwrap().candidates[index]
                 .inspection
@@ -514,5 +522,58 @@ impl State {
             ui.label("サンプルやパリティの一致だけで、元の配列や削除前の内容は確定しません。スキャン結果も確認してください。");
         }
         selected
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn open_dialog_stays_inside_first_frame_after_resize() {
+        for zoom in [1.0, 1.5, 2.0] {
+            let ctx = egui::Context::default();
+            ctx.set_zoom_factor(zoom);
+            // Configure the native scale before opening the dialog. Each subsequent
+            // viewport resize is checked on its first layout, with no settling pass.
+            for _ in 0..3 {
+                let _ = ctx.run(
+                    egui::RawInput {
+                        screen_rect: Some(egui::Rect::from_min_size(
+                            egui::Pos2::ZERO,
+                            egui::vec2(1260.0 * zoom, 820.0 * zoom),
+                        )),
+                        ..Default::default()
+                    },
+                    |_| {},
+                );
+            }
+            let mut app = App::blank();
+            app.raid.dialog = true;
+            for size in [
+                [1260.0, 820.0],
+                [720.0, 520.0],
+                [1008.0, 620.0],
+                [720.0, 520.0],
+            ] {
+                for _ in 0..3 {
+                    let _ = ctx.run(
+                        egui::RawInput {
+                            screen_rect: Some(egui::Rect::from_min_size(
+                                egui::Pos2::ZERO,
+                                egui::vec2(size[0] * zoom, size[1] * zoom),
+                            )),
+                            ..Default::default()
+                        },
+                        |ctx| app.render(ctx),
+                    );
+                    let rect = app.raid.dialog_rect.expect("dialog shown");
+                    assert!(
+                        ctx.content_rect().contains_rect(rect),
+                        "{size:?} {zoom}: {rect:?} outside {:?}",
+                        ctx.content_rect()
+                    );
+                }
+            }
+        }
     }
 }

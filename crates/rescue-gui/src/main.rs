@@ -1435,6 +1435,16 @@ enum Picker {
     Folder,
     Zip,
 }
+/// Top anchoring does not reuse the previous frame's height/width when centering.
+/// This keeps an already-open modal inside the first resized frame.
+fn responsive_modal(ctx: &egui::Context, name: &str, max_width: f32) -> egui::Modal {
+    let id = egui::Id::new(name);
+    let width = (ctx.content_rect().width() - 48.0).clamp(240.0, max_width);
+    let margin = egui::Frame::popup(&ctx.style()).total_margin().sum().x;
+    let x = ((ctx.content_rect().width() - width - margin) / 2.0).max(8.0);
+    egui::Modal::new(id)
+        .area(egui::Modal::default_area(id).anchor(egui::Align2::LEFT_TOP, egui::vec2(x, 24.0)))
+}
 fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) {
     let label_id = ui.label(label).id;
     ui.horizontal(|ui| {
