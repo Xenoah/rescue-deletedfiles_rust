@@ -19,10 +19,10 @@ def attribute_diagnostics(binary,source,root,candidates):
         for n in range(1,count):record[n*bps-2:n*bps]=record[usa+2*n:usa+2*n+2]
         at=struct.unpack_from('<H',record,20)[0]
         while at+24<=len(record):
-            kind,length=struct.unpack_from('<II',record,at)
-            if kind==0xffffffff or length<24:break
+            kind,attr_length=struct.unpack_from('<II',record,at)
+            if kind==0xffffffff or attr_length<24 or at+attr_length>len(record):break
             if kind==0x20:
-                attr=record[at:at+length]
+                attr=record[at:at+attr_length]
                 if attr[8]:
                     data_size=struct.unpack_from('<Q',attr,48)[0];pos=struct.unpack_from('<H',attr,32)[0];lcn=0;data=bytearray();runs=[]
                     while pos<len(attr) and attr[pos]:
@@ -38,7 +38,7 @@ def attribute_diagnostics(binary,source,root,candidates):
                     if length<26 or pos+length>len(data):break
                     pos+=length
                 result.append({'record':candidate['record'],'list_bytes':data_size,'runs':runs,'entries':rows,'nonzero_bytes':sum(x!=0 for x in data)})
-            at+=length
+            at+=attr_length
     return result
 
 def main(binary,output):
