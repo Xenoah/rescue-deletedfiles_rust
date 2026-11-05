@@ -30,6 +30,7 @@ jobs:
           key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
           restore-keys: windows-2022-x64-rust-1.99.1-
       - run: cargo fetch --locked
+      - run: python scripts/ci_command.py cargo test -p rescue-core --target x86_64-pc-windows-msvc --locked --offline read_access::windows::tests
       - run: python scripts/ci_command.py cargo build --release -p rescue-cli --target x86_64-pc-windows-msvc --locked --offline
       - name: Explicit reader on owned read-only VHD
         timeout-minutes: 5

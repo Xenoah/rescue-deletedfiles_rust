@@ -3,7 +3,7 @@
 use super::*;
 use std::{
     fs::{File, OpenOptions},
-    io::{Read, Write},
+    io::Write,
     os::windows::{
         ffi::OsStrExt,
         fs::OpenOptionsExt,
@@ -256,13 +256,32 @@ impl Pipe {
     fn exact(&mut self, bytes: &mut [u8], cancel: &AtomicBool) -> Result<()> {
         let mut at = 0;
         while at < bytes.len() {
-            match self.file.read(&mut bytes[at..]) {
-                Ok(0) => return Err(Error::Request("read broker disconnected".into())),
-                Ok(n) => at += n,
-                Err(e) if e.raw_os_error() == Some(ERROR_NO_DATA as i32) => {
-                    wait(self.deadline, cancel)?
+            // std::fs::File maps ERROR_NO_DATA to EOF on Windows. A nonblocking
+            // pipe without a frame yet must instead wait; preserve ReadFile's
+            // native error so absence of data cannot look like a disconnected peer.
+            let mut read = 0;
+            let ok = unsafe {
+                ReadFile(
+                    self.file.as_raw_handle(),
+                    bytes[at..].as_mut_ptr(),
+                    (bytes.len() - at) as u32,
+                    &mut read,
+                    std::ptr::null_mut(),
+                )
+            };
+            if ok != 0 {
+                if read == 0 {
+                    wait(self.deadline, cancel)?;
+                } else {
+                    at += read as usize;
                 }
-                Err(e) => return Err(e.into()),
+            } else {
+                let error = std::io::Error::last_os_error();
+                if error.raw_os_error() == Some(ERROR_NO_DATA as i32) {
+                    wait(self.deadline, cancel)?;
+                } else {
+                    return Err(error.into());
+                }
             }
         }
         Ok(())
@@ -846,6 +865,65 @@ pub(crate) fn install_transferred(handles: Vec<Transfer>) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn nonblocking_pipe_waits_for_a_delayed_frame_and_reports_disconnect() {
+        let nonce = Uuid::new_v4().to_string();
+        let mut inbound = server(&nonce).unwrap();
+        inbound.deadline = Instant::now() + Duration::from_secs(2);
+        unsafe {
+            ConnectNamedPipe(inbound.file.as_raw_handle(), std::ptr::null_mut());
+        }
+        let file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(pipe_name(&nonce))
+            .unwrap();
+        let mode = PIPE_NOWAIT;
+        assert_ne!(
+            unsafe {
+                SetNamedPipeHandleState(
+                    file.as_raw_handle(),
+                    &mode,
+                    std::ptr::null(),
+                    std::ptr::null(),
+                )
+            },
+            0
+        );
+        let ok = unsafe { ConnectNamedPipe(inbound.file.as_raw_handle(), std::ptr::null_mut()) };
+        assert!(
+            ok != 0
+                || std::io::Error::last_os_error().raw_os_error()
+                    == Some(ERROR_PIPE_CONNECTED as i32)
+        );
+        let worker = std::thread::spawn(move || {
+            let message: serde_json::Value = inbound.receive(&AtomicBool::new(false)).unwrap();
+            assert_eq!(message, serde_json::json!({"frame":"delayed"}));
+            inbound
+        });
+        std::thread::sleep(Duration::from_millis(75));
+        let mut outbound = Pipe {
+            file,
+            deadline: Instant::now() + Duration::from_secs(2),
+        };
+        outbound
+            .send(
+                &serde_json::json!({"frame":"delayed"}),
+                &AtomicBool::new(false),
+            )
+            .unwrap();
+        let mut inbound = worker.join().unwrap();
+        drop(outbound);
+        let start = Instant::now();
+        let error = inbound
+            .receive::<serde_json::Value>(&AtomicBool::new(false))
+            .unwrap_err();
+        assert!(
+            matches!(error,Error::Io(error) if error.raw_os_error()==Some(ERROR_BROKEN_PIPE as i32))
+        );
+        assert!(start.elapsed() < Duration::from_secs(1));
+    }
 
     #[test]
     fn read_only_handle_rejects_write_delete_and_acl_access() {
