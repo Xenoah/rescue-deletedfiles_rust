@@ -477,8 +477,15 @@ impl CandidateIndex {
             // Disjoint index ranges seek all the way to `seq` and
             // preserve ascending group/rank even for descending value order.
             let comparison = if query.descending { "<" } else { ">" };
+            let sequence_range = if query.descending {
+                // Two upper bounds let SQLite seek from the snapshot watermark
+                // instead of the tighter cursor. Give it one exact bound.
+                select.replacen("WHERE seq<=?1", "WHERE seq<=min(?1,?5-1)", 1)
+            } else {
+                format!("{select} AND seq>?5")
+            };
             let mut ranges = vec![
-                format!("{select} AND {group}=?7 AND {rank}=?8 AND {column}=?4 AND seq{comparison}?5"),
+                format!("{sequence_range} AND {group}=?7 AND {rank}=?8 AND {column}=?4"),
                 format!("{select} AND {group}=?7 AND {rank}=?8 AND {column}{comparison}?4"),
             ];
             // Do not scan impossible constant-key ranges: SQLite can prefer

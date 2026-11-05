@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "application_version": "0.2.0-alpha.14",
-  "gui_binary_sha256": "066f143bba670e8af5bac49b5b4d90c003605615ed4db01afa6d200fbb77cf9b",
+  "application_version": "0.2.0-alpha.15",
+  "gui_binary_sha256": "0c63018b8e96dcb29c69121902922e61d6c3cd90b2528c82506ce58a607f2149",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "lost_files_byte_exact": 6,
   "remnant_streams_byte_exact": 14,
@@ -15,35 +15,35 @@
   "screenshots": [
     {
       "file": "images/volume-discovery.png",
-      "sha256": "815d4b981354512e1baee72e304ac7a620dfb98518b3cefc4087bbe6f514b908"
+      "sha256": "7aa5eb19ee3732404a922bb130b5cb84ad6949df5987fd75eaaf419cb141c4bb"
     },
     {
       "file": "images/discovered-settings.png",
-      "sha256": "f5acc586b97d4a3b99f35254769bd34e96a74957e242108879c344f37b047cd6"
+      "sha256": "6e240d5598cecb06e450f8618b5d1f9797844400b0a6779f8ad0f3d00ac5ec15"
     },
     {
       "file": "images/discovered-files.png",
-      "sha256": "3f11e4489eb0f3571ccc05b9c8e14fae91c939d0ce788ae7215da917abc5e42b"
+      "sha256": "503c0cc3aa9adc2edeeaf9c821d1caacb73d3c1055b20cba5623845f3240de40"
     },
     {
       "file": "images/discovered-restored.png",
-      "sha256": "031ed6e6f939c76dafccd508a95f03600f827de9486dadb584ac75922b6a3830"
+      "sha256": "7a541a8ac854448516488cea76f762b26889220f83104e23694eeee2ecfd7f89"
     },
     {
       "file": "images/remnant-settings.png",
-      "sha256": "d189fbf57af888bdaee7946d8544b7c6a90d38ba8d1c1de6fb437820b42e1b44"
+      "sha256": "add1e2c87ae45d6a1a6b2256ac476391cc760d7ac1673421948322df27bfe1e3"
     },
     {
       "file": "images/remnant-files.png",
-      "sha256": "404b1b562eee94c16b7b4b5bf3462be480f3c5758993a52d282f5f955c2f2b33"
+      "sha256": "00b3cceeeccae67a9291cab2fb279f0e6042c6fa73a1a5d14788110e1d4f7747"
     },
     {
       "file": "images/remnant-restored.png",
-      "sha256": "6771b950ad6f57d7bfc2b5a3b42baaae161c3201eb7a0d22972531bec3ba82c2"
+      "sha256": "7c09efcc58ac38626ec8c862be613c97cf3fd00074ab01601c3766e45e138bf3"
     },
     {
       "file": "images/discovery-small-window.png",
-      "sha256": "a5197c31279ce7ae8049abef3e603b5d48215bb7541de8d66b83e0030218d093"
+      "sha256": "1c5e73e343ba2d872a905cd3fe6cf4b5bb72f6d86e1ceda9975417404fd2247b"
     }
   ],
   "narrow_window": {
@@ -51,5 +51,6 @@
     "height": 520,
     "all_dialog_actions_visible": true,
     "keyboard_close_exercised": true
-  }
+  },
+  "indexed_recovered_volume_restore": true
 }

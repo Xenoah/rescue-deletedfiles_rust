@@ -1,20 +1,20 @@
 {
   "status": "passed",
-  "application_version": "0.2.0-alpha.14",
+  "application_version": "0.2.0-alpha.15",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
-  "gui_binary_sha256": "066f143bba670e8af5bac49b5b4d90c003605615ed4db01afa6d200fbb77cf9b",
+  "gui_binary_sha256": "056291db78262a0638ed4d109ce02e52a6ca094c7d990bb5fbaf841ba4596560",
   "scope": "Actual Linux GUI acquisition of a 512 MiB regular image, map page navigation, resume verification, Quick scan and ZIP restoration. No physical device fault in this GUI run.",
   "source_bytes": 536870912,
   "image_source_byte_exact": true,
   "source_unchanged": true,
   "source_sha256": "088c86ce0b762eb1a83d62eaf5037dd5ccf846b97d1566ad656bf07fcb920814",
   "map_digest_unchanged_after_gui_resume": true,
-  "map_digest": "90acd233d3d0f83ff61c77305e019133993c0483f0fb7fb93b7a4fad851b5af0",
+  "map_digest": "d309b8998e8105bb13db963980cddfe46bd43351c38977459c40cc7d91df137f",
   "copied_ranges": 128,
   "gui_map_pages_exercised": 2,
   "recovered_files_byte_exact": 36,
   "zip_crc_verified": true,
-  "archive_sha256": "db958d13bc7982b0fa3b461fefd653fef0c17e292544b48a33c1c18ba8e1c0cb",
+  "archive_sha256": "4f0074647bf0994a3db5fcffd619fedbcbc50fd699aa697de29c7a155c3fe5dc",
   "files": [
     {
       "candidate_id": "mft-20-7",
@@ -164,15 +164,15 @@
   "screenshots": [
     {
       "file": "images/imaging-settings.png",
-      "sha256": "cec99873d9967a20015c56fc8a6e8641779ffa3eb6f1425b012c6c91cbfb9fd2"
+      "sha256": "aa2d5f35f76fa0cd9dd8fe1381fa86e5cb2de8331866484e2d5dffb9c946f48a"
     },
     {
       "file": "images/imaging-progress.png",
-      "sha256": "bcd0b778f9e8e78a8afc77f3e8e7f9d421c46e2e9ddf89824ce4d3a28f278421"
+      "sha256": "7bc70e4ddee0a239d4507468f8a2ceb6e12d037a737b4362b7b1062a7e0c22e1"
     },
     {
       "file": "images/read-map.png",
-      "sha256": "53c0764c372eb442f77961fbbc352547fea0d35e510f59ea1c623862479e9916"
+      "sha256": "19e335bafae95d7f7c06a176757314722229c30d25561d7f231d7cc5e9260553"
     }
   ]
 }

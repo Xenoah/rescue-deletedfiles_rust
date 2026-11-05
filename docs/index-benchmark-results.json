@@ -1,0 +1,1429 @@
+{
+  "status": "passed",
+  "version": "0.2.0-alpha.15",
+  "recorded_at_utc": "2026-11-05T22:13:08.298343+00:00",
+  "functional_checks": {
+    "queries": 220,
+    "ordered_ids_exact": true,
+    "selected_files_byte_exact": 3,
+    "gui_selected_files_byte_exact": 3
+  },
+  "scan": {
+    "status": "completed",
+    "version": "rescue 0.2.0-alpha.15",
+    "binary_sha256": "2ef79010039163571b7c867b520f8abe02777d91b0db6e1e05ccd8f5d4e7884d",
+    "logical_source_bytes": 1099511627776,
+    "allocated_source_bytes": 10240020480,
+    "candidates": 10000000,
+    "index": "/workspace/rescue-benchmark-v15/work/6bb8aeb9-fe7e-4467-bc44-c23842ba1ae5.rescue-index/session.sqlite",
+    "index_bytes": 12133199872,
+    "jobs": [
+      {
+        "exit": 130,
+        "elapsed_seconds": 6.320397725998191,
+        "cancel_to_process_exit_seconds": 0.11103934499260504,
+        "aggregate_peak_rss_bytes": 165003264,
+        "cli_peak_rss_bytes": 17354752,
+        "errors": [],
+        "result": {
+          "event": "scan_finished",
+          "index": {
+            "candidates": 25328,
+            "engine": "filesystem_records_v1",
+            "index_id": "bd4c91d4-032f-4b50-a665-35cfd1c0e377",
+            "resumable": true,
+            "scanned_records": 25344,
+            "schema_version": 3,
+            "source": "/workspace/rescue-10m.raw",
+            "state": "cancelled",
+            "total_records": 10000016
+          },
+          "session": "/workspace/rescue-benchmark-v15/work/6bb8aeb9-fe7e-4467-bc44-c23842ba1ae5.rescue-index/session.sqlite"
+        }
+      },
+      {
+        "exit": 0,
+        "elapsed_seconds": 1660.347704453001,
+        "cancel_to_process_exit_seconds": null,
+        "aggregate_peak_rss_bytes": 169414656,
+        "cli_peak_rss_bytes": 17313792,
+        "errors": [],
+        "result": {
+          "event": "scan_finished",
+          "index": {
+            "candidates": 10000000,
+            "engine": "filesystem_records_v1",
+            "index_id": "bd4c91d4-032f-4b50-a665-35cfd1c0e377",
+            "resumable": false,
+            "scanned_records": 10000016,
+            "schema_version": 3,
+            "source": "/workspace/rescue-10m.raw",
+            "state": "completed",
+            "total_records": 10000016
+          },
+          "session": "/workspace/rescue-benchmark-v15/work/6bb8aeb9-fe7e-4467-bc44-c23842ba1ae5.rescue-index/session.sqlite"
+        }
+      }
+    ],
+    "aggregate_peak_rss_bytes": 170176512,
+    "gui_pids_included": [
+      332740
+    ],
+    "queries": {
+      "name_asc": {
+        "samples_ms": [
+          24.77406500838697,
+          22.049011997296475,
+          12.820165007724427,
+          12.913495011162013,
+          17.87335000699386,
+          11.834828997962177,
+          22.976170002948493,
+          29.063900001347065,
+          19.535133003955707,
+          12.52597699931357,
+          12.585756005137227,
+          47.96894900209736,
+          40.96645099343732,
+          31.885617005173117,
+          17.78334799746517,
+          17.552386998431757,
+          34.35663098935038,
+          12.260342002264224,
+          16.946766001638025,
+          26.033780013676733
+        ],
+        "p95_ms": 40.96645099343732,
+        "median_ms": 18.704241505474783,
+        "failures": []
+      },
+      "name_desc": {
+        "samples_ms": [
+          19.618026999523863,
+          16.534128997591324,
+          17.70717500767205,
+          18.118827007128857,
+          16.633361999993213,
+          17.49043900053948,
+          24.51533499697689,
+          18.563174991868436,
+          30.036864001885988,
+          36.29268398799468,
+          13.664088997757062,
+          27.31148099701386,
+          28.620550001505762,
+          34.18962500290945,
+          28.266891997191124,
+          11.618846998317167,
+          11.719454996637069,
+          17.442373995436355,
+          35.83292000985239,
+          16.996211008518003
+        ],
+        "p95_ms": 35.83292000985239,
+        "median_ms": 18.341000999498647,
+        "failures": []
+      },
+      "size_desc": {
+        "samples_ms": [
+          28.012149006826803,
+          18.788364992360584,
+          25.378815989824943,
+          22.900251002283767,
+          24.842876009643078,
+          20.303028999478556,
+          22.228930989513174,
+          27.188862004550174,
+          27.077431994257495,
+          74.30199500231538,
+          12.060240987921134,
+          17.896807999932207,
+          18.713415003730915,
+          17.695906004519202,
+          32.692081993445754,
+          33.823310004663654,
+          15.674305002903566,
+          11.20749099936802,
+          24.521701008779928,
+          21.109312001499347
+        ],
+        "p95_ms": 33.823310004663654,
+        "median_ms": 22.56459099589847,
+        "failures": []
+      },
+      "modified_desc": {
+        "samples_ms": [
+          21.32722400710918,
+          19.69055699009914,
+          16.985399997793138,
+          17.43505099148024,
+          23.40676799940411,
+          17.546249000588432,
+          20.984553004382178,
+          18.825332008418627,
+          17.147082995506935,
+          20.791525006643496,
+          32.27660999982618,
+          30.13822100183461,
+          15.72667200525757,
+          19.543853995855898,
+          29.87047500209883,
+          37.828770000487566,
+          17.87542899546679,
+          17.58406200679019,
+          22.49205400585197,
+          12.543455988634378
+        ],
+        "p95_ms": 32.27660999982618,
+        "median_ms": 19.61720549297752,
+        "failures": []
+      },
+      "group_type_name": {
+        "samples_ms": [
+          2014.7019590076525,
+          2009.1224080097163,
+          2009.1243859933456,
+          2031.9691199983936,
+          2024.0693669911707,
+          2018.3817530050874,
+          2071.85754099919,
+          2009.6286620100727,
+          2020.2134009887232,
+          2009.0340589958942,
+          2015.882514999248,
+          2016.6832490067463,
+          2013.0456290062284,
+          2020.2453689998947,
+          2024.8266749986215,
+          2017.8230080055073,
+          2026.1618980002822,
+          2066.749229998095,
+          3002.056953991996,
+          2093.5171419987455
+        ],
+        "p95_ms": 2093.5171419987455,
+        "median_ms": 2019.2975769969053,
+        "failures": [
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          }
+        ]
+      },
+      "group_folder_size": {
+        "samples_ms": [
+          3701.693039998645,
+          2052.513436996378,
+          2047.6445559907006,
+          2016.3889329996891,
+          2709.425993001787,
+          2016.6193150071194,
+          2037.4313890060876,
+          2014.926967996871,
+          2435.1692970085423,
+          2138.7370279990137,
+          2141.500316996826,
+          2020.9502630023053,
+          2089.6844050002983,
+          2401.665679004509,
+          2024.5699189981679,
+          2019.8356269975193,
+          2040.0309630058473,
+          2034.0940059977584,
+          2644.0815919922898,
+          2029.5803010085365
+        ],
+        "p95_ms": 2709.425993001787,
+        "median_ms": 2043.837759498274,
+        "failures": [
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          }
+        ]
+      },
+      "rare_substring": {
+        "samples_ms": [
+          2039.6799059963087,
+          2015.1302209997084,
+          2019.4532059977064,
+          2024.2551180126611,
+          2024.110238009598,
+          2023.9615110040177,
+          2019.4603450072464,
+          2025.1707679999527,
+          2037.8268430067692,
+          2021.459302995936,
+          2023.7101840029936,
+          2062.849343987182,
+          2047.1426000003703,
+          2045.3828480094671,
+          3473.991606995696,
+          2560.3060010034824,
+          2035.6414139969274,
+          4293.321614997694,
+          2791.9600210007047,
+          2095.685118008987
+        ],
+        "p95_ms": 3473.991606995696,
+        "median_ms": 2036.7341285018483,
+        "failures": [
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          }
+        ]
+      },
+      "common_substring": {
+        "samples_ms": [
+          2159.1883770015556,
+          2070.912088995101,
+          2055.5543169903103,
+          2277.426979999291,
+          2088.7198410055134,
+          3525.3129600023385,
+          2631.7421440035105,
+          2034.6665890101576,
+          2038.9978460007114,
+          2030.4262569989078,
+          2740.480727996328,
+          2172.7735080057755,
+          2068.3312930050306,
+          2085.8420229924377,
+          2088.5369859897764,
+          2062.3939560027793,
+          2050.337207998382,
+          2032.5187179987552,
+          2027.628587995423,
+          2795.4255730001023
+        ],
+        "p95_ms": 2795.4255730001023,
+        "median_ms": 2078.3770559937693,
+        "failures": [
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          }
+        ]
+      },
+      "unicode_absent": {
+        "samples_ms": [
+          2211.9009510061005,
+          2045.1278399996227,
+          2089.125814003637,
+          2053.0782420100877,
+          2029.6997750119772,
+          2016.2517610006034,
+          2047.883548992104,
+          2020.0015739974333,
+          2013.7805990088964,
+          2265.2727820095606,
+          2030.533288998413,
+          2024.2405199969653,
+          2011.6296039923327,
+          1547.2032260004198,
+          2028.3184830041137,
+          1596.4270549884532,
+          2018.7781360000372,
+          2021.4688659907551,
+          2023.1972169858636,
+          2018.4471379907336
+        ],
+        "p95_ms": 2211.9009510061005,
+        "median_ms": 2023.7188684914145,
+        "failures": [
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          },
+          {
+            "exit": 4,
+            "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+          }
+        ]
+      }
+    },
+    "selected_files_byte_exact": 3,
+    "source_size_and_mtime_unchanged": true,
+    "scope": "Sparse synthetic NTFS, resident data, Linux. RSS sampled every 25 ms (5 ms for query processes); CLI latency includes process startup and JSON. GUI frame/keyboard latency and physical 1 TiB throughput are not measured. Source identity and metadata revalidated; no full 1 TiB hash claim."
+  },
+  "final_queries": {
+    "status": "passed",
+    "version": "rescue 0.2.0-alpha.15",
+    "binary_sha256": "606b2094b9e7158a5b1aeb7ab4bba7cff71e04cc528f4fd521b663c6515d4a16",
+    "logical_source_bytes": 1099511627776,
+    "allocated_source_bytes": 10240020480,
+    "candidates": 10000000,
+    "index": "/workspace/rescue-benchmark-v15/work/6bb8aeb9-fe7e-4467-bc44-c23842ba1ae5.rescue-index/session.sqlite",
+    "index_bytes": 12489699328,
+    "jobs": [],
+    "aggregate_peak_rss_bytes": 159416320,
+    "gui_pids_included": [
+      392721
+    ],
+    "queries_only": true,
+    "queries": {
+      "name_asc": {
+        "samples_ms": [
+          84.37208097893745,
+          37.38601799705066,
+          51.008151000132784,
+          42.22720902180299,
+          35.323743999470025,
+          23.274315986782312,
+          32.66527998493984,
+          45.36471198662184,
+          43.13782200915739,
+          86.78337899618782,
+          86.83149100397713,
+          128.6225820076652,
+          36.43959300825372,
+          21.438638999825343,
+          44.14888098835945,
+          44.72949099726975,
+          14.705413981573656,
+          34.12136301631108,
+          35.533349990146235,
+          16.52654298231937
+        ],
+        "first_query_ms": 84.37208097893745,
+        "p95_ms": 86.83149100397713,
+        "median_ms": 39.806613509426825,
+        "failures": []
+      },
+      "name_desc": {
+        "samples_ms": [
+          21.917789010331035,
+          33.5921379737556,
+          16.914954991079867,
+          19.190193997928873,
+          15.39200497791171,
+          19.351860013557598,
+          24.273385002743453,
+          118.98541101254523,
+          24.760013009654358,
+          81.36019200901501,
+          74.96790800360031,
+          56.40598697937094,
+          17.715654015773907,
+          18.317318987101316,
+          11.721610993845388,
+          23.25346600264311,
+          23.718657990684733,
+          18.789633992128074,
+          18.97888898383826,
+          27.060895023168996
+        ],
+        "first_query_ms": 21.917789010331035,
+        "p95_ms": 81.36019200901501,
+        "median_ms": 22.58562750648707,
+        "failures": []
+      },
+      "size_desc": {
+        "samples_ms": [
+          41.911961016012356,
+          19.920754013583064,
+          22.10743899922818,
+          38.737546012271196,
+          13.229440985014662,
+          27.417198987677693,
+          24.716157000511885,
+          18.611200008308515,
+          22.700089000863954,
+          27.918178995605558,
+          21.105482999701053,
+          18.736156984232366,
+          12.192519003292546,
+          19.832785008475184,
+          22.577943018404767,
+          13.818509003613144,
+          13.135414017597213,
+          14.749870984815061,
+          10.979792015859857,
+          12.409443006617948
+        ],
+        "first_query_ms": 41.911961016012356,
+        "p95_ms": 38.737546012271196,
+        "median_ms": 19.876769511029124,
+        "failures": []
+      },
+      "modified_desc": {
+        "samples_ms": [
+          19.40291200298816,
+          23.34408601745963,
+          10.165118001168594,
+          9.531463991152123,
+          26.854268013266847,
+          21.31966399610974,
+          22.968957026023418,
+          76.77264302037656,
+          45.15214799903333,
+          22.65949599677697,
+          15.666529012378305,
+          17.672967980615795,
+          17.054718016879633,
+          21.2568300194107,
+          16.289591003442183,
+          32.3582689743489,
+          16.285623016301543,
+          25.020544999279082,
+          21.236528002191335,
+          11.440392991062254
+        ],
+        "first_query_ms": 19.40291200298816,
+        "p95_ms": 45.15214799903333,
+        "median_ms": 21.246679010801017,
+        "failures": []
+      },
+      "group_type_name": {
+        "samples_ms": [
+          16.421790001913905,
+          16.154754994204268,
+          19.760694005526602,
+          23.919323983136564,
+          139.45663499180228,
+          272.63313299044967,
+          23.527309007477015,
+          28.05690499371849,
+          58.115444000577554,
+          23.590716009493917,
+          44.003165006870404,
+          135.85665600840002,
+          75.59866399969906,
+          86.43702600966208,
+          48.240286007057875,
+          46.862949995556846,
+          34.9080600135494,
+          18.79050998832099,
+          17.178718000650406,
+          18.019758979789913
+        ],
+        "first_query_ms": 16.421790001913905,
+        "p95_ms": 139.45663499180228,
+        "median_ms": 31.482482503633946,
+        "failures": []
+      },
+      "group_folder_size": {
+        "samples_ms": [
+          23.998873017262667,
+          34.97400099877268,
+          17.130141000961885,
+          18.838546006008983,
+          11.29266998032108,
+          18.20475299609825,
+          12.46984099270776,
+          11.972998996498063,
+          14.592224993975833,
+          16.76250802120194,
+          24.77485398412682,
+          13.075708993710577,
+          11.796556995250285,
+          19.15524498326704,
+          20.079325971892104,
+          12.107717979233712,
+          12.0137220073957,
+          12.58697098819539,
+          16.768302011769265,
+          12.036248983349651
+        ],
+        "first_query_ms": 23.998873017262667,
+        "p95_ms": 24.77485398412682,
+        "median_ms": 15.677366507588886,
+        "failures": []
+      },
+      "rare_substring": {
+        "samples_ms": [
+          383.6627520213369,
+          263.6232490185648,
+          64.01723599992692,
+          50.23330598487519,
+          45.66970799351111,
+          33.47198001574725,
+          42.77305499999784,
+          156.18032700149342,
+          45.77755500213243,
+          62.461652007186785,
+          44.762461009668186,
+          55.73046501376666,
+          56.24991998774931,
+          39.347027020994574,
+          33.98235799977556,
+          35.5989350064192,
+          38.19142701104283,
+          32.18849000404589,
+          45.072312001138926,
+          60.433328995713964
+        ],
+        "first_query_ms": 383.6627520213369,
+        "p95_ms": 263.6232490185648,
+        "median_ms": 45.72363149782177,
+        "failures": []
+      },
+      "common_substring": {
+        "samples_ms": [
+          35.7388130214531,
+          70.38216100772843,
+          77.39873699028976,
+          66.91533300909214,
+          68.87901600566693,
+          25.45269698021002,
+          89.44635701482184,
+          79.14822100428864,
+          87.02914501191117,
+          29.14432800025679,
+          61.634418001631275,
+          33.775955002056435,
+          59.48662699665874,
+          31.09388699522242,
+          27.993662981316447,
+          29.158754012314603,
+          27.702588005922735,
+          28.44491001451388,
+          42.76462699635886,
+          27.716470998711884
+        ],
+        "first_query_ms": 35.7388130214531,
+        "p95_ms": 87.02914501191117,
+        "median_ms": 39.25172000890598,
+        "failures": []
+      },
+      "unicode_absent": {
+        "samples_ms": [
+          6.034871010342613,
+          6.050138996215537,
+          5.983093986287713,
+          12.33461601077579,
+          6.339167011901736,
+          5.795787001261488,
+          11.612250003963709,
+          6.149480992462486,
+          5.719198001315817,
+          11.39033999061212,
+          7.695159001741558,
+          5.924383003730327,
+          6.029749987646937,
+          5.807902984088287,
+          5.9343670145608485,
+          11.815275996923447,
+          16.476238990435377,
+          5.938284011790529,
+          11.898598982952535,
+          16.76572801079601
+        ],
+        "first_query_ms": 6.034871010342613,
+        "p95_ms": 16.476238990435377,
+        "median_ms": 6.099809994339012,
+        "failures": []
+      },
+      "size_desc_deep": {
+        "samples_ms": [
+          19.25551099702716,
+          16.493527014972642,
+          11.345716018695384,
+          22.446405986556783,
+          16.52238899259828,
+          16.706075984984636,
+          11.036651994800195,
+          10.894129984080791,
+          12.17644099961035,
+          22.06023401231505,
+          12.706937006441876,
+          28.067229024600238,
+          16.409857984399423,
+          16.455256001790985,
+          16.789009008789435,
+          17.503025010228157,
+          22.91576098650694,
+          19.27919199806638,
+          16.622586990706623,
+          153.457613021601
+        ],
+        "first_query_ms": 19.25551099702716,
+        "p95_ms": 28.067229024600238,
+        "median_ms": 16.66433148784563,
+        "failures": []
+      },
+      "group_folder_size_deep": {
+        "samples_ms": [
+          55.40495700552128,
+          34.060450008837506,
+          21.940002974588424,
+          21.898484003031626,
+          12.278512003831565,
+          21.92110099713318,
+          32.34482498373836,
+          22.71593300974928,
+          27.161467995028943,
+          40.584230999229476,
+          22.015094000380486,
+          11.282022984232754,
+          17.08817802136764,
+          12.576378008816391,
+          17.110216023866087,
+          11.067919986089692,
+          11.081636999733746,
+          10.973953001666814,
+          11.027310014469549,
+          16.838985990034416
+        ],
+        "first_query_ms": 55.40495700552128,
+        "p95_ms": 40.584230999229476,
+        "median_ms": 19.504350013448857,
+        "failures": []
+      }
+    },
+    "selected_files_byte_exact": 3,
+    "source_size_and_mtime_unchanged": true,
+    "scope": "Sparse synthetic NTFS, resident data, Linux. RSS sampled every 25 ms (5 ms for query processes); CLI latency includes process startup and JSON. GUI frame/keyboard latency and physical 1 TiB throughput are not measured. Source identity and metadata revalidated; no full 1 TiB hash claim."
+  },
+  "order_build_cancellation": {
+    "status": "passed",
+    "scope": "Linux actual SIGINT while a 10M-row compound order build owns the work index",
+    "cancel_to_exit_seconds": 0.009895205002976581,
+    "exit": 130,
+    "stdout": "",
+    "stderr": "{\"error\":{\"code\":\"CANCELLED\",\"message\":\"operation cancelled\"}}\n",
+    "unfinished_order_rolled_back": true,
+    "candidates_preserved": 10000000,
+    "binary_sha256": "36a92744cd2b4f95297feb34de165e8e6808295487f863fa1ddbabb54de23c27"
+  },
+  "cold_order_build_seconds": 94.3416,
+  "cold_order_build_binary_sha256": "36a92744cd2b4f95297feb34de165e8e6808295487f863fa1ddbabb54de23c27",
+  "cli_p95_target_ms": 200,
+  "cli_p95_target_met": false,
+  "gui_frame_latency_measured": false,
+  "earlier_query_measurements": [
+    {
+      "file": "queries-v2.json",
+      "binary_sha256": "36a92744cd2b4f95297feb34de165e8e6808295487f863fa1ddbabb54de23c27",
+      "queries": {
+        "name_asc": {
+          "p95_ms": 173.12151499208994,
+          "failures": []
+        },
+        "name_desc": {
+          "p95_ms": 67.26015100139193,
+          "failures": []
+        },
+        "size_desc": {
+          "p95_ms": 53.104204998817295,
+          "failures": []
+        },
+        "modified_desc": {
+          "p95_ms": 42.240458002197556,
+          "failures": []
+        },
+        "group_type_name": {
+          "p95_ms": 2651.324343998567,
+          "failures": [
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            }
+          ]
+        },
+        "group_folder_size": {
+          "p95_ms": 419.8854639980709,
+          "failures": [
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: database is locked\"}}\n"
+            }
+          ]
+        },
+        "rare_substring": {
+          "p95_ms": 2696.114752005087,
+          "failures": [
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            }
+          ]
+        },
+        "common_substring": {
+          "p95_ms": 360.2974139939761,
+          "failures": []
+        },
+        "unicode_absent": {
+          "p95_ms": 512.2228989930591,
+          "failures": []
+        }
+      }
+    },
+    {
+      "file": "queries-final.json",
+      "binary_sha256": "a94abf8fec141b1e1caa4d5a045cdca75bb714b20ea018e94debf5c8d2aaa0f8",
+      "queries": {
+        "name_asc": {
+          "p95_ms": 732.7602669975022,
+          "failures": []
+        },
+        "name_desc": {
+          "p95_ms": 138.32432799972594,
+          "failures": []
+        },
+        "size_desc": {
+          "p95_ms": 56.99781799921766,
+          "failures": []
+        },
+        "modified_desc": {
+          "p95_ms": 64.18466099421494,
+          "failures": []
+        },
+        "group_type_name": {
+          "p95_ms": 122.3976219916949,
+          "failures": []
+        },
+        "group_folder_size": {
+          "p95_ms": 82.58074401237536,
+          "failures": []
+        },
+        "rare_substring": {
+          "p95_ms": 251.33251899387687,
+          "failures": []
+        },
+        "common_substring": {
+          "p95_ms": 85.99070500349626,
+          "failures": []
+        },
+        "unicode_absent": {
+          "p95_ms": 48.62537101143971,
+          "failures": []
+        },
+        "size_desc_deep": {
+          "p95_ms": 2040.6788490072358,
+          "failures": [
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            }
+          ]
+        },
+        "group_folder_size_deep": {
+          "p95_ms": 2148.1467579869786,
+          "failures": [
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            },
+            {
+              "exit": 4,
+              "error": "{\"error\":{\"code\":\"INDEX_ERROR\",\"message\":\"session index: interrupted\"}}\n"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "file": "queries-deep-fixed.json",
+      "binary_sha256": "ae0a856451fd0c024f5c351474e3a3ab7db68a4ea515d5769836ec17eb7fe305",
+      "queries": {
+        "name_asc": {
+          "p95_ms": 37.86782000679523,
+          "failures": []
+        },
+        "name_desc": {
+          "p95_ms": 29.360324988374487,
+          "failures": []
+        },
+        "size_desc": {
+          "p95_ms": 23.176241986220703,
+          "failures": []
+        },
+        "modified_desc": {
+          "p95_ms": 27.034355996875092,
+          "failures": []
+        },
+        "group_type_name": {
+          "p95_ms": 52.60458498378284,
+          "failures": []
+        },
+        "group_folder_size": {
+          "p95_ms": 39.53333501704037,
+          "failures": []
+        },
+        "rare_substring": {
+          "p95_ms": 194.83569799922407,
+          "failures": []
+        },
+        "common_substring": {
+          "p95_ms": 63.00360499881208,
+          "failures": []
+        },
+        "unicode_absent": {
+          "p95_ms": 47.51991599914618,
+          "failures": []
+        },
+        "size_desc_deep": {
+          "p95_ms": 1726.8206250155345,
+          "failures": []
+        },
+        "group_folder_size_deep": {
+          "p95_ms": 24.139392015058547,
+          "failures": []
+        }
+      }
+    }
+  ],
+  "scope": "Sparse synthetic NTFS, resident files, Linux. The passing status covers functional checks and exact selected bytes. It is not a claim that every latency target passed or that a physical 1 TiB disk was read."
+}

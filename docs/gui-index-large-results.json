@@ -1,0 +1,39 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.15",
+  "gui_binary_sha256": "0c63018b8e96dcb29c69121902922e61d6c3cd90b2528c82506ce58a607f2149",
+  "environment": "Linux Xvfb 1260x820, actual native egui application",
+  "candidates": 10000000,
+  "page_size": 500,
+  "pages_selected": 3,
+  "files_byte_exact": 3,
+  "bytes_exact": 138,
+  "selected_ids": [
+    "mft-10000015-7",
+    "mft-16-7",
+    "mft-516-7"
+  ],
+  "archive_crc_valid": true,
+  "archive_sha256": "e68b43fc707b39160281f64438b56defc355c2acba990b95cc9929e830e03913",
+  "selection_preserved_across_pages_and_filter": true,
+  "query_cancelled_by_keyboard": true,
+  "screenshots": [
+    {
+      "file": "images/index-large-loaded.png",
+      "sha256": "e35b40ca0a6ae1fe67d7482dc88b512f740b5e67ea2b20d914df16f8c4db8da0"
+    },
+    {
+      "file": "images/index-large-search.png",
+      "sha256": "02c3c37339f4b019bdfb86e49181125464c885eaa0d37020dd16538a573c1902"
+    },
+    {
+      "file": "images/index-large-restored.png",
+      "sha256": "ca888970ccad285f3cfa41605cc7016827bc022c8314a2dc062605c302bdc628"
+    },
+    {
+      "file": "images/index-large-cancelled.png",
+      "sha256": "a15c2311eccab218f71b19b5b499e3394dea4ad94ccaf6bd288e877972e774d7"
+    }
+  ],
+  "scope": "Synthetic sparse NTFS. GUI loaded 10 million indexed candidates, selected first-page, second-page and filtered last-file entries, restored ZIP and cancelled a two-character query with Tab/Enter. Payloads and ZIP CRC independently checked; full 1 TiB source hash and GUI frame latency not measured."
+}

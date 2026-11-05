@@ -1,0 +1,68 @@
+{
+  "status": "passed",
+  "version": "0.2.0-alpha.15",
+  "binary_sha256": "056291db78262a0638ed4d109ce02e52a6ca094c7d990bb5fbaf841ba4596560",
+  "git_commit": "4536278",
+  "index_schema": 3,
+  "source_sha256": "2989bd46ad690f25f16f5cf7232072e6951aa319053f91b4b65283e0f15ac5b5",
+  "candidates": 1256,
+  "page_size": 500,
+  "selected_pages": [
+    1,
+    2,
+    3
+  ],
+  "selected_files": 4,
+  "selected_bytes": 185,
+  "files_byte_exact": 4,
+  "gui_paused_candidates": 877,
+  "gui_resumed_candidates": 1256,
+  "selected_id_preserved_on_resume": "mft-2000-7",
+  "sort": "folder_then_size",
+  "keyboard": [
+    "Ctrl+F search page-1000",
+    "Tab focus"
+  ],
+  "viewports": [
+    [
+      1260,
+      820
+    ],
+    [
+      720,
+      520
+    ]
+  ],
+  "source_bytes_unchanged": true,
+  "scope": "Actual Linux X11 GUI automation on synthetic NTFS; not Windows/macOS screen-reader or IME certification.",
+  "screenshots": [
+    {
+      "file": "images/index-grouped.png",
+      "sha256": "1384751096d4ab38a21ab277ef4653c503529ce9caa3ffad759073530ec897f3"
+    },
+    {
+      "file": "images/index-narrow.png",
+      "sha256": "092fa39360803e2d6f8d0e864bb553eb52096007034bad0fd16ab51a3efb84cc"
+    },
+    {
+      "file": "images/index-paused.png",
+      "sha256": "cebc2e5eb0ad05bde3be24a0c8f2e49c201ddd5e864061561785cfed887468d5"
+    },
+    {
+      "file": "images/index-restored.png",
+      "sha256": "0a30e8a78207e20c2d8c634ff237d0b2f567782643e53285ebf14a245769b52c"
+    },
+    {
+      "file": "images/index-resumed.png",
+      "sha256": "34fd4dfa4b1498d7c95913eae71104b956c79ae5b3f9340673db862d401a9ca3"
+    },
+    {
+      "file": "images/index-search.png",
+      "sha256": "9bf337d3c869fdff87bc9a135c60a980c84642f25f46d791177a0c8936131973"
+    },
+    {
+      "file": "images/index-settings.png",
+      "sha256": "3b7e8f31e745ebfa04ba0b535aba1f40251d57c87ab834060d2b37cfe78da7e2"
+    }
+  ]
+}

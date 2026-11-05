@@ -33,6 +33,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     image=json.loads((dist/f'imaging-results-{platform}-{arch}.json').read_text());assert image['version']==f'rescue {VERSION}' and image['status']=='passed' and image['checks']>=15
     image_native=json.loads((dist/f'imaging-native-{platform}-{arch}.json').read_text());assert image_native['version']==f'rescue {VERSION}' and image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
+    for prefix,minimum,files in [('index',10 if platform=='windows' else 12,38),('index-carve',65,60),('index-fat',11 if platform=='windows' else 15,51),('index-remnants',8,13),('index-late',7,6),('index-discovery',6,76)]:
+        proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
+        assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files
+        assert proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
@@ -78,13 +82,33 @@ for shot in raid_gui['screenshots']:
     assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
     shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
 shutil.copy2(ROOT/'docs/gui-raid-results.json',dist/'gui-raid-results.json')
+indexed_gui=json.loads((ROOT/'docs/gui-index-results.json').read_text())
+assert indexed_gui['version']==VERSION and indexed_gui['status']=='passed' and indexed_gui['candidates']==1256 and indexed_gui['files_byte_exact']==4
+assert 0<indexed_gui['gui_paused_candidates']<indexed_gui['gui_resumed_candidates']==1256 and indexed_gui['source_bytes_unchanged']
+assert indexed_gui['selected_pages']==[1,2,3] and indexed_gui['selected_bytes']==185
+for shot in indexed_gui['screenshots']:
+    assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
+    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+shutil.copy2(ROOT/'docs/gui-index-results.json',dist/'gui-index-results.json')
+large_gui=json.loads((ROOT/'docs/gui-index-large-results.json').read_text())
+assert large_gui['application_version']==VERSION and large_gui['status']=='passed' and large_gui['candidates']==10000000
+assert large_gui['files_byte_exact']==3 and large_gui['bytes_exact']==138 and large_gui['query_cancelled_by_keyboard'] and large_gui['archive_crc_valid']
+for shot in large_gui['screenshots']:
+    assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
+    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+shutil.copy2(ROOT/'docs/gui-index-large-results.json',dist/'gui-index-large-results.json')
+benchmark=json.loads((ROOT/'docs/index-benchmark-results.json').read_text())
+assert benchmark['version']==VERSION and benchmark['status']=='passed' and benchmark['functional_checks']['queries']==220
+assert benchmark['final_queries']['status']=='passed' and benchmark['final_queries']['candidates']==10000000
+assert all(not query['failures'] for query in benchmark['final_queries']['queries'].values())
+shutil.copy2(ROOT/'docs/index-benchmark-results.json',dist/'index-benchmark-results.json')
 html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
 def embedded(match):
     path=ROOT/'docs'/match.group(1)
     return 'src="data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode('ascii')+'"'
 html=re.sub(r'src="(images/[^"<>]+\.png)"',embedded,html)
 (dist/'intelligence.html').write_text(html,encoding='utf-8')
-for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v14.png','ntfs-extents.png','ntfs-extents-restored.png','ntfs-aliases.png','ntfs-aliases-restored.png','imaging-settings.png','imaging-progress.png','read-map.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
+for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v15.png','ntfs-extents.png','ntfs-extents-restored.png','ntfs-aliases.png','ntfs-aliases-restored.png','imaging-settings.png','imaging-progress.png','read-map.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
     shutil.copy2(ROOT/'docs/images'/name,dist/name)
 assets=sorted(path for path in dist.iterdir() if path.is_file() and path.name!='SHA256SUMS.txt')
 (dist/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets),encoding='ascii')
