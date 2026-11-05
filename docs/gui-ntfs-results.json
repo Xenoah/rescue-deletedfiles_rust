@@ -1,9 +1,9 @@
 {
   "status": "passed",
-  "application_version": "0.2.0-alpha.12",
+  "application_version": "0.2.0-alpha.13",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "scope": "Actual Linux GUI: ntfs-3g-created attribute list across four records and 21 distinct streams; deletion flag emulated, allocation retained. Separate synthetic hard-link alias search and one-payload ZIP.",
-  "gui_binary_sha256": "61bc39342b4b4221e9ef65679df2490e4e94cf0cf6163babf4cee847b5a02574",
+  "gui_binary_sha256": "5eea5312e826449251873d37312bae479c2196acf09ea6b1416e52b1c6b82c91",
   "ntfs_streams_byte_exact": 21,
   "native_attribute_records": 4,
   "allocation_conflicts_reported": 21,
@@ -12,8 +12,8 @@
   "alias_payloads_recovered": 1,
   "source_unchanged": true,
   "source_sha256": "c084cfe2e7fc6b3d11103fc9a7636742486c725cd9fc020e6ae4c396cdb40019",
-  "archive_sha256": "2a3d5c75dc0d947f35e2f3e7b729e94a2fa8e53227f1c752c27c0c9a44bc3888",
-  "alias_archive_sha256": "6053863c8e1d547ff3ddd81653ea1d233ba54aae0618382ae671b2bbf2a70f99",
+  "archive_sha256": "fb61c5bee9b959c4492a4f4cb1f6297ec597e997f3b6ef0eee58a79bf83eef2e",
+  "alias_archive_sha256": "c57433848e0111b9d4808dd86dccbd6c8e04b6a3fbaf09c4fb75e639db7a6e68",
   "zip_crc_verified": true,
   "files": [
     {
@@ -125,19 +125,20 @@
   "screenshots": [
     {
       "file": "images/ntfs-extents.png",
-      "sha256": "85e17eb9210a17861210f779403736aa06bef5b506e08eef0a006dd492265488"
+      "sha256": "aad7c9dfff72c4f29dc3f6865eb55322cbefc6b696f0dab0a46e3bdf0509c2e9"
     },
     {
       "file": "images/ntfs-extents-restored.png",
-      "sha256": "a127b627bc73ca47fad4a6d2e1f021a3caf0440379017a3872ea180f28fd5d77"
+      "sha256": "2662086b4907d5e2c1b01f9f7e737d28d9dea9b8b7ae6d2405797f4df0468299"
     },
     {
       "file": "images/ntfs-aliases.png",
-      "sha256": "2659f38a28e44ff240d414aa409e408af18ca43f83aeb0d587357363a7a9429d"
+      "sha256": "89248ca355c8507972422de0dcfb95ae18640e0e28dd45b12083c45543b3c772"
     },
     {
       "file": "images/ntfs-aliases-restored.png",
-      "sha256": "eb62576279c4598506d490e144586d7817b010ad83f95882b500cce0f617187a"
+      "sha256": "ccc988f28b911086c796192df706ebab221ea3cf5cf183026f5c0e1630b9a72d"
     }
-  ]
+  ],
+  "alias_source_sha256": "a1662276f6e20ad80f9e280e8829f69c82dbd2b385d33cb83ad4137065d9d330"
 }
