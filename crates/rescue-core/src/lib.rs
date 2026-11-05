@@ -449,6 +449,7 @@ fn scan_volume(
                             warnings.push("DATA is unavailable".into());
                         }
                         let supported = warnings.is_empty() && stream.data.is_some();
+                        warnings.extend(record.provenance.clone());
                         let (allocation_status, allocation_warnings) = stream
                             .data
                             .as_ref()
@@ -674,7 +675,8 @@ fn ntfs_recovery_data(
         || name.clone(),
         |s| format!("{}__ADS__{}", safe_name(&name), safe_name(&s)),
     );
-    let (allocation_status, warnings) = ntfs.allocation(image, &data);
+    let (allocation_status, mut warnings) = ntfs.allocation(image, &data);
+    warnings.extend(record.provenance);
     Ok(RecoveryData {
         data,
         name,

@@ -287,7 +287,37 @@ pub(super) fn resolve(
     }
     let list = list_bytes(image, &base, geometry)?;
     let entries = entries(&list)?;
-    let base_reference = index | ((base.sequence as u64) << 48);
+    let current_reference = index | ((base.sequence as u64) << 48);
+    let base_references = entries
+        .iter()
+        .filter(|e| e.index() == index)
+        .map(|e| e.reference)
+        .collect::<BTreeSet<_>>();
+    if base_references.len() > 1 {
+        return Err(invalid("attribute list has conflicting base references"));
+    }
+    let base_reference = base_references
+        .first()
+        .copied()
+        .unwrap_or(current_reference);
+    // Windows increments the FILE sequence when freeing a record; its surviving
+    // attribute list still records the previous sequence. Require ONE consistent
+    // mode for the base and every extension, so reused/mixed records stay invalid.
+    let advanced = base_reference != current_reference;
+    let next_sequence = |sequence: u16| sequence.wrapping_add(1).max(1);
+    if advanced && (base.in_use || next_sequence((base_reference >> 48) as u16) != base.sequence) {
+        return Err(invalid(
+            "attribute-list base sequence mismatch (reused record)",
+        ));
+    }
+    let matches_sequence = |current: u16, reference: u64| {
+        current
+            == if advanced {
+                next_sequence((reference >> 48) as u16)
+            } else {
+                (reference >> 48) as u16
+            }
+    };
     let in_use = base.in_use;
     let mut records = BTreeMap::from([(index, base)]);
     let mut missing = entries
@@ -329,7 +359,7 @@ pub(super) fn resolve(
             if entries
                 .iter()
                 .filter(|e| e.index() == number)
-                .any(|e| (e.reference >> 48) as u16 != extension.sequence)
+                .any(|e| !matches_sequence(extension.sequence, e.reference))
                 || extension.base != base_reference
                 || extension.in_use != in_use
                 || extension.attributes.iter().any(|a| a.kind == 0x20)
@@ -373,7 +403,7 @@ pub(super) fn resolve(
     }
     let mut selected = Vec::new();
     for entry in &entries {
-        if records[&entry.index()].sequence != (entry.reference >> 48) as u16 {
+        if !matches_sequence(records[&entry.index()].sequence, entry.reference) {
             return Err(invalid("attribute-list sequence mismatch (reused record)"));
         }
         selected.push(
@@ -429,6 +459,9 @@ pub(super) fn resolve(
         .collect::<Vec<_>>();
     let name_record = records.values().find(|r| r.name.is_some()).cloned();
     let mut base = records.remove(&index).unwrap();
+    if advanced {
+        base.provenance.push("Deleted NTFS sequence increment verified consistently across the base, attribute-list references and every extension.".into());
+    }
     base.names = names;
     if base.name.is_none()
         && let Some(named) = name_record

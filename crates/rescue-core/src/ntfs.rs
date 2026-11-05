@@ -341,6 +341,7 @@ pub(crate) struct Record {
     pub parent_sequence: u16,
     pub streams: Vec<Stream>,
     pub unsupported: Vec<String>,
+    pub provenance: Vec<String>,
     pub hash: String,
     pub created: Option<crate::FileTimestamp>,
     pub modified: Option<crate::FileTimestamp>,
@@ -392,6 +393,7 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         return Err(invalid("invalid MFT attribute bounds"));
     }
     let mut record = Record {
+        provenance: Vec::new(),
         attributes: Vec::new(),
         sequence: u16_at(&raw, 16)?,
         in_use: flags & 1 != 0,

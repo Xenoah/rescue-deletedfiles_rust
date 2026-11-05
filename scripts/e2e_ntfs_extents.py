@@ -77,6 +77,23 @@ def main(binary,output=None):
                     finally:client.close()
             else:check(found and not any(c['supported'] for c in found),'malformed list accepted '+variant+str(found))
             check(hashlib.sha256(source.read_bytes()).hexdigest()==before,'source modified');count+=1
+        # Windows frees FILE records by advancing their sequence once, while
+        # the surviving list/base references retain the historical sequence.
+        for variant in ['consistent-free','mixed-free','base-reused-twice','active-extension']:
+            source=root/(variant+'.raw');truth=fixture(source,'normal');vol=bytearray(source.read_bytes())
+            for number in [30,31,32,33]:put(vol,MFT_LCN*SECTOR+number*RECORD+16,'H',8)
+            if variant=='mixed-free':put(vol,MFT_LCN*SECTOR+31*RECORD+16,'H',9)
+            if variant=='base-reused-twice':put(vol,MFT_LCN*SECTOR+30*RECORD+16,'H',9)
+            if variant=='active-extension':put(vol,MFT_LCN*SECTOR+31*RECORD+22,'H',1)
+            source.write_bytes(vol);before=hashlib.sha256(source.read_bytes()).hexdigest()
+            s=run(binary,'scan','--source',source,'--work-dir',root/(variant+'-work'),'--json')
+            found=[c for c in run(binary,'results','--session',s['session'],'--json')['candidates'] if c['record']==30]
+            if variant=='consistent-free':
+                check(len(found)==2 and all(c['supported'] and any('sequence increment' in w for w in c['warnings']) for c in found),'consistent deleted sequence rejected '+str(found))
+                restored=run(binary,'recover','--session',s['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'freed-output','--json')['results']
+                for r in restored:check(r['status']=='completed' and Path(r['path']).read_bytes()==truth[r['candidate_id'].replace('mft-30-8','mft-30-7')],'deleted extent bytes')
+            else:check(found and not any(c['supported'] for c in found),'inconsistent deleted sequence accepted')
+            check(hashlib.sha256(source.read_bytes()).hexdigest()==before,'deleted sequence test source modified');count+=1
         # Bootstrap an MFT whose additional run is described by a reachable extension.
         source=root/'mft.raw';truth=build(source);vol=bytearray(source.read_bytes());tail=bytes(vol[MFT_LCN*SECTOR+16*RECORD:MFT_LCN*SECTOR+64*RECORD]);vol[800*SECTOR:800*SECTOR+len(tail)]=tail;vol[MFT_LCN*SECTOR+16*RECORD:MFT_LCN*SECTOR+64*RECORD]=b'\0'*len(tail)
         first=ident(extent([(32,MFT_LCN)],64*RECORD),1);second=ident(extent([(96,800)],64*RECORD,start=32),1)

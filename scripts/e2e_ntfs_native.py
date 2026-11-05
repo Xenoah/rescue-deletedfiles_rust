@@ -35,9 +35,9 @@ def populate(mount,before_delete=None):
     for name,payload in truth.items():
         target=path if name is None else Path(str(path)+':'+name)
         with target.open('xb') as f:f.write(payload);f.flush();os.fsync(f.fileno())
-    alias=mount/'native-alias.pdf';os.link(path,alias);sync_volume(mount)
-    if before_delete:before_delete(path)
-    path.unlink();alias.unlink();sync_volume(mount)
+    alias=mount/'native-alias.pdf';os.link(path,alias);path.unlink();sync_volume(mount)
+    if before_delete:before_delete(alias)
+    alias.unlink();sync_volume(mount)
     return path,alias,truth
 
 def attribute_diagnostics(binary,source,root,candidates):
@@ -92,7 +92,7 @@ def main(binary,output):
             found=[c for c in candidates if c['name'].split(':')[0] in [path.name,alias.name]]
             valid=len(found)==21 and {c['stream_name'] for c in found}==set(truth) and all(c['supported'] for c in found)
             diagnosis=None if valid else attribute_diagnostics(binary,source,root,found)
-            check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; before: '+str(before)+'; diagnostic: '+str(diagnosis))
+            check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; before-list-bytes: '+str([d['list_bytes'] for d in before])+'; diagnostic: '+str(diagnosis))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
             check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
