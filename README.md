@@ -120,7 +120,7 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 
 alpha.13のローカル試験では、消失領域20条件・64出力、残存MFT12条件・52出力、実クイックフォーマット100件×CLI/MCPを照合しました。
 実GUIでは消失領域6件・残存レコード14件をZIP復元し、720×520の候補ダイアログとキーボードで閉じる操作も確認しました。
-[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42004653478)でRust42項目・13統合群・8パッケージの組立を通過しました。公開実物の検証は配布後に記録します。
+[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42004653478)でRust42項目・13統合群・8パッケージの組立を通過しました。公開後も[全4環境で実行検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42010127782)し、計111資産を照合しました。[alpha.13公開実物の記録](docs/public-release-v0.2.0-alpha.13.json)。
 前版alpha.12は[公開パッケージを4環境で実行](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41999924773)し、計93資産を照合済みです。[公開実物の記録](docs/public-release-v0.2.0-alpha.12.json)。
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
