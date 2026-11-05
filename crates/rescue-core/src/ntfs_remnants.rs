@@ -1,4 +1,5 @@
 //! Explicit, uncertain old-MFT evidence. Never invent a chain or an original path.
+pub(crate) mod indexed;
 use crate::*;
 const CHUNK: u64 = 4 * 1024 * 1024;
 const MAX_PROBE_BYTES: u64 = 256 * 1024 * 1024;
@@ -107,7 +108,6 @@ pub(crate) fn scan(
                 }
                 Err(_) => continue,
             };
-            let name = r.name.clone().unwrap();
             if r.streams.is_empty() {
                 r.streams.push(ntfs::Stream {
                     name: None,
@@ -115,63 +115,19 @@ pub(crate) fn scan(
                     unsupported: Vec::new(),
                 });
             }
-            for stream in r.streams {
+            for stream in &r.streams {
                 if session.candidates.len() >= options.max_candidates {
                     session.truncated = true;
                     break 'scan;
                 }
-                let mut warnings = r.unsupported.clone();
-                warnings.extend(stream.unsupported);
-                let supported = warnings.is_empty() && stream.data.is_some();
-                warnings.push(CAUTION.into());
-                if r.in_use {
-                    warnings.push("The surviving record has its in-use flag set; it is not a current-MFT record.".into());
-                }
-                let (allocation_status, allocation_warnings) = match (&current, &stream.data) {
-                    (Some(n), Some(d)) => n.allocation(image, d),
-                    _ => (AllocationStatus::Unknown, Vec::new()),
-                };
-                warnings.extend(allocation_warnings);
-                let display = stream
-                    .name
-                    .as_ref()
-                    .map_or_else(|| name.clone(), |s| format!("{name}:{s}"));
-                let alternate_names = r
-                    .names
-                    .iter()
-                    .filter(|n| n.name != name)
-                    .map(|n| {
-                        let name = stream
-                            .name
-                            .as_ref()
-                            .map_or_else(|| n.name.clone(), |s| format!("{}:{s}", n.name));
-                        CandidateName {
-                            name: name.clone(),
-                            original_path: name,
-                            path_verified: false,
-                            namespace: n.namespace,
-                        }
-                    })
-                    .collect();
-                session.candidates.push(Candidate {
-                    id: id(offset, number, r.sequence, stream.name.as_deref()),
-                    record: number,
-                    fragment_offset: Some(offset),
-                    sequence: r.sequence,
-                    stream_name: stream.name,
-                    name: display.clone(),
-                    original_path: display,
-                    path_verified: false,
-                    alternate_names,
-                    size: stream.data.as_ref().map(|d| d.size()),
-                    supported,
-                    warnings,
-                    record_sha256: r.hash.clone(),
-                    extent_evidence: ExtentEvidence::MetadataRemnant,
-                    allocation_status,
-                    created: r.created.clone(),
-                    modified: r.modified.clone(),
-                });
+                session.candidates.push(make_candidate(
+                    image,
+                    current.as_ref(),
+                    offset,
+                    number,
+                    &r,
+                    stream,
+                ));
             }
         }
         cursor += count as u64;
@@ -184,6 +140,71 @@ pub(crate) fn scan(
     }
     session.total_records = session.total_records.max(session.scanned_records);
     Ok(())
+}
+
+fn make_candidate(
+    image: &mut Image,
+    current: Option<&Ntfs>,
+    offset: u64,
+    number: u64,
+    r: &ntfs::Record,
+    stream: &ntfs::Stream,
+) -> Candidate {
+    let name = r.name.as_ref().unwrap();
+    let mut warnings = r.unsupported.clone();
+    warnings.extend(stream.unsupported.clone());
+    let supported = warnings.is_empty() && stream.data.is_some();
+    warnings.push(CAUTION.into());
+    if r.in_use {
+        warnings.push(
+            "The surviving record has its in-use flag set; it is not a current-MFT record.".into(),
+        );
+    }
+    let (allocation_status, allocation_warnings) = match (current, &stream.data) {
+        (Some(n), Some(d)) => n.allocation(image, d),
+        _ => (AllocationStatus::Unknown, Vec::new()),
+    };
+    warnings.extend(allocation_warnings);
+    let display = stream
+        .name
+        .as_ref()
+        .map_or_else(|| name.clone(), |s| format!("{name}:{s}"));
+    let alternate_names = r
+        .names
+        .iter()
+        .filter(|n| n.name != *name)
+        .map(|n| {
+            let name = stream
+                .name
+                .as_ref()
+                .map_or_else(|| n.name.clone(), |s| format!("{}:{s}", n.name));
+            CandidateName {
+                name: name.clone(),
+                original_path: name,
+                path_verified: false,
+                namespace: n.namespace,
+            }
+        })
+        .collect();
+    Candidate {
+        id: id(offset, number, r.sequence, stream.name.as_deref()),
+        record: number,
+        fragment_offset: Some(offset),
+        sequence: r.sequence,
+        stream_name: stream.name.clone(),
+        name: display.clone(),
+        original_path: display,
+        path_verified: false,
+        alternate_names,
+        size: stream.data.as_ref().map(|d| d.size()),
+        supported,
+        warnings,
+        record_sha256: r.hash.clone(),
+        extent_evidence: ExtentEvidence::MetadataRemnant,
+        allocation_status,
+        created: r.created.clone(),
+        modified: r.modified.clone(),
+    }
 }
 
 pub(crate) fn recovery_data(

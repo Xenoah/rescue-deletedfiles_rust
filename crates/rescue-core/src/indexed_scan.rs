@@ -16,6 +16,13 @@ pub(crate) struct Plan {
     pub(crate) records: u64,
     #[serde(default)]
     pub(crate) filesystem: FileSystem,
+    #[serde(default = "default_true")]
+    pub(crate) current_mft: bool,
+    #[serde(default)]
+    warnings: Vec<String>,
+}
+fn default_true() -> bool {
+    true
 }
 #[derive(Serialize, Deserialize)]
 pub(crate) struct Checkpoint {
@@ -29,21 +36,19 @@ pub(crate) struct Checkpoint {
     pub(crate) previous_records: u64,
     #[serde(default)]
     pub(crate) fat: Option<crate::fat::indexed::State>,
+    #[serde(default)]
+    pub(crate) remnants: Option<crate::ntfs_remnants::indexed::State>,
 }
 pub fn scan_indexed(
     source: &Path,
     work: &Path,
-    options: ScanOptions,
+    mut options: ScanOptions,
     settings: &SearchSettings,
     cancel: &AtomicBool,
     progress: impl FnMut(IndexedProgress),
 ) -> Result<PathBuf> {
     settings.validate()?;
-    if settings.fragments {
-        return Err(Error::Unsupported(
-            "incremental engine for this scan mode is not available yet".into(),
-        ));
-    }
+    options.fragments = settings.fragments;
     if options.max_candidates == 0
         || options.max_candidates > 10_000_000
         || options.max_records == 0
@@ -96,21 +101,38 @@ pub fn scan_indexed(
             return Err(Error::Cancelled);
         }
         let mut volume = Image::open_region(source, region.as_ref())?;
-        let (filesystem, records) = if &volume.boot_read(512)?[3..11] == b"NTFS    " {
-            (FileSystem::Ntfs, Ntfs::open(&mut volume)?.records)
-        } else {
-            (crate::fat::filesystem(&mut volume)?, 0)
-        };
+        let (filesystem, records, current_mft, warnings) =
+            if &volume.boot_read(512)?[3..11] == b"NTFS    " {
+                match Ntfs::open(&mut volume) {
+                    Ok(n) => (FileSystem::Ntfs, n.records, true, n.warnings.clone()),
+                    Err(error) if options.fragments => {
+                        ntfs::Geometry::parse(&mut volume)?;
+                        (
+                            FileSystem::Ntfs,
+                            0,
+                            false,
+                            vec![format!("Current MFT is unavailable: {error}")],
+                        )
+                    }
+                    Err(error) => return Err(error),
+                }
+            } else {
+                (crate::fat::filesystem(&mut volume)?, 0, false, vec![])
+            };
         plans.push(Plan {
             region,
             fingerprint: volume.fingerprint()?,
             records,
             filesystem,
+            current_mft,
+            warnings,
         });
     }
     let mut header = Session {
         raid: None,
-        schema_version: if disk || settings.recovered_volume.is_some() {
+        schema_version: if settings.fragments {
+            8
+        } else if disk || settings.recovered_volume.is_some() {
             5
         } else {
             3
@@ -151,6 +173,14 @@ pub fn scan_indexed(
             vec![]
         },
     };
+    for plan in &plans {
+        header.warnings.extend(
+            plan.warnings
+                .iter()
+                .take(100usize.saturating_sub(header.warnings.len()))
+                .cloned(),
+        );
+    }
     image.annotate_coverage(&mut header);
     let checkpoint = Checkpoint {
         version: 1,
@@ -162,6 +192,7 @@ pub fn scan_indexed(
         stream: 0,
         previous_records: 0,
         fat: None,
+        remnants: None,
     };
     let writer = IndexWriter::create(work, &header, "filesystem_records_v1", &checkpoint)?;
     run(writer, cancel, progress)
@@ -239,6 +270,11 @@ fn run(
     header.cancelled = false;
     let settings = header.search.clone().unwrap_or_default();
     settings.validate()?;
+    if settings.method != ScanMethod::Quick || settings.fragments != checkpoint.options.fragments {
+        return Err(Error::Request(
+            "saved metadata scan settings changed".into(),
+        ));
+    }
     let mut committed = writer.index().status()?.candidates;
     let notify = |header: &Session, committed: u64, progress: &mut dyn FnMut(IndexedProgress)| {
         progress(IndexedProgress {
@@ -265,6 +301,38 @@ fn run(
         let mut volume = Image::open_region(&header.source, plan.region.as_ref())?;
         if volume.fingerprint()? != plan.fingerprint {
             return Err(Error::SourceChanged);
+        }
+        if checkpoint.options.fragments
+            && plan.filesystem == FileSystem::Ntfs
+            && (checkpoint.remnants.is_some() || !plan.current_mft)
+        {
+            crate::ntfs_remnants::indexed::run_volume(
+                &mut writer,
+                &mut header,
+                &mut checkpoint,
+                &image,
+                &mut volume,
+                cancel,
+                &mut progress,
+            )?;
+            if volume.fingerprint()? != plan.fingerprint {
+                return Err(Error::SourceChanged);
+            }
+            if header.cancelled || checkpoint.remnants.as_ref().is_some_and(|r| r.limited) {
+                return Ok(path);
+            }
+            if !checkpoint.remnants.as_ref().is_some_and(|r| r.complete) {
+                return Err(Error::Request("unfinished remnant phase".into()));
+            }
+            checkpoint.previous_records = header.scanned_records;
+            checkpoint.volume += 1;
+            checkpoint.record = 0;
+            checkpoint.stream = 0;
+            checkpoint.remnants = None;
+            commit(&mut writer, &image, &header, &[], "running", &checkpoint)?;
+            committed = writer.index().status()?.candidates;
+            notify(&header, committed, &mut progress);
+            continue;
         }
         if plan.filesystem != FileSystem::Ntfs {
             if crate::fat::filesystem(&mut volume)? != plan.filesystem {
@@ -453,6 +521,14 @@ fn run(
             committed += batch.len() as u64;
             notify(&header, committed, &mut progress);
             return Ok(path);
+        }
+        if checkpoint.options.fragments {
+            checkpoint.remnants =
+                Some(crate::ntfs_remnants::indexed::State::new(&mut header, true));
+            commit(&mut writer, &image, &header, &batch, "running", &checkpoint)?;
+            committed += batch.len() as u64;
+            notify(&header, committed, &mut progress);
+            continue;
         }
         checkpoint.previous_records += ntfs.records;
         checkpoint.volume += 1;
