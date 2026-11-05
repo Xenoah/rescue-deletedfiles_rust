@@ -1,5 +1,6 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 mod acquisition_ui;
+mod discovery_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -47,6 +48,7 @@ enum Message {
     ImagingProgress(rescue_core::AcquisitionProgress),
     Imaged(rescue_core::AcquisitionResult),
     Progress(Progress),
+    Discovered(Box<rescue_core::DiscoveryResult>),
     Scanned(Box<Session>, PathBuf),
     Finished {
         results: Vec<RecoveryResult>,
@@ -56,6 +58,12 @@ enum Message {
     Error(String),
 }
 struct App {
+    discovery_dialog: bool,
+    discovery_running: bool,
+    discovery_source: String,
+    discovery: Option<rescue_core::DiscoveryResult>,
+    discovered_id: Option<String>,
+    recovered_volume: Option<rescue_core::SourceRegion>,
     map_dialog: bool,
     map_source: PathBuf,
     map_page: Option<rescue_core::ReadMapPage>,
@@ -169,6 +177,12 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            discovery_dialog: false,
+            discovery_running: false,
+            discovery_source: String::new(),
+            discovery: None,
+            discovered_id: None,
+            recovered_volume: None,
             map_dialog: false,
             map_source: PathBuf::new(),
             map_page: None,
@@ -236,6 +250,11 @@ impl App {
             }
         };
         let s = SearchSettings {
+            recovered_volume: if self.carve || self.discovery_source != self.source {
+                None
+            } else {
+                self.recovered_volume.clone()
+            },
             method: if self.carve {
                 ScanMethod::Carve
             } else {
@@ -302,6 +321,8 @@ impl App {
             ..Default::default()
         });
         self.carve = settings.method == ScanMethod::Carve;
+        self.recovered_volume = settings.recovered_volume.clone();
+        self.discovery_source = self.source.clone();
         self.extensions = settings.extensions.join(", ");
         self.path_prefix = settings.path_prefix;
         self.depth = settings
@@ -381,6 +402,7 @@ impl App {
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
         self.stage = Stage::Scanning;
+        self.discovery_running = false;
         self.session = None;
         self.selected.clear();
         self.focused = None;
@@ -428,7 +450,7 @@ impl App {
             Vec::new()
         } else {
             vec![VolumeRoot {
-                partition: None,
+                partition: session.region.as_ref().map(|r| r.index),
                 path: PathBuf::from(&self.original_root),
             }]
         };
@@ -573,6 +595,27 @@ impl App {
                     );
                 }
                 Message::Progress(p) => self.progress = p,
+                Message::Discovered(result) => {
+                    self.discovery_running = false;
+                    self.stage = Stage::Settings;
+                    self.status = format!(
+                        "領域探索{}: {} 候補{}",
+                        if result.cancelled {
+                            "を中断"
+                        } else {
+                            "完了"
+                        },
+                        result.volumes.len(),
+                        if result.truncated {
+                            " / 未探索の範囲あり"
+                        } else {
+                            ""
+                        }
+                    );
+                    self.discovery = Some(*result);
+                    self.discovered_id = None;
+                    self.discovery_dialog = true;
+                }
                 Message::Scanned(s, p) => {
                     self.status = format!(
                         "スキャン完了: {} 候補 / 解析不良: {} 件{}",
@@ -599,6 +642,7 @@ impl App {
                     self.stage = Stage::Finished;
                 }
                 Message::Error(e) => {
+                    self.discovery_running = false;
                     self.status = format!("エラー: {e}");
                     self.stage = if self.session.is_some() {
                         Stage::Selecting
@@ -702,6 +746,7 @@ impl App {
             self.source_ui(ui);
             if ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("ディスクのイメージを作成・再開")).clicked(){self.image_dialog=true;}
             if self.source_mode==SourceMode::Image && ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("読取マップを確認")).clicked(){self.map_source=PathBuf::from(&self.source);self.map_page=None;self.map_dialog=true;self.load_map_page(0,None);}
+            self.discovery_controls(ui);
             ui.add_space(16.0);
             ui.strong("2  保存方法");
             ui.horizontal_wrapped(|ui| {
@@ -1537,7 +1582,11 @@ impl App {
                         Stage::Settings => self.setup_ui(ui),
                         Stage::Scanning => {
                             ui.add_space(24.0);
-                            ui.heading("スキャンしています");
+                            ui.heading(if self.discovery_running {
+                                "失われた領域を探しています"
+                            } else {
+                                "スキャンしています"
+                            });
                             ui.label(&self.source);
                             ui.label("完了後、復元するファイルを選択できます。");
                         }
@@ -1553,6 +1602,9 @@ impl App {
         }
         if self.map_dialog && !self.busy() {
             self.read_map_dialog(ctx);
+        }
+        if self.discovery_dialog && !self.busy() {
+            self.discovery_dialog_ui(ctx);
         }
         if self.show_evidence && !wide && self.session.is_some() && self.stage != Stage::Settings {
             let mut open = true;

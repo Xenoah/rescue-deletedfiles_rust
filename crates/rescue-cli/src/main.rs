@@ -74,6 +74,17 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Find lost volumes and validated backup boots without repairing the source.
+    Discover {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long, default_value_t = 0)]
+        range_start: u64,
+        #[arg(long)]
+        range_end: Option<u64>,
+        #[arg(long)]
+        json: bool,
+    },
     Scan {
         #[arg(long)]
         source: PathBuf,
@@ -91,6 +102,9 @@ enum Command {
         range_start: u64,
         #[arg(long)]
         range_end: Option<u64>,
+        /// Select one validated volume returned by discover (including overlaps).
+        #[arg(long)]
+        volume_id: Option<String>,
         #[arg(long)]
         json: bool,
     },
@@ -329,6 +343,38 @@ fn run() -> Result<i32, Error> {
             );
             Ok(0)
         }
+        Command::Discover {
+            source,
+            range_start,
+            range_end,
+            json: compact,
+        } => {
+            let result = rescue_core::discover_volumes(
+                &source,
+                &rescue_core::DiscoveryOptions {
+                    range_start,
+                    range_end,
+                },
+                &cancel,
+                |p| {
+                    if !compact {
+                        eprintln!(
+                            "{} / {} bytes ; {} volume candidates",
+                            p.scanned_records, p.total_records, p.candidates
+                        );
+                    }
+                },
+            )?;
+            let code = if result.cancelled {
+                130
+            } else if result.truncated {
+                5
+            } else {
+                0
+            };
+            print(serde_json::to_value(result)?, compact);
+            Ok(code)
+        }
         Command::Scan {
             source,
             work_dir,
@@ -339,8 +385,32 @@ fn run() -> Result<i32, Error> {
             max_depth,
             range_start,
             range_end,
+            volume_id,
         } => {
             rescue_core::guard_output_path(&source, &work_dir)?;
+            let recovered_volume = if let Some(id) = volume_id {
+                if mode != "quick" {
+                    return Err(Error::Request("--volume-id requires --mode quick".into()));
+                }
+                let found = rescue_core::discover_volumes(
+                    &source,
+                    &rescue_core::DiscoveryOptions::default(),
+                    &cancel,
+                    |_| {},
+                )?;
+                Some(
+                    found
+                        .volumes
+                        .into_iter()
+                        .find(|v| v.id == id)
+                        .ok_or_else(|| {
+                            Error::Request("selected discovered volume is unavailable".into())
+                        })?
+                        .region,
+                )
+            } else {
+                None
+            };
             let settings = SearchSettings {
                 method: if mode == "carve" {
                     ScanMethod::Carve
@@ -352,6 +422,7 @@ fn run() -> Result<i32, Error> {
                 max_depth,
                 range_start,
                 range_end,
+                recovered_volume,
             };
             let session = scan_with_settings(
                 &source,

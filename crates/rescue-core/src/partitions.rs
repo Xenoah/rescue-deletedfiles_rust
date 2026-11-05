@@ -13,6 +13,9 @@ pub struct SourceRegion {
     pub offset: u64,
     pub length: u64,
     pub filesystem: Option<FileSystem>,
+    /// A validated, read-only boot interpretation found without a partition table.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery_boot: Option<crate::RecoveryBoot>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SourceLayout {
@@ -81,6 +84,7 @@ fn region(
         offset,
         length,
         filesystem: filesystem(image, offset, length)?,
+        recovery_boot: None,
     })
 }
 fn validate_regions(regions: &[SourceRegion]) -> Result<()> {
@@ -369,6 +373,7 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
             offset: 0,
             length: layout.bytes,
             filesystem: Some(fs),
+            recovery_boot: None,
         });
         return Ok(layout);
     }

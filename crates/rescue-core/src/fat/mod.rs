@@ -19,6 +19,51 @@ const MAX_CHAIN: u64 = 1_048_576;
 const MAX_DIRECTORIES: usize = 16384;
 const MAX_DIRECTORY_BYTES: u64 = 64 * 1024 * 1024;
 
+/// Discovery checks independent geometry, reserved FAT entries and root bounds.
+/// Normal scanning still validates complete chains, allocation and directory sets.
+pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
+    let geometry = Geometry::open(image)?;
+    let mut copies = Vec::new();
+    for offset in &geometry.fat_offsets {
+        let bytes = image.read(*offset, 8)?;
+        let first = u32_at(&bytes, 0)?;
+        let second = u32_at(&bytes, 4)?;
+        if first & 0x0fff_fff8 != 0x0fff_fff8 || second & 0x0fff_fff8 != 0x0fff_fff8 {
+            return Err(invalid("reserved FAT entries"));
+        }
+        copies.push(bytes);
+    }
+    if copies.windows(2).any(|p| p[0] != p[1]) {
+        return Err(invalid("reserved FAT copies disagree"));
+    }
+    let root = image.read(
+        geometry.address(geometry.root)?,
+        geometry.cluster.min(65536) as usize,
+    )?;
+    if geometry.filesystem == FileSystem::Exfat {
+        for kind in [0x81, 0x82] {
+            let entry = root
+                .as_chunks::<32>()
+                .0
+                .iter()
+                .take_while(|e| e[0] != 0)
+                .find(|e| e[0] == kind)
+                .ok_or_else(|| {
+                    invalid("exFAT allocation/upcase root entry not found within probe")
+                })?;
+            geometry.address(u32_at(entry, 20)?)?;
+            let length = u64_at(entry, 24)?;
+            if length == 0 || length > u64::from(geometry.clusters) * geometry.cluster {
+                return Err(invalid("exFAT system stream bounds"));
+            }
+        }
+    }
+    Ok(vec![
+        "Validated boot geometry and configured backup".into(),
+        "Checked reserved FAT entries, mirrored copies and root directory bounds".into(),
+    ])
+}
+
 fn invalid(message: &str) -> Error {
     Error::Invalid(format!("FAT: {message}"))
 }

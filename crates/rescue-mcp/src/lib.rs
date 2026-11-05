@@ -67,6 +67,11 @@ fn tool(
 }
 fn tools() -> Value {
     let string = json!({"type":"string","minLength":1});
+    let region = json!({"type":"object","properties":{
+        "index":{"type":"integer","minimum":0},"name":string,"offset":{"type":"integer","minimum":0},"length":{"type":"integer","minimum":512},
+        "filesystem":{"type":"string","enum":["ntfs","fat32","exfat"]},
+        "recovery_boot":{"type":"object","properties":{"role":{"type":"string","enum":["primary","backup"]},"offset":{"type":"integer","minimum":0},"bytes":{"type":"integer","minimum":512,"maximum":49152},"sha256":{"type":"string","pattern":"^[a-f0-9]{64}$"}},"required":["role","offset","bytes","sha256"],"additionalProperties":false}},
+        "required":["index","name","offset","length","filesystem","recovery_boot"],"additionalProperties":false});
     json!([
         tool(
             "list_sources",
@@ -78,9 +83,16 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
+            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region}),
             &["source", "request_id"],
             false
+        ),
+        tool(
+            "discover_volumes",
+            "Find lost volumes and validated backup boots on an allowed source, without repairs. Returns alternative regions with overlap and structural evidence. Pass exactly one region to start_scan.recovered_volume; it is revalidated before use. Poll get_job.",
+            json!({"source":string,"request_id":string,"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
+            &["source", "request_id"],
+            true
         ),
         tool(
             "start_image",
@@ -221,7 +233,10 @@ impl Server {
         if object.keys().any(|key| !properties.contains_key(key)) {
             return Err("unknown argument".into());
         }
-        if matches!(name, "start_scan" | "recover_files" | "start_image") {
+        if matches!(
+            name,
+            "start_scan" | "recover_files" | "start_image" | "discover_volumes"
+        ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
             if let Some((previous, result)) = self.requests.get(request) {
@@ -236,7 +251,7 @@ impl Server {
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
                 "generated_images":self.state.lock().unwrap().acquired_images,
-                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","jpeg_raw_carving","document_media_carving","native_read_only_disks","mbr_gpt_partitions","resumable_acquisition","read_map"],"version":rescue_core::VERSION}),
+                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","jpeg_raw_carving","document_media_carving","native_read_only_disks","mbr_gpt_partitions","resumable_acquisition","read_map","lost_volume_discovery"],"version":rescue_core::VERSION}),
             ),
             "get_read_map" => {
                 let path = rescue_core::canonical_source_path(Path::new(field(args, "image")?))
@@ -339,6 +354,57 @@ impl Server {
                 }));
                 Ok(json!({"job_id":id,"state":"running"}))
             }
+            "discover_volumes" => {
+                let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
+                    .map_err(err)?;
+                if !self.config.sources.contains(&path)
+                    && !self.state.lock().unwrap().acquired_images.contains(&path)
+                {
+                    return Err("source is outside the allowlist".into());
+                }
+                let number = |name: &str| {
+                    args.get(name)
+                        .map(|v| v.as_u64().ok_or_else(|| format!("invalid {name}")))
+                        .transpose()
+                };
+                let options = rescue_core::DiscoveryOptions {
+                    range_start: number("range_start")?.unwrap_or(0),
+                    range_end: number("range_end")?,
+                };
+                let (id, cancel) = self.create_job()?;
+                let shared = self.state.clone();
+                let job_id = id.clone();
+                self.threads.push(thread::spawn(move || {
+                    let result =
+                        rescue_core::discover_volumes(&path, &options, &cancel, |progress| {
+                            shared
+                                .lock()
+                                .unwrap()
+                                .jobs
+                                .get_mut(&job_id)
+                                .unwrap()
+                                .progress = progress;
+                        });
+                    let mut state = shared.lock().unwrap();
+                    let job = state.jobs.get_mut(&job_id).unwrap();
+                    match result {
+                        Ok(result) => {
+                            job.state = if result.cancelled {
+                                "cancelled"
+                            } else {
+                                "completed"
+                            }
+                            .into();
+                            job.result = serde_json::to_value(result).unwrap();
+                        }
+                        Err(e) => {
+                            job.state = "failed".into();
+                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                        }
+                    }
+                }));
+                Ok(json!({"job_id":id,"state":"running"}))
+            }
             "start_scan" => {
                 let carve = match args.get("mode") {
                     None => false,
@@ -372,6 +438,10 @@ impl Server {
                     .map(|v| u16::try_from(v).map_err(err))
                     .transpose()?;
                 let settings = SearchSettings {
+                    recovered_volume: args
+                        .get("recovered_volume")
+                        .map(|v| serde_json::from_value(v.clone()).map_err(err))
+                        .transpose()?,
                     method: if carve {
                         ScanMethod::Carve
                     } else {
@@ -648,8 +718,10 @@ impl Server {
             }
             _ => Err("unknown tool".into()),
         };
-        if matches!(name, "start_scan" | "recover_files" | "start_image")
-            && let Ok(ref value) = result
+        if matches!(
+            name,
+            "start_scan" | "recover_files" | "start_image" | "discover_volumes"
+        ) && let Ok(ref value) = result
         {
             self.requests.insert(
                 field(args, "request_id")?.into(),

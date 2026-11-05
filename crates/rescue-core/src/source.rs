@@ -25,6 +25,9 @@ pub(crate) struct Image {
     total: u64,
     device: Option<device::DeviceInfo>,
     mapped: Option<MappedSource>,
+    boot: Option<(crate::RecoveryBoot, Vec<u8>)>,
+    read_budget: Option<u64>,
+    bytes_read: u64,
 }
 pub(crate) fn map_path(image: &Path) -> PathBuf {
     let mut name = image.as_os_str().to_owned();
@@ -86,6 +89,9 @@ impl Image {
             total,
             device,
             mapped,
+            boot: None,
+            read_budget: None,
+            bytes_read: 0,
         })
     }
     pub fn open_region(path: &Path, region: Option<&crate::SourceRegion>) -> Result<Self> {
@@ -105,10 +111,50 @@ impl Image {
             {
                 return Err(Error::Invalid("unaligned volume boundary".into()));
             }
+            if let Some(boot) = &region.recovery_boot {
+                if boot.bytes < 512
+                    || boot.bytes > 12 * 4096
+                    || boot.offset < region.offset
+                    || boot
+                        .offset
+                        .checked_add(u64::from(boot.bytes))
+                        .is_none_or(|end| end > region.offset + region.length)
+                {
+                    return Err(Error::Invalid("recovery boot outside volume".into()));
+                }
+                let bytes = image.read(boot.offset, boot.bytes as usize)?;
+                if format!("{:x}", Sha256::digest(&bytes)) != boot.sha256 {
+                    return Err(Error::SourceChanged);
+                }
+                image.boot = Some((boot.clone(), bytes));
+            }
             image.base = region.offset;
             image.length = region.length;
         }
         Ok(image)
+    }
+    /// Only filesystem geometry parsers use the selected boot copy. Payload reads
+    /// always use read(), so a backup never substitutes bytes in recovered files.
+    pub fn boot_read(&mut self, length: usize) -> Result<Vec<u8>> {
+        if let Some((_, bytes)) = &self.boot {
+            return bytes
+                .get(..length)
+                .map(|b| b.to_vec())
+                .ok_or_else(|| Error::Invalid("selected boot copy is too short".into()));
+        }
+        self.read(0, length)
+    }
+    pub fn uses_backup_boot(&self) -> bool {
+        self.boot
+            .as_ref()
+            .is_some_and(|(b, _)| b.role == crate::BootRole::Backup)
+    }
+    pub fn limit_reads(&mut self, bytes: u64) {
+        self.read_budget = Some(bytes);
+        self.bytes_read = 0;
+    }
+    pub fn bytes_read(&self) -> u64 {
+        self.bytes_read
     }
     pub fn sector_size(&self) -> u32 {
         self.mapped
@@ -188,6 +234,12 @@ impl Image {
         self.base + offset
     }
     pub fn read(&mut self, offset: u64, length: usize) -> Result<Vec<u8>> {
+        if let Some(budget) = &mut self.read_budget {
+            *budget = budget
+                .checked_sub(length as u64)
+                .ok_or_else(|| Error::Limit("metadata probe read budget".into()))?;
+        }
+        self.bytes_read = self.bytes_read.saturating_add(length as u64);
         let end = offset
             .checked_add(length as u64)
             .ok_or_else(|| Error::Invalid("read overflow".into()))?;
@@ -286,6 +338,14 @@ impl Image {
         };
         let mut hash = Sha256::new();
         hash.update(self.length.to_le_bytes());
+        if let Some((boot, _)) = self.boot.clone() {
+            let current = self.read(boot.offset - self.base, boot.bytes as usize)?;
+            if format!("{:x}", Sha256::digest(&current)) != boot.sha256 {
+                return Err(Error::SourceChanged);
+            }
+            hash.update(b"rescue-recovery-boot-v1");
+            hash.update(serde_json::to_vec(&boot)?);
+        }
         // Preserve legacy regular-volume fingerprints exactly; bound partition sessions to their start.
         if self.base != 0 {
             hash.update(b"rescue-volume-window");

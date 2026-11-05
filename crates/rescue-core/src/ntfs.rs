@@ -192,7 +192,7 @@ pub(crate) struct Geometry {
 }
 impl Geometry {
     pub fn parse(image: &mut Image) -> Result<Self> {
-        let boot = image.read(0, 512)?;
+        let boot = image.boot_read(512)?;
         if &boot[3..11] != b"NTFS    " || boot[510..512] != [0x55, 0xaa] {
             return Err(Error::Unsupported(
                 "expected an NTFS volume RAW image (partition starts at byte 0)".into(),

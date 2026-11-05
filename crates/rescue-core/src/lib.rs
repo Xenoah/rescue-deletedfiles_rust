@@ -3,6 +3,7 @@ mod archive;
 mod carve;
 mod destination;
 mod device;
+mod discovery;
 mod disk_scan;
 mod fat;
 mod lznt1;
@@ -26,6 +27,10 @@ use cap_std::{
 };
 pub use destination::{OutputRoot, RecoveryDestination, canonical_output_path};
 pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device, list_disks};
+pub use discovery::{
+    BootRole, DiscoveredVolume, DiscoveryOptions, DiscoveryResult, RecoveryBoot, discover_volumes,
+    scan_discovered_volume,
+};
 pub use disk_scan::scan_source;
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
@@ -362,7 +367,7 @@ fn scan_volume(
 ) -> Result<Session> {
     let mut image = Image::open_region(path, region)?;
     let fingerprint = image.fingerprint()?;
-    if image.read(3, 8)? != b"NTFS    " {
+    if &image.boot_read(512)?[3..11] != b"NTFS    " {
         let result = fat::scan(&mut image, options, cancel, &mut progress)?;
         if image.fingerprint()? != fingerprint {
             return Err(Error::SourceChanged);

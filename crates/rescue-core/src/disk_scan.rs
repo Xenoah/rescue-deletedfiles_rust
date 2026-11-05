@@ -148,8 +148,12 @@ pub(crate) fn validate_region(session: &Session) -> Result<()> {
         if session.schema_version != 5
             || !session.volumes.is_empty()
             || region.filesystem != Some(session.filesystem)
-            || !inspect_source(&session.source)?.regions.contains(region)
         {
+            return Err(Error::SourceChanged);
+        }
+        if region.recovery_boot.is_some() {
+            crate::discovery::validate_region(&session.source, region)?;
+        } else if !inspect_source(&session.source)?.regions.contains(region) {
             return Err(Error::SourceChanged);
         }
     } else if !session.volumes.is_empty() {

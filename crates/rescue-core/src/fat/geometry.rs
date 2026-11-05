@@ -14,7 +14,7 @@ pub(super) struct Geometry {
 
 impl Geometry {
     pub fn open(image: &mut Image) -> Result<Self> {
-        let boot = image.read(0, 512)?;
+        let boot = image.boot_read(512)?;
         if boot[510..512] != [0x55, 0xaa] {
             return Err(Error::Unsupported(
                 "expected an NTFS/FAT32/exFAT volume at byte 0".into(),
@@ -61,6 +61,11 @@ impl Geometry {
             return Err(Error::Unsupported("FAT32 version/extended flags".into()));
         }
         let mut warnings = Vec::new();
+        if image.uses_backup_boot() {
+            warnings.push(
+                "Using a selected FAT32 backup boot copy; the primary was not repaired".into(),
+            );
+        }
         let fat_offsets = if flags & 0x80 == 0 {
             (0..copies)
                 .map(|n| (reserved + u64::from(n) * fat_sectors) * sector)
@@ -115,10 +120,10 @@ impl Geometry {
         }
         let sector = 1u64 << shift;
         let cluster = sector << cluster_shift;
-        let region = image.read(0, (24 * sector) as usize)?;
-        check_boot(&region[..(12 * sector) as usize], sector as usize)?;
-        check_boot(&region[(12 * sector) as usize..], sector as usize)?;
-        let backup = &region[(12 * sector) as usize..];
+        let primary = image.boot_read((12 * sector) as usize)?;
+        let backup = image.read(12 * sector, (12 * sector) as usize)?;
+        check_boot(&primary, sector as usize)?;
+        check_boot(&backup, sector as usize)?;
         if backup[64..106] != boot[64..106] || backup[108..112] != boot[108..112] {
             return Err(invalid("exFAT primary and backup geometry disagree"));
         }
@@ -144,6 +149,12 @@ impl Geometry {
             return Err(invalid("exFAT volume flags"));
         }
         let mut warnings = Vec::new();
+        if image.uses_backup_boot() {
+            warnings.push(
+                "Using a checksum-validated exFAT backup boot region; the primary was not repaired"
+                    .into(),
+            );
+        }
         if flags & 6 != 0 {
             warnings.push(
                 "exFAT volume is marked dirty or media-failure; metadata may be inconsistent"

@@ -19,9 +19,17 @@ pub struct SearchSettings {
     pub max_depth: Option<u16>,
     pub range_start: u64,
     pub range_end: Option<u64>,
+    /// A specific, independently validated alternative from volume discovery.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovered_volume: Option<crate::SourceRegion>,
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.recovered_volume.is_some() && self.method != ScanMethod::Quick {
+            return Err(Error::Request(
+                "a recovered volume requires metadata scanning".into(),
+            ));
+        }
         if self.extensions.len() > 64
             || self.extensions.iter().any(|e| {
                 e.len() > 32
@@ -131,7 +139,13 @@ pub fn scan_with_settings(
 ) -> Result<Session> {
     settings.validate()?;
     let mut session = match settings.method {
-        ScanMethod::Quick => crate::scan_source(path, options, cancel, progress)?,
+        ScanMethod::Quick => {
+            if let Some(region) = &settings.recovered_volume {
+                crate::scan_discovered_volume(path, region, options, cancel, progress)?
+            } else {
+                crate::scan_source(path, options, cancel, progress)?
+            }
+        }
         ScanMethod::Carve => crate::carve::scan_range(
             path,
             options,
