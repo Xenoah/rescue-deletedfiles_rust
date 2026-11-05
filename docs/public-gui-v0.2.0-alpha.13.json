@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.13",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "scope": "Actual downloaded Linux portable GUI: lost partition table and primary boot, validated backup volume; separate synthetic quick-format remnants. Not actual Windows format.exe or hardware loss.",
+  "gui_binary_sha256": "d7a90a5699daa5e18687d4b43c8db611d8423f0f533c60419b71505b6caabaf6",
+  "matches_published_gui_sha256": true,
+  "lost_files_byte_exact": 6,
+  "remnant_streams_byte_exact": 14,
+  "zip_crc_verified": true,
+  "source_unchanged": true,
+  "source_sha256": {
+    "lost.raw": "8781929a265dbf675e2bae2b6b06889511e9594d61b592a1e10d7de1dbbfc249",
+    "remnants.raw": "59bb8a8f92b05f2ee7d3f46f1ba8fc161b62fe0af5a1bac9cdbfc0e410561b4f"
+  },
+  "archive_sha256": {
+    "lost": "5774fc6df04f744e3f6cb6bbd0595763d3b6e139f220720b071a00463536f5b1",
+    "remnants": "8ed7af2c083fa642f2cbef0200b42671a5887eb56eab5a2eca38529f4da1d8ed"
+  },
+  "screenshots": [
+    {
+      "file": "images/public-volume-discovery-v13.png",
+      "sha256": "6ac138de0076d4862cb4d1e984842d2cb649c2d7d689b8a3e84ef84999339b6e"
+    },
+    {
+      "file": "images/public-discovered-settings-v13.png",
+      "sha256": "10f8360ed0a4e31c4a0b85f9a1d970a3039cc18ef811c877bacc1fa039e5b0a9"
+    },
+    {
+      "file": "images/public-discovered-files-v13.png",
+      "sha256": "d228d7c85d12dae73d090ebeaf29b72253d1bab01c5f065c447e16f1f0d21f01"
+    },
+    {
+      "file": "images/public-discovered-restored-v13.png",
+      "sha256": "e3a22ab464173cbc8cd94bcaee0fc99298413859397f450992479f2fe75e37ed"
+    },
+    {
+      "file": "images/public-remnant-settings-v13.png",
+      "sha256": "0ebb6e6bbdaae1aa1e01e57c78757651594de4eedeebb2973e4250bfafdc5bbf"
+    },
+    {
+      "file": "images/public-remnant-files-v13.png",
+      "sha256": "a41f8c5d4ceab2f3a6a21e725700ba326d7875d5e198cd3507a7359e76c1dbd9"
+    },
+    {
+      "file": "images/public-remnant-restored-v13.png",
+      "sha256": "65360135fb842c9cd0efa745d2fef3e1483974a27de4454cd61cdbfbf981bc43"
+    }
+  ]
+}
