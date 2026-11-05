@@ -19,7 +19,7 @@ def write(path,offset,data):
     with path.open('r+b') as f:f.seek(offset);f.write(data)
 
 
-def verify(binary,root,name,kind,make,broken=False,mcp=False):
+def verify(binary,root,name,kind,make,broken=False,mcp=False,indexed=False):
     volume=root/(name+'-volume.raw');truth,_,_=make(volume);source=root/(name+'.raw')
     starts=disk_image(source,[volume],scheme='mbr');offset=starts[0][0]*512
     write(source,0,bytes(512))
@@ -31,7 +31,7 @@ def verify(binary,root,name,kind,make,broken=False,mcp=False):
     check(region['offset']==offset and region['filesystem']==kind and region['length']==volume.stat().st_size,'incorrect lost bounds')
     check(not choice['matches_current_table'] and len(choice['evidence'])>=2 and not choice['overlaps'],'lost volume provenance')
     check(region['recovery_boot']['role']==('backup' if broken else 'primary'),'boot copy role')
-    scanned=run(binary,'scan','--source',source,'--volume-id',choice['id'],'--work-dir',root/(name+'-work'),'--json')
+    scanned=run(binary,'scan',*(['--indexed'] if indexed else []),'--source',source,'--volume-id',choice['id'],'--work-dir',root/(name+'-work'),'--json')
     recovered=run(binary,'recover','--session',scanned['session'],'--all','--destination',root/(name+'-out'),'--json')['results']
     check({r['candidate_id'] for r in recovered}==set(truth),'missing recoverable file')
     for r in recovered:check(r['status']=='completed' and Path(r['path']).read_bytes()==truth[r['candidate_id']],'lost file content')
@@ -42,7 +42,7 @@ def verify(binary,root,name,kind,make,broken=False,mcp=False):
             args={'source':str(source),'request_id':'discover'};job=client.tool('discover_volumes',args)
             check(client.tool('discover_volumes',args)==job,'discovery idempotency')
             result=client.wait(job['job_id']);check(result['state']=='completed' and result['result']['volumes']==found['volumes'],'MCP discovery differs')
-            job=client.wait(client.tool('start_scan',{'source':str(source),'recovered_volume':region,'request_id':'scan'})['job_id'])
+            job=client.wait(client.tool('start_scan',{'source':str(source),'recovered_volume':region,'indexed':indexed,'request_id':'scan'})['job_id'])
             check(job['state']=='completed','MCP recovered volume scan');sid=job['result']['session_id']
             job=client.wait(client.tool('recover_files',{'session_id':sid,'ids':list(truth),'destination':str(root/(name+'-mcp-out')),'request_id':'recover'})['job_id'])
             check(job['state']=='completed' and len(job['result']['results'])==len(truth),'MCP recovered files missing')

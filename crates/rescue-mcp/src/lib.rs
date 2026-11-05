@@ -77,6 +77,13 @@ fn tools() -> Value {
         "required":["index","name","offset","length","filesystem","recovery_boot"],"additionalProperties":false});
     json!([
         tool(
+            "prepare_results",
+            "Prepare a large compound group/sort order asynchronously in the work index. Poll get_job, then list_candidates with the same query. cancel_job rolls back an unfinished build; completed indexes are reused. Never writes to the source disk.",
+            json!({"session_id":string,"query":{"type":"object"},"request_id":string}),
+            &["session_id", "query", "request_id"],
+            false
+        ),
+        tool(
             "open_session",
             "Open a saved candidate index inside the configured work directory; its source must remain explicitly allowed.",
             json!({"path":string}),
@@ -293,6 +300,7 @@ impl Server {
                 | "create_raid"
                 | "search_raid"
                 | "resume_job"
+                | "prepare_results"
         ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
@@ -305,6 +313,7 @@ impl Server {
             }
         }
         let result = match name {
+            "prepare_results" => self.prepare_results(args),
             "open_session" => self.open_index(Path::new(field(args, "path")?)),
             "resume_job" => {
                 let path = self
@@ -957,6 +966,7 @@ impl Server {
                 | "create_raid"
                 | "search_raid"
                 | "resume_job"
+                | "prepare_results"
         ) && let Ok(ref value) = result
         {
             self.requests.insert(

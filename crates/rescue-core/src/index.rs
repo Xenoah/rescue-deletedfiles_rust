@@ -1,6 +1,7 @@
 //! Append-only candidate storage. A batch and its scan checkpoint commit together.
 //! Readers carry a high-water mark; later commits cannot replace their pages.
 mod migrate;
+mod query;
 use crate::{Candidate, Error, Result, Session};
 use rusqlite::{Connection, OpenFlags, OptionalExtension, config::DbConfig, limits::Limit, params};
 use serde::{Deserialize, Serialize};
@@ -394,7 +395,19 @@ impl CandidateIndex {
         let direction = if query.descending { "DESC" } else { "ASC" };
         let comparison = if query.descending { "<" } else { ">" };
         let text = query.text.to_lowercase();
-        let terms = search_terms(&text);
+        let mut terms = search_terms(&text);
+        // Do not materialize millions of common trigram matches. For selective
+        // terms force rowid lookup; otherwise SQLite can scan the entire sort
+        // index even when FTS returned zero matching rows.
+        if let Some(value) = &terms {
+            let hits: i64 = budget.0.query_row(
+                "SELECT count(*) FROM (SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?1 LIMIT 4097)",
+                [value], |r| r.get(0))?;
+            if hits > 4096 {
+                terms = None;
+            }
+        }
+        let access = self.query_access(query, terms.is_some())?;
         let fixed = if query.group == IndexGroup::None {
             if rank == "zero_rank" {
                 "AND empty_key='' AND zero_rank=0"
@@ -407,7 +420,7 @@ impl CandidateIndex {
             ""
         };
         let sql = format!(
-            "SELECT seq,{column},payload,{rank},{group} FROM candidate WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {fixed} {} {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
+            "SELECT seq,{column},payload,{rank},{group} FROM candidate {access} WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {fixed} {} {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
             if terms.is_some() {
                 "AND seq IN(SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?9)"
             } else {

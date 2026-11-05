@@ -45,6 +45,33 @@ def main(binary,output=None):
                 row=result['result']['results'][0];check(Path(row['path']).read_bytes()==expected,row);exact+=1
             finally:client.close()
             check(file_hash(source)==before,'source bytes changed')
+            if kind=='ntfs':
+                full=run(binary,'scan','--indexed','--source',source,'--work-dir',root/'orders','--json',timeout=240)
+                order_path=Path(full['session'])
+                first=run(binary,'results','--session',order_path,'--group','folder','--sort','size','--descending','--limit','3','--json',timeout=90)
+                check(len(first['candidates'])==3 and first['candidates'][0]['id']==candidate['id'],'compound order lost late target')
+                second=run(binary,'results','--session',order_path,'--group','folder','--sort','size','--descending','--limit','3','--cursor',json.dumps(first['next_cursor']),'--json')
+                check(not {c['id'] for c in first['candidates']} & {c['id'] for c in second['candidates']},'compound cursor duplicate')
+                rare=run(binary,'results','--session',order_path,'--sort','name','--name','late-oracle','--json')
+                common=run(binary,'results','--session',order_path,'--sort','name','--name','file-','--limit','500','--json')
+                check(len(rare['candidates'])==1 and len(common['candidates'])==500,'adaptive trigram result mismatch')
+                checks.extend(['large_compound_order_and_cursor','selective_and_common_trigram_queries'])
+                query={'group':'folder','sort':'modified','descending':True}
+                client=Client(binary,source,root/'orders',root/'order-output')
+                try:
+                    client.rpc('initialize',{'protocolVersion':'2025-11-25'})
+                    sid=client.tool('open_session',{'path':str(order_path)})['session_id']
+                    args={'session_id':sid,'query':query,'request_id':'prepare-order'}
+                    job=client.tool('prepare_results',args)
+                    check(client.tool('prepare_results',args)==job,'duplicate order worker')
+                    done=client.wait(job['job_id']);check(done['state']=='completed' and done['result']['order_index_created'],done)
+                    again=client.wait(client.tool('prepare_results',{**args,'request_id':'reuse-order'})['job_id'])
+                    check(again['state']=='completed' and not again['result']['order_index_created'],'order cache not reused')
+                    values=client.tool('list_candidates',{'session_id':sid,'query':query,'limit':3})
+                    check(values['candidates'][0]['id']==candidate['id'],'MCP compound order mismatch')
+                    checks.append('mcp_async_compound_prepare_dedup_and_reuse')
+                finally:client.close()
+                check(file_hash(source)==before,'query preparation modified source')
             checks.append(kind+'_late_selected_cli_mcp_byte_exact')
             print(json.dumps({'case':checks[-1],'status':'passed'}),flush=True)
     result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),

@@ -28,6 +28,8 @@ fn default_true() -> bool {
 pub(crate) struct Checkpoint {
     pub(crate) version: u32,
     pub(crate) identity: AcquisitionIdentity,
+    #[serde(default)]
+    pub(crate) source_fingerprint: Option<Fingerprint>,
     pub(crate) options: ScanOptions,
     pub(crate) plans: Vec<Plan>,
     pub(crate) volume: usize,
@@ -144,7 +146,11 @@ pub fn scan_indexed(
         },
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
-        fingerprint,
+        fingerprint: if disk {
+            fingerprint.clone()
+        } else {
+            plans[0].fingerprint.clone()
+        },
         candidates: vec![],
         scanned_records: 0,
         total_records: if plans.iter().any(|p| p.filesystem != FileSystem::Ntfs) {
@@ -185,6 +191,7 @@ pub fn scan_indexed(
     let checkpoint = Checkpoint {
         version: 1,
         identity,
+        source_fingerprint: Some(fingerprint),
         options,
         plans,
         volume: 0,
@@ -250,11 +257,25 @@ fn run(
     }
     let mut image = Image::open(&header.source)?;
     if image.acquisition_identity()? != checkpoint.identity
-        || image.fingerprint()? != header.fingerprint
+        || image.fingerprint()?
+            != *checkpoint
+                .source_fingerprint
+                .as_ref()
+                .unwrap_or(&header.fingerprint)
     {
         return Err(Error::SourceChanged);
     }
     image.validate_raid(&header)?;
+    if header.filesystem != FileSystem::Disk
+        && (checkpoint.plans.len() != 1
+            || checkpoint.plans[0].region != header.region
+            || checkpoint.plans[0].filesystem != header.filesystem
+            || checkpoint.plans[0].fingerprint != header.fingerprint)
+    {
+        return Err(Error::Request(
+            "selected volume identity differs from its scan plan; rescan the source".into(),
+        ));
+    }
     if header.filesystem == FileSystem::Disk {
         let layout = inspect_source(&header.source)?;
         if checkpoint.plans.iter().any(|p| {
@@ -538,7 +559,12 @@ fn run(
         committed += batch.len() as u64;
         notify(&header, committed, &mut progress);
     }
-    if image.fingerprint()? != header.fingerprint {
+    if image.fingerprint()?
+        != *checkpoint
+            .source_fingerprint
+            .as_ref()
+            .unwrap_or(&header.fingerprint)
+    {
         return Err(Error::SourceChanged);
     }
     if !header.truncated {

@@ -9,6 +9,41 @@ pub(super) enum Task {
     Resume(PathBuf),
 }
 impl Server {
+    pub(super) fn prepare_results(&mut self, args: &Value) -> ToolResult {
+        let session_id = field(args, "session_id")?.to_owned();
+        let path = self
+            .state
+            .lock()
+            .unwrap()
+            .indexes
+            .get(&session_id)
+            .cloned()
+            .ok_or("unknown indexed session")?;
+        let query: rescue_core::IndexQuery =
+            serde_json::from_value(args.get("query").cloned().ok_or("missing query")?)
+                .map_err(err)?;
+        let (id, cancel) = self.create_job()?;
+        let job_id = id.clone();
+        let shared = self.state.clone();
+        let grants = self.source_grants();
+        self.threads.push(thread::spawn(move || {
+            let _scope = rescue_core::SourceScope::enter(grants);
+            let result = rescue_core::CandidateIndex::open(&path).and_then(|index| index.prepare_query(&query, &cancel));
+            let mut state = shared.lock().unwrap();
+            let job = state.jobs.get_mut(&job_id).unwrap();
+            match result {
+                Ok(created) => {
+                    job.state = "completed".into();
+                    job.result = json!({"session_id":session_id,"query":query,"order_index_created":created});
+                }
+                Err(error) => {
+                    job.state = if matches!(error, Error::Cancelled) { "cancelled" } else { "failed" }.into();
+                    job.result = json!({"error":{"code":error.code(),"message":error.to_string(),"retryable":true,"affected_scope":"result_order"}});
+                }
+            }
+        }));
+        Ok(json!({"job_id":id,"state":"running"}))
+    }
     pub(super) fn start_index_job(&mut self, task: Task) -> ToolResult {
         if !self.persist_sessions {
             return Err(

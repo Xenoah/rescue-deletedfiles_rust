@@ -18,6 +18,7 @@ pub(super) struct State {
     receiver: Option<mpsc::Receiver<Reply>>,
     failed_query: Option<IndexQuery>,
     error: String,
+    cancel: QueryCancel,
     sizes: BTreeMap<String, Option<u64>>,
 }
 #[derive(Clone, Copy)]
@@ -39,8 +40,15 @@ pub(super) struct Loaded {
     pub page: IndexPage,
     pub query: IndexQuery,
 }
-pub(super) fn load(path: PathBuf, query: IndexQuery) -> Result<Loaded, String> {
+pub(super) fn load(
+    path: PathBuf,
+    query: IndexQuery,
+    cancel: &Arc<AtomicBool>,
+) -> Result<Loaded, String> {
     let index = CandidateIndex::open(&path).map_err(|e| e.to_string())?;
+    index
+        .prepare_query(&query, cancel)
+        .map_err(|e| e.to_string())?;
     let header = index.session().map_err(|e| e.to_string())?;
     let mut status = index.status().map_err(|e| e.to_string())?;
     let page = index
@@ -54,6 +62,13 @@ pub(super) fn load(path: PathBuf, query: IndexQuery) -> Result<Loaded, String> {
         page,
         query,
     })
+}
+#[derive(Default)]
+struct QueryCancel(Arc<AtomicBool>);
+impl Drop for QueryCancel {
+    fn drop(&mut self) {
+        self.0.store(true, Ordering::Relaxed);
+    }
 }
 impl State {
     pub fn loading(&self) -> bool {
@@ -156,11 +171,14 @@ impl App {
         let query = self.index_query();
         let (tx, rx) = mpsc::sync_channel(1);
         self.index.receiver = Some(rx);
+        self.index.cancel = QueryCancel(Arc::new(AtomicBool::new(false)));
+        let cancel = self.index.cancel.0.clone();
         self.index.failed_query = None;
         self.index.error.clear();
         thread::spawn(move || {
             let result = (|| {
                 let index = CandidateIndex::open(&path)?;
+                index.prepare_query(&query, &cancel)?;
                 let mut status = index.status()?;
                 let page = index.page(&query, cursor.as_ref(), PAGE_SIZE)?;
                 status.candidates = page.watermark;
@@ -279,7 +297,10 @@ impl App {
             ));
             if loading {
                 ui.spinner();
-                ui.label("検索中…");
+                ui.label("検索・並べ替えを準備中…");
+                if ui.button("検索を取消").clicked() {
+                    self.index.cancel.0.store(true, Ordering::Relaxed);
+                }
             }
             if self.index.status.as_ref().is_some_and(|s| s.resumable)
                 && ui
@@ -323,7 +344,7 @@ impl App {
                 let _ = tx.try_send(Message::IndexProgress(p));
             })
             .map_err(|e| e.to_string())
-            .and_then(|p| load(p, query));
+            .and_then(|p| load(p, query, &cancel));
             let _ = tx.send(match result {
                 Ok(loaded) => Message::IndexResumed(Box::new(loaded)),
                 Err(e) => Message::Error(e),
@@ -355,7 +376,7 @@ impl App {
         thread::spawn(move || {
             let result = (|| -> Result<Message, String> {
                 if CandidateIndex::is_index(&path).map_err(|e| e.to_string())? {
-                    Ok(Message::Indexed(Box::new(load(path, query)?)))
+                    Ok(Message::Indexed(Box::new(load(path, query, &cancel)?)))
                 } else {
                     Ok(Message::Scanned(
                         Box::new(Session::load(&path).map_err(|e| e.to_string())?),

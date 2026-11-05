@@ -685,6 +685,7 @@ fn run() -> Result<i32, Error> {
                     text: name.unwrap_or_default(),
                     supported_only,
                 };
+                index.prepare_query(&query, &cancel)?;
                 print(
                     serde_json::to_value(index.page(&query, cursor.as_ref(), limit)?)?,
                     compact,

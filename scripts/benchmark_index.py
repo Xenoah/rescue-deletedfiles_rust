@@ -54,9 +54,14 @@ def main(a):
         cancelled=job(['scan','--indexed','--source',a.source,'--work-dir',a.work],cancel_at=25_000)
         if cancelled['exit']!=130 or not cancelled['result']['index']['resumable']:
             raise RuntimeError('cooperative cancellation did not leave a resumable checkpoint')
-    done=job(['resume','--session',state['index']])
-    if done['exit']!=0 or done['result']['index']['candidates']!=oracle['candidates']:
-        raise RuntimeError('large scan incomplete: see scan-progress.json')
+    if a.queries_only:
+        if not a.resume_index:raise ValueError('--queries-only requires --resume-index')
+        report=json.loads(subprocess.check_output([str(a.binary),'report','--session',state['index'],'--json']))
+        if report['index']['candidates']!=oracle['candidates']:raise RuntimeError('reused index count mismatch')
+    else:
+        done=job(['resume','--session',state['index']])
+        if done['exit']!=0 or done['result']['index']['candidates']!=oracle['candidates']:
+            raise RuntimeError('large scan incomplete: see scan-progress.json')
     cases={
         'name_asc':['--sort','name'],'name_desc':['--sort','name','--descending'],
         'size_desc':['--sort','size','--descending'],'modified_desc':['--sort','modified','--descending'],
@@ -79,7 +84,7 @@ def main(a):
                 peak=max(peak,rss(p.pid)+sum(rss(pid) for pid in a.gui_pid));time.sleep(.005)
             reader.join();peaks.append(peak);samples.append((time.monotonic()-start)*1000)
             if p.returncode:failures.append({'exit':p.returncode,'error':output[0][1].decode('utf-8','replace')[:1000]})
-        ordered=sorted(samples);queries[name]={'samples_ms':samples,'p95_ms':ordered[math.ceil(.95*len(ordered))-1],'median_ms':statistics.median(samples),'failures':failures}
+        ordered=sorted(samples);queries[name]={'samples_ms':samples,'first_query_ms':samples[0],'p95_ms':ordered[math.ceil(.95*len(ordered))-1],'median_ms':statistics.median(samples),'failures':failures}
         print(json.dumps({'query':name,**queries[name]}),flush=True)
     recovered=subprocess.run([str(a.binary),'recover','--session',state['index'],
         *[value for key in oracle['examples'] for value in ['--id',key]],'--destination',str(a.work/'selected'),'--json'],capture_output=True,text=True,encoding='utf-8',timeout=90)
@@ -93,11 +98,11 @@ def main(a):
         'binary_sha256':hashlib.sha256(a.binary.read_bytes()).hexdigest(),'logical_source_bytes':initial.st_size,
         'allocated_source_bytes':initial.st_blocks*512,'candidates':oracle['candidates'],'index':state['index'],
         'index_bytes':Path(state['index']).stat().st_size,'jobs':jobs,'aggregate_peak_rss_bytes':max(peaks),
-        'gui_pids_included':a.gui_pid,'queries':queries,'selected_files_byte_exact':len(results),
+        'gui_pids_included':a.gui_pid,'queries_only':a.queries_only,'queries':queries,'selected_files_byte_exact':len(results),
         'source_size_and_mtime_unchanged':(initial.st_size,initial.st_mtime_ns)==(final.st_size,final.st_mtime_ns),
         'scope':'Sparse synthetic NTFS, resident data, Linux. RSS sampled every 25 ms (5 ms for query processes); CLI latency includes process startup and JSON. GUI frame/keyboard latency and physical 1 TiB throughput are not measured. Source identity and metadata revalidated; no full 1 TiB hash claim.'}
     a.output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'status':'completed','report':str(a.output)}))
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--source',type=Path,required=True);p.add_argument('--work',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--resume-index',type=Path);p.add_argument('--gui-pid',type=int,action='append',default=[]);p.add_argument('--repetitions',type=int,default=20);main(p.parse_args())
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--source',type=Path,required=True);p.add_argument('--work',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--resume-index',type=Path);p.add_argument('--queries-only',action='store_true');p.add_argument('--gui-pid',type=int,action='append',default=[]);p.add_argument('--repetitions',type=int,default=20);main(p.parse_args())
