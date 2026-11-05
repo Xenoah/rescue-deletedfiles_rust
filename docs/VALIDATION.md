@@ -265,3 +265,17 @@ LinuxローカルでRust33項目、fmt、workspace/all-targets clippy、9統合�
 最終変更後もRust33項目・文書69ケース・Linux/Windowsターゲットのall-targets clippyを通過。GUIの4復元シナリオは最終debugバイナリーで再実行し、各JSONのハッシュを更新済み。上書き済みデータの試験は、Quickが現在のバイトを保存する一方で削除前の正解とは0件一致であることを確認するもので、内容の完全性を検出したとの意味ではない。
 
 [alpha.10のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41971886923)は4環境すべて成功（8分57秒）。debug/releaseの9統合群、文書69ケース、35形式、各864件の仮想ディスク、実削除PDF、GUI起動、8配布物の検証と全体アセンブルを通過。公開実物の検証は別途追記する。
+
+
+## alpha.10 公開実物の再検証（2026-11-05）
+
+タグCI [41973595452](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41973595452)、
+公開バイナリCI [41974636495](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41974636495) が成功。
+8インストーラー/ポータブルを含む63主要資産、6追加レポート、2チェックサム一覧の計71資産を公開URLから取得・照合した。
+公開CLIの4ネイティブ環境で35形式・864ディスク観測・実削除PDFの元の場所復元・JPEG・文書69ケースを再実行。
+macOSは署名後のバイナリSHA-256を照合した。Linux公開GUIから7文書/動画をZIPに復元し、全バイトとCRC、元イメージ不変を確認。
+配布HTMLの8画面/6方式、390px表示をブラウザーで実行し、外部通信・JavaScriptエラーは0。
+
+[配布実物の記録](public-release-v0.2.0-alpha.10.json) · [GUIの記録](public-gui-v0.2.0-alpha.10.json) · [HTMLの記録](public-browser-v0.2.0-alpha.10.json)
+
+![公開Linux GUIの文書・動画復元](images/public-document-restored-v10.png)

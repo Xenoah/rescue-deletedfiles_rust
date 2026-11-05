@@ -1,0 +1,155 @@
+{
+  "status": "passed",
+  "scope": "Actually downloaded primary installer/portable assets, and all four native executions of exact public CLI bytes after signing/packaging",
+  "tag": "v0.2.0-alpha.10",
+  "checksummed_public_assets": 69,
+  "primary_checksummed_assets": 63,
+  "post_package_checksummed_assets": 6,
+  "binaries": [
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 3324416,
+      "sha256": "3ee189b32c2e61e303986cb5b23c5251a1dac8704dc379cabdff425ecfb8c8c9"
+    },
+    {
+      "platform": "windows",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 12640256,
+      "sha256": "4f4fa2cc616855aa21341f1e86fb3d8a91b9d45cb72fc196bd641a1513777092"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 4000080,
+      "sha256": "de053a477311eb37ef453d6cf59e1ed833ccff50c1d59056f1d316e9b0ea60a6"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 18974320,
+      "sha256": "ef83ff20a602a13247ca8992a87ad90c918bd16376dfbab1e3f2017245454bed"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue",
+      "bytes": 3705312,
+      "sha256": "0c8c1604424e38314eb1002aea02d41c6aea8bb48eb6c246f1b1760998b7d39e"
+    },
+    {
+      "platform": "macos",
+      "arch": "x64",
+      "program": "rescue-gui",
+      "bytes": 8396064,
+      "sha256": "14b8555fb18bf8b382122366cae11be6cad43620a13ff7f24a7db53f89fbd64d"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue",
+      "bytes": 3421184,
+      "sha256": "3cff6dd1aef9dd30c343a82f942861f072570db6e29fe3dbcdedb605c334f98f"
+    },
+    {
+      "platform": "macos",
+      "arch": "arm64",
+      "program": "rescue-gui",
+      "bytes": 8046112,
+      "sha256": "593554642a61308a76cff6cb19871a6de4804ec17e8c553f68bb808a61a84c58"
+    }
+  ],
+  "native_platforms": [
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "3ee189b32c2e61e303986cb5b23c5251a1dac8704dc379cabdff425ecfb8c8c9",
+      "post_package_matrix_cli_sha256": "3ee189b32c2e61e303986cb5b23c5251a1dac8704dc379cabdff425ecfb8c8c9",
+      "macos_signing_changed_binary_hash": false,
+      "platform": "windows",
+      "arch": "x64",
+      "gui": "Rescue renderer: Dx12; device: Cpu; adapter: Microsoft Basic Render Driver",
+      "installer": "installed_version_and_bytes_verified_then_uninstalled",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 37,
+      "public_native_document_checks": 69,
+      "public_native_document_exact": 30,
+      "public_native_jpeg_exact": 33,
+      "public_native_jpeg_checks": 58,
+      "public_native_original_pdf_exact": 2,
+      "public_qa_run_id": "41974636495"
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "de053a477311eb37ef453d6cf59e1ed833ccff50c1d59056f1d316e9b0ea60a6",
+      "post_package_matrix_cli_sha256": "de053a477311eb37ef453d6cf59e1ed833ccff50c1d59056f1d316e9b0ea60a6",
+      "macos_signing_changed_binary_hash": false,
+      "platform": "linux",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "deb_extracted_version_payload_and_shortcuts_verified",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "public_native_document_checks": 69,
+      "public_native_document_exact": 30,
+      "public_native_jpeg_exact": 33,
+      "public_native_jpeg_checks": 58,
+      "public_native_original_pdf_exact": 2,
+      "public_qa_run_id": "41974636495"
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "16feed1c5f7e893604c42051655ea35d11a0e2e131710efeddd6a01361e9d41b",
+      "post_package_matrix_cli_sha256": "0c8c1604424e38314eb1002aea02d41c6aea8bb48eb6c246f1b1760998b7d39e",
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "x64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "public_native_document_checks": 69,
+      "public_native_document_exact": 30,
+      "public_native_jpeg_exact": 33,
+      "public_native_jpeg_checks": 58,
+      "public_native_original_pdf_exact": 2,
+      "public_qa_run_id": "41974636495"
+    },
+    {
+      "metadata_byte_exact": 576,
+      "disk_checks_byte_exact": 864,
+      "native_virtual_disk_files_byte_exact": 216,
+      "original_matrix_cli_sha256_before_packaging": "331aebbf64de0fed17c9252c26fb6724e2a4be4ad97642088b7fa4bd73f14493",
+      "post_package_matrix_cli_sha256": "3cff6dd1aef9dd30c343a82f942861f072570db6e29fe3dbcdedb605c334f98f",
+      "macos_signing_changed_binary_hash": true,
+      "platform": "macos",
+      "arch": "arm64",
+      "gui": "Rescue renderer: OpenGL",
+      "installer": "pkg_expanded_version_payload_and_symlink_verified_ad_hoc_signature_checked",
+      "format_observations": 900,
+      "native_lznt1_oracle_units": 0,
+      "public_native_document_checks": 69,
+      "public_native_document_exact": 30,
+      "public_native_jpeg_exact": 33,
+      "public_native_jpeg_checks": 58,
+      "public_native_original_pdf_exact": 2,
+      "public_qa_run_id": "41974636495"
+    }
+  ],
+  "published_linux_feature_suite": true,
+  "gui_proof_files": 36,
+  "standalone_html_embedded_screenshots": 8,
+  "release_tag_ci": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41973595452",
+  "public_package_ci": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41974636495",
+  "published_gui_document_byte_exact": 7,
+  "release_assets_including_manifests": 71
+}

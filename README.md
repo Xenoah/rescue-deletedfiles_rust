@@ -68,9 +68,9 @@ Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/15
 - LinuxのRust 33項目、9統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
 - 35形式36ファイルの管理情報復元は8条件×CLI/MCPで576件一致。管理情報を失った連続配置は11/36、512B単位の断片配置は2/36。全900観測中755件が正解一致。上書き済み36件は元データとの一致0件で、管理情報から保存できても内容の同一性を保証しないことも確認。
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
-- Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認します。
+- Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
 
-[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41971886923)がすべて成功しました。公開パッケージそのものの追加検証は完了後に記録します。CIと配布物の結果はリリース添付JSONと [検証履歴](docs/VALIDATION.md) に記録します。
+[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41971886923)がすべて成功しました。[公開パッケージの4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41974636495)も成功し、署名・梱包後の実CLI、公開Linux GUIの7形式復元、配布71資産の照合まで完了しました。[公開実物の検証記録](docs/public-release-v0.2.0-alpha.10.json) · [公開GUIの記録](docs/public-gui-v0.2.0-alpha.10.json) · [検証履歴](docs/VALIDATION.md)
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
