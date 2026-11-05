@@ -71,6 +71,10 @@ def main(a):
         'common_substring':['--sort','name','--name','file-'],
         'unicode_absent':['--sort','name','--name','日本語がない'],
     }
+    for name,args in [('size_desc_deep',['--sort','size','--descending']),('group_folder_size_deep',['--sort','size','--group','folder'])]:
+        seed=json.loads(subprocess.check_output([str(a.binary),'results','--session',state['index'],'--limit','1',*args,'--json']))
+        cursor=seed['next_cursor'];cursor['last_sequence']=oracle['candidates']//2
+        cases[name]=[*args,'--cursor',json.dumps(cursor,separators=(',',':'))]
     queries={}
     for name,args in cases.items():
         samples=[];failures=[]
@@ -84,6 +88,15 @@ def main(a):
                 peak=max(peak,rss(p.pid)+sum(rss(pid) for pid in a.gui_pid));time.sleep(.005)
             reader.join();peaks.append(peak);samples.append((time.monotonic()-start)*1000)
             if p.returncode:failures.append({'exit':p.returncode,'error':output[0][1].decode('utf-8','replace')[:1000]})
+            else:
+                rows=json.loads(output[0][0])['candidates']
+                count=0 if name=='unicode_absent' else (1 if name=='rare_substring' else 500)
+                descending=name in ['name_desc','size_desc','modified_desc','size_desc_deep']
+                first=(oracle['candidates']+15) if descending or name=='rare_substring' else 16
+                if name.endswith('_deep'):first=oracle['candidates']//2+(14 if descending else 16)
+                expected=[f'mft-{first+(-i if descending else i)}-7' for i in range(count)]
+                if [r['id'] for r in rows]!=expected:failures.append({'error':'ordered candidate IDs differ from the deterministic oracle'})
+
         ordered=sorted(samples);queries[name]={'samples_ms':samples,'first_query_ms':samples[0],'p95_ms':ordered[math.ceil(.95*len(ordered))-1],'median_ms':statistics.median(samples),'failures':failures}
         print(json.dumps({'query':name,**queries[name]}),flush=True)
     recovered=subprocess.run([str(a.binary),'recover','--session',state['index'],

@@ -40,6 +40,7 @@ impl CandidateIndex {
         if query.text.len() > 4096 {
             return Err(Error::Limit("index query".into()));
         }
+        self.checkpoint_cache(cancel);
         let (name, optional) = query.order_index();
         if !optional || self.has_order(&name)? || self.status()?.candidates <= 50_000 {
             return Ok(false);
@@ -89,7 +90,56 @@ impl CandidateIndex {
             });
         }
         tx.commit()?;
+        db.progress_handler(0, None::<fn() -> bool>)?;
+        // A large CREATE INDEX may leave hundreds of MiB of WAL frames. A
+        // future read-only process would otherwise rebuild that WAL mapping.
+        let _ = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| {
+            Ok((
+                r.get::<_, i64>(0)?,
+                r.get::<_, i64>(1)?,
+                r.get::<_, i64>(2)?,
+            ))
+        });
         Ok(true)
+    }
+    fn checkpoint_cache(&self, cancel: &Arc<AtomicBool>) {
+        let mut wal = self.path.as_os_str().to_os_string();
+        wal.push("-wal");
+        if fs::metadata(wal).map_or(true, |m| m.len() <= 32 * 1024 * 1024)
+            || cancel.load(Ordering::Relaxed)
+        {
+            return;
+        }
+        // Optional maintenance must not prevent read-only access or contend
+        // with an active scan. Only the already-authorized work index is written.
+        let attempt = || -> Result<()> {
+            self.session()?.guard_output(&self.path)?;
+            let _owner = IndexWriter::owner(&self.path)?;
+            let db = Connection::open_with_flags(
+                &self.path,
+                OpenFlags::SQLITE_OPEN_READ_WRITE
+                    | OpenFlags::SQLITE_OPEN_NO_MUTEX
+                    | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+            )?;
+            configure(&db, true)?;
+            let id: String = db.query_row(
+                "SELECT index_id FROM checkpoint WHERE singleton=1",
+                [],
+                |r| r.get(0),
+            )?;
+            if id != self.status()?.index_id {
+                return Err(Error::Request("index changed before maintenance".into()));
+            }
+            let _ = db.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |r| {
+                Ok((
+                    r.get::<_, i64>(0)?,
+                    r.get::<_, i64>(1)?,
+                    r.get::<_, i64>(2)?,
+                ))
+            });
+            Ok(())
+        };
+        let _ = attempt();
     }
     fn has_order(&self, name: &str) -> Result<bool> {
         Ok(self.db.query_row("SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='index' AND tbl_name='candidate' AND name=?1)", [name], |r| r.get(0))?)

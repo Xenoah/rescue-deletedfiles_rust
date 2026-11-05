@@ -687,7 +687,12 @@ fn run() -> Result<i32, Error> {
                 };
                 index.prepare_query(&query, &cancel)?;
                 print(
-                    serde_json::to_value(index.page(&query, cursor.as_ref(), limit)?)?,
+                    serde_json::to_value(index.page_with_cancel(
+                        &query,
+                        cursor.as_ref(),
+                        limit,
+                        &cancel,
+                    )?)?,
                     compact,
                 );
                 return Ok(0);

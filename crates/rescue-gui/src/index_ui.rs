@@ -17,6 +17,7 @@ pub(super) struct State {
     page: usize,
     receiver: Option<mpsc::Receiver<Reply>>,
     failed_query: Option<IndexQuery>,
+    requested_query: Option<IndexQuery>,
     error: String,
     cancel: QueryCancel,
     sizes: BTreeMap<String, Option<u64>>,
@@ -52,7 +53,7 @@ pub(super) fn load(
     let header = index.session().map_err(|e| e.to_string())?;
     let mut status = index.status().map_err(|e| e.to_string())?;
     let page = index
-        .page(&query, None, PAGE_SIZE)
+        .page_with_cancel(&query, None, PAGE_SIZE, cancel)
         .map_err(|e| e.to_string())?;
     status.candidates = page.watermark;
     Ok(Loaded {
@@ -174,13 +175,14 @@ impl App {
         self.index.cancel = QueryCancel(Arc::new(AtomicBool::new(false)));
         let cancel = self.index.cancel.0.clone();
         self.index.failed_query = None;
+        self.index.requested_query = Some(query.clone());
         self.index.error.clear();
         thread::spawn(move || {
             let result = (|| {
                 let index = CandidateIndex::open(&path)?;
                 index.prepare_query(&query, &cancel)?;
                 let mut status = index.status()?;
-                let page = index.page(&query, cursor.as_ref(), PAGE_SIZE)?;
+                let page = index.page_with_cancel(&query, cursor.as_ref(), PAGE_SIZE, &cancel)?;
                 status.candidates = page.watermark;
                 Ok::<_, rescue_core::Error>((status, page))
             })()
@@ -204,6 +206,11 @@ impl App {
         };
         self.index.receiver = None;
         if reply.query != self.index_query() {
+            return;
+        }
+        if self.index.cancel.0.load(Ordering::Relaxed) {
+            self.index.error = "検索を取り消しました。条件を変えるか再試行してください。".into();
+            self.index.failed_query = Some(reply.query);
             return;
         }
         match reply.result {
@@ -255,6 +262,9 @@ impl App {
             return;
         }
         let desired = self.index_query();
+        if self.index.loading() && self.index.requested_query.as_ref() != Some(&desired) {
+            self.index.cancel.0.store(true, Ordering::Relaxed);
+        }
         if !self.index.loading()
             && self.index.query != desired
             && self.index.failed_query.as_ref() != Some(&desired)

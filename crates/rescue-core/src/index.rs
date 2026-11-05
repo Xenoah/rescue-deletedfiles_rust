@@ -9,6 +9,10 @@ use sha2::{Digest, Sha256};
 use std::{
     fs::{self, File},
     path::{Path, PathBuf},
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::Duration,
 };
 
@@ -164,7 +168,7 @@ fn configure(db: &Connection, writer: bool) -> Result<()> {
 }
 struct QueryBudget(Connection);
 impl QueryBudget {
-    fn new(path: &Path, index_id: &str) -> Result<Self> {
+    fn new(path: &Path, index_id: &str, cancel: Arc<AtomicBool>) -> Result<Self> {
         let mut db = Connection::open_with_flags(
             path,
             OpenFlags::SQLITE_OPEN_READ_ONLY
@@ -184,7 +188,9 @@ impl QueryBudget {
         let started = std::time::Instant::now();
         db.progress_handler(
             1000,
-            Some(move || started.elapsed() > Duration::from_secs(2)),
+            Some(move || {
+                cancel.load(Ordering::Relaxed) || started.elapsed() > Duration::from_secs(2)
+            }),
         )?;
         Ok(Self(db))
     }
@@ -366,6 +372,34 @@ impl CandidateIndex {
         cursor: Option<&IndexCursor>,
         limit: usize,
     ) -> Result<IndexPage> {
+        self.page_with_cancel(query, cursor, limit, &Arc::new(AtomicBool::new(false)))
+    }
+    pub fn page_with_cancel(
+        &self,
+        query: &IndexQuery,
+        cursor: Option<&IndexCursor>,
+        limit: usize,
+        cancel: &Arc<AtomicBool>,
+    ) -> Result<IndexPage> {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Error::Cancelled);
+        }
+        self.page_inner(query, cursor, limit, cancel)
+            .map_err(|error| {
+                if cancel.load(Ordering::Relaxed) {
+                    Error::Cancelled
+                } else {
+                    error
+                }
+            })
+    }
+    fn page_inner(
+        &self,
+        query: &IndexQuery,
+        cursor: Option<&IndexCursor>,
+        limit: usize,
+        cancel: &Arc<AtomicBool>,
+    ) -> Result<IndexPage> {
         if limit == 0 || limit > MAX_PAGE || query.text.len() > 4096 {
             return Err(Error::Request(
                 "page limit must be 1..1000; query at most 4096 bytes".into(),
@@ -388,25 +422,30 @@ impl CandidateIndex {
                 "cursor does not belong to this index/query/snapshot".into(),
             ));
         }
-        let budget = QueryBudget::new(&self.path, &status.index_id)?;
+        let budget = QueryBudget::new(&self.path, &status.index_id, cancel.clone())?;
         let column = query.sort.column();
         let rank = query.sort.rank();
         let group = query.group.column();
         let direction = if query.descending { "DESC" } else { "ASC" };
-        let comparison = if query.descending { "<" } else { ">" };
         let text = query.text.to_lowercase();
-        let mut terms = search_terms(&text);
-        // Do not materialize millions of common trigram matches. For selective
-        // terms force rowid lookup; otherwise SQLite can scan the entire sort
-        // index even when FTS returned zero matching rows.
-        if let Some(value) = &terms {
-            let hits: i64 = budget.0.query_row(
-                "SELECT count(*) FROM (SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?1 LIMIT 4097)",
-                [value], |r| r.get(0))?;
-            if hits > 4096 {
-                terms = None;
+        // Collect a bounded selective posting list once. Broad terms use the
+        // sorted B-tree directly, avoiding a millions-row IN materialization.
+        // Rowid lookup also prevents a full sort-index scan for absent terms.
+        let terms = if let Some(value) = search_terms(&text) {
+            let mut statement = budget.0.prepare(
+                "SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?1 LIMIT 50001",
+            )?;
+            let ids = statement
+                .query_map([value], |r| r.get::<_, i64>(0))?
+                .collect::<std::result::Result<Vec<_>, _>>()?;
+            if ids.len() > 50_000 {
+                None
+            } else {
+                Some(serde_json::to_string(&ids)?)
             }
-        }
+        } else {
+            None
+        };
         let access = self.query_access(query, terms.is_some())?;
         let fixed = if query.group == IndexGroup::None {
             if rank == "zero_rank" {
@@ -414,32 +453,33 @@ impl CandidateIndex {
             } else {
                 "AND empty_key=''"
             }
-        } else if rank == "zero_rank" {
-            "AND zero_rank=0"
         } else {
             ""
         };
-        let sql = format!(
-            "SELECT seq,{column},payload,{rank},{group} FROM candidate {access} WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {fixed} {} {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
+        let select = format!(
+            "SELECT seq,{column},payload,{rank},{group} FROM candidate {access} WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {fixed} {}",
             if terms.is_some() {
-                "AND seq IN(SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?9)"
+                "AND seq IN(SELECT value FROM json_each(?9))"
             } else {
                 ""
-            },
-            if cursor.is_some() {
-                if !query.descending {
-                    format!("AND ({group},{rank},{column},seq)>(?7,?8,?4,?5)")
-                } else if query.group == IndexGroup::None && rank == "zero_rank" {
-                    format!("AND empty_key=?7 AND zero_rank=?8 AND ({column},seq)<(?4,?5)")
-                } else {
-                    format!(
-                        "AND ({group}>?7 OR ({group}=?7 AND ({rank}>?8 OR ({rank}=?8 AND ({column},seq) {comparison} (?4,?5)))))"
-                    )
-                }
-            } else {
-                String::new()
             }
         );
+        let order = format!(
+            "ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6"
+        );
+        let sql = if cursor.is_none() {
+            format!("{select} {order}")
+        } else if !query.descending {
+            format!("{select} AND ({group},{rank},{column},seq)>(?7,?8,?4,?5) {order}")
+        } else if query.group == IndexGroup::None && rank == "zero_rank" {
+            format!("{select} AND empty_key=?7 AND zero_rank=?8 AND ({column},seq)<(?4,?5) {order}")
+        } else {
+            // Three disjoint ranges preserve ascending group/rank and descending
+            // values without walking every preceding row for a deep cursor.
+            format!(
+                "{select} AND {group}=?7 AND {rank}=?8 AND ({column},seq)<(?4,?5) UNION ALL {select} AND {group}=?7 AND {rank}>?8 UNION ALL {select} AND {group}>?7 {order}"
+            )
+        };
         let mut statement = budget.0.prepare(&sql)?;
         // Bind named indices only when present: first pages have no cursor parameters.
         statement.raw_bind_parameter(1, watermark as i64)?;
