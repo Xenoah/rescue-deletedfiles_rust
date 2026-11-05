@@ -422,10 +422,22 @@ pub(super) fn resolve(
     for attr in selected.iter().filter(|a| a.kind == 0x80) {
         streams.entry(attr.name.clone()).or_default().push(attr);
     }
-    let streams = streams
+    let mut streams = streams
         .values()
         .map(|attrs| merge(attrs, geometry, true))
         .collect::<Result<Vec<_>>>()?;
+    // Windows may erase a nonresident stream's size and runlist when freeing
+    // an attribute-list file. Its empty sentinel is indistinguishable from a
+    // formerly empty stream. Do not publish zero bytes as recovered content.
+    if advanced {
+        for stream in &mut streams {
+            if matches!(&stream.data, Some(Data::NonResident { size: 0, runs, .. }) if runs.is_empty())
+            {
+                stream.data = None;
+                stream.unsupported.push("Freed NTFS attribute-list stream has an empty nonresident descriptor: deletion may have erased its original length and runlist; original contents are unavailable.".into());
+            }
+        }
+    }
     let mut digest = Sha256::new();
     digest.update(b"rescue-ntfs-attribute-list-v1\0");
     digest.update(&list);

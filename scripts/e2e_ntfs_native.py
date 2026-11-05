@@ -29,9 +29,9 @@ def ntfs_trim_policy(value):
         proof['restored']=current()==original
         check(proof['restored'],'NTFS TRIM profile was not restored')
 
-def populate(mount,before_delete=None):
-    path=mount/'native-streams-日本語.pdf';truth={None:b'%PDF-1.4\n'+b'Native NTFS bytes\n'*512}
-    for n in range(20):truth[f'stream-{n:02d}-Windows-created-extra-attribute']=bytes([n])*8192+f'ADS {n}'.encode()
+def populate(mount,before_delete=None,resident=False):
+    path=mount/'native-streams-日本語.pdf';truth={None:b'%PDF-1.4\n'+b'Native NTFS bytes\n'*(1 if resident else 512)}
+    for n in range(20):truth[f'stream-{n:02d}-Windows-created-extra-attribute']=bytes([n])*(1 if resident else 8192)+f'ADS {n}'.encode()
     for name,payload in truth.items():
         target=path if name is None else Path(str(path)+':'+name)
         with target.open('xb') as f:f.write(payload);f.flush();os.fsync(f.fileno())
@@ -83,7 +83,7 @@ def attribute_diagnostics(binary,source,root,candidates):
             kind,length=struct.unpack_from('<II',record,at)
             if kind==0xffffffff or length<24 or at+length>len(record):break
             attr=record[at:at+length]
-            if kind==0x80 and len(headers)<4:
+            if kind==0x80 and len(headers)<32:
                 name=bytes(attr[struct.unpack_from('<H',attr,10)[0]:][:attr[9]*2]).decode('utf-16le',errors='replace') if attr[9] else None
                 item={'record':number,'name':name,'nonresident':attr[8],'header':bytes(attr[:80]).hex()}
                 if attr[8]:item.update(zip(['allocated','size','initialized'],struct.unpack_from('<QQQ',attr,40)))
@@ -117,7 +117,8 @@ def main(binary,output):
                 snapshot=root/'before-delete';snapshot.mkdir()
                 before.extend(attribute_diagnostics(binary,source,snapshot,[{'record':path.stat().st_ino & ((1<<48)-1)}]))
                 check(before and all(d['nonzero_bytes']>0 for d in before),'OS-created attribute list was never durable: '+str(before))
-            path,alias,truth=populate(mount,inspect_before)
+                check(len(before[0]['data_headers'])==21 and all(h['nonresident']==0 and h['size']>0 for h in before[0]['data_headers']),'resident profile was not durable')
+            path,alias,truth=populate(mount,inspect_before,resident=True)
             # Save session and output on the runner volume, never onto the source fixture.
             scanned=run(binary,'scan','--source',source,'--work-dir',root/'work','--json')
             candidates=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
@@ -140,25 +141,38 @@ def main(binary,output):
                 job=client.wait(client.tool('recover_files',{'session_id':sid,'ids':list(names),'destination':str(root/'mcp-out'),'request_id':'recover'})['job_id'])
                 check(job['state']=='completed' and len(job['result']['results'])==21 and {r['candidate_id'] for r in job['result']['results']}==set(names) and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in job['result']['results']),'MCP native ADS content mismatch')
             finally:client.close()
-            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'trim_disabled_profile':trim_policy,'attribute_list_bytes_before_deletion':before[0]['list_bytes'],'attribute_list_nonzero_before_deletion':True,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, with NTFS TRIM notifications temporarily disabled on a disposable hosted VM; original policy restored; new owned VHD only, no metadata edited'}
-        # A second actual deletion with notifications enabled records whether
-        # this virtual backend erases the external attribute list. Never invent it.
-        negative=root/'trim-enabled';negative.mkdir()
-        with ntfs_trim_policy(0) as enabled_policy, mounted_fixture(negative) as (source,mount,filesystem):
-            path,alias,truth=populate(mount)
-            scanned=run(binary,'scan','--source',source,'--work-dir',negative/'work','--json')
-            rows=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
-            found=[c for c in rows if c['name'].split(':')[0] in [path.name,alias.name]]
-            check(found,'deleted NTFS metadata unexpectedly absent')
-            diagnosis=attribute_diagnostics(binary,source,negative,found)
-            zeroed=bool(diagnosis) and all(d['list_bytes']>0 and d['nonzero_bytes']==0 for d in diagnosis)
-            if zeroed:
-                check(all(not c['supported'] for c in found),'erased list incorrectly marked recoverable')
-            else:
-                check(len(found)==21 and all(c['supported'] for c in found),'retained metadata is unsupported: '+str(found)+'; '+str(diagnosis))
-                restored=run(binary,'recover','--session',scanned['session'],'--all','--destination',negative/'out','--json')['results'];names={c['id']:c['stream_name'] for c in found}
-                check(len(restored)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in restored),'enabled-TRIM retained bytes mismatch')
-            result['trim_enabled_profile']={'policy':enabled_policy,'attribute_list_zeroed':zeroed,'erased_metadata_not_fabricated':zeroed,'retained_streams_byte_exact':0 if zeroed else 21}
+            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'trim_disabled_profile':trim_policy,'attribute_list_bytes_before_deletion':before[0]['list_bytes'],'attribute_list_nonzero_before_deletion':True,'scope':'20 OS-created resident ADS and the resident unnamed stream, deletion of both hard-link names, with NTFS TRIM notifications temporarily disabled on a disposable hosted VM; original policy restored; new owned VHD only, no metadata edited'}
+        # With nonresident streams Windows can erase size and runlists during
+        # final unlink even when TRIM notifications are disabled. Verify the
+        # actual pre/post descriptors before accepting a negative outcome.
+        result['resident_stream_profile']=True
+        result['nonresident_profiles']=[]
+        for policy in [1,0]:
+            negative=root/f'nonresident-trim-{policy}';negative.mkdir();prior=[]
+            with ntfs_trim_policy(policy) as policy_proof, mounted_fixture(negative) as (source,mount,filesystem):
+                def before_nonresident(path):
+                    snapshot=negative/'before-delete';snapshot.mkdir()
+                    prior.extend(attribute_diagnostics(binary,source,snapshot,[{'record':path.stat().st_ino & ((1<<48)-1)}]))
+                    headers=prior[0]['data_headers']
+                    check(len(headers)==21 and all(h['nonresident'] and h['size']>0 for h in headers),'nonresident input was not durable: '+str(headers))
+                path,alias,truth=populate(mount,before_nonresident)
+                scanned=run(binary,'scan','--source',source,'--work-dir',negative/'work','--json')
+                rows=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
+                found=[c for c in rows if c['name'].split(':')[0] in [path.name,alias.name]]
+                check(found,'deleted NTFS metadata unexpectedly absent')
+                diagnosis=attribute_diagnostics(binary,source,negative,found)
+                zeroed=bool(diagnosis) and all(d['list_bytes']>0 and d['nonzero_bytes']==0 for d in diagnosis)
+                headers=diagnosis[0]['data_headers'] if diagnosis else []
+                cleared=len(headers)==21 and all(h['nonresident'] and h['size']==0 and h['allocated']==0 and h['initialized']==0 for h in headers)
+                if zeroed or cleared:
+                    check(all(not c['supported'] for c in found),'erased metadata incorrectly marked recoverable')
+                    restored=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',negative/'out','--json',expected=5)['results']
+                    check(restored and all(r['status']=='failed' and r['path'] is None and r['sha256'] is None for r in restored),'empty output falsely published as recovered data')
+                else:
+                    check(len(found)==21 and all(c['supported'] for c in found),'retained metadata is unsupported: '+str(found)+'; '+str(diagnosis))
+                    restored=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',negative/'out','--json')['results'];names={c['id']:c['stream_name'] for c in found}
+                    check(len(restored)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in restored),'retained nonresident bytes mismatch')
+                result['nonresident_profiles'].append({'policy':policy_proof,'durable_nonempty_streams_before_deletion':21,'attribute_list_zeroed':zeroed,'data_descriptors_cleared':cleared,'erased_metadata_not_fabricated':zeroed or cleared,'retained_streams_byte_exact':0 if zeroed or cleared else 21})
         output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result));return result
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();main(a.binary.resolve(),a.output.resolve())

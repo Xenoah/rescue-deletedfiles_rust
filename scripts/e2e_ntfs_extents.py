@@ -94,6 +94,19 @@ def main(binary,output=None):
                 for r in restored:check(r['status']=='completed' and Path(r['path']).read_bytes()==truth[r['candidate_id'].replace('mft-30-8','mft-30-7')],'deleted extent bytes')
             else:check(found and not any(c['supported'] for c in found),'inconsistent deleted sequence accepted')
             check(hashlib.sha256(source.read_bytes()).hexdigest()==before,'deleted sequence test source modified');count+=1
+        # Freed nonresident descriptors can lose all sizes and runs. Do not
+        # publish them as valid empty files; an intact resident ADS still works.
+        source=root/'erased-descriptor.raw';build(source);vol=bytearray(source.read_bytes())
+        empty=ident(nonresident([(1,600)],0),2);put(empty,24,'Q',2**64-1);put(empty,40,'Q',0);empty[64:]=bytes(len(empty)-64)
+        listing=resident(0x20,entry(0x30,1,30)+entry(0x80,2,31)+entry(0x80,3,31,name='kept'))
+        vol[MFT_LCN*SECTOR+30*RECORD:MFT_LCN*SECTOR+31*RECORD]=record(30,[ident(filename('erased.bin'),1),listing],sequence=8)
+        extension=record(31,[empty,ident(resident(0x80,b'kept resident bytes',name='kept'),3)],sequence=8);put(extension,32,'Q',30|(7<<48));vol[MFT_LCN*SECTOR+31*RECORD:MFT_LCN*SECTOR+32*RECORD]=extension;source.write_bytes(vol)
+        s=run(binary,'scan','--source',source,'--work-dir',root/'erased-work','--json');found=[c for c in run(binary,'results','--session',s['session'],'--json')['candidates'] if c['record']==30]
+        check(len(found)==2 and sum(c['supported'] for c in found)==1 and all(c['supported'] or any('original length and runlist' in w for w in c['warnings']) for c in found),'freed empty descriptor accepted')
+        r=run(binary,'recover','--session',s['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'erased-out','--json',expected=5)['results']
+        check(len(r)==2 and sum(x['status']=='completed' for x in r)==1,'erased descriptor restore status')
+        for x in r:check(Path(x['path']).read_bytes()==b'kept resident bytes' if x['path'] else x['status']=='failed' and x['sha256'] is None,'erased descriptor output')
+        count+=1
         # Bootstrap an MFT whose additional run is described by a reachable extension.
         source=root/'mft.raw';truth=build(source);vol=bytearray(source.read_bytes());tail=bytes(vol[MFT_LCN*SECTOR+16*RECORD:MFT_LCN*SECTOR+64*RECORD]);vol[800*SECTOR:800*SECTOR+len(tail)]=tail;vol[MFT_LCN*SECTOR+16*RECORD:MFT_LCN*SECTOR+64*RECORD]=b'\0'*len(tail)
         first=ident(extent([(32,MFT_LCN)],64*RECORD),1);second=ident(extent([(96,800)],64*RECORD,start=32),1)
