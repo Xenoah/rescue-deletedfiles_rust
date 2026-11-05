@@ -312,3 +312,11 @@ macOSは署名後の実バイナリを実行した。
 [配布記録](public-release-v0.2.0-alpha.11.json) · [GUI記録](public-gui-v0.2.0-alpha.11.json) · [HTML記録](public-browser-v0.2.0-alpha.11.json)
 
 ![公開GUIの取得後36ファイル復元](images/public-imaging-restored-v11.png)
+
+## 2026-11-05 — alpha.12 NTFS拡張（ローカル）
+
+Rust40項目・11統合群・Linux/Windowsクロスclippyを通過。NTFS22条件はresident/nonresident属性リスト、分割MFT、参照の再利用/誤所有者/属性ID/名前/VCN/物理重複/過剰参照、疎領域、圧縮、Bitmap3状態、別名検索を含む。境界テストは4,096変異入力・16,384エントリ上限・u64末尾オーバーフローを含む。
+
+ntfs-3gが作成した4レコードに分かれる21個の異なるストリームをCLIと実GUIで全バイト照合。削除フラグはエミュレートしたものであり、Windows実削除試験とは区別する。GUIで別名report.pdfから1候補を選択し、同じデータを重複保存しないことも確認。`gui-ntfs-results.json`に正解ハッシュと実画面のハッシュを記録。
+
+従来の実GUIシナリオ（元の場所36・ZIP36・JPEG33・文書/動画7・取得512 MiBと再開/2ページ/36件復元）も現バイナリで再実行。各出力の全バイト・ZIP CRC・元イメージSHA-256を確認した。技術説明HTMLの13画面/8方式、390px幅、JSエラーなし・外部通信なしを確認（`browser-v12-results.json`）。

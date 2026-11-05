@@ -26,17 +26,17 @@ def main(binary,output):
             scanned=run(binary,'scan','--source',source,'--work-dir',root/'work','--json')
             candidates=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
             found=[c for c in candidates if c['name'].split(':')[0] in [path.name,alias.name]]
-            check(len(found)==21 and all(c['supported'] for c in found),'native deleted attributes missing or unsupported: '+str(found))
+            check(len(found)==21 and {c['stream_name'] for c in found}==set(truth) and all(c['supported'] for c in found),'native deleted attributes missing or unsupported: '+str(found))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
-            check(len(result)==21 and all(Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
+            check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
             client=Client(binary,source,root/'mcp-work',root/'mcp-out')
             try:
                 client.rpc('initialize',{'protocolVersion':'2025-11-25'})
                 job=client.wait(client.tool('start_scan',{'source':str(source),'request_id':'scan'})['job_id']);check(job['state']=='completed',str(job))
                 sid=job['result']['session_id']
                 job=client.wait(client.tool('recover_files',{'session_id':sid,'ids':list(names),'destination':str(root/'mcp-out'),'request_id':'recover'})['job_id'])
-                check(job['state']=='completed' and all(Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in job['result']['results']),'MCP native ADS content mismatch')
+                check(job['state']=='completed' and len(job['result']['results'])==21 and {r['candidate_id'] for r in job['result']['results']}==set(names) and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in job['result']['results']),'MCP native ADS content mismatch')
             finally:client.close()
             result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, on a new owned VHD only; no metadata edited'}
         output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result));return result

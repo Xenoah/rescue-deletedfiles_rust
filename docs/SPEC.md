@@ -580,3 +580,7 @@ GUIはalphaでegui/eframeを採用。RAIDの互換プロファイルは、その
 ### alpha.10 文書・動画とGUI配置（2026-11-05）
 
 [DOCUMENT-CARVING.md](DOCUMENT-CARVING.md)のプロファイルと上限でPDF/ZIP/Office/MP4/MOVを追加。[UI_GUIDELINES.md](UI_GUIDELINES.md)に公式資料と採用基準を記録。全v1.0必須項目は[V1_ACCEPTANCE.md](V1_ACCEPTANCE.md)で継続管理する。
+
+### alpha.12 NTFS拡張（開発中）
+
+[NTFS-EXTENTS.md](NTFS-EXTENTS.md)の境界と資源上限で、属性リスト・分割MFT・現在の割当・同じデータの複数名を実装。受入台帳のネイティブ・配布物検証後に公開する。
