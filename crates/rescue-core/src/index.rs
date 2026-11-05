@@ -1,5 +1,6 @@
 //! Append-only candidate storage. A batch and its scan checkpoint commit together.
 //! Readers carry a high-water mark; later commits cannot replace their pages.
+mod migrate;
 use crate::{Candidate, Error, Result, Session};
 use rusqlite::{Connection, OpenFlags, OptionalExtension, config::DbConfig, limits::Limit, params};
 use serde::{Deserialize, Serialize};
@@ -11,7 +12,7 @@ use std::{
 };
 
 const APP_ID: i32 = 0x52534349;
-const SCHEMA: i32 = 1;
+const SCHEMA: i32 = 2;
 const MAX_ROW: usize = 8 * 1024 * 1024;
 const MAX_CHECKPOINT: usize = 32 * 1024 * 1024;
 pub const MAX_PAGE: usize = 1000;
@@ -26,6 +27,8 @@ pub enum IndexSort {
     Size,
     Created,
     Modified,
+    Type,
+    State,
 }
 impl IndexSort {
     fn column(self) -> &'static str {
@@ -36,6 +39,43 @@ impl IndexSort {
             Self::Size => "size_key",
             Self::Created => "created_key",
             Self::Modified => "modified_key",
+            Self::Type => "type_key",
+            Self::State => "state_key",
+        }
+    }
+    fn rank(self) -> &'static str {
+        match self {
+            Self::Size => "size_rank",
+            Self::Created => "created_rank",
+            Self::Modified => "modified_rank",
+            _ => "zero_rank",
+        }
+    }
+}
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum IndexGroup {
+    #[default]
+    None,
+    Folder,
+    Type,
+    Created,
+    Modified,
+    Size,
+    Initial,
+    State,
+}
+impl IndexGroup {
+    fn column(self) -> &'static str {
+        match self {
+            Self::None => "empty_key",
+            Self::Folder => "folder_key",
+            Self::Type => "type_key",
+            Self::Created => "created_day",
+            Self::Modified => "modified_day",
+            Self::Size => "size_group",
+            Self::Initial => "initial_key",
+            Self::State => "state_key",
         }
     }
 }
@@ -43,6 +83,7 @@ impl IndexSort {
 #[serde(default, deny_unknown_fields)]
 pub struct IndexQuery {
     pub sort: IndexSort,
+    pub group: IndexGroup,
     pub descending: bool,
     pub text: String,
     pub supported_only: bool,
@@ -54,6 +95,8 @@ pub struct IndexCursor {
     pub watermark: u64,
     pub query_sha256: String,
     pub last_key: String,
+    pub last_group: String,
+    pub last_rank: u8,
     pub last_sequence: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -118,6 +161,67 @@ fn configure(db: &Connection, writer: bool) -> Result<()> {
     }
     Ok(())
 }
+struct QueryBudget(Connection);
+impl QueryBudget {
+    fn new(path: &Path, index_id: &str) -> Result<Self> {
+        let mut db = Connection::open_with_flags(
+            path,
+            OpenFlags::SQLITE_OPEN_READ_ONLY
+                | OpenFlags::SQLITE_OPEN_NO_MUTEX
+                | OpenFlags::SQLITE_OPEN_NOFOLLOW,
+        )?;
+        configure(&db, false)?;
+        db.execute_batch("BEGIN")?;
+        let found: String = db.query_row(
+            "SELECT index_id FROM checkpoint WHERE singleton=1",
+            [],
+            |r| r.get(0),
+        )?;
+        if found != index_id {
+            return Err(Error::Request("index changed before page query".into()));
+        }
+        let started = std::time::Instant::now();
+        db.progress_handler(
+            1000,
+            Some(move || started.elapsed() > Duration::from_secs(2)),
+        )?;
+        Ok(Self(db))
+    }
+}
+fn date_key(date: &Option<crate::FileTimestamp>) -> (u8, String) {
+    match date {
+        None => (2, String::new()),
+        Some(d) => match d.unix_seconds {
+            None => (1, d.value.clone()),
+            Some(seconds) => {
+                let fraction = d
+                    .value
+                    .split_once('.')
+                    .map(|(_, rest)| {
+                        rest.chars()
+                            .take_while(char::is_ascii_digit)
+                            .take(9)
+                            .collect::<String>()
+                    })
+                    .unwrap_or_default();
+                (
+                    0,
+                    format!(
+                        "{:020}.{:0<9}",
+                        i128::from(seconds) - i128::from(i64::MIN),
+                        fraction
+                    ),
+                )
+            }
+        },
+    }
+}
+fn day_key(date: &Option<crate::FileTimestamp>) -> String {
+    date.as_ref().map_or_else(
+        || "\u{10ffff}".into(),
+        |d| d.value.chars().take(10).collect(),
+    )
+}
 fn nonnegative(value: i64) -> Result<u64> {
     u64::try_from(value).map_err(|_| Error::Request("negative index sequence".into()))
 }
@@ -131,6 +235,18 @@ fn regular(path: &Path) -> Result<()> {
     Ok(())
 }
 impl CandidateIndex {
+    /// Identify the file format without relying on a filename extension.
+    pub fn is_index(path: &Path) -> Result<bool> {
+        use std::io::Read;
+        regular(path)?;
+        let mut file = File::open(path)?;
+        let mut header = [0u8; 16];
+        match file.read_exact(&mut header) {
+            Ok(()) => Ok(&header == b"SQLite format 3\0"),
+            Err(error) if error.kind() == std::io::ErrorKind::UnexpectedEof => Ok(false),
+            Err(error) => Err(error.into()),
+        }
+    }
     pub fn open(path: &Path) -> Result<Self> {
         regular(path)?;
         let path = path.canonicalize()?;
@@ -179,6 +295,9 @@ impl CandidateIndex {
     }
     pub fn status(&self) -> Result<IndexStatus> {
         let (session,state,engine,resumable,count,index_id):(String,String,String,bool,i64,String)=self.db.query_row("SELECT session,state,engine,resumable,watermark,index_id FROM checkpoint WHERE singleton=1",[],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?,r.get(5)?)))?;
+        if session.len() > MAX_ROW {
+            return Err(Error::Limit("index header".into()));
+        }
         let session: Session = serde_json::from_str(&session)?;
         Ok(IndexStatus {
             schema_version: SCHEMA as u32,
@@ -238,32 +357,49 @@ impl CandidateIndex {
                 || c.watermark > status.candidates
                 || c.last_sequence == 0
                 || c.last_sequence > c.watermark
-                || c.last_key.len() > MAX_ROW)
+                || c.last_key.len() > MAX_ROW
+                || c.last_group.len() > MAX_ROW
+                || c.last_rank > 2)
         {
             return Err(Error::Request(
                 "cursor does not belong to this index/query/snapshot".into(),
             ));
         }
+        let budget = QueryBudget::new(&self.path, &status.index_id)?;
         let column = query.sort.column();
+        let rank = query.sort.rank();
+        let group = query.group.column();
         let direction = if query.descending { "DESC" } else { "ASC" };
         let comparison = if query.descending { "<" } else { ">" };
         let sql = format!(
-            "SELECT seq, {column}, payload FROM candidate WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {} ORDER BY {column} {direction}, seq {direction} LIMIT ?6",
+            "SELECT seq,{column},payload,{rank},{group} FROM candidate WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
             if cursor.is_some() {
-                format!("AND ({column},seq) {comparison} (?4,?5)")
+                if !query.descending {
+                    format!("AND ({group},{rank},{column},seq)>(?7,?8,?4,?5)")
+                } else if query.group == IndexGroup::None && rank == "zero_rank" {
+                    format!("AND empty_key=?7 AND zero_rank=?8 AND ({column},seq)<(?4,?5)")
+                } else {
+                    format!(
+                        "AND ({group}>?7 OR ({group}=?7 AND ({rank}>?8 OR ({rank}=?8 AND ({column},seq) {comparison} (?4,?5)))))"
+                    )
+                }
             } else {
                 String::new()
             }
         );
-        let mut statement = self.db.prepare(&sql)?;
-        let mut rows = statement.query(params![
-            watermark as i64,
-            query.text.to_lowercase(),
-            query.supported_only,
-            cursor.map_or("", |c| c.last_key.as_str()),
-            cursor.map_or(0, |c| c.last_sequence as i64),
-            (limit + 1) as i64
-        ])?;
+        let mut statement = budget.0.prepare(&sql)?;
+        // Bind named indices only when present: first pages have no cursor parameters.
+        statement.raw_bind_parameter(1, watermark as i64)?;
+        statement.raw_bind_parameter(2, query.text.to_lowercase())?;
+        statement.raw_bind_parameter(3, query.supported_only)?;
+        statement.raw_bind_parameter(6, (limit + 1) as i64)?;
+        if let Some(c) = cursor {
+            statement.raw_bind_parameter(4, &c.last_key)?;
+            statement.raw_bind_parameter(5, c.last_sequence as i64)?;
+            statement.raw_bind_parameter(7, &c.last_group)?;
+            statement.raw_bind_parameter(8, c.last_rank)?;
+        }
+        let mut rows = statement.raw_query();
         let mut values = Vec::with_capacity(limit);
         let mut last = None;
         let mut more = false;
@@ -289,6 +425,8 @@ impl CandidateIndex {
                 watermark,
                 query_sha256: digest.clone(),
                 last_key: row.get(1)?,
+                last_rank: row.get(3)?,
+                last_group: row.get(4)?,
                 last_sequence: nonnegative(row.get(0)?)?,
             });
         }
@@ -376,10 +514,41 @@ impl IndexWriter {
         db.execute_batch(&format!("PRAGMA application_id={APP_ID}; PRAGMA user_version={SCHEMA};
 CREATE TABLE engine_item(namespace INTEGER NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(namespace,seq)) STRICT;
 CREATE TABLE checkpoint(singleton INTEGER PRIMARY KEY CHECK(singleton=1),session TEXT NOT NULL,state TEXT NOT NULL,engine TEXT NOT NULL,resumable INTEGER NOT NULL,engine_state TEXT NOT NULL,watermark INTEGER NOT NULL CHECK(watermark>=0),index_id TEXT NOT NULL) STRICT;
-CREATE TABLE candidate(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,discovery_key TEXT NOT NULL,name_key TEXT NOT NULL,path_key TEXT NOT NULL,size_key TEXT NOT NULL,created_key TEXT NOT NULL,modified_key TEXT NOT NULL,search_text TEXT NOT NULL,supported INTEGER NOT NULL) STRICT;
-CREATE INDEX candidate_name ON candidate(name_key,seq); CREATE INDEX candidate_path ON candidate(path_key,seq);
-CREATE INDEX candidate_size ON candidate(size_key,seq); CREATE INDEX candidate_created ON candidate(created_key,seq);
-CREATE INDEX candidate_modified ON candidate(modified_key,seq); CREATE INDEX candidate_discovery ON candidate(discovery_key,seq);"))?;
+CREATE TABLE candidate(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,discovery_key TEXT NOT NULL,name_key TEXT NOT NULL,path_key TEXT NOT NULL,size_key TEXT NOT NULL,created_key TEXT NOT NULL,modified_key TEXT NOT NULL,search_text TEXT NOT NULL,supported INTEGER NOT NULL,
+type_key TEXT NOT NULL,state_key TEXT NOT NULL,zero_rank INTEGER NOT NULL CHECK(zero_rank=0),size_rank INTEGER NOT NULL,created_rank INTEGER NOT NULL,modified_rank INTEGER NOT NULL,folder_key TEXT NOT NULL,created_day TEXT NOT NULL,modified_day TEXT NOT NULL,size_group TEXT NOT NULL,initial_key TEXT NOT NULL,empty_key TEXT NOT NULL CHECK(empty_key='')) STRICT;"))?;
+        for sort in [
+            IndexSort::Discovery,
+            IndexSort::Name,
+            IndexSort::Path,
+            IndexSort::Size,
+            IndexSort::Created,
+            IndexSort::Modified,
+            IndexSort::Type,
+            IndexSort::State,
+        ] {
+            let column = sort.column();
+            let rank = sort.rank();
+            db.execute_batch(&format!(
+                "CREATE INDEX candidate_{column} ON candidate(empty_key,{rank},{column},seq);"
+            ))?;
+            if rank != "zero_rank" {
+                db.execute_batch(&format!("CREATE INDEX candidate_{column}_desc ON candidate(empty_key,{rank},{column} DESC,seq DESC);"))?;
+            }
+        }
+        for group in [
+            IndexGroup::Folder,
+            IndexGroup::Type,
+            IndexGroup::Created,
+            IndexGroup::Modified,
+            IndexGroup::Size,
+            IndexGroup::Initial,
+            IndexGroup::State,
+        ] {
+            let column = group.column();
+            db.execute_batch(&format!(
+                "CREATE INDEX group_{column} ON candidate({column},zero_rank,name_key,seq);"
+            ))?;
+        }
         db.execute(
             "INSERT INTO checkpoint VALUES(1,?1,'queued',?2,1,?3,0,?4)",
             params![
@@ -511,32 +680,48 @@ CREATE INDEX candidate_modified ON candidate(modified_key,seq); CREATE INDEX can
                 search.push('\n');
                 search.push_str(&n.original_path);
             }
-            let unknown = "\u{10ffff}";
+            let (created_rank, created_key) = date_key(&candidate.created);
+            let (modified_rank, modified_key) = date_key(&candidate.modified);
+            let base = candidate.name.split(':').next().unwrap_or(&candidate.name);
+            let kind = base
+                .rsplit_once('.')
+                .filter(|(name, ext)| !name.is_empty() && !ext.is_empty())
+                .map(|(_, ext)| ext.to_uppercase())
+                .unwrap_or_default();
+            let state = if !candidate.supported {
+                "2"
+            } else if candidate.warnings.is_empty() {
+                "0"
+            } else {
+                "1"
+            };
+            let path = candidate.original_path.replace('\\', "/");
+            let folder = path.rsplit_once('/').map_or("", |(folder, _)| folder);
+            let size_group = match candidate.size {
+                Some(0) => "0",
+                Some(1..=1048575) => "1",
+                Some(1048576..=1073741823) => "2",
+                Some(_) => "3",
+                None => "4",
+            };
+            let initial = candidate
+                .name
+                .chars()
+                .next()
+                .map(|c| {
+                    if c.is_ascii_digit() {
+                        "0 – 9".into()
+                    } else {
+                        c.to_uppercase().to_string()
+                    }
+                })
+                .unwrap_or_else(|| "\u{10ffff}".into());
             transaction.execute(
-                "INSERT INTO candidate VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
-                params![
-                    sequence as i64,
-                    candidate.id,
-                    json,
-                    format!("{sequence:020}"),
-                    candidate.name.to_lowercase(),
-                    candidate.original_path.to_lowercase(),
-                    candidate
-                        .size
-                        .map_or_else(|| unknown.into(), |s| format!("{s:020}")),
-                    candidate
-                        .created
-                        .as_ref()
-                        .map_or(unknown, |t| t.value.as_str()),
-                    candidate
-                        .modified
-                        .as_ref()
-                        .map_or(unknown, |t| t.value.as_str()),
-                    search.to_lowercase(),
-                    candidate.supported
-                ],
+                "INSERT INTO candidate VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,0,?14,?15,?16,?17,?18,?19,?20,?21,'')",
+                params![sequence as i64,candidate.id,json,format!("{sequence:020}"),candidate.name.to_lowercase(),candidate.original_path.to_lowercase(),candidate.size.map_or_else(String::new,|s|format!("{s:020}")),created_key,modified_key,search.to_lowercase(),candidate.supported,kind,state,u8::from(candidate.size.is_none()),created_rank,modified_rank,folder,day_key(&candidate.created),day_key(&candidate.modified),size_group,initial],
             )?;
         }
+
         for row in staged {
             transaction.execute(
                 "INSERT INTO engine_item VALUES(?1,?2,?3)",
@@ -547,8 +732,11 @@ CREATE INDEX candidate_modified ON candidate(modified_key,seq); CREATE INDEX can
         transaction.commit()?;
         Ok(())
     }
-    /// JSON sessions are imported into a new index; the original is never edited.
+    /// JSON and earlier SQLite schemas are copied; the original is never edited.
     pub fn import_session(path: &Path, work: &Path) -> Result<PathBuf> {
+        if CandidateIndex::is_index(path)? {
+            return Self::import_index(path, work);
+        }
         let mut header = Session::load(path)?;
         let candidates = std::mem::take(&mut header.candidates);
         let mut writer = Self::create(work, &header, "imported_json", &serde_json::Value::Null)?;
@@ -693,6 +881,136 @@ mod tests {
         assert!(w.index.selected_session(&["id-2".into()]).is_err());
         h.fingerprint.length += 1;
         assert!(w.commit(&h, &[], "paused", true, &3).is_err());
+    }
+    #[test]
+    fn grouped_pages_and_unknown_ranks_preserve_a_global_order() {
+        let root = tempfile::tempdir().unwrap();
+        let h = header(root.path());
+        let mut w = IndexWriter::create(root.path(), &h, "test", &0).unwrap();
+        let mut values = vec![
+            candidate(1, "b.pdf"),
+            candidate(2, "a.png"),
+            candidate(3, "d.pdf"),
+            candidate(4, "c.png"),
+        ];
+        values[0].size = Some(9);
+        values[1].size = Some(100);
+        values[2].size = None;
+        values[3].size = Some(0);
+        values[0].created = Some(crate::FileTimestamp {
+            value: "1970-01-01T00:00:00.1000000Z".into(),
+            unix_seconds: Some(0),
+        });
+        values[1].created = Some(crate::FileTimestamp {
+            value: "1970-01-01T00:00:00.1100000Z".into(),
+            unix_seconds: Some(0),
+        });
+        values[3].created = Some(crate::FileTimestamp {
+            value: "1960-01-01T00:00:00".into(),
+            unix_seconds: None,
+        });
+        w.commit(&h, &values, "completed", false, &4).unwrap();
+        for (sort, descending, ids) in [
+            (IndexSort::Size, false, [4, 1, 2, 3]),
+            (IndexSort::Size, true, [2, 1, 4, 3]),
+            (IndexSort::Created, false, [1, 2, 4, 3]),
+            (IndexSort::Created, true, [2, 1, 4, 3]),
+        ] {
+            let query = IndexQuery {
+                sort,
+                descending,
+                ..Default::default()
+            };
+            let mut cursor = None;
+            let mut actual = vec![];
+            loop {
+                let page = w.index.page(&query, cursor.as_ref(), 1).unwrap();
+                actual.extend(page.candidates.into_iter().map(|c| c.record));
+                cursor = page.next_cursor;
+                if cursor.is_none() {
+                    break;
+                }
+            }
+            assert_eq!(actual, ids);
+        }
+        let query = IndexQuery {
+            group: IndexGroup::Type,
+            sort: IndexSort::Name,
+            descending: true,
+            ..Default::default()
+        };
+        let mut cursor = None;
+        let mut actual = vec![];
+        loop {
+            let page = w.index.page(&query, cursor.as_ref(), 1).unwrap();
+            actual.extend(page.candidates.into_iter().map(|c| c.record));
+            cursor = page.next_cursor;
+            if cursor.is_none() {
+                break;
+            }
+        }
+        assert_eq!(actual, [3, 1, 4, 2]);
+    }
+    #[test]
+    fn copy_migration_preserves_checkpoint_staging_and_the_old_database() {
+        let root = tempfile::tempdir().unwrap();
+        let h = header(root.path());
+        let mut w = IndexWriter::create(
+            root.path(),
+            &h,
+            "filesystem_records_v1",
+            &serde_json::json!({"next":23}),
+        )
+        .unwrap();
+        w.commit_staged(
+            &h,
+            &[candidate(1, "b.pdf"), candidate(2, "a.png")],
+            "paused",
+            true,
+            &serde_json::json!({"next":23}),
+            &[StagedRow {
+                namespace: 0,
+                sequence: 0,
+                payload: "[1,2,3]".into(),
+            }],
+        )
+        .unwrap();
+        let old = w.index.path.clone();
+        drop(w);
+        let db = Connection::open(&old).unwrap();
+        db.execute_batch("ALTER TABLE candidate RENAME TO candidate_v2; CREATE TABLE candidate AS SELECT seq,id,payload,discovery_key,name_key,path_key,size_key,created_key,modified_key,search_text,supported FROM candidate_v2; DROP TABLE candidate_v2; PRAGMA user_version=1;").unwrap();
+        drop(db);
+        let original = fs::read(&old).unwrap();
+        assert!(CandidateIndex::open(&old).is_err());
+        let copy = IndexWriter::import_session(&old, root.path()).unwrap();
+        assert_eq!(fs::read(&old).unwrap(), original);
+        let migrated = CandidateIndex::open(&copy).unwrap();
+        let status = migrated.status().unwrap();
+        assert_eq!(status.schema_version, 2);
+        assert_eq!(status.state, "paused");
+        assert!(status.resumable);
+        assert_eq!(
+            migrated.checkpoint::<serde_json::Value>().unwrap(),
+            serde_json::json!({"next":23})
+        );
+        assert_eq!(migrated.staged::<Vec<u32>>(0, 0).unwrap(), [1, 2, 3]);
+        assert_eq!(
+            migrated
+                .page(
+                    &IndexQuery {
+                        group: IndexGroup::Type,
+                        ..Default::default()
+                    },
+                    None,
+                    10
+                )
+                .unwrap()
+                .candidates
+                .len(),
+            2
+        );
+        let copied_again = IndexWriter::import_session(&copy, root.path()).unwrap();
+        assert_ne!(copied_again, copy);
     }
     #[test]
     fn sort_filter_and_selected_ids_keep_evidence() {

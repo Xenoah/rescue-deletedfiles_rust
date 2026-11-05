@@ -114,7 +114,7 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    /// Import a legacy JSON session into a new index without changing the original.
+    /// Copy a JSON session or older SQLite index into the current format; keep the original.
     IndexImport {
         #[arg(long)]
         session: PathBuf,
@@ -161,8 +161,10 @@ enum Command {
     Results {
         #[arg(long)]
         cursor: Option<String>,
-        #[arg(long, default_value="discovery", value_parser=["discovery","name","path","size","created","modified"])]
+        #[arg(long, default_value="discovery", value_parser=["discovery","name","path","size","created","modified","type","state"])]
         sort: String,
+        #[arg(long,default_value="none",value_parser=["none","folder","type","created","modified","size","initial","state"])]
+        group: String,
         #[arg(long)]
         descending: bool,
         #[arg(long)]
@@ -646,6 +648,7 @@ fn run() -> Result<i32, Error> {
         Command::Results {
             cursor,
             sort,
+            group,
             descending,
             supported_only,
             session,
@@ -657,7 +660,7 @@ fn run() -> Result<i32, Error> {
             if limit == 0 || limit > 1000 {
                 return Err(Error::Request("limit must be 1..1000".into()));
             }
-            if session.extension().is_some_and(|e| e == "sqlite") {
+            if rescue_core::CandidateIndex::is_index(&session)? {
                 if offset != 0 {
                     return Err(Error::Request(
                         "indexed results use --cursor, not --offset".into(),
@@ -673,8 +676,11 @@ fn run() -> Result<i32, Error> {
                         "size" => rescue_core::IndexSort::Size,
                         "created" => rescue_core::IndexSort::Created,
                         "modified" => rescue_core::IndexSort::Modified,
+                        "type" => rescue_core::IndexSort::Type,
+                        "state" => rescue_core::IndexSort::State,
                         _ => rescue_core::IndexSort::Discovery,
                     },
+                    group: serde_json::from_value(json!(group))?,
                     descending,
                     text: name.unwrap_or_default(),
                     supported_only,
@@ -685,7 +691,12 @@ fn run() -> Result<i32, Error> {
                 );
                 return Ok(0);
             }
-            if cursor.is_some() || sort != "discovery" || descending || supported_only {
+            if cursor.is_some()
+                || sort != "discovery"
+                || group != "none"
+                || descending
+                || supported_only
+            {
                 return Err(Error::Request(
                     "cursor and indexed sorting require a SQLite index".into(),
                 ));
@@ -723,7 +734,7 @@ fn run() -> Result<i32, Error> {
                     .unwrap_or_else(|| std::path::Path::new("."))
                     .to_owned()
             });
-            let session = if session.extension().is_some_and(|e| e == "sqlite") {
+            let session = if rescue_core::CandidateIndex::is_index(&session)? {
                 let index = rescue_core::CandidateIndex::open(&session)?;
                 if all {
                     let q = rescue_core::IndexQuery {
@@ -864,7 +875,7 @@ fn run() -> Result<i32, Error> {
             session,
             json: compact,
         } => {
-            if session.extension().is_some_and(|e| e == "sqlite") {
+            if rescue_core::CandidateIndex::is_index(&session)? {
                 let index = rescue_core::CandidateIndex::open(&session)?;
                 print(
                     json!({"index":index.status()?,"session":index.session()?}),

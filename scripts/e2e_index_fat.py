@@ -88,6 +88,18 @@ def main(binary,output=None):
             db=sqlite3.connect(path);saved=json.loads(db.execute('SELECT engine_state FROM checkpoint').fetchone()[0]);count=db.execute('SELECT count(*) FROM engine_item').fetchone()[0];public=db.execute('SELECT count(*) FROM candidate').fetchone()[0];db.close()
             check(saved['fat']['phase']=='Traverse' and saved['fat']['staged']==count and count>0 and public==0,('unvalidated candidates published or torn stage',kind))
             check(saved['fat']['active'] is not None,'directory cursor not saved')
+            # Build the actual earlier table layout from a consistent snapshot;
+            # migration must retain both unpublished FAT rows and resumability.
+            legacy_path=root/(kind+'-schema1.db');original_db=sqlite3.connect(path);legacy_db=sqlite3.connect(legacy_path);original_db.backup(legacy_db);original_db.close()
+            legacy_db.executescript('ALTER TABLE candidate RENAME TO candidate_v2; CREATE TABLE candidate AS SELECT seq,id,payload,discovery_key,name_key,path_key,size_key,created_key,modified_key,search_text,supported FROM candidate_v2; DROP TABLE candidate_v2; PRAGMA user_version=1;');legacy_db.close()
+            original_hash=file_hash(legacy_path)
+            migrated=run(binary,'index-import','--session',legacy_path,'--work-dir',root/(kind+'-migration'),'--json')
+            check(file_hash(legacy_path)==original_hash,'migration changed original SQLite bytes')
+            check(migrated['index']['resumable'],'migration lost restart point')
+            check(run(binary,'resume','--session',migrated['session'],'--json')['index']['state']=='completed','migrated FAT resume failed')
+            check(pages(binary,migrated['session'])==expected,'schema1 copy lost candidate metadata')
+            check(file_hash(legacy_path)==original_hash,'resume changed original SQLite bytes')
+            checks.append(kind+'_schema1_copy_preserves_staging_and_evidence')
             resumed=run(binary,'resume','--session',path,'--json');check(resumed['index']['state']=='completed',resumed)
             check(pages(binary,path)==expected,('restart metadata mismatch',kind))
             checks.extend([kind+'_atomic_staging_before_publication',kind+'_mid_directory_crash_resume_exact'])

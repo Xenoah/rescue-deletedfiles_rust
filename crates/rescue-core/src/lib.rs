@@ -38,7 +38,8 @@ pub use discovery::{
 };
 pub use disk_scan::scan_source;
 pub use index::{
-    CandidateIndex, IndexCursor, IndexPage, IndexQuery, IndexSort, IndexStatus, IndexWriter,
+    CandidateIndex, IndexCursor, IndexGroup, IndexPage, IndexQuery, IndexSort, IndexStatus,
+    IndexWriter,
 };
 pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
 use ntfs::Ntfs;
