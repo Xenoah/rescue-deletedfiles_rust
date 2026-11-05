@@ -72,7 +72,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all fourteen suites)
+      - name: Debug CLI and MCP integration (all fifteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -82,7 +82,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all fourteen suites)
+      - name: Release CLI and MCP integration (all fifteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
       - name: Record JPEG entropy and pixel verification
         run: python scripts/ci_command.py python scripts/e2e_jpeg.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output jpeg-results.json

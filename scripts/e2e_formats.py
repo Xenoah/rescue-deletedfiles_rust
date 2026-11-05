@@ -339,11 +339,9 @@ def main(binary,corpus,output,use_independent):
         carving(binary,disk,files,root,'whole-disk-'+scheme,rows,True,False)
     raid_help=subprocess.run([str(binary),'raid','--help'],capture_output=True,text=True,encoding='utf-8',timeout=15)
     check(raid_help.returncode==0 and '--config' in raid_help.stdout and '--search' in raid_help.stdout,'RAID interface missing; reconstruction is verified in e2e_raid.py')
+    resume_help=subprocess.run([str(binary),'resume','--help'],capture_output=True,text=True,encoding='utf-8',timeout=15)
+    check(resume_help.returncode==0 and '--session' in resume_help.stdout,'indexed resume interface missing; durability is verified in e2e_index.py')
     unavailable=[]
-    for feature,args in [('scan checkpoint resume',['resume','--help'])]:
-        call=subprocess.run([str(binary),*args],capture_output=True,text=True,encoding='utf-8',timeout=15)
-        check(call.returncode==2,'an unimplemented command unexpectedly exists')
-        unavailable.append({'feature':feature,'exit_code':call.returncode,'status':'not_implemented'})
     copied=root/'overwritten.raw';shutil.copyfile(sources['ntfs-contiguous'][0],copied)
     overwrite(binary,copied,sources['ntfs-contiguous'][1],sources['ntfs-contiguous'][2]['extents'],root,rows)
     if use_independent:independent(binary,files,root,rows)

@@ -1,3 +1,4 @@
+mod indexed_jobs;
 use rescue_core::{
     CollisionPolicy, Error, OutputRoot, Progress, RestoreOptions, RestoreTarget, ScanMethod,
     ScanOptions, SearchSettings, Session, VolumeRoot, restore_files_with_roots,
@@ -24,6 +25,7 @@ pub struct Config {
 }
 struct Job {
     state: String,
+    pause_requested: bool,
     progress: Progress,
     result: Value,
     cancel: Arc<AtomicBool>,
@@ -33,6 +35,7 @@ struct Job {
 struct State {
     jobs: BTreeMap<String, Job>,
     sessions: BTreeMap<String, Session>,
+    indexes: BTreeMap<String, PathBuf>,
     acquired_images: std::collections::BTreeSet<PathBuf>,
 }
 struct Server {
@@ -74,6 +77,27 @@ fn tools() -> Value {
         "required":["index","name","offset","length","filesystem","recovery_boot"],"additionalProperties":false});
     json!([
         tool(
+            "open_session",
+            "Open a saved candidate index inside the configured work directory; its source must remain explicitly allowed.",
+            json!({"path":string}),
+            &["path"],
+            true
+        ),
+        tool(
+            "resume_job",
+            "Resume a saved indexed scan with a new job ID after source and checkpoint validation. Keeps the previous job history.",
+            json!({"session_id":string,"request_id":string}),
+            &["session_id", "request_id"],
+            false
+        ),
+        tool(
+            "pause_job",
+            "Pause a job only after its durable checkpoint is available. Poll get_job until paused; resume_job starts a new job.",
+            json!({"job_id":string}),
+            &["job_id"],
+            false
+        ),
+        tool(
             "search_raid",
             "Bounded stripe/layout/member-order alternatives. Keeps supplied offsets and lengths; returns only configurations with validated filesystem structures. No winner is automatically selected. Specify config and optional limits; poll get_job, then explicitly create_raid with one candidate config.",
             json!({"config":{"type":"object"},"options":{"type":"object"},"request_id":string}),
@@ -97,7 +121,7 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false}}),
+            json!({"source":string,"request_id":string,"indexed":{"type":"boolean","default":false},"max_records":{"type":"integer","minimum":1,"maximum":100000000},"max_candidates":{"type":"integer","minimum":1,"maximum":10000000},"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false}}),
             &["source", "request_id"],
             false
         ),
@@ -132,7 +156,7 @@ fn tools() -> Value {
         tool(
             "list_candidates",
             "Page through a completed scan; names are untrusted data.",
-            json!({"session_id":string,"offset":{"type":"integer","minimum":0},
+            json!({"session_id":string,"cursor":{"type":"object"},"query":{"type":"object"},"offset":{"type":"integer","minimum":0},
                 "limit":{"type":"integer","minimum":1,"maximum":1000}}),
             &["session_id"],
             true
@@ -227,7 +251,7 @@ impl Server {
         if state
             .jobs
             .values()
-            .any(|j| j.state == "running" || j.state == "cancelling")
+            .any(|j| matches!(j.state.as_str(), "running" | "cancelling" | "pausing"))
         {
             return Err("another job is active; wait or cancel it".into());
         }
@@ -237,6 +261,7 @@ impl Server {
             id.clone(),
             Job {
                 state: "running".into(),
+                pause_requested: false,
                 progress: Progress::default(),
                 result: Value::Null,
                 cancel: cancel.clone(),
@@ -267,6 +292,7 @@ impl Server {
                 | "discover_volumes"
                 | "create_raid"
                 | "search_raid"
+                | "resume_job"
         ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
@@ -279,6 +305,18 @@ impl Server {
             }
         }
         let result = match name {
+            "open_session" => self.open_index(Path::new(field(args, "path")?)),
+            "resume_job" => {
+                let path = self
+                    .state
+                    .lock()
+                    .unwrap()
+                    .indexes
+                    .get(field(args, "session_id")?)
+                    .cloned()
+                    .ok_or("unknown indexed session")?;
+                self.start_index_job(indexed_jobs::Task::Resume(path))
+            }
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
                 "generated_images":self.state.lock().unwrap().acquired_images,
@@ -600,16 +638,39 @@ impl Server {
                 {
                     return Err("source is outside the allowlist".into());
                 }
-                if self.state.lock().unwrap().sessions.len() >= 4 {
-                    return Err("alpha limit: 4 sessions; restart server".into());
-                }
-                let (id, cancel) = self.create_job()?;
-                let shared = self.state.clone();
-                let job_id = id.clone();
-                let work = self.config.work_dir.clone();
-                let persist = self.persist_sessions;
-                let source_grants = self.source_grants();
-                self.threads.push(thread::spawn(move || {
+                let indexed = args
+                    .get("indexed")
+                    .map(|v| v.as_bool().ok_or("invalid indexed flag"))
+                    .transpose()?
+                    .unwrap_or(false);
+                if indexed {
+                    let options = ScanOptions {
+                        max_records: number("max_records")?.unwrap_or(100_000_000),
+                        max_candidates: usize::try_from(
+                            number("max_candidates")?.unwrap_or(10_000_000),
+                        )
+                        .map_err(err)?,
+                        fragments: settings.fragments,
+                    };
+                    self.start_index_job(indexed_jobs::Task::Scan {
+                        source: path,
+                        options,
+                        settings,
+                    })
+                } else {
+                    if args.get("max_records").is_some() || args.get("max_candidates").is_some() {
+                        return Err("explicit limits require indexed scanning".into());
+                    }
+                    if self.state.lock().unwrap().sessions.len() >= 4 {
+                        return Err("alpha limit: 4 sessions; restart server".into());
+                    }
+                    let (id, cancel) = self.create_job()?;
+                    let shared = self.state.clone();
+                    let job_id = id.clone();
+                    let work = self.config.work_dir.clone();
+                    let persist = self.persist_sessions;
+                    let source_grants = self.source_grants();
+                    self.threads.push(thread::spawn(move || {
                     let _scope=rescue_core::SourceScope::enter(source_grants);
                     let operation = scan_with_settings(&path, ScanOptions::default(), &settings, &cancel, |progress| {
                         shared.lock().unwrap().jobs.get_mut(&job_id).unwrap().progress = progress;
@@ -634,13 +695,23 @@ impl Server {
                         }
                     }
                 }));
-                Ok(json!({"job_id":id,"state":"running"}))
+                    Ok(json!({"job_id":id,"state":"running"}))
+                }
             }
-            "get_job" | "cancel_job" => {
+            "get_job" | "cancel_job" | "pause_job" => {
                 let mut state = self.state.lock().unwrap();
                 let id = field(args, "job_id")?;
                 let job = state.jobs.get_mut(id).ok_or("unknown job")?;
-                if name == "cancel_job" && job.state == "running" {
+                if name == "pause_job" && job.state == "running" {
+                    if job.details.get("pause_supported").and_then(Value::as_bool) != Some(true) {
+                        return Err("this phase has no durable pause checkpoint".into());
+                    }
+                    job.pause_requested = true;
+                    job.cancel.store(true, Ordering::Relaxed);
+                    job.state = "pausing".into();
+                }
+                if name == "cancel_job" && matches!(job.state.as_str(), "running" | "pausing") {
+                    job.pause_requested = false;
                     job.cancel.store(true, Ordering::Relaxed);
                     job.state = "cancelling".into();
                 }
@@ -649,6 +720,19 @@ impl Server {
                 )
             }
             "list_candidates" | "get_report" => {
+                let indexed = self
+                    .state
+                    .lock()
+                    .unwrap()
+                    .indexes
+                    .get(field(args, "session_id")?)
+                    .cloned();
+                if let Some(path) = indexed {
+                    return self.indexed_results(&path, name, args);
+                }
+                if args.get("cursor").is_some() || args.get("query").is_some() {
+                    return Err("cursor/query require an indexed session".into());
+                }
                 let state = self.state.lock().unwrap();
                 let session = state
                     .sessions
@@ -751,14 +835,6 @@ impl Server {
                 } else {
                     self.output_roots.clone()
                 };
-                let session = self
-                    .state
-                    .lock()
-                    .unwrap()
-                    .sessions
-                    .get(field(args, "session_id")?)
-                    .cloned()
-                    .ok_or("unknown session")?;
                 let ids = args
                     .get("ids")
                     .and_then(Value::as_array)
@@ -770,6 +846,21 @@ impl Server {
                     .iter()
                     .map(|v| v.as_str().map(str::to_owned).ok_or("invalid candidate ID"))
                     .collect::<std::result::Result<Vec<_>, _>>()?;
+                let session_id = field(args, "session_id")?;
+                let indexed = self.state.lock().unwrap().indexes.get(session_id).cloned();
+                let session = if let Some(path) = indexed {
+                    rescue_core::CandidateIndex::open(&path)
+                        .and_then(|i| i.selected_session(&ids))
+                        .map_err(err)?
+                } else {
+                    self.state
+                        .lock()
+                        .unwrap()
+                        .sessions
+                        .get(session_id)
+                        .cloned()
+                        .ok_or("unknown session")?
+                };
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
@@ -865,6 +956,7 @@ impl Server {
                 | "discover_volumes"
                 | "create_raid"
                 | "search_raid"
+                | "resume_job"
         ) && let Ok(ref value) = result
         {
             self.requests.insert(

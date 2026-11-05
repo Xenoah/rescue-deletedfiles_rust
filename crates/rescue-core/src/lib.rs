@@ -6,6 +6,8 @@ mod device;
 mod discovery;
 mod disk_scan;
 mod fat;
+mod index;
+mod indexed_scan;
 mod lznt1;
 mod mapped_source;
 mod ntfs;
@@ -35,6 +37,10 @@ pub use discovery::{
     scan_discovered_volume,
 };
 pub use disk_scan::scan_source;
+pub use index::{
+    CandidateIndex, IndexCursor, IndexPage, IndexQuery, IndexSort, IndexStatus, IndexWriter,
+};
+pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
 pub use raid::{
@@ -113,6 +119,8 @@ pub enum AllocationStatus {
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("session index: {0}")]
+    Index(#[from] rusqlite::Error),
     #[error("{0}")]
     Io(#[from] std::io::Error),
     #[error("{0}")]
@@ -139,6 +147,7 @@ pub enum Error {
 impl Error {
     pub fn code(&self) -> &'static str {
         match self {
+            Self::Index(_) => "INDEX_ERROR",
             Self::Io(_) => "IO_ERROR",
             Self::Json(_) => "INVALID_JSON",
             Self::Invalid(_) => "INVALID_IMAGE",
@@ -342,7 +351,7 @@ pub enum ProgressUnit {
     Bytes,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct ScanOptions {
     pub max_records: u64,
     pub max_candidates: usize,

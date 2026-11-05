@@ -105,7 +105,34 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Resume a durable scan after validating source identity and volume boundaries.
+    Resume {
+        #[arg(long)]
+        session: PathBuf,
+        #[arg(long)]
+        progress: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Import a legacy JSON session into a new index without changing the original.
+    IndexImport {
+        #[arg(long)]
+        session: PathBuf,
+        #[arg(long)]
+        work_dir: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     Scan {
+        /// Persist candidates and resumable checkpoints in a disk index.
+        #[arg(long)]
+        indexed: bool,
+        #[arg(long)]
+        max_records: Option<u64>,
+        #[arg(long)]
+        max_candidates: Option<usize>,
+        #[arg(long)]
+        progress: bool,
         #[arg(long)]
         source: PathBuf,
         #[arg(long)]
@@ -132,6 +159,14 @@ enum Command {
         json: bool,
     },
     Results {
+        #[arg(long)]
+        cursor: Option<String>,
+        #[arg(long, default_value="discovery", value_parser=["discovery","name","path","size","created","modified"])]
+        sort: String,
+        #[arg(long)]
+        descending: bool,
+        #[arg(long)]
+        supported_only: bool,
         #[arg(long)]
         session: PathBuf,
         #[arg(long, default_value_t = 100)]
@@ -444,7 +479,47 @@ fn run() -> Result<i32, Error> {
             print(serde_json::to_value(result)?, compact);
             Ok(code)
         }
+        Command::Resume {
+            session,
+            progress,
+            json: compact,
+        } => {
+            let path = rescue_core::resume_indexed_scan(&session, &cancel, |p| {
+                if progress {
+                    eprintln!("{}", serde_json::to_string(&p).unwrap());
+                }
+            })?;
+            let index = rescue_core::CandidateIndex::open(&path)?;
+            let status = index.status()?;
+            print(
+                json!({"event":"scan_finished","session":path,"index":status}),
+                compact,
+            );
+            Ok(if status.state == "cancelled" {
+                130
+            } else if status.state == "partial" {
+                5
+            } else {
+                0
+            })
+        }
+        Command::IndexImport {
+            session,
+            work_dir,
+            json: compact,
+        } => {
+            let path = rescue_core::IndexWriter::import_session(&session, &work_dir)?;
+            print(
+                json!({"session":path,"index":rescue_core::CandidateIndex::open(&path)?.status()?}),
+                compact,
+            );
+            Ok(0)
+        }
         Command::Scan {
+            indexed,
+            max_records,
+            max_candidates,
+            progress: emit_progress,
             source,
             work_dir,
             json: compact,
@@ -495,9 +570,49 @@ fn run() -> Result<i32, Error> {
                 recovered_volume,
                 fragments,
             };
+            if !indexed && (max_records.is_some() || max_candidates.is_some()) {
+                return Err(Error::Request(
+                    "explicit scan limits require --indexed".into(),
+                ));
+            }
+            let options = ScanOptions {
+                max_records: max_records.unwrap_or(if indexed { 100_000_000 } else { 2_000_000 }),
+                max_candidates: max_candidates.unwrap_or(if indexed {
+                    10_000_000
+                } else {
+                    100_000
+                }),
+                fragments,
+            };
+            if indexed {
+                let path = rescue_core::scan_indexed(
+                    &source,
+                    &work_dir,
+                    options,
+                    &settings,
+                    &cancel,
+                    |p| {
+                        if emit_progress {
+                            eprintln!("{}", serde_json::to_string(&p).unwrap());
+                        }
+                    },
+                )?;
+                let status = rescue_core::CandidateIndex::open(&path)?.status()?;
+                print(
+                    json!({"event":"scan_finished","session":path,"index":status}),
+                    compact,
+                );
+                return Ok(if status.state == "cancelled" {
+                    130
+                } else if status.state == "partial" {
+                    5
+                } else {
+                    0
+                });
+            }
             let session = scan_with_settings(
                 &source,
-                ScanOptions::default(),
+                options,
                 &settings,
                 &cancel,
                 |p: rescue_core::Progress| {
@@ -529,6 +644,10 @@ fn run() -> Result<i32, Error> {
             })
         }
         Command::Results {
+            cursor,
+            sort,
+            descending,
+            supported_only,
             session,
             limit,
             offset,
@@ -537,6 +656,39 @@ fn run() -> Result<i32, Error> {
         } => {
             if limit == 0 || limit > 1000 {
                 return Err(Error::Request("limit must be 1..1000".into()));
+            }
+            if session.extension().is_some_and(|e| e == "sqlite") {
+                if offset != 0 {
+                    return Err(Error::Request(
+                        "indexed results use --cursor, not --offset".into(),
+                    ));
+                }
+                let index = rescue_core::CandidateIndex::open(&session)?;
+                let cursor: Option<rescue_core::IndexCursor> =
+                    cursor.map(|s| serde_json::from_str(&s)).transpose()?;
+                let query = rescue_core::IndexQuery {
+                    sort: match sort.as_str() {
+                        "name" => rescue_core::IndexSort::Name,
+                        "path" => rescue_core::IndexSort::Path,
+                        "size" => rescue_core::IndexSort::Size,
+                        "created" => rescue_core::IndexSort::Created,
+                        "modified" => rescue_core::IndexSort::Modified,
+                        _ => rescue_core::IndexSort::Discovery,
+                    },
+                    descending,
+                    text: name.unwrap_or_default(),
+                    supported_only,
+                };
+                print(
+                    serde_json::to_value(index.page(&query, cursor.as_ref(), limit)?)?,
+                    compact,
+                );
+                return Ok(0);
+            }
+            if cursor.is_some() || sort != "discovery" || descending || supported_only {
+                return Err(Error::Request(
+                    "cursor and indexed sorting require a SQLite index".into(),
+                ));
             }
             let session = Session::load(&session)?;
             let matching = session
@@ -571,7 +723,32 @@ fn run() -> Result<i32, Error> {
                     .unwrap_or_else(|| std::path::Path::new("."))
                     .to_owned()
             });
-            let session = Session::load(&session)?;
+            let session = if session.extension().is_some_and(|e| e == "sqlite") {
+                let index = rescue_core::CandidateIndex::open(&session)?;
+                if all {
+                    let q = rescue_core::IndexQuery {
+                        supported_only: true,
+                        ..Default::default()
+                    };
+                    let mut cursor = None;
+                    loop {
+                        let page = index.page(&q, cursor.as_ref(), 1000)?;
+                        id.extend(page.candidates.into_iter().map(|c| c.id));
+                        if id.len() > 100_000 {
+                            return Err(Error::Limit(
+                                "recover at most 100000 indexed candidates per batch".into(),
+                            ));
+                        }
+                        cursor = page.next_cursor;
+                        if cursor.is_none() {
+                            break;
+                        }
+                    }
+                }
+                index.selected_session(&id)?
+            } else {
+                Session::load(&session)?
+            };
             if all {
                 id = session
                     .candidates
@@ -687,6 +864,14 @@ fn run() -> Result<i32, Error> {
             session,
             json: compact,
         } => {
+            if session.extension().is_some_and(|e| e == "sqlite") {
+                let index = rescue_core::CandidateIndex::open(&session)?;
+                print(
+                    json!({"index":index.status()?,"session":index.session()?}),
+                    compact,
+                );
+                return Ok(0);
+            }
             let session = Session::load(&session)?;
             print(
                 json!({"schema_version":1,"session_id":session.id,"source":session.source,
