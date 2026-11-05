@@ -45,7 +45,7 @@ def attribute_diagnostics(binary,source,root,candidates):
     acquired=run(binary,'image','--source',source,'--destination',root/'diagnostic-image','--json')
     raw=(root/'diagnostic-image/image.rescue.raw').read_bytes()
     bps=struct.unpack_from('<H',raw,11)[0];cluster=bps*raw[13];mft=struct.unpack_from('<Q',raw,48)[0]*cluster;code=struct.unpack_from('<b',raw,64)[0];size=(1<<-code) if code<0 else code*cluster
-    result=[]
+    result=[];references={c['record'] for c in candidates[:2]}
     for candidate in candidates[:2]:
         record=bytearray(raw[mft+candidate['record']*size:mft+(candidate['record']+1)*size]);usa,count=struct.unpack_from('<HH',record,4)
         for n in range(1,count):record[n*bps-2:n*bps]=record[usa+2*n:usa+2*n+2]
@@ -68,9 +68,29 @@ def attribute_diagnostics(binary,source,root,candidates):
                 while pos+8<=len(data) and len(rows)<30:
                     kind,length=struct.unpack_from('<IH',data,pos);rows.append([pos,kind,length,bytes(data[pos:pos+32]).hex()])
                     if length<26 or pos+length>len(data):break
+                    references.add(struct.unpack_from('<Q',data,pos+16)[0]&((1<<48)-1))
                     pos+=length
                 result.append({'record':candidate['record'],'list_bytes':data_size,'runs':runs,'entries':rows,'nonzero_bytes':sum(x!=0 for x in data)})
             at+=attr_length
+    headers=[]
+    for number in sorted(references)[:8]:
+        record=bytearray(raw[mft+number*size:mft+(number+1)*size])
+        if len(record)!=size or record[:4]!=b'FILE':continue
+        usa,count=struct.unpack_from('<HH',record,4)
+        for n in range(1,min(count,size//bps+1)):record[n*bps-2:n*bps]=record[usa+2*n:usa+2*n+2]
+        at=struct.unpack_from('<H',record,20)[0]
+        while at+24<=len(record):
+            kind,length=struct.unpack_from('<II',record,at)
+            if kind==0xffffffff or length<24 or at+length>len(record):break
+            attr=record[at:at+length]
+            if kind==0x80 and len(headers)<4:
+                name=bytes(attr[struct.unpack_from('<H',attr,10)[0]:][:attr[9]*2]).decode('utf-16le',errors='replace') if attr[9] else None
+                item={'record':number,'name':name,'nonresident':attr[8],'header':bytes(attr[:80]).hex()}
+                if attr[8]:item.update(zip(['allocated','size','initialized'],struct.unpack_from('<QQQ',attr,40)))
+                else:item['size']=struct.unpack_from('<I',attr,16)[0]
+                headers.append(item)
+            at+=length
+    for item in result:item['data_headers']=headers
     return result
 
 def recovery_diagnostics(results,names,truth):
@@ -107,7 +127,11 @@ def main(binary,output):
             check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; before-list-bytes: '+str([d['list_bytes'] for d in before])+'; diagnostic: '+str(diagnosis))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
-            check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch: '+str(recovery_diagnostics(result,names,truth)))
+            mismatch=recovery_diagnostics(result,names,truth)
+            if mismatch:
+                after=attribute_diagnostics(binary,source,root,found)
+                raise AssertionError('native ADS content mismatch: '+str(mismatch[:1])+'; before='+str(before[0]['data_headers'][:2])+'; after='+str(after[0]['data_headers'][:2]))
+            check(len(result)==21,'native ADS count differs')
             client=Client(binary,source,root/'mcp-work',root/'mcp-out')
             try:
                 client.rpc('initialize',{'protocolVersion':'2025-11-25'})
