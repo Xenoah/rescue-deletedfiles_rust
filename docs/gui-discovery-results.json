@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.13",
+  "gui_binary_sha256": "5eea5312e826449251873d37312bae479c2196acf09ea6b1416e52b1c6b82c91",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "lost_files_byte_exact": 6,
+  "remnant_streams_byte_exact": 14,
+  "source_unchanged": true,
+  "zip_crc_verified": true,
+  "source_sha256": {
+    "lost.raw": "8781929a265dbf675e2bae2b6b06889511e9594d61b592a1e10d7de1dbbfc249",
+    "remnants.raw": "59bb8a8f92b05f2ee7d3f46f1ba8fc161b62fe0af5a1bac9cdbfc0e410561b4f"
+  },
+  "scope": "Actual Linux GUI operated through XTest: lost MBR and damaged primary NTFS boot selected from backup, then ZIP; separate synthetic old-MFT run with live-state uncertainty. Not actual OS quick-format evidence.",
+  "screenshots": [
+    {
+      "file": "images/volume-discovery.png",
+      "sha256": "3ab1e37c06a720079ed780ffd537b2931f65e726aba053e52393e575350ca7ee"
+    },
+    {
+      "file": "images/discovered-settings.png",
+      "sha256": "0f31a38e101b5ce92fa1e0445b6560cd092ccd0f3de961a84bec1b69bfaace5a"
+    },
+    {
+      "file": "images/discovered-files.png",
+      "sha256": "d412d8a5b38332979ebc8fd8db1643660355aea7db7ffb75df748e736ffda8f3"
+    },
+    {
+      "file": "images/discovered-restored.png",
+      "sha256": "e5cc08b2b469c67ce8c488b90e89e843160432691807eb559a401941d9dbfe91"
+    },
+    {
+      "file": "images/remnant-settings.png",
+      "sha256": "0ceceb67d951247650b80271c3fe90c9bec14d4fa53140078a909820df9c6cb1"
+    },
+    {
+      "file": "images/remnant-files.png",
+      "sha256": "f2770e81788cfb6c691cc255de4ad2b242fb709d5eb11994c6d2fafc4a0bbc5e"
+    },
+    {
+      "file": "images/remnant-restored.png",
+      "sha256": "3199a7c56e508e9e826e147c83fec1f5c1d6ee2a94c20cea27827ae93af8b601"
+    },
+    {
+      "file": "images/discovery-small-window.png",
+      "sha256": "e34941a5e4ed6db2482225ac5981edb9b1b0fa1cc5119345cbdd976482848215"
+    }
+  ],
+  "narrow_window": {
+    "width": 720,
+    "height": 520,
+    "all_dialog_actions_visible": true,
+    "keyboard_close_exercised": true
+  }
+}
