@@ -15,6 +15,7 @@ mod ntfs_remnants;
 mod partitions;
 mod preview;
 mod raid;
+mod read_access;
 mod read_map;
 mod restore;
 mod search;
@@ -54,6 +55,7 @@ pub use raid::{
 };
 pub use raid::{RaidAlternative, RaidSearchOptions, RaidSearchResult, search_raid};
 pub use raid::{RaidReadRange, RaidReadTrace};
+pub use read_access::{ReadAccess, read_broker_entry, request_read_access};
 pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
 pub use restore::{
     CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,

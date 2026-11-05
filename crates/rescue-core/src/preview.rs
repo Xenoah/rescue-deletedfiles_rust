@@ -90,6 +90,9 @@ struct Request {
     nonce: String,
     session: Session,
     grants: Option<Vec<PathBuf>>,
+    #[cfg(windows)]
+    #[serde(default)]
+    handles: Vec<crate::read_access::Transfer>,
 }
 #[derive(Serialize, Deserialize)]
 struct Reply {
@@ -119,15 +122,17 @@ pub fn preview_candidate(mut session: Session, id: &str, cancel: &AtomicBool) ->
         return Err(Error::Cancelled);
     }
     let nonce = Uuid::new_v4().to_string();
-    let request = Request {
+    #[allow(unused_mut)]
+    let mut request = Request {
         nonce: nonce.clone(),
         session,
         grants: source_scope::snapshot(),
+        #[cfg(windows)]
+        handles: Vec::new(),
     };
     if serialized_size(&request)? > MAX_REQUEST as u64 {
         return Err(Error::Limit("preview metadata exceeds 2 MiB".into()));
     }
-    let bytes = serde_json::to_vec(&request)?;
     let started = Instant::now();
     let mut command = Command::new(std::env::current_exe()?);
     command
@@ -141,6 +146,14 @@ pub fn preview_candidate(mut session: Session, id: &str, cancel: &AtomicBool) ->
         command.creation_flags(0x08000000); // CREATE_NO_WINDOW, including GUI worker.
     }
     let mut child = Child(command.spawn()?);
+    #[cfg(windows)]
+    {
+        request.handles = crate::read_access::transfer_to(&request.session, &child.0)?;
+    }
+    let bytes = serde_json::to_vec(&request)?;
+    if bytes.len() > MAX_REQUEST {
+        return Err(Error::Limit("preview metadata exceeds 2 MiB".into()));
+    }
     let mut input = child
         .0
         .stdin
@@ -237,6 +250,8 @@ pub fn preview_worker_entry() -> Option<i32> {
         }
         let request: Request = serde_json::from_slice(&input)?;
         let _scope = request.grants.map(SourceScope::enter);
+        #[cfg(windows)]
+        crate::read_access::install_transferred(request.handles)?;
         READ_LEFT.with(|b| b.set(Some(MAX_READ)));
         let result = render(request.session);
         let reply = match result {

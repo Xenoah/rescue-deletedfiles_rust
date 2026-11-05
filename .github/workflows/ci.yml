@@ -111,6 +111,10 @@ jobs:
         run: python scripts/ci_command.py python scripts/e2e_ntfs_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output ntfs-native-results.json
       - name: Record resumable acquisition and read-map verification
         run: python scripts/ci_command.py python scripts/e2e_imaging.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-results.json
+      - name: Windows read-only helper and preview handle transfer on owned VHD
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_read_access_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output read-access-native-results.json
       - name: Native capacity failure, permission denial and acquisition resume
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_imaging_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-native-results.json
@@ -167,6 +171,9 @@ jobs:
       - name: Collect Windows native NTFS evidence
         if: runner.os == 'Windows'
         run: python -c "import shutil;shutil.copyfile('ntfs-native-results.json','dist/ntfs-native-windows-x64.json')"
+      - name: Collect Windows read-access evidence
+        if: runner.os == 'Windows'
+        run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json')"
       - name: Collect acquisition evidence
         run: python -c "import shutil;shutil.copyfile('imaging-results.json','dist/imaging-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('imaging-native-results.json','dist/imaging-native-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
@@ -193,6 +200,7 @@ jobs:
             dist/raid-*.json
             dist/index-*.json
             dist/preview-*.json
+            dist/read-access-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

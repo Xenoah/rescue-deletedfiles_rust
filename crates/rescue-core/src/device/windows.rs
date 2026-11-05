@@ -59,6 +59,9 @@ pub fn is_device(path: &Path) -> bool {
     normalized_device(path).is_some()
 }
 fn device_file(path: &Path) -> std::io::Result<File> {
+    if let Some(file) = crate::read_access::granted(path)? {
+        return Ok(file);
+    }
     OpenOptions::new()
         .read(true)
         .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)

@@ -17,6 +17,10 @@ use std::{
     about = "Read-only NTFS/FAT32/exFAT disk and volume recovery (alpha)"
 )]
 struct Cli {
+    /// Explicitly request Windows UAC permission for this command's source disk.
+    /// The GUI/parser process keeps its existing token. Never implicit in MCP.
+    #[arg(long, global = true)]
+    request_read_access: bool,
     #[command(subcommand)]
     command: Command,
 }
@@ -334,6 +338,18 @@ fn run() -> Result<i32, Error> {
     if !matches!(cli.command, Command::Mcp { .. }) {
         ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::Relaxed))
             .map_err(|e| Error::Request(e.to_string()))?;
+    }
+    if cli.request_read_access {
+        let source=match &cli.command {
+            Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
+            Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}=> {
+                if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
+                else {Session::load(session)?.source}
+            },
+            _=>return Err(Error::Request("--request-read-access requires a disk-reading command; MCP never requests elevation".into())),
+        };
+        let access = rescue_core::request_read_access(&source, &cancel)?;
+        eprintln!("{}", json!({"read_access":access}));
     }
     match cli.command {
         Command::Preview {
@@ -954,6 +970,9 @@ fn run() -> Result<i32, Error> {
     }
 }
 fn main() {
+    if let Some(code) = rescue_core::read_broker_entry() {
+        std::process::exit(code);
+    }
     if let Some(code) = rescue_core::preview_worker_entry() {
         std::process::exit(code);
     }

@@ -4,6 +4,8 @@ mod discovery_ui;
 mod index_ui;
 mod preview_ui;
 mod raid_ui;
+#[cfg(windows)]
+mod read_access_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -66,6 +68,8 @@ enum Message {
     Error(String),
 }
 struct App {
+    #[cfg(windows)]
+    read_access: read_access_ui::State,
     preview: preview_ui::State,
     index: index_ui::State,
     raid: raid_ui::State,
@@ -197,6 +201,8 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            #[cfg(windows)]
+            read_access: read_access_ui::State::default(),
             index: index_ui::State::default(),
             raid: raid_ui::State::default(),
             discovery_dialog: false,
@@ -807,11 +813,10 @@ impl App {
                 },
             );
             ui.small("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。");
-            ui.small(if cfg!(windows) {
-                "アクセス拒否の場合は管理者として起動してください。"
-            } else {
-                "ディスクを読み取れる権限が必要です。"
-            });
+            #[cfg(windows)]
+            self.read_access.show(ui, &self.source);
+            #[cfg(not(windows))]
+            ui.small("ディスクを読み取れる権限が必要です。");
         } else {
             path_row(ui, "イメージファイル", &mut self.source, Picker::Open);
             ui.small("RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。");
@@ -1765,6 +1770,9 @@ impl Drop for App {
     }
 }
 fn main() -> eframe::Result {
+    if let Some(code) = rescue_core::read_broker_entry() {
+        std::process::exit(code);
+    }
     if let Some(code) = rescue_core::preview_worker_entry() {
         std::process::exit(code);
     }

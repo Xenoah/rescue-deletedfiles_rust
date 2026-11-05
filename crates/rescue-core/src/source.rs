@@ -360,8 +360,25 @@ impl Image {
             ];
             let align = storage.as_ptr().align_offset(device.sector as usize);
             let buffer = &mut storage[align..align + count];
-            self.file.seek(SeekFrom::Start(start))?;
-            self.file.read_exact(buffer)?;
+            #[cfg(not(windows))]
+            {
+                self.file.seek(SeekFrom::Start(start))?;
+                self.file.read_exact(buffer)?;
+            }
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::FileExt;
+                // Duplicated broker handles share a file pointer. Explicit
+                // offsets make concurrent scan/preview reads independent.
+                let mut at = 0;
+                while at < buffer.len() {
+                    let read = self.file.seek_read(&mut buffer[at..], start + at as u64)?;
+                    if read == 0 {
+                        return Err(std::io::Error::from(std::io::ErrorKind::UnexpectedEof).into());
+                    }
+                    at += read;
+                }
+            }
             let skip = (absolute - start) as usize;
             return Ok(buffer[skip..skip + length].to_vec());
         }
