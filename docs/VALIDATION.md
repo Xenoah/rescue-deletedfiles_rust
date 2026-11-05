@@ -296,3 +296,19 @@ GUIの既存4フローも元の場所36件/ZIP36件/JPEG33件/文書7件の全�
 
 
 alpha.11の [4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41979409874) が全成功（7分8秒）。38 Rust項目、debug/releaseの10統合群、35形式、864ディスク観測、実削除PDF、GUI起動、8配布物と組立を通過。新規の容量不足/権限拒否/空き解放後の再開、読取専用実仮想ディスクの全体取得、取得後の108ファイル復元を4環境で確認。前回CIの形式一覧に残っていた「imageは未実装」という古いテスト条件も更新した。公開実物の確認は別記録にする。
+
+
+## alpha.11 公開実物（2026-11-05）
+
+[タグCI41980373634](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41980373634) が成功（10分38秒）。
+[公開CLIの4環境CI41981560219](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41981560219) も成功（2分50秒）。
+8パッケージを含む75一次資産・6追加レポート・2チェックサム一覧、計83資産を取得・照合した。
+各環境の配布CLIで取得15条件、実仮想ディスクの取得と108ファイル復元、容量不足/空き解放後の再開/権限拒否を再確認。
+macOSは署名後の実バイナリを実行した。
+
+公開Linux GUI（SHA-256 d5902168b827e4a93ec503368f6aeb17e220c3dc92f3dbbdc3ce1c9b596fbcb2）から
+512 MiBを全バイト一致で取得し、128範囲・2ページ・再開後マップ不変・36ファイルのZIP/CRCを照合。
+取得元と取得イメージは同じ全体SHA-256を維持した。公開HTMLは11画面/7方式/390px幅で外部通信・JSエラーなし。
+[配布記録](public-release-v0.2.0-alpha.11.json) · [GUI記録](public-gui-v0.2.0-alpha.11.json) · [HTML記録](public-browser-v0.2.0-alpha.11.json)
+
+![公開GUIの取得後36ファイル復元](images/public-imaging-restored-v11.png)

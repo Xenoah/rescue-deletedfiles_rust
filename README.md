@@ -88,7 +88,7 @@ Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/15
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
 - Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
 
-alpha.11の [4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41979409874) が成功。各環境で実仮想ディスクの取得と108件復元、容量不足からの再開、権限拒否を確認しました。公開パッケージの再取得検証は [検証履歴](docs/VALIDATION.md) とリリース添付JSONへ追記します。前版alpha.10の公開実物は [記録](docs/public-release-v0.2.0-alpha.10.json) を参照。
+alpha.11の [4環境ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41979409874) と [公開パッケージの再実行](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41981560219) が成功。配布83資産を照合し、公開Linux GUIで512 MiB取得・再開照合・36件復元も確認しました。[公開実物の記録](docs/public-release-v0.2.0-alpha.11.json) · [公開GUIの記録](docs/public-gui-v0.2.0-alpha.11.json)。
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
