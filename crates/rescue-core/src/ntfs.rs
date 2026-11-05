@@ -1,6 +1,9 @@
 use crate::{Error, Result, source::Image};
 use sha2::{Digest, Sha256};
 
+mod allocation;
+mod attributes;
+
 fn invalid(message: &str) -> Error {
     Error::Invalid(message.into())
 }
@@ -318,13 +321,22 @@ fn runlist(data: &[u8], geometry: &Geometry, last_vcn: u64) -> Result<Vec<Run>> 
     Ok(runs)
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct FileName {
+    pub name: String,
+    pub parent: u64,
+    pub sequence: u16,
+    pub namespace: u8,
+}
 #[derive(Clone, Debug)]
 pub(crate) struct Record {
+    attributes: Vec<attributes::Attribute>,
     pub sequence: u16,
     pub in_use: bool,
     pub directory: bool,
     pub base: u64,
     pub name: Option<String>,
+    pub names: Vec<FileName>,
     pub parent: u64,
     pub parent_sequence: u16,
     pub streams: Vec<Stream>,
@@ -380,11 +392,13 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         return Err(invalid("invalid MFT attribute bounds"));
     }
     let mut record = Record {
+        attributes: Vec::new(),
         sequence: u16_at(&raw, 16)?,
         in_use: flags & 1 != 0,
         directory: flags & 2 != 0,
         base: u64_at(&raw, 32)?,
         name: None,
+        names: Vec::new(),
         parent: 0,
         parent_sequence: 0,
         streams: Vec::new(),
@@ -431,12 +445,6 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
         } else {
             None
         };
-        let attr_flags = u16_at(attr, 12)?;
-        if kind == 0x20 {
-            record
-                .unsupported
-                .push("attribute-list extents require a later release".into());
-        }
         if nonresident == 0 {
             let value_len = u32_at(attr, 16)? as usize;
             let offset = u16_at(attr, 20)? as usize;
@@ -457,36 +465,80 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
                     return Err(invalid("short FILE_NAME"));
                 }
                 let namespace = value[65];
+                if namespace > 3 {
+                    return Err(invalid("unknown FILE_NAME namespace"));
+                }
+                let codes = bytes(value, 66, value[64] as usize * 2)?
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
+                    .map(|b| u16::from_le_bytes(*b))
+                    .collect::<Vec<_>>();
+                let name =
+                    String::from_utf16(&codes).map_err(|_| invalid("invalid FILE_NAME UTF-16"))?;
+                let parent = u64_at(value, 0)?;
+                let link = FileName {
+                    name: name.clone(),
+                    parent: parent & 0x0000_ffff_ffff_ffff,
+                    sequence: (parent >> 48) as u16,
+                    namespace,
+                };
+                if !record.names.contains(&link) {
+                    record.names.push(link);
+                }
                 let priority = if namespace == 2 { 1 } else { 2 };
                 if priority >= name_priority {
                     if !standard_times {
                         record.created = crate::timestamps::filetime(u64_at(value, 8)?);
                         record.modified = crate::timestamps::filetime(u64_at(value, 16)?);
                     }
-                    let name = bytes(value, 66, value[64] as usize * 2)?
-                        .as_chunks::<2>()
-                        .0
-                        .iter()
-                        .map(|b| u16::from_le_bytes([b[0], b[1]]))
-                        .collect::<Vec<_>>();
-                    record.name = Some(String::from_utf16_lossy(&name));
-                    let parent = u64_at(value, 0)?;
+                    record.name = Some(name);
                     record.parent = parent & 0x0000_ffff_ffff_ffff;
                     record.parent_sequence = (parent >> 48) as u16;
                     name_priority = priority;
                 }
             }
         }
-        if kind == 0x80 {
-            if record.streams.iter().any(|s| s.name == stream_name) {
-                return Err(invalid("duplicate DATA stream or unsupported extent"));
-            }
-            let stream = parse_stream(attr, stream_name, attr_flags, geometry)?;
-            record.streams.push(stream);
-        }
+        record.attributes.push(attributes::Attribute {
+            kind,
+            id: u16_at(attr, 14)?,
+            name: stream_name,
+            lowest_vcn: if nonresident == 1 {
+                u64_at(attr, 16)?
+            } else {
+                0
+            },
+            raw: attr.to_vec(),
+        });
         at = at
             .checked_add(length)
             .ok_or_else(|| invalid("attribute offset overflow"))?;
+    }
+    if record.base != 0 || record.attributes.iter().any(|a| a.kind == 0x20) {
+        record
+            .unsupported
+            .push("attribute list has not been resolved".into());
+        for attr in record.attributes.iter().filter(|a| a.kind == 0x80) {
+            if !record.streams.iter().any(|s| s.name == attr.name) {
+                record.streams.push(Stream {
+                    name: attr.name.clone(),
+                    data: None,
+                    unsupported: Vec::new(),
+                });
+            }
+        }
+    } else {
+        for attr in record.attributes.iter().filter(|a| a.kind == 0x80) {
+            if record.streams.iter().any(|s| s.name == attr.name) {
+                return Err(invalid("duplicate DATA stream without an attribute list"));
+            }
+            record.streams.push(parse_stream(
+                &attr.raw,
+                attr.name.clone(),
+                u16_at(&attr.raw, 12)?,
+                geometry,
+            )?);
+        }
     }
     Ok(record)
 }
@@ -575,6 +627,7 @@ fn parse_stream(
 }
 
 pub(crate) struct Ntfs {
+    bitmap: std::cell::RefCell<allocation::Bitmap>,
     pub geometry: Geometry,
     pub mft: Data,
     pub records: u64,
@@ -583,9 +636,13 @@ impl Ntfs {
     pub fn open(image: &mut Image) -> Result<Self> {
         let geometry = Geometry::parse(image)?;
         let first = parse_record(image.read(geometry.mft, geometry.record)?, &geometry)?;
+        if !first.in_use || first.base != 0 {
+            return Err(invalid("invalid MFT base record"));
+        }
+        let first = attributes::resolve(image, &geometry, 0, first, None)?;
         if !first.unsupported.is_empty() {
             return Err(Error::Unsupported(
-                "MFT attribute-list/compression is not supported by this alpha".into(),
+                "MFT contains unsupported attributes".into(),
             ));
         }
         let stream = first
@@ -614,11 +671,21 @@ impl Ntfs {
             return Err(invalid("MFT stream size is not record aligned"));
         }
         let records = mft.size() / geometry.record as u64;
-        Ok(Self {
+        let mut ntfs = Self {
             geometry,
             mft,
             records,
-        })
+            bitmap: std::cell::RefCell::new(allocation::Bitmap::unknown()),
+        };
+        ntfs.bitmap = std::cell::RefCell::new(allocation::Bitmap::load(&ntfs, image));
+        Ok(ntfs)
+    }
+    pub fn allocation(
+        &self,
+        image: &mut Image,
+        data: &Data,
+    ) -> (crate::AllocationStatus, Vec<String>) {
+        self.bitmap.borrow_mut().status(image, &self.geometry, data)
     }
     pub fn record(&self, image: &mut Image, index: u64) -> Result<Option<Record>> {
         if index >= self.records {
@@ -632,7 +699,24 @@ impl Ntfs {
         if raw.get(..4) != Some(b"FILE") {
             return Ok(None);
         }
-        parse_record(raw, &self.geometry).map(Some)
+        let record = parse_record(raw, &self.geometry)?;
+        if record.base != 0 || !record.attributes.iter().any(|a| a.kind == 0x20) {
+            return Ok(Some(record));
+        }
+        match attributes::resolve(
+            image,
+            &self.geometry,
+            index,
+            record.clone(),
+            Some(&self.mft),
+        ) {
+            Ok(record) => Ok(Some(record)),
+            Err(error) => {
+                let mut record = record;
+                record.unsupported = vec![format!("attribute list could not be resolved: {error}")];
+                Ok(Some(record))
+            }
+        }
     }
 }
 

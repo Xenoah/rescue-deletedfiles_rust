@@ -69,6 +69,31 @@ def mark_deleted(image, record_number):
         return sequence
 
 
+def extended_streams(binary, root):
+    image=root/'extended.raw'
+    with image.open('xb') as f:f.truncate(64*1024*1024)
+    command('mkntfs','-F','-Q','-s',512,'-c',4096,image)
+    data=root/'extended-data.bin';data.write_bytes(bytes(range(256))*36)
+    truth={None:data.read_bytes()};command('ntfscp',image,data,'/attributes.bin')
+    for n in range(20):
+        name=f'stream-{n:02d}-independently-created';payload=name.encode()+bytes([n])*8192;truth[name]=payload;data.write_bytes(payload)
+        command('ntfscp','-N',name,image,data,'/attributes.bin')
+    info=command('ntfsinfo','-F','/attributes.bin',image)
+    assert '$ATTRIBUTE_LIST (0x20)' in info
+    refs=sorted(set(map(int,re.findall(r'from mft record (\d+)',info))))
+    assert len(refs)>1
+    for ref in refs:mark_deleted(image,ref)
+    before=hashlib.sha256(image.read_bytes()).hexdigest()
+    summary=json.loads(command(binary,'scan','--source',image,'--work-dir',root/'extended-work','--json'))
+    candidates=json.loads(command(binary,'results','--session',summary['session'],'--limit',1000,'--json'))['candidates']
+    assert len(candidates)==21 and all(c['supported'] and c['allocation_status']=='conflict' for c in candidates)
+    result=json.loads(command(binary,'recover','--session',summary['session'],'--all','--destination',root/'extended-out','--json'))['results']
+    names={c['id']:c['stream_name'] for c in candidates}
+    assert len(result)==21 and all(Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result)
+    assert hashlib.sha256(image.read_bytes()).hexdigest()==before
+    print(json.dumps({'status':'passed','native_attribute_records':len(refs),'byte_exact_streams':21,'scope':'ntfs-3g nonresident attribute list and 20 distinct ADS; explicitly emulated deletion; original allocation bitmap retained and reported as conflict'}))
+
+
 def main(binary):
     for tool in ("mkntfs", "ntfscp", "ntfsinfo"):
         if shutil.which(tool) is None:
@@ -105,6 +130,7 @@ def main(binary):
         print(json.dumps({"status": "passed", "bytes": recovered["bytes_written"],
                           "ads_bytes": len(ads.read_bytes()),
                           "scope": "ntfs-3g metadata with named DATA; emulated deleted-record flag"}))
+        extended_streams(binary,root)
 
 
 if __name__ == "__main__":

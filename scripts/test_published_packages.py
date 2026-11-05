@@ -13,6 +13,8 @@ import zipfile
 from e2e_formats import main as formats
 from e2e_jpeg import main as jpeg
 from e2e_documents import main as documents
+from e2e_ntfs_extents import main as ntfs_extents
+from e2e_ntfs_native import main as ntfs_native
 from e2e_imaging import main as imaging
 from e2e_imaging_native import main as imaging_native
 from e2e_features import main as features
@@ -57,6 +59,8 @@ def main():
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
+    result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if a.platform=='windows':result['ntfs_native_verification']=ntfs_native(binary,(a.output/'ntfs-native.json').resolve())
     result['jpeg_verification']=jpeg(binary,(a.output/'jpeg-results.json').resolve())
     result['document_verification']=documents(binary,(a.output/'document-results.json').resolve())
     result['imaging_verification']=imaging(binary,(a.output/'imaging-results.json').resolve())

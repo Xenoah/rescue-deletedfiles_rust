@@ -57,7 +57,24 @@ impl SearchSettings {
         Ok(())
     }
     pub fn matches(&self, candidate: &Candidate) -> bool {
-        self.matches_path(candidate, &candidate.original_path)
+        self.matches_volume(candidate, false)
+    }
+    fn matches_volume(&self, candidate: &Candidate, disk: bool) -> bool {
+        std::iter::once(candidate.original_path.as_str())
+            .chain(
+                candidate
+                    .alternate_names
+                    .iter()
+                    .map(|n| n.original_path.as_str()),
+            )
+            .any(|path| {
+                let path = if disk {
+                    path.split_once('/').map_or(path, |(_, p)| p)
+                } else {
+                    path
+                };
+                self.matches_path(candidate, path)
+            })
     }
     fn matches_path(&self, candidate: &Candidate, path: &str) -> bool {
         let path = path.replace('\\', "/").to_lowercase();
@@ -82,15 +99,14 @@ impl SearchSettings {
         if self.extensions.is_empty() {
             return true;
         }
+        let basename = path.rsplit('/').next().unwrap_or(&path);
         let name = if let Some(stream) = &candidate.stream_name {
-            candidate
-                .name
-                .strip_suffix(&format!(":{stream}"))
-                .unwrap_or(&candidate.name)
+            basename
+                .strip_suffix(&format!(":{}", stream.to_lowercase()))
+                .unwrap_or(basename)
         } else {
-            &candidate.name
-        }
-        .to_lowercase();
+            basename
+        };
         self.extensions.iter().any(|ext| {
             let ext = ext
                 .trim()
@@ -128,19 +144,11 @@ pub fn scan_with_settings(
     };
     let discovered = session.candidates.len();
     let disk = session.filesystem == crate::FileSystem::Disk;
-    session.candidates.retain(|c| {
-        if disk {
-            // P<n>/ labels identify volumes in results, not an extra folder level.
-            settings.matches_path(
-                c,
-                c.original_path
-                    .split_once('/')
-                    .map_or(c.original_path.as_str(), |(_, path)| path),
-            )
-        } else {
-            settings.matches(c)
-        }
-    });
+    // P<n>/ is a volume label rather than a folder depth. Aliases refer to the
+    // same candidate and must never multiply recovered payloads.
+    session
+        .candidates
+        .retain(|c| settings.matches_volume(c, disk));
     if discovered != session.candidates.len() {
         session.warnings.push(format!("Search filters retained {} of {discovered} discovered candidates; ownership verification still examined metadata across the volume",session.candidates.len()));
     }

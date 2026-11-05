@@ -200,7 +200,7 @@ pub fn rows(
     for (i, c) in candidates
         .iter()
         .enumerate()
-        .filter(|(_, c)| c.original_path.to_lowercase().contains(&needle))
+        .filter(|(_, c)| c.matches_path_text(&needle))
     {
         groups.entry(group(c, by)).or_default().push(i);
     }
@@ -229,6 +229,7 @@ mod tests {
             name: format!("{id}.png"),
             original_path: format!("photos/{id}.png"),
             path_verified: true,
+            alternate_names: Vec::new(),
             size,
             supported: true,
             warnings: vec![],

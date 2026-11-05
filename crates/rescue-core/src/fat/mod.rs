@@ -519,6 +519,7 @@ fn candidate(
         name: name.text,
         original_path: path,
         path_verified: prefix.verified && name.verified,
+        alternate_names: Vec::new(),
         size: Some(size),
         supported: false,
         warnings: name.warnings,

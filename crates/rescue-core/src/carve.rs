@@ -232,6 +232,7 @@ pub(crate) fn scan_range(
                 name: format.name(at),
                 original_path: format.name(at),
                 path_verified: false,
+                alternate_names: Vec::new(),
                 size: None,
                 supported: false,
                 warnings: vec![PROVENANCE.into()],

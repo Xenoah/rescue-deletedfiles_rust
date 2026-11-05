@@ -400,10 +400,7 @@ fn run() -> Result<i32, Error> {
             let matching = session
                 .candidates
                 .iter()
-                .filter(|c| {
-                    name.as_ref()
-                        .is_none_or(|n| c.name.to_lowercase().contains(&n.to_lowercase()))
-                })
+                .filter(|c| name.as_ref().is_none_or(|n| c.matches_name(n)))
                 .collect::<Vec<_>>();
             print(
                 json!({"schema_version":1,"session_id":session.id,"total":matching.len(),
@@ -516,7 +513,14 @@ fn run() -> Result<i32, Error> {
                 .candidates
                 .iter()
                 .filter(|c| {
-                    c.supported && (all || name.iter().any(|n| c.name.eq_ignore_ascii_case(n)))
+                    c.supported
+                        && (all
+                            || name.iter().any(|n| {
+                                c.name.eq_ignore_ascii_case(n)
+                                    || c.alternate_names
+                                        .iter()
+                                        .any(|a| a.name.eq_ignore_ascii_case(n))
+                            }))
                 })
                 .map(|c| c.id.clone())
                 .collect::<Vec<_>>();

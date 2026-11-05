@@ -139,6 +139,14 @@ impl Error {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CandidateName {
+    pub name: String,
+    pub original_path: String,
+    pub path_verified: bool,
+    /// NTFS FILE_NAME namespace: 0 POSIX, 1 Win32, 2 DOS, 3 Win32/DOS.
+    pub namespace: u8,
+}
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Candidate {
     pub id: String,
     pub record: u64,
@@ -148,6 +156,8 @@ pub struct Candidate {
     pub name: String,
     pub original_path: String,
     pub path_verified: bool,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub alternate_names: Vec<CandidateName>,
     pub size: Option<u64>,
     pub supported: bool,
     pub warnings: Vec<String>,
@@ -160,6 +170,25 @@ pub struct Candidate {
     pub created: Option<FileTimestamp>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub modified: Option<FileTimestamp>,
+}
+
+impl Candidate {
+    pub fn matches_name(&self, needle: &str) -> bool {
+        let needle = needle.to_lowercase();
+        self.name.to_lowercase().contains(&needle)
+            || self
+                .alternate_names
+                .iter()
+                .any(|n| n.name.to_lowercase().contains(&needle))
+    }
+    pub fn matches_path_text(&self, needle: &str) -> bool {
+        let needle = needle.to_lowercase();
+        self.original_path.to_lowercase().contains(&needle)
+            || self
+                .alternate_names
+                .iter()
+                .any(|n| n.original_path.to_lowercase().contains(&needle))
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -379,6 +408,7 @@ fn scan_volume(
     };
     let mut directories = BTreeMap::new();
     let mut parents = Vec::new();
+    let mut alias_parents = Vec::new();
     for index in 0..ntfs.records.min(options.max_records) {
         if cancel.load(Ordering::Relaxed) {
             session.cancelled = true;
@@ -419,11 +449,48 @@ fn scan_volume(
                             warnings.push("DATA is unavailable".into());
                         }
                         let supported = warnings.is_empty() && stream.data.is_some();
+                        let (allocation_status, allocation_warnings) = stream
+                            .data
+                            .as_ref()
+                            .map_or((AllocationStatus::Unknown, Vec::new()), |data| {
+                                ntfs.allocation(&mut image, data)
+                            });
+                        warnings.extend(allocation_warnings);
                         let display = stream
                             .name
                             .as_ref()
                             .map_or_else(|| name.clone(), |s| format!("{name}:{s}"));
                         parents.push((record.parent, record.parent_sequence));
+                        let aliases = record
+                            .names
+                            .iter()
+                            .filter(|n| {
+                                n.name != name
+                                    || n.parent != record.parent
+                                    || n.sequence != record.parent_sequence
+                            })
+                            .collect::<Vec<_>>();
+                        alias_parents.push(
+                            aliases
+                                .iter()
+                                .map(|n| (n.parent, n.sequence))
+                                .collect::<Vec<_>>(),
+                        );
+                        let alternate_names = aliases
+                            .iter()
+                            .map(|n| {
+                                let display = stream
+                                    .name
+                                    .as_ref()
+                                    .map_or_else(|| n.name.clone(), |s| format!("{}:{s}", n.name));
+                                CandidateName {
+                                    name: display.clone(),
+                                    original_path: display,
+                                    path_verified: false,
+                                    namespace: n.namespace,
+                                }
+                            })
+                            .collect();
                         session.candidates.push(Candidate {
                             id: ntfs::candidate_id(index, record.sequence, stream.name.as_deref()),
                             record: index,
@@ -432,12 +499,13 @@ fn scan_volume(
                             original_path: display.clone(),
                             name: display,
                             path_verified: false,
+                            alternate_names,
                             size: stream.data.as_ref().map(|d| d.size()),
                             supported,
                             warnings,
                             record_sha256: record.hash.clone(),
                             extent_evidence: ExtentEvidence::Metadata,
-                            allocation_status: AllocationStatus::Unknown,
+                            allocation_status,
                             created: record.created.clone(),
                             modified: record.modified.clone(),
                         });
@@ -467,7 +535,12 @@ fn scan_volume(
     let candidate_count = session.candidates.len();
     let mut path_bytes = 0;
     let mut retained = 0;
-    for (candidate, (mut parent, mut sequence)) in session.candidates.iter_mut().zip(parents) {
+    for ((candidate, (mut parent, mut sequence)), aliases) in session
+        .candidates
+        .iter_mut()
+        .zip(parents)
+        .zip(alias_parents)
+    {
         let mut parts = vec![candidate.name.clone()];
         let mut visited = BTreeSet::new();
         for _ in 0..256 {
@@ -487,6 +560,28 @@ fn scan_volume(
         }
         parts.reverse();
         candidate.original_path = parts.join("/");
+        for (alias, (mut parent, mut sequence)) in candidate.alternate_names.iter_mut().zip(aliases)
+        {
+            let mut parts = vec![alias.name.clone()];
+            let mut visited = BTreeSet::new();
+            for _ in 0..256 {
+                let Some((found, next, next_sequence, name)) = directories.get(&parent) else {
+                    break;
+                };
+                if *found != sequence || !visited.insert(parent) {
+                    break;
+                }
+                if parent == 5 {
+                    alias.path_verified = true;
+                    break;
+                }
+                parts.push(name.clone());
+                parent = *next;
+                sequence = *next_sequence;
+            }
+            parts.reverse();
+            alias.original_path = parts.join("/");
+        }
         path_bytes += serialized_size(candidate)? + 1;
         if path_bytes > CANDIDATE_BYTES {
             break;
@@ -579,12 +674,13 @@ fn ntfs_recovery_data(
         || name.clone(),
         |s| format!("{}__ADS__{}", safe_name(&name), safe_name(&s)),
     );
+    let (allocation_status, warnings) = ntfs.allocation(image, &data);
     Ok(RecoveryData {
         data,
         name,
-        warnings: Vec::new(),
+        warnings,
         extent_evidence: ExtentEvidence::Metadata,
-        allocation_status: AllocationStatus::Unknown,
+        allocation_status,
     })
 }
 

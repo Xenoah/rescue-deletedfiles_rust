@@ -93,6 +93,13 @@ pub fn scan_source(
         };
         for candidate in &mut volume.candidates {
             candidate.id = format!("p{}:{}", region.index, candidate.id);
+            for name in &mut candidate.alternate_names {
+                name.original_path = format!(
+                    "P{}/{}",
+                    region.index,
+                    name.original_path.trim_start_matches('/')
+                );
+            }
             candidate.original_path = format!(
                 "P{}/{}",
                 region.index,

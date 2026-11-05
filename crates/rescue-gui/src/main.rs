@@ -873,7 +873,7 @@ impl App {
                 {
                     let needle = self.filter.to_lowercase();
                     for c in &s.candidates {
-                        if c.supported && c.original_path.to_lowercase().contains(&needle) {
+                        if c.supported && c.matches_path_text(&needle) {
                             self.selected.insert(c.id.clone());
                         }
                     }
@@ -1237,6 +1237,22 @@ impl App {
         {
             ui.strong(&c.name);
             ui.small(&c.original_path);
+            if !c.alternate_names.is_empty() {
+                ui.collapsing(
+                    format!("同じデータの別名（{}）", c.alternate_names.len()),
+                    |ui| {
+                        ui.label("名前が複数あっても、復元するデータは1件です。");
+                        for alias in &c.alternate_names {
+                            ui.label(&alias.original_path);
+                            ui.small(if alias.path_verified {
+                                "親参照を照合済み"
+                            } else {
+                                "階層は未確認"
+                            });
+                        }
+                    },
+                );
+            }
             ui.add_space(10.0);
             ui.strong("配置の根拠");
             ui.label(format!("{:?}", c.extent_evidence));
@@ -1257,6 +1273,9 @@ impl App {
                 AllocationStatus::Unknown => "不明",
                 AllocationStatus::Unallocated => allocation_label(c, s.candidate_filesystem(c)),
                 AllocationStatus::Unreferenced => "探索した使用中エントリーからの参照なし",
+                AllocationStatus::Conflict if s.candidate_filesystem(c) == FileSystem::Ntfs => {
+                    "現在は割当済みの領域を含む：削除前の内容か要確認"
+                }
                 AllocationStatus::Conflict => "使用中領域と競合：復元不可",
             });
             ui.label(if s.filesystem == FileSystem::Raw {
