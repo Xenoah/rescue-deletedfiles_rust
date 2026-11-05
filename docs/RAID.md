@@ -1,8 +1,8 @@
-# RAIDの読み取り専用仮想ソース（開発中）
+# RAIDの読み取り専用仮想ソース（alpha.14）
 
 メンバーのRAWイメージと取得マップを読み、`.rescue-raid.json` の指定に従って論理バイトを生成する。
 メンバーへ書き戻す処理は持たない。ライブデバイスと入れ子の配列は受け付けず、先にイメージを取得する。
-本ファイルは実装・検証中の仕様であり、公開済みの互換性宣言ではない。
+以下の明示プロファイルを実装し、独立生成データとOSの実配列を照合する。
 
 | 方式 | 明示するプロファイル |
 | --- | --- |
@@ -67,8 +67,10 @@ RAID6は実装の対数表と異なる多項式演算を正解生成に使用し
 FAT32/exFAT/NTFS、4 KiBセクター、オフセット、パリティ不一致、マップ欠損、構成改変を検査する。
 
 追加のLinuxカーネルmdadm試験は、試験で新規作成したloopだけにRAID5の4配置とRAID6のparity-lastを作り、
-停止・切離し後のメンバーをRescueで読み取る。実行結果が得られるまではカーネル互換性を検証済みとはしない。
-3 OSのネイティブ実行と配布実物の検証も公開前の工程として残る。
+停止・切離し後のメンバーをRescueで読み取る。
+[全4ネイティブVMのCI 42013561650](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42013561650)を通過した。
+Linuxカーネルの5配列について、欠損条件を含む12論理像・72ファイルを照合。
+配布実物は公開後に再実行し、別途記録する。
 
 参照: [Linux raid5.c](https://github.com/torvalds/linux/blob/master/drivers/md/raid5.c)、
 [mdadm manual](https://github.com/md-raid-utilities/mdadm/blob/main/mdadm.8.in)。
