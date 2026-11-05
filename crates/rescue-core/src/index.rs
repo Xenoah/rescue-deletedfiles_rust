@@ -80,6 +80,11 @@ pub struct CandidateIndex {
     db: Connection,
     path: PathBuf,
 }
+pub(crate) struct StagedRow {
+    pub namespace: u64,
+    pub sequence: u64,
+    pub payload: String,
+}
 pub struct IndexWriter {
     index: CandidateIndex,
     // A separate stable inode, never removed on close: a deleted lock file would
@@ -186,6 +191,21 @@ impl CandidateIndex {
             engine,
             resumable,
         })
+    }
+    pub(crate) fn staged<T: for<'de> Deserialize<'de>>(
+        &self,
+        namespace: u64,
+        sequence: u64,
+    ) -> Result<T> {
+        let json: String = self.db.query_row(
+            "SELECT payload FROM engine_item WHERE namespace=?1 AND seq=?2",
+            params![namespace as i64, sequence as i64],
+            |r| r.get(0),
+        )?;
+        if json.len() > MAX_ROW {
+            return Err(Error::Limit("staged metadata row".into()));
+        }
+        Ok(serde_json::from_str(&json)?)
     }
     pub fn checkpoint<T: for<'de> Deserialize<'de>>(&self) -> Result<T> {
         let value: String = self.db.query_row(
@@ -354,6 +374,7 @@ impl IndexWriter {
         )?;
         configure(&db, true)?;
         db.execute_batch(&format!("PRAGMA application_id={APP_ID}; PRAGMA user_version={SCHEMA};
+CREATE TABLE engine_item(namespace INTEGER NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(namespace,seq)) STRICT;
 CREATE TABLE checkpoint(singleton INTEGER PRIMARY KEY CHECK(singleton=1),session TEXT NOT NULL,state TEXT NOT NULL,engine TEXT NOT NULL,resumable INTEGER NOT NULL,engine_state TEXT NOT NULL,watermark INTEGER NOT NULL CHECK(watermark>=0),index_id TEXT NOT NULL) STRICT;
 CREATE TABLE candidate(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,discovery_key TEXT NOT NULL,name_key TEXT NOT NULL,path_key TEXT NOT NULL,size_key TEXT NOT NULL,created_key TEXT NOT NULL,modified_key TEXT NOT NULL,search_text TEXT NOT NULL,supported INTEGER NOT NULL) STRICT;
 CREATE INDEX candidate_name ON candidate(name_key,seq); CREATE INDEX candidate_path ON candidate(path_key,seq);
@@ -419,6 +440,31 @@ CREATE INDEX candidate_modified ON candidate(modified_key,seq); CREATE INDEX can
         resumable: bool,
         checkpoint: &impl Serialize,
     ) -> Result<()> {
+        self.commit_staged(header, batch, state, resumable, checkpoint, &[])
+    }
+    pub(crate) fn commit_staged(
+        &mut self,
+        header: &Session,
+        batch: &[Candidate],
+        state: &str,
+        resumable: bool,
+        checkpoint: &impl Serialize,
+        staged: &[StagedRow],
+    ) -> Result<()> {
+        if staged.len() > 256
+            || staged.iter().any(|row| {
+                row.payload.len() > MAX_ROW
+                    || row.namespace > i64::MAX as u64
+                    || row.sequence > i64::MAX as u64
+            })
+            || staged
+                .iter()
+                .map(|row| row.payload.len() as u64)
+                .sum::<u64>()
+                > 32 * 1024 * 1024
+        {
+            return Err(Error::Limit("staged metadata batch".into()));
+        }
         if batch.len() > 256
             || !header.candidates.is_empty()
             || !matches!(
@@ -489,6 +535,12 @@ CREATE INDEX candidate_modified ON candidate(modified_key,seq); CREATE INDEX can
                     search.to_lowercase(),
                     candidate.supported
                 ],
+            )?;
+        }
+        for row in staged {
+            transaction.execute(
+                "INSERT INTO engine_item VALUES(?1,?2,?3)",
+                params![row.namespace as i64, row.sequence as i64, row.payload],
             )?;
         }
         transaction.execute("UPDATE checkpoint SET session=?1,state=?2,resumable=?3,engine_state=?4,watermark=?5 WHERE singleton=1",params![header,state,resumable,checkpoint,sequence as i64])?;

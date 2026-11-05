@@ -1,5 +1,6 @@
 //! Read-only FAT32/exFAT directory recovery. No guessed multi-cluster extents.
 mod geometry;
+pub(crate) mod indexed;
 mod names;
 
 use crate::{
@@ -21,6 +22,10 @@ const MAX_DIRECTORY_BYTES: u64 = 64 * 1024 * 1024;
 
 /// Discovery checks independent geometry, reserved FAT entries and root bounds.
 /// Normal scanning still validates complete chains, allocation and directory sets.
+pub(crate) fn filesystem(image: &mut Image) -> Result<FileSystem> {
+    Ok(Geometry::open(image)?.filesystem)
+}
+
 pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
     let geometry = Geometry::open(image)?;
     let mut copies = Vec::new();
@@ -110,7 +115,7 @@ struct Volume {
 }
 
 /// Merged cluster intervals keep large exFAT NoFatChain live files cheap to index.
-#[derive(Default)]
+#[derive(Default, serde::Serialize, serde::Deserialize)]
 struct Owners(BTreeMap<u32, u32>);
 impl Owners {
     fn contains(&self, cluster: &u32) -> bool {
@@ -497,6 +502,7 @@ impl Directory {
     }
 }
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct Entry {
     candidate: Candidate,
     first: u32,
@@ -508,8 +514,10 @@ pub(crate) struct RecoveredEntry {
     pub candidate: Candidate,
     pub data: Option<Data>,
 }
+#[derive(serde::Serialize, serde::Deserialize)]
 pub(crate) struct Scan {
     pub filesystem: FileSystem,
+    #[serde(skip)]
     pub entries: Vec<RecoveredEntry>,
     pub scanned_records: u64,
     pub total_records: u64,
@@ -527,6 +535,7 @@ impl Scan {
     }
 }
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct Folder {
     first: u32,
     size: Option<u64>,
@@ -1028,98 +1037,23 @@ pub(crate) fn scan(
         live_complete = false;
         scan.problem(format!("{} previously parsed directories overlap active file allocations; their descendants are not trusted", conflicted.len()));
     }
-    for (mut entry, origin) in entries {
-        if invalid_origin(origin, &parents, &conflicted) {
-            entry.candidate.allocation_status = AllocationStatus::Conflict;
-            entry.candidate.warnings.push(
-                "Directory provenance overlaps an active file allocation; candidate is not trusted"
-                    .into(),
-            );
-            scan.entries.push(RecoveredEntry {
-                candidate: entry.candidate,
-                data: None,
-            });
-            continue;
-        }
-        let attempt = (|| -> Result<Data> {
-            let clusters = volume.file_clusters(image, &entry, true, cancel)?;
-            if scan.filesystem == FileSystem::Exfat {
-                entry.candidate.extent_evidence = if clusters.is_empty() {
-                    ExtentEvidence::Metadata
-                } else if entry.contiguous {
-                    ExtentEvidence::NoFatChain
-                } else if clusters.len() == 1 && volume.next(image, entry.first)? == 0 {
-                    ExtentEvidence::SingleCluster
-                } else {
-                    ExtentEvidence::ResidualFatChain
-                };
-                for cluster in &clusters {
-                    if live_clusters.contains(cluster) || volume.allocated(image, *cluster)? {
-                        entry.candidate.allocation_status = AllocationStatus::Conflict;
-                        return Err(Error::Unsupported(
-                            "deleted extents overlap a live file/directory or allocated exFAT bitmap bits".into(),
-                        ));
-                    }
-                }
-                entry.candidate.allocation_status = AllocationStatus::Unallocated;
-                if !live_complete {
-                    entry.candidate.allocation_status = AllocationStatus::Unknown;
-                    entry.candidate.warnings.push("Bitmap marks these extents free, but live ownership traversal was incomplete".into());
-                }
-            } else {
-                let free = clusters.is_empty()
-                    || (clusters.len() == 1 && volume.next(image, entry.first)? == 0);
-                entry.candidate.extent_evidence = if clusters.is_empty() {
-                    ExtentEvidence::Metadata
-                } else if free {
-                    ExtentEvidence::SingleCluster
-                } else {
-                    ExtentEvidence::ResidualFatChain
-                };
-                if clusters.iter().any(|c| live_clusters.contains(c)) {
-                    entry.candidate.allocation_status = AllocationStatus::Conflict;
-                    return Err(Error::Unsupported(
-                        "deleted cluster chain overlaps a live file/directory".into(),
-                    ));
-                }
-                if free && !live_complete && !clusters.is_empty() {
-                    entry.candidate.allocation_status = AllocationStatus::Unknown;
-                    return Err(Error::Unsupported("free FAT cluster cannot be trusted because live ownership traversal was incomplete".into()));
-                }
-                if free {
-                    entry.candidate.allocation_status = AllocationStatus::Unallocated;
-                } else if live_complete {
-                    entry.candidate.allocation_status = AllocationStatus::Unreferenced;
-                    entry.candidate.warnings.push("Residual FAT allocation has no live directory reference in this traversal; original content is not proven".into());
-                } else {
-                    return Err(Error::Unsupported("residual FAT allocation cannot be checked because live directory traversal was incomplete".into()));
-                }
-            }
-            volume.data(&clusters, entry.size, entry.initialized)
-        })();
-        let data = match attempt {
-            Ok(data) => {
-                entry.candidate.supported = true;
-                Some(data)
-            }
-            Err(error) => {
-                if matches!(error, Error::Cancelled) {
-                    scan.cancelled = true;
-                }
-                if matches!(error, Error::Limit(_)) {
-                    scan.truncated = true;
-                }
-                entry
-                    .candidate
-                    .warnings
-                    .push(format!("{}: {error}", error.code()));
-                None
-            }
-        };
-        scan.entries.push(RecoveredEntry {
-            candidate: entry.candidate,
-            data,
-        });
+    let ownership = Ownership {
+        parents: &parents,
+        conflicted: &conflicted,
+        live_clusters: &live_clusters,
+        live_complete,
+    };
+    for (entry, origin) in entries {
+        let result = recover_entry(
+            image,
+            &mut volume,
+            entry,
+            origin,
+            &ownership,
+            &mut scan,
+            cancel,
+        );
+        scan.entries.push(result);
     }
     if !scan.cancelled && !scan.truncated {
         scan.total_records = scan.scanned_records;
@@ -1131,6 +1065,116 @@ pub(crate) fn scan(
         unit: crate::ProgressUnit::Records,
     });
     Ok(scan)
+}
+
+struct Ownership<'a> {
+    parents: &'a [Option<usize>],
+    conflicted: &'a BTreeSet<usize>,
+    live_clusters: &'a Owners,
+    live_complete: bool,
+}
+fn recover_entry(
+    image: &mut Image,
+    volume: &mut Volume,
+    mut entry: Entry,
+    origin: usize,
+    ownership: &Ownership<'_>,
+    scan: &mut Scan,
+    cancel: &AtomicBool,
+) -> RecoveredEntry {
+    if invalid_origin(origin, ownership.parents, ownership.conflicted) {
+        entry.candidate.allocation_status = AllocationStatus::Conflict;
+        entry.candidate.warnings.push(
+            "Directory provenance overlaps an active file allocation; candidate is not trusted"
+                .into(),
+        );
+        return RecoveredEntry {
+            candidate: entry.candidate,
+            data: None,
+        };
+    }
+    let attempt = (|| -> Result<Data> {
+        let clusters = volume.file_clusters(image, &entry, true, cancel)?;
+        if scan.filesystem == FileSystem::Exfat {
+            entry.candidate.extent_evidence = if clusters.is_empty() {
+                ExtentEvidence::Metadata
+            } else if entry.contiguous {
+                ExtentEvidence::NoFatChain
+            } else if clusters.len() == 1 && volume.next(image, entry.first)? == 0 {
+                ExtentEvidence::SingleCluster
+            } else {
+                ExtentEvidence::ResidualFatChain
+            };
+            for cluster in &clusters {
+                if ownership.live_clusters.contains(cluster) || volume.allocated(image, *cluster)? {
+                    entry.candidate.allocation_status = AllocationStatus::Conflict;
+                    return Err(Error::Unsupported(
+                            "deleted extents overlap a live file/directory or allocated exFAT bitmap bits".into(),
+                        ));
+                }
+            }
+            entry.candidate.allocation_status = AllocationStatus::Unallocated;
+            if !ownership.live_complete {
+                entry.candidate.allocation_status = AllocationStatus::Unknown;
+                entry.candidate.warnings.push(
+                    "Bitmap marks these extents free, but live ownership traversal was incomplete"
+                        .into(),
+                );
+            }
+        } else {
+            let free = clusters.is_empty()
+                || (clusters.len() == 1 && volume.next(image, entry.first)? == 0);
+            entry.candidate.extent_evidence = if clusters.is_empty() {
+                ExtentEvidence::Metadata
+            } else if free {
+                ExtentEvidence::SingleCluster
+            } else {
+                ExtentEvidence::ResidualFatChain
+            };
+            if clusters.iter().any(|c| ownership.live_clusters.contains(c)) {
+                entry.candidate.allocation_status = AllocationStatus::Conflict;
+                return Err(Error::Unsupported(
+                    "deleted cluster chain overlaps a live file/directory".into(),
+                ));
+            }
+            if free && !ownership.live_complete && !clusters.is_empty() {
+                entry.candidate.allocation_status = AllocationStatus::Unknown;
+                return Err(Error::Unsupported("free FAT cluster cannot be trusted because live ownership traversal was incomplete".into()));
+            }
+            if free {
+                entry.candidate.allocation_status = AllocationStatus::Unallocated;
+            } else if ownership.live_complete {
+                entry.candidate.allocation_status = AllocationStatus::Unreferenced;
+                entry.candidate.warnings.push("Residual FAT allocation has no live directory reference in this traversal; original content is not proven".into());
+            } else {
+                return Err(Error::Unsupported("residual FAT allocation cannot be checked because live directory traversal was incomplete".into()));
+            }
+        }
+        volume.data(&clusters, entry.size, entry.initialized)
+    })();
+    let data = match attempt {
+        Ok(data) => {
+            entry.candidate.supported = true;
+            Some(data)
+        }
+        Err(error) => {
+            if matches!(error, Error::Cancelled) {
+                scan.cancelled = true;
+            }
+            if matches!(error, Error::Limit(_)) {
+                scan.truncated = true;
+            }
+            entry
+                .candidate
+                .warnings
+                .push(format!("{}: {error}", error.code()));
+            None
+        }
+    };
+    RecoveredEntry {
+        candidate: entry.candidate,
+        data,
+    }
 }
 
 #[cfg(test)]

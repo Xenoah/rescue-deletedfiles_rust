@@ -69,6 +69,11 @@ pub(crate) fn resume(
         || saved.start > saved.next
         || saved.next > saved.end
         || saved.end > image.length
+        || saved.options.max_records == 0
+        || saved.options.max_records > 100_000_000
+        || saved.options.max_candidates == 0
+        || saved.options.max_candidates > 10_000_000
+        || saved.attempts > saved.options.max_records
         || saved.validation_budget > VALIDATION_BUDGET
         || saved.zip_records.len() > 1_048_576
         || saved

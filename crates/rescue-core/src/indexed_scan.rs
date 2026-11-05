@@ -10,21 +10,25 @@ pub struct IndexedProgress {
     pub committed_candidates: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct Plan {
-    region: Option<SourceRegion>,
-    fingerprint: Fingerprint,
-    records: u64,
+pub(crate) struct Plan {
+    pub(crate) region: Option<SourceRegion>,
+    pub(crate) fingerprint: Fingerprint,
+    pub(crate) records: u64,
+    #[serde(default)]
+    pub(crate) filesystem: FileSystem,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct Checkpoint {
-    version: u32,
-    identity: AcquisitionIdentity,
-    options: ScanOptions,
-    plans: Vec<Plan>,
-    volume: usize,
-    record: u64,
-    stream: usize,
-    previous_records: u64,
+#[derive(Serialize, Deserialize)]
+pub(crate) struct Checkpoint {
+    pub(crate) version: u32,
+    pub(crate) identity: AcquisitionIdentity,
+    pub(crate) options: ScanOptions,
+    pub(crate) plans: Vec<Plan>,
+    pub(crate) volume: usize,
+    pub(crate) record: u64,
+    pub(crate) stream: usize,
+    pub(crate) previous_records: u64,
+    #[serde(default)]
+    pub(crate) fat: Option<crate::fat::indexed::State>,
 }
 pub fn scan_indexed(
     source: &Path,
@@ -92,16 +96,16 @@ pub fn scan_indexed(
             return Err(Error::Cancelled);
         }
         let mut volume = Image::open_region(source, region.as_ref())?;
-        if &volume.boot_read(512)?[3..11] != b"NTFS    " {
-            return Err(Error::Unsupported(
-                "incremental FAT engine is not available yet".into(),
-            ));
-        }
-        let ntfs = Ntfs::open(&mut volume)?;
+        let (filesystem, records) = if &volume.boot_read(512)?[3..11] == b"NTFS    " {
+            (FileSystem::Ntfs, Ntfs::open(&mut volume)?.records)
+        } else {
+            (crate::fat::filesystem(&mut volume)?, 0)
+        };
         plans.push(Plan {
             region,
             fingerprint: volume.fingerprint()?,
-            records: ntfs.records,
+            records,
+            filesystem,
         });
     }
     let mut header = Session {
@@ -114,14 +118,21 @@ pub fn scan_indexed(
         filesystem: if disk {
             FileSystem::Disk
         } else {
-            FileSystem::Ntfs
+            plans[0].filesystem
         },
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
         fingerprint,
         candidates: vec![],
         scanned_records: 0,
-        total_records: plans.iter().map(|p| p.records).sum(),
+        total_records: if plans.iter().any(|p| p.filesystem != FileSystem::Ntfs) {
+            0
+        } else {
+            plans
+                .iter()
+                .try_fold(0u64, |n, p| n.checked_add(p.records))
+                .ok_or_else(|| Error::Limit("total record count".into()))?
+        },
         cancelled: false,
         truncated: false,
         invalid_records: 0,
@@ -150,8 +161,9 @@ pub fn scan_indexed(
         record: 0,
         stream: 0,
         previous_records: 0,
+        fat: None,
     };
-    let writer = IndexWriter::create(work, &header, "ntfs_records_v1", &checkpoint)?;
+    let writer = IndexWriter::create(work, &header, "filesystem_records_v1", &checkpoint)?;
     run(writer, cancel, progress)
 }
 pub fn resume_indexed_scan(
@@ -161,7 +173,12 @@ pub fn resume_indexed_scan(
 ) -> Result<PathBuf> {
     let writer = IndexWriter::resume(index)?;
     let status = writer.index().status()?;
-    if !["ntfs_records_v1", "carve_signatures_v1"].contains(&status.engine.as_str())
+    if ![
+        "ntfs_records_v1",
+        "filesystem_records_v1",
+        "carve_signatures_v1",
+    ]
+    .contains(&status.engine.as_str())
         || !status.resumable
         || matches!(status.state.as_str(), "completed" | "failed")
     {
@@ -186,6 +203,17 @@ fn run(
         || checkpoint.plans.is_empty()
         || checkpoint.plans.len() > 256
         || checkpoint.volume > checkpoint.plans.len()
+        || checkpoint.options.max_records == 0
+        || checkpoint.options.max_records > 100_000_000
+        || checkpoint.options.max_candidates == 0
+        || checkpoint.options.max_candidates > 10_000_000
+        || checkpoint.previous_records > checkpoint.options.max_records
+        || checkpoint.plans.iter().any(|p| {
+            !matches!(
+                p.filesystem,
+                FileSystem::Ntfs | FileSystem::Fat32 | FileSystem::Exfat
+            )
+        })
     {
         return Err(Error::Request("invalid scan checkpoint".into()));
     }
@@ -227,10 +255,55 @@ fn run(
     };
     notify(&header, committed, &mut progress);
     while checkpoint.volume < checkpoint.plans.len() {
+        if checkpoint.previous_records >= checkpoint.options.max_records
+            || committed >= checkpoint.options.max_candidates as u64
+        {
+            header.truncated = true;
+            break;
+        }
         let plan = checkpoint.plans[checkpoint.volume].clone();
         let mut volume = Image::open_region(&header.source, plan.region.as_ref())?;
         if volume.fingerprint()? != plan.fingerprint {
             return Err(Error::SourceChanged);
+        }
+        if plan.filesystem != FileSystem::Ntfs {
+            if crate::fat::filesystem(&mut volume)? != plan.filesystem {
+                return Err(Error::SourceChanged);
+            }
+            let result = crate::fat::indexed::run_volume(
+                &mut writer,
+                &mut header,
+                &mut checkpoint,
+                &image,
+                &mut volume,
+                cancel,
+                &mut progress,
+            );
+            if matches!(result, Err(Error::Cancelled)) {
+                // Discard the uncommitted directory/ownership step as a unit.
+                header = writer.index().session()?;
+                checkpoint = writer.index().checkpoint()?;
+                header.cancelled = true;
+                commit(&mut writer, &image, &header, &[], "cancelled", &checkpoint)?;
+                notify(&header, writer.index().status()?.candidates, &mut progress);
+                return Ok(path);
+            }
+            result?;
+            if volume.fingerprint()? != plan.fingerprint {
+                return Err(Error::SourceChanged);
+            }
+            checkpoint.previous_records = header.scanned_records;
+            checkpoint.volume += 1;
+            checkpoint.record = 0;
+            checkpoint.stream = 0;
+            checkpoint.fat = None;
+            commit(&mut writer, &image, &header, &[], "running", &checkpoint)?;
+            committed = writer.index().status()?.candidates;
+            notify(&header, committed, &mut progress);
+            continue;
+        }
+        if checkpoint.fat.is_some() {
+            return Err(Error::Request("FAT state for an NTFS volume".into()));
         }
         let ntfs = Ntfs::open(&mut volume)?;
         if ntfs.records != plan.records || checkpoint.record > ntfs.records {
@@ -391,6 +464,9 @@ fn run(
     }
     if image.fingerprint()? != header.fingerprint {
         return Err(Error::SourceChanged);
+    }
+    if !header.truncated {
+        header.total_records = header.scanned_records;
     }
     commit(
         &mut writer,
