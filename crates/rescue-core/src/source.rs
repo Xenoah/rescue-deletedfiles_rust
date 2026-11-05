@@ -376,6 +376,33 @@ impl Image {
 mod tests {
     use super::*;
     #[test]
+    fn selected_backup_is_geometry_only_and_changes_invalidate_its_identity() {
+        let file = tempfile::NamedTempFile::new().unwrap();
+        let mut raw = vec![0x11; 2048];
+        raw[512..1024].fill(0x22);
+        std::fs::write(file.path(), &raw).unwrap();
+        let region = crate::SourceRegion {
+            index: 1,
+            name: "test".into(),
+            offset: 0,
+            length: 2048,
+            filesystem: Some(crate::FileSystem::Ntfs),
+            recovery_boot: Some(crate::RecoveryBoot {
+                role: crate::BootRole::Backup,
+                offset: 512,
+                bytes: 512,
+                sha256: format!("{:x}", Sha256::digest(&raw[512..1024])),
+            }),
+        };
+        let mut image = Image::open_region(file.path(), Some(&region)).unwrap();
+        assert_eq!(image.boot_read(512).unwrap(), vec![0x22; 512]);
+        assert_eq!(image.read(0, 1024).unwrap(), raw[..1024]);
+        image.fingerprint().unwrap();
+        raw[512] = 0x33;
+        std::fs::write(file.path(), raw).unwrap();
+        assert!(matches!(image.fingerprint(), Err(Error::SourceChanged)));
+    }
+    #[test]
     fn device_reads_align_without_exposing_adjacent_volume_bytes() {
         use std::io::Write;
         let mut file = tempfile::NamedTempFile::new().unwrap();

@@ -231,10 +231,12 @@ fn probe(path: &Path, region: &SourceRegion, budget: u64) -> (Result<Vec<String>
                 {
                     return Err(invalid("MFT root directory ownership"));
                 }
-                Ok(vec![
+                let mut evidence = vec![
                     "Validated NTFS geometry, MFT fixups and complete MFT runlist".into(),
                     "Cross-checked MFT base extent and root record 5".into(),
-                ])
+                ];
+                evidence.extend(ntfs.warnings.clone());
+                Ok(evidence)
             }
             Some(FileSystem::Fat32 | FileSystem::Exfat) => crate::fat::probe(&mut image),
             _ => Err(invalid("unsupported filesystem")),
@@ -425,4 +427,35 @@ pub fn scan_discovered_volume(
     session.warnings.push(format!("Virtual recovered volume at byte {} using {:?} boot at {}. No partition table or filesystem was repaired.",region.offset,
         region.recovery_boot.as_ref().unwrap().role,region.recovery_boot.as_ref().unwrap().offset));
     Ok(session)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn adversarial_boot_geometry_is_bounded_before_any_probe() {
+        let mut seed = 0x31415926u32;
+        for n in 0..4096 {
+            let mut b = [0u8; 512];
+            for byte in &mut b {
+                seed ^= seed << 13;
+                seed ^= seed >> 17;
+                seed ^= seed << 5;
+                *byte = seed as u8;
+            }
+            b[510..512].copy_from_slice(&[0x55, 0xaa]);
+            match n % 3 {
+                0 => b[3..11].copy_from_slice(b"NTFS    "),
+                1 => b[82..90].copy_from_slice(b"FAT32   "),
+                _ => b[3..11].copy_from_slice(b"EXFAT   "),
+            }
+            if let Ok(g) = geometry(&b) {
+                assert!(g.count.checked_mul(g.sector).is_some());
+                assert!(g.boot_bytes <= 49152);
+                for at in [0, 511, 4096, u64::MAX] {
+                    assert!(possible_starts(at, &g).len() <= 3);
+                }
+            }
+        }
+    }
 }

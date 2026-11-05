@@ -188,6 +188,7 @@ pub(crate) struct Geometry {
     pub cluster: u64,
     pub record: usize,
     pub mft: u64,
+    pub mft_mirror: Option<u64>,
     pub volume_length: u64,
 }
 impl Geometry {
@@ -238,6 +239,13 @@ impl Geometry {
             cluster,
             record: record as usize,
             mft,
+            mft_mirror: u64_at(&boot, 56)?.checked_mul(cluster).filter(|at| {
+                *at != 0
+                    && *at != mft
+                    && at
+                        .checked_add(record)
+                        .is_some_and(|end| end <= volume_length)
+            }),
             volume_length,
         })
     }
@@ -633,20 +641,41 @@ pub(crate) struct Ntfs {
     pub geometry: Geometry,
     pub mft: Data,
     pub records: u64,
+    pub warnings: Vec<String>,
+    bootstrap: Option<Record>,
 }
 impl Ntfs {
     pub fn open(image: &mut Image) -> Result<Self> {
         let geometry = Geometry::parse(image)?;
-        let first = parse_record(image.read(geometry.mft, geometry.record)?, &geometry)?;
-        if !first.in_use || first.base != 0 {
-            return Err(invalid("invalid MFT base record"));
-        }
+        let valid_base = |r: Record| {
+            if r.in_use && !r.directory && r.base == 0 {
+                Ok(r)
+            } else {
+                Err(invalid("invalid MFT base record"))
+            }
+        };
+        let primary = image
+            .read(geometry.mft, geometry.record)
+            .and_then(|raw| parse_record(raw, &geometry))
+            .and_then(valid_base);
+        let (first, mirrored) = match primary {
+            Ok(first) => (first, false),
+            Err(error) => {
+                let Some(at) = geometry.mft_mirror else {
+                    return Err(error);
+                };
+                let first = parse_record(image.read(at, geometry.record)?, &geometry)
+                    .and_then(valid_base)?;
+                (first, true)
+            }
+        };
         let first = attributes::resolve(image, &geometry, 0, first, None)?;
         if !first.unsupported.is_empty() {
             return Err(Error::Unsupported(
                 "MFT contains unsupported attributes".into(),
             ));
         }
+        let bootstrap = mirrored.then(|| first.clone());
         let stream = first
             .streams
             .into_iter()
@@ -673,12 +702,38 @@ impl Ntfs {
             return Err(invalid("MFT stream size is not record aligned"));
         }
         let records = mft.size() / geometry.record as u64;
+        if mirrored
+            && (!matches!(&mft,Data::NonResident {runs,..} if runs.first().is_some_and(|r|r.logical==0 && r.physical==Some(geometry.mft)))
+                || records < 6)
+        {
+            return Err(invalid("MFT mirror does not map the primary MFT and root"));
+        }
         let mut ntfs = Self {
             geometry,
             mft,
             records,
             bitmap: std::cell::RefCell::new(allocation::Bitmap::unknown()),
+            warnings: if mirrored {
+                vec!["MFT base record is damaged; bootstrapped its runlist from the fixup-validated MFT mirror. Other MFT records are read from their original extents, not reconstructed from the mirror.".into()]
+            } else {
+                Vec::new()
+            },
+            bootstrap,
         };
+        if mirrored {
+            let root = ntfs
+                .record(image, 5)?
+                .ok_or_else(|| invalid("MFT mirror root is unavailable"))?;
+            if !root.in_use
+                || !root.directory
+                || root.base != 0
+                || root.parent != 5
+                || root.parent_sequence != root.sequence
+                || !root.unsupported.is_empty()
+            {
+                return Err(invalid("MFT mirror root ownership mismatch"));
+            }
+        }
         ntfs.bitmap = std::cell::RefCell::new(allocation::Bitmap::load(&ntfs, image));
         Ok(ntfs)
     }
@@ -692,6 +747,11 @@ impl Ntfs {
     pub fn record(&self, image: &mut Image, index: u64) -> Result<Option<Record>> {
         if index >= self.records {
             return Err(invalid("record index outside MFT"));
+        }
+        if index == 0
+            && let Some(first) = &self.bootstrap
+        {
+            return Ok(Some(first.clone()));
         }
         let raw = self.mft.read(
             image,
@@ -731,6 +791,7 @@ mod tests {
             cluster: 512,
             record: 1024,
             mft: 2048,
+            mft_mirror: None,
             volume_length: 1024 * 1024,
         }
     }

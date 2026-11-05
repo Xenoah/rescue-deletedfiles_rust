@@ -84,6 +84,21 @@ def main(binary,output=None):
         check(all(v['overlaps'][0] in {x['id'] for x in overlap['volumes']} for v in overlap['volumes']),'overlap references');checks+=1
         current=run(binary,'discover','--source',inner,'--json');check(len(current['volumes'])==1 and current['volumes'][0]['matches_current_table'],'current volume flag');checks+=1
         run(binary,'discover','--source',inner,'--range-start',1000,'--range-end',999,'--json',expected=2);checks+=1
+        # The mirror supplies only record 0's runlist. It cannot replace other records.
+        mirror=root/'mirror.raw';truth=build(mirror);raw=bytearray(mirror.read_bytes());mirror_at=800*SECTOR
+        raw[mirror_at:mirror_at+RECORD]=raw[MFT_LCN*SECTOR:MFT_LCN*SECTOR+RECORD]
+        struct.pack_into('<Q',raw,56,800);raw[-SECTOR:]=raw[:SECTOR];raw[MFT_LCN*SECTOR:MFT_LCN*SECTOR+RECORD]=bytes(RECORD);mirror.write_bytes(raw)
+        before=file_hash(mirror);m=run(binary,'scan','--source',mirror,'--work-dir',root/'mirror-work','--json')
+        check(any('MFT mirror' in w for w in m['warnings']),'MFT mirror provenance missing')
+        rows=run(binary,'recover','--session',m['session'],'--all','--destination',root/'mirror-out','--json')['results']
+        check({r['candidate_id'] for r in rows}==set(truth),'MFT mirror recovery missing files')
+        for r in rows:check(r['status']=='completed' and file_hash(Path(r['path']))==truth[r['candidate_id']]['sha256'],'MFT mirror bytes')
+        check(file_hash(mirror)==before,'MFT mirror repair wrote to source');checks+=1;files+=len(rows)
+        write(mirror,MFT_LCN*SECTOR+20*RECORD,bytes(RECORD))
+        partial=run(binary,'scan','--source',mirror,'--work-dir',root/'mirror-partial-work','--json')
+        check(partial['candidates']==len(truth)-1,'mirror invented a missing non-mirrored MFT record');checks+=1
+        write(mirror,mirror_at,bytes(RECORD))
+        run(binary,'scan','--source',mirror,'--work-dir',root/'mirror-both-bad','--json',expected=4);checks+=1
         # Source allocation is sparse; cancellation must return partial coverage.
         large=root/'large.raw'
         with large.open('xb') as f:f.truncate(2*1024*1024*1024)
@@ -93,7 +108,7 @@ def main(binary,output=None):
             client.tool('cancel_job',{'job_id':j['job_id']});result=client.wait(j['job_id']);check(result['state']=='cancelled' and result['result']['cancelled'],'discovery cancellation')
         finally:client.close()
         checks+=1
-    result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':file_hash(binary),'os':platform.system(),'checks':checks,'files_byte_exact':files,'source_unchanged':True,'scope':'Synthetic lost MBR, primary/backup boots for NTFS/FAT32/exFAT, false signatures, overflow, overlap alternatives, tampered session, changed source, CLI/MCP parity and cancellation. No host device modified.'}
+    result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':file_hash(binary),'os':platform.system(),'checks':checks,'files_byte_exact':files,'source_unchanged':True,'scope':'Synthetic lost MBR, primary/backup boots for NTFS/FAT32/exFAT, false signatures, overflow, overlap alternatives, tampered session, changed source, CLI/MCP parity, bounded MFT mirror bootstrap and cancellation. No host device modified.'}
     if output:output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(result,indent=2)+'\n')
     print(json.dumps(result));return result
 

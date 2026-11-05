@@ -406,7 +406,7 @@ fn scan_volume(
         cancelled: false,
         truncated: false,
         invalid_records: 0,
-        warnings: Vec::new(),
+        warnings: ntfs.warnings.clone(),
         search: None,
         region: region.cloned(),
         volumes: Vec::new(),
@@ -682,6 +682,7 @@ fn ntfs_recovery_data(
     );
     let (allocation_status, mut warnings) = ntfs.allocation(image, &data);
     warnings.extend(record.provenance);
+    warnings.extend(ntfs.warnings.clone());
     Ok(RecoveryData {
         data,
         name,
@@ -692,7 +693,7 @@ fn ntfs_recovery_data(
 }
 
 enum RecoverySource {
-    Ntfs(Ntfs),
+    Ntfs(Box<Ntfs>),
     Fat(BTreeMap<String, fat::RecoveredEntry>),
     Carved,
 }
@@ -801,7 +802,7 @@ pub fn recover_to(
         return Err(Error::SourceChanged);
     }
     let source = if session.filesystem == FileSystem::Ntfs {
-        RecoverySource::Ntfs(Ntfs::open(&mut image)?)
+        RecoverySource::Ntfs(Box::new(Ntfs::open(&mut image)?))
     } else if session.filesystem == FileSystem::Raw {
         RecoverySource::Carved
     } else {

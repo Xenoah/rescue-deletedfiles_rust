@@ -275,7 +275,7 @@ fn read_volume(
         return Err(Error::SourceChanged);
     }
     let source = match session.filesystem {
-        FileSystem::Ntfs => RecoverySource::Ntfs(Ntfs::open(&mut image)?),
+        FileSystem::Ntfs => RecoverySource::Ntfs(Box::new(Ntfs::open(&mut image)?)),
         FileSystem::Raw => RecoverySource::Carved,
         _ => {
             let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;

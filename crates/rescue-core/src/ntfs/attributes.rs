@@ -550,6 +550,7 @@ mod tests {
             cluster: 512,
             record: 1024,
             mft: 2048,
+            mft_mirror: None,
             volume_length: 1024 * 1024,
         };
         let clusters = u64::MAX / 512;
