@@ -11,10 +11,12 @@ mod mapped_source;
 mod ntfs;
 mod ntfs_remnants;
 mod partitions;
+mod raid;
 mod read_map;
 mod restore;
 mod search;
 mod source;
+mod source_scope;
 mod timestamps;
 
 pub use acquisition::{
@@ -35,6 +37,12 @@ pub use discovery::{
 pub use disk_scan::scan_source;
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
+pub use raid::{
+    RAID_SUFFIX, RaidConfig, RaidEvidence, RaidInspection, RaidLayout, RaidLevel, RaidMember,
+    create_raid_manifest, inspect_raid, is_raid_path,
+};
+pub use raid::{RaidAlternative, RaidSearchOptions, RaidSearchResult, search_raid};
+pub use raid::{RaidReadRange, RaidReadTrace};
 pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
 pub use restore::{
     CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,
@@ -45,6 +53,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub use source::Fingerprint;
 use source::Image;
+pub use source_scope::SourceScope;
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
@@ -202,6 +211,8 @@ impl Candidate {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Session {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raid: Option<RaidEvidence>,
     pub schema_version: u32,
     #[serde(default)]
     pub filesystem: FileSystem,
@@ -260,7 +271,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if !(1..=8).contains(&session.schema_version) {
+        if !(1..=9).contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -390,6 +401,7 @@ fn scan_volume(
             return Err(Error::SourceChanged);
         }
         let mut session = Session {
+            raid: None,
             schema_version,
             filesystem: result.filesystem,
             id: Uuid::new_v4().to_string(),
@@ -412,6 +424,7 @@ fn scan_volume(
     }
     let opened = Ntfs::open(&mut image);
     let mut session = Session {
+        raid: None,
         schema_version,
         filesystem: FileSystem::Ntfs,
         id: Uuid::new_v4().to_string(),
@@ -652,6 +665,8 @@ fn scan_volume(
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RecoveryResult {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raid_reads: Option<RaidReadTrace>,
     pub candidate_id: String,
     pub status: String,
     pub path: Option<PathBuf>,
@@ -817,7 +832,7 @@ pub fn recover_to(
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
     session.guard_output(&destination.path)?;
-    if !(1..=8).contains(&session.schema_version) {
+    if !(1..=9).contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if session.filesystem == FileSystem::Disk {
@@ -841,6 +856,7 @@ pub fn recover_to(
         selected.push(candidate);
     }
     let mut image = Image::open_region(&session.source, session.region.as_ref())?;
+    image.validate_raid(session)?;
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
@@ -877,6 +893,7 @@ pub fn recover_to(
     for candidate in selected {
         if cancel.load(Ordering::Relaxed) {
             results.push(RecoveryResult {
+                raid_reads: None,
                 candidate_id: candidate.id.clone(),
                 status: "cancelled".into(),
                 path: None,
@@ -892,6 +909,7 @@ pub fn recover_to(
             continue;
         }
         let mut result = RecoveryResult {
+            raid_reads: None,
             candidate_id: candidate.id.clone(),
             status: "failed".into(),
             path: None,
@@ -904,6 +922,7 @@ pub fn recover_to(
             archive_entry: None,
             missing_ranges: Vec::new(),
         };
+        image.take_raid_trace();
         let attempt = (|| -> Result<()> {
             // Media were checked before opening this pinned destination. Recheck
             // its file/volume identity for every file without rediscovering topology.
@@ -962,6 +981,7 @@ pub fn recover_to(
                 offset += count as u64;
                 result.bytes_written = offset;
             }
+            result.raid_reads = image.take_raid_trace();
             output.sync_all()?;
             drop(output);
             if image.fingerprint()? != session.fingerprint {
@@ -977,6 +997,9 @@ pub fn recover_to(
             result.status = "completed".into();
             Ok(())
         })();
+        if result.raid_reads.is_none() {
+            result.raid_reads = image.take_raid_trace();
+        }
         if let Err(error) = attempt {
             if let Error::MissingRanges(ranges) = &error {
                 result.missing_ranges = ranges.clone();
@@ -1049,7 +1072,7 @@ fn write_report(
         &serde_json::json!({
             "schema_version":1, "session_id":session.id, "source":session.source,
             "filesystem":session.filesystem,
-            "source_fingerprint":session.fingerprint, "results":results,
+            "source_fingerprint":session.fingerprint, "raid":session.raid, "results":results,
             "integrity_note":"Output hashes do not prove equality with the deleted originals."
         }),
     )?;

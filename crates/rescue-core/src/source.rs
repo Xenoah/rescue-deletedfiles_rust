@@ -19,6 +19,7 @@ pub struct Fingerprint {
 /// Owns a strictly read-only file/device handle and a bounded volume window.
 pub(crate) struct Image {
     file: File,
+    raid: Option<Box<crate::raid::RaidSource>>,
     pub path: PathBuf,
     pub length: u64,
     base: u64,
@@ -59,12 +60,53 @@ fn regular_file_identity(file: &File) -> Result<String> {
     }
 }
 impl Image {
+    pub(crate) fn from_raid(raid: crate::raid::RaidSource) -> Result<Self> {
+        let path = raid
+            .evidence
+            .config
+            .members
+            .iter()
+            .find_map(|m| m.path.clone())
+            .ok_or_else(|| Error::Invalid("RAID has no available image".into()))?;
+        crate::source_scope::check(&path)?;
+        let file = File::open(&path)?;
+        let total = raid.evidence.logical_bytes;
+        Ok(Self {
+            file,
+            raid: Some(Box::new(raid)),
+            path,
+            length: total,
+            base: 0,
+            total,
+            device: None,
+            mapped: None,
+            boot: None,
+            read_budget: None,
+            bytes_read: 0,
+        })
+    }
+    pub(crate) fn select_window(&mut self, offset: u64, length: u64) -> Result<()> {
+        if length == 0 || offset.checked_add(length).is_none_or(|e| e > self.total) {
+            return Err(Error::Invalid("virtual source window".into()));
+        }
+        self.base = offset;
+        self.length = length;
+        self.boot = None;
+        Ok(())
+    }
     pub fn open(path: &Path) -> Result<Self> {
         let path = device::canonical_source_path(path)?;
-        let (file, device) = device::open(&path)?;
+        crate::source_scope::check(&path)?;
+        let (mut file, device) = device::open(&path)?;
+        let raid = if crate::is_raid_path(&path) {
+            Some(Box::new(crate::raid::RaidSource::open(&mut file, &path)?))
+        } else {
+            None
+        };
         // Windows raw handles do not implement ordinary file metadata queries.
         // Do not eagerly evaluate a file-length fallback for a device.
-        let mapped = if device.is_none()
+        let mapped = if raid.is_none()
+            && device.is_none()
             && (path
                 .file_name()
                 .is_some_and(|n| n.to_string_lossy().ends_with(".rescue.raw"))
@@ -74,7 +116,9 @@ impl Image {
         } else {
             None
         };
-        let total = if let Some(map) = &mapped {
+        let total = if let Some(raid) = &raid {
+            raid.evidence.logical_bytes
+        } else if let Some(map) = &mapped {
             map.length()
         } else if let Some(device) = &device {
             device.bytes
@@ -83,6 +127,7 @@ impl Image {
         };
         Ok(Self {
             file,
+            raid,
             path,
             length: total,
             base: 0,
@@ -157,16 +202,31 @@ impl Image {
         self.bytes_read
     }
     pub fn sector_size(&self) -> u32 {
-        self.mapped
+        self.raid
             .as_ref()
-            .map(|m| m.sector())
+            .map(|r| r.evidence.config.sector_size)
+            .or_else(|| self.mapped.as_ref().map(|m| m.sector()))
             .or_else(|| self.device.as_ref().map(|d| d.sector))
             .unwrap_or(512)
     }
     pub fn has_read_map(&self) -> bool {
         self.mapped.is_some()
     }
+    pub fn take_raid_trace(&mut self) -> Option<crate::raid::RaidReadTrace> {
+        self.raid.as_mut().map(|r| r.take_trace())
+    }
+    pub fn validate_raid(&self, session: &crate::Session) -> Result<()> {
+        if self.raid.as_ref().map(|r| &r.evidence) != session.raid.as_ref() {
+            return Err(Error::SourceChanged);
+        }
+        Ok(())
+    }
     pub fn annotate_coverage(&self, session: &mut crate::Session) {
+        if let Some(raid) = &self.raid {
+            session.schema_version = 9;
+            session.raid = Some(raid.evidence.clone());
+            session.warnings.extend(raid.evidence.warnings.clone());
+        }
         if let Some(map) = &self.mapped
             && map.missing_bytes() > 0
         {
@@ -175,6 +235,15 @@ impl Image {
         }
     }
     pub fn acquisition_identity(&self) -> Result<AcquisitionIdentity> {
+        if let Some(raid) = &self.raid {
+            return Ok(AcquisitionIdentity {
+                path: self.path.clone(),
+                length: self.total,
+                sector_size: self.sector_size(),
+                identity: format!("raid:{}", raid.identity(&self.file)?),
+                modified_ns: None,
+            });
+        }
         let modified_ns = if self.device.is_none() {
             Some(
                 self.file
@@ -215,6 +284,9 @@ impl Image {
         })
     }
     pub fn reject_same_file(&self, other: &File) -> Result<()> {
+        if let Some(raid) = &self.raid {
+            raid.reject_same_file(other)?;
+        }
         // Acquisition outputs have already been checked to be regular files on
         // separate media. Windows raw-device handles do not support file IDs.
         if self.device.is_some() {
@@ -253,6 +325,14 @@ impl Image {
             .base
             .checked_add(offset)
             .ok_or_else(|| Error::Invalid("read overflow".into()))?;
+        if let Some(raid) = &mut self.raid {
+            let (bytes, gaps) = raid.read_available(absolute, length)?;
+            return if gaps.is_empty() {
+                Ok(bytes)
+            } else {
+                Err(Error::MissingRanges(gaps))
+            };
+        }
         if let Some(map) = &mut self.mapped {
             return map.read(&mut self.file, absolute, length);
         }
@@ -301,13 +381,19 @@ impl Image {
         {
             return Err(Error::Invalid("read extends beyond selected volume".into()));
         }
+        if let Some(raid) = &mut self.raid {
+            return raid.read_available(self.base + offset, length);
+        }
         if let Some(map) = &mut self.mapped {
             return map.read_available(&mut self.file, self.base + offset, length);
         }
         self.read(offset, length).map(|b| (b, Vec::new()))
     }
     pub fn fingerprint(&mut self) -> Result<Fingerprint> {
-        let modified_ns = if let Some(map) = &self.mapped {
+        let modified_ns = if let Some(raid) = &mut self.raid {
+            raid.check(&mut self.file)?;
+            format!("raid:{}:{}", raid.evidence.identity_sha256, self.base)
+        } else if let Some(map) = &self.mapped {
             map.check(&self.file)?;
             format!(
                 "mapped:{}:{}:{}",

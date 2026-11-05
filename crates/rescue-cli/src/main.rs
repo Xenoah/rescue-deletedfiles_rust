@@ -22,6 +22,26 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Inspect or save an explicit read-only RAID configuration. Members remain unchanged.
+    Raid {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long, conflicts_with = "output")]
+        search: bool,
+        #[arg(long, requires = "search", value_delimiter = ',')]
+        stripe_sizes: Vec<u32>,
+        #[arg(long, requires = "search")]
+        reorder: bool,
+        #[arg(long, default_value_t = 128)]
+        max_configurations: u16,
+        #[arg(long, default_value_t = 5000)]
+        max_milliseconds: u32,
+        /// Save a fingerprint-bound .rescue-raid.json source, using exclusive creation.
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Acquire a disk into a durable RAW image/read-map pair. The output directory must be empty.
     Image {
         #[arg(long)]
@@ -334,6 +354,52 @@ fn run() -> Result<i32, Error> {
                 json!({"schema_version":1,"sources":rescue_core::list_disks()?}),
                 compact,
             );
+            Ok(0)
+        }
+        Command::Raid {
+            config,
+            output,
+            search,
+            stripe_sizes,
+            reorder,
+            max_configurations,
+            max_milliseconds,
+            json: compact,
+        } => {
+            use std::io::Read;
+            let file = std::fs::File::open(&config)?;
+            let mut bytes = Vec::new();
+            file.take(128 * 1024 + 1).read_to_end(&mut bytes)?;
+            if bytes.len() > 128 * 1024 {
+                return Err(Error::Limit("RAID configuration exceeds 128 KiB".into()));
+            }
+            let settings: rescue_core::RaidConfig = serde_json::from_slice(&bytes)?;
+            let parent = config.parent().unwrap_or(std::path::Path::new("."));
+            if search {
+                let defaults = rescue_core::RaidSearchOptions::default();
+                let options = rescue_core::RaidSearchOptions {
+                    stripe_sizes: if stripe_sizes.is_empty() {
+                        defaults.stripe_sizes
+                    } else {
+                        stripe_sizes
+                    },
+                    reorder_members: reorder,
+                    max_configurations,
+                    max_milliseconds,
+                    ..defaults
+                };
+                let result =
+                    rescue_core::search_raid(&settings, parent, &options, &cancel, |_| {})?;
+                let code = if result.cancelled { 130 } else { 0 };
+                print(serde_json::to_value(result)?, compact);
+                return Ok(code);
+            }
+            let report = if let Some(output) = output {
+                rescue_core::create_raid_manifest(&settings, parent, &output, None, &cancel)?
+            } else {
+                rescue_core::inspect_raid(&settings, parent, &cancel)?
+            };
+            print(serde_json::to_value(report)?, compact);
             Ok(0)
         }
         Command::Inspect {

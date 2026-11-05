@@ -74,6 +74,20 @@ fn tools() -> Value {
         "required":["index","name","offset","length","filesystem","recovery_boot"],"additionalProperties":false});
     json!([
         tool(
+            "search_raid",
+            "Bounded stripe/layout/member-order alternatives. Keeps supplied offsets and lengths; returns only configurations with validated filesystem structures. No winner is automatically selected. Specify config and optional limits; poll get_job, then explicitly create_raid with one candidate config.",
+            json!({"config":{"type":"object"},"options":{"type":"object"},"request_id":string}),
+            &["config", "request_id"],
+            true
+        ),
+        tool(
+            "create_raid",
+            "Validate and save an explicit read-only array from individually allowed member images. Configuration includes missing slots, offsets, lengths, stripe size and parity layout. The generated manifest becomes a source; scan it to validate filesystem structure. Poll get_job.",
+            json!({"config":{"type":"object"},"destination":string,"request_id":string}),
+            &["config", "destination", "request_id"],
+            false
+        ),
+        tool(
             "list_sources",
             "List explicitly allowed RAW images and output directories.",
             json!({}),
@@ -159,8 +173,11 @@ impl Server {
             .sources
             .iter()
             .all(|source| rescue_core::guard_output_path(source, &config.work_dir).is_ok());
-        for source in &config.sources {
-            rescue_core::validate_source(source)?;
+        {
+            let _scope = rescue_core::SourceScope::enter(config.sources.clone());
+            for source in &config.sources {
+                rescue_core::validate_source(source)?;
+            }
         }
         if persist_sessions {
             fs::create_dir_all(&config.work_dir)?;
@@ -194,6 +211,14 @@ impl Server {
             initialized: false,
         })
     }
+    fn source_grants(&self) -> Vec<PathBuf> {
+        self.config
+            .sources
+            .iter()
+            .cloned()
+            .chain(self.state.lock().unwrap().acquired_images.iter().cloned())
+            .collect()
+    }
     fn create_job(&mut self) -> std::result::Result<(String, Arc<AtomicBool>), String> {
         let mut state = self.state.lock().unwrap();
         if state.jobs.len() >= 32 {
@@ -221,6 +246,7 @@ impl Server {
         Ok((id, cancel))
     }
     fn call(&mut self, name: &str, args: &Value) -> ToolResult {
+        let _scope = rescue_core::SourceScope::enter(self.source_grants());
         let definitions = tools();
         let definition = definitions
             .as_array()
@@ -235,7 +261,12 @@ impl Server {
         }
         if matches!(
             name,
-            "start_scan" | "recover_files" | "start_image" | "discover_volumes"
+            "start_scan"
+                | "recover_files"
+                | "start_image"
+                | "discover_volumes"
+                | "create_raid"
+                | "search_raid"
         ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
@@ -284,6 +315,101 @@ impl Server {
                 )
                 .map_err(err)
             }
+            "search_raid" => {
+                let config: rescue_core::RaidConfig =
+                    serde_json::from_value(args.get("config").ok_or("missing config")?.clone())
+                        .map_err(err)?;
+                let options: rescue_core::RaidSearchOptions =
+                    serde_json::from_value(args.get("options").cloned().unwrap_or(json!({})))
+                        .map_err(err)?;
+                let relative = self.config.work_dir.clone();
+                let (id, cancel) = self.create_job()?;
+                let shared = self.state.clone();
+                let job_id = id.clone();
+                let grants = self.source_grants();
+                self.threads.push(thread::spawn(move || {
+                    let _scope = rescue_core::SourceScope::enter(grants);
+                    let result =
+                        rescue_core::search_raid(&config, &relative, &options, &cancel, |p| {
+                            shared
+                                .lock()
+                                .unwrap()
+                                .jobs
+                                .get_mut(&job_id)
+                                .unwrap()
+                                .progress = p;
+                        });
+                    let mut state = shared.lock().unwrap();
+                    let job = state.jobs.get_mut(&job_id).unwrap();
+                    match result {
+                        Ok(report) => {
+                            job.state = if report.cancelled {
+                                "cancelled"
+                            } else if report.truncated {
+                                "partial"
+                            } else {
+                                "completed"
+                            }
+                            .into();
+                            job.result = serde_json::to_value(report).unwrap();
+                        }
+                        Err(e) => {
+                            job.state = if matches!(e, Error::Cancelled) {
+                                "cancelled"
+                            } else {
+                                "failed"
+                            }
+                            .into();
+                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                        }
+                    }
+                }));
+                Ok(json!({"job_id":id,"state":"running"}))
+            }
+            "create_raid" => {
+                let config: rescue_core::RaidConfig =
+                    serde_json::from_value(args.get("config").ok_or("missing config")?.clone())
+                        .map_err(err)?;
+                let destination =
+                    rescue_core::canonical_output_path(Path::new(field(args, "destination")?))
+                        .map_err(err)?;
+                let roots = self.output_roots.clone();
+                let relative = self.config.work_dir.clone();
+                let (id, cancel) = self.create_job()?;
+                let shared = self.state.clone();
+                let job_id = id.clone();
+                let grants = self.source_grants();
+                self.threads.push(thread::spawn(move || {
+                    let _scope = rescue_core::SourceScope::enter(grants);
+                    let result = rescue_core::create_raid_manifest(
+                        &config,
+                        &relative,
+                        &destination,
+                        Some(&roots),
+                        &cancel,
+                    );
+                    let mut state = shared.lock().unwrap();
+                    match result {
+                        Ok(report) => {
+                            state.acquired_images.insert(destination.clone());
+                            let job = state.jobs.get_mut(&job_id).unwrap();
+                            job.state = "completed".into();
+                            job.result = json!({"source":destination,"inspection":report});
+                        }
+                        Err(e) => {
+                            let job = state.jobs.get_mut(&job_id).unwrap();
+                            job.state = if matches!(e, Error::Cancelled) {
+                                "cancelled"
+                            } else {
+                                "failed"
+                            }
+                            .into();
+                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                        }
+                    }
+                }));
+                Ok(json!({"job_id":id,"state":"running"}))
+            }
             "start_image" => {
                 let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
                     .map_err(err)?;
@@ -314,7 +440,9 @@ impl Server {
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
+                let source_grants = self.source_grants();
                 self.threads.push(thread::spawn(move || {
+                    let _scope = rescue_core::SourceScope::enter(source_grants);
                     let result = rescue_core::acquire_image_with_roots(
                         &path,
                         &destination,
@@ -374,7 +502,9 @@ impl Server {
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
+                let source_grants = self.source_grants();
                 self.threads.push(thread::spawn(move || {
+                    let _scope = rescue_core::SourceScope::enter(source_grants);
                     let result =
                         rescue_core::discover_volumes(&path, &options, &cancel, |progress| {
                             shared
@@ -478,7 +608,9 @@ impl Server {
                 let job_id = id.clone();
                 let work = self.config.work_dir.clone();
                 let persist = self.persist_sessions;
+                let source_grants = self.source_grants();
                 self.threads.push(thread::spawn(move || {
+                    let _scope=rescue_core::SourceScope::enter(source_grants);
                     let operation = scan_with_settings(&path, ScanOptions::default(), &settings, &cancel, |progress| {
                         shared.lock().unwrap().jobs.get_mut(&job_id).unwrap().progress = progress;
                     }).and_then(|session| {
@@ -641,7 +773,9 @@ impl Server {
                 let (id, cancel) = self.create_job()?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
+                let source_grants = self.source_grants();
                 self.threads.push(thread::spawn(move || {
+                    let _scope = rescue_core::SourceScope::enter(source_grants);
                     if zip {
                         let operation = restore_zip_with_roots(
                             &session,
@@ -725,7 +859,12 @@ impl Server {
         };
         if matches!(
             name,
-            "start_scan" | "recover_files" | "start_image" | "discover_volumes"
+            "start_scan"
+                | "recover_files"
+                | "start_image"
+                | "discover_volumes"
+                | "create_raid"
+                | "search_raid"
         ) && let Ok(ref value) = result
         {
             self.requests.insert(

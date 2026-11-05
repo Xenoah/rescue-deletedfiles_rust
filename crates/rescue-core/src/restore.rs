@@ -44,6 +44,7 @@ struct Batch {
 }
 fn result_for(id: &str) -> RecoveryResult {
     RecoveryResult {
+        raid_reads: None,
         candidate_id: id.into(),
         status: "failed".into(),
         path: None,
@@ -131,7 +132,7 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
-    if !(1..=8).contains(&session.schema_version) {
+    if !(1..=9).contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if cancel.load(Ordering::Relaxed) {
@@ -175,7 +176,8 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     if fresh.cancelled {
         return Err(Error::Cancelled);
     }
-    if fresh.fingerprint != session.fingerprint
+    if fresh.raid != session.raid
+        || fresh.fingerprint != session.fingerprint
         || fresh.filesystem != session.filesystem
         || fresh.region != session.region
         || fresh.volumes.len() != session.volumes.len()
@@ -304,6 +306,7 @@ fn read_volume(
         if cancel.load(Ordering::Relaxed) {
             return Err(Error::Cancelled);
         }
+        image.take_raid_trace();
         let mut result = result_for(&candidate.id);
         if !prefix.is_empty() {
             candidate.id = candidate
@@ -363,6 +366,7 @@ fn read_volume(
                     Err(_) => (PathBuf::from(component(&data.name)), false),
                 };
             result.sha256 = Some(format!("{:x}", hash.finalize()));
+            result.raid_reads = image.take_raid_trace();
             *used += size;
             Ok(PreparedFile {
                 bytes,
@@ -378,6 +382,7 @@ fn read_volume(
             Err(e @ (Error::Cancelled | Error::SourceChanged)) => return Err(e),
             Err(e) if memory_limit => return Err(e),
             Err(e) => {
+                result.raid_reads = image.take_raid_trace();
                 if let Error::MissingRanges(ranges) = &e {
                     result.status = "incomplete".into();
                     result.missing_ranges = ranges.clone();
@@ -787,7 +792,7 @@ fn zip_impl(
             .map_err(|e| Error::Io(std::io::Error::other(e)))?;
         serde_json::to_writer_pretty(
             &mut zip,
-            &serde_json::json!({"schema_version":1,"session_id":session.id,"results":result.results}),
+            &serde_json::json!({"schema_version":1,"session_id":session.id,"raid":session.raid,"results":result.results}),
         )?;
         let mut output = zip
             .finish()

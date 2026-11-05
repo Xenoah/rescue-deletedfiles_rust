@@ -1,6 +1,7 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 mod acquisition_ui;
 mod discovery_ui;
+mod raid_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -45,6 +46,8 @@ enum SourceMode {
     Image,
 }
 enum Message {
+    RaidChecked(Box<rescue_core::RaidInspection>, Option<PathBuf>),
+    RaidSearched(Box<rescue_core::RaidSearchResult>),
     ImagingProgress(rescue_core::AcquisitionProgress),
     Imaged(rescue_core::AcquisitionResult),
     Progress(Progress),
@@ -58,6 +61,7 @@ enum Message {
     Error(String),
 }
 struct App {
+    raid: raid_ui::State,
     discovery_dialog: bool,
     discovery_running: bool,
     discovery_source: String,
@@ -178,6 +182,7 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            raid: raid_ui::State::default(),
             discovery_dialog: false,
             discovery_running: false,
             discovery_source: String::new(),
@@ -568,6 +573,8 @@ impl App {
             .unwrap_or_default();
         for m in messages {
             match m {
+                Message::RaidChecked(report, path) => self.raid_checked(*report, path),
+                Message::RaidSearched(report) => self.raid_searched(*report),
                 Message::ImagingProgress(p) => {
                     self.progress = Progress {
                         scanned_records: p.completed_bytes,
@@ -646,6 +653,7 @@ impl App {
                     self.stage = Stage::Finished;
                 }
                 Message::Error(e) => {
+                    self.raid.running = false;
                     self.discovery_running = false;
                     self.status = format!("エラー: {e}");
                     self.stage = if self.session.is_some() {
@@ -678,6 +686,12 @@ impl App {
                 "ディスク／ボリューム",
             );
             ui.selectable_value(&mut self.source_mode, SourceMode::Image, "保存したイメージ");
+            if ui.button("RAIDを構成").clicked() {
+                if rescue_core::is_raid_path(Path::new(&self.source)) {
+                    self.raid.load_source(Path::new(&self.source));
+                }
+                self.raid.dialog = true;
+            }
             if previous != self.source_mode {
                 self.source.clear();
             }
@@ -1276,6 +1290,13 @@ impl App {
             s.candidates.len(),
             s.candidates.iter().filter(|c| c.supported).count()
         ));
+        if let Some(raid) = &s.raid {
+            ui.collapsing("仮想RAIDの構成",|ui|{
+                ui.label(format!("{:?} / {:?} / ストライプ {}",raid.config.level,raid.config.layout,view::size_text(Some(u64::from(raid.config.stripe_bytes)))));
+                ui.label(format!("{}メンバー / 欠損 {}",raid.config.members.len(),raid.config.members.iter().filter(|m|m.path.is_none()).count()));
+                ui.small("この構成で読めた内容です。パリティの一致は元データとの一致保証ではありません。使用メンバーと範囲は復元レポートに記録します。");
+            });
+        }
         if s.cancelled || s.truncated {
             ui.colored_label(egui::Color32::YELLOW, "未探索の領域が残っています。");
         }
@@ -1588,7 +1609,9 @@ impl App {
                         Stage::Settings => self.setup_ui(ui),
                         Stage::Scanning => {
                             ui.add_space(24.0);
-                            ui.heading(if self.discovery_running {
+                            ui.heading(if self.raid.running {
+                                "RAIDの構成を検査しています"
+                            } else if self.discovery_running {
                                 "失われた領域を探しています"
                             } else {
                                 "スキャンしています"
@@ -1608,6 +1631,9 @@ impl App {
         }
         if self.map_dialog && !self.busy() {
             self.read_map_dialog(ctx);
+        }
+        if self.raid.dialog && !self.busy() {
+            self.raid_dialog_ui(ctx);
         }
         if self.discovery_dialog && !self.busy() {
             self.discovery_dialog_ui(ctx);
@@ -1697,6 +1723,7 @@ mod tests {
     }
     fn session(fs: FileSystem) -> Session {
         Session {
+            raid: None,
             schema_version: 4,
             region: None,
             volumes: Vec::new(),

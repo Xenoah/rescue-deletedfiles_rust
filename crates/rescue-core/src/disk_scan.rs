@@ -27,6 +27,7 @@ pub fn scan_source(
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
     let mut session = Session {
+        raid: None,
         schema_version: if options.fragments { 8 } else { 5 },
         filesystem: FileSystem::Disk,
         id: uuid::Uuid::new_v4().to_string(),
@@ -142,6 +143,7 @@ pub fn scan_source(
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
+    image.annotate_coverage(&mut session);
     session.bound_candidates()?;
     Ok(session)
 }
@@ -149,7 +151,7 @@ const LIVE_WARNING: &str = "Direct disk access is read-only. Mounted volumes may
 
 pub(crate) fn validate_region(session: &Session) -> Result<()> {
     if let Some(region) = &session.region {
-        if ![5, 8].contains(&session.schema_version)
+        if ![5, 8, 9].contains(&session.schema_version)
             || !session.volumes.is_empty()
             || region.filesystem != Some(session.filesystem)
         {
@@ -172,7 +174,7 @@ pub(crate) fn recover_disk(
     destination: &RecoveryDestination,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if ![5, 8].contains(&session.schema_version)
+    if ![5, 8, 9].contains(&session.schema_version)
         || session.region.is_some()
         || session.volumes.is_empty()
         || session.volumes.len() > 256
@@ -184,6 +186,7 @@ pub(crate) fn recover_disk(
     }
     let layout = inspect_source(&session.source)?;
     let mut image = Image::open(&session.source)?;
+    image.validate_raid(session)?;
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }

@@ -392,6 +392,9 @@ fn run_passes(
                     image.write_all(&bytes)?;
                     image.sync_data()?;
                 }
+                Err(Error::MissingRanges(_)) => {
+                    segment.error_code = -2;
+                }
                 Err(Error::Io(error)) => {
                     segment.error_code = error.raw_os_error().unwrap_or(-1);
                 }

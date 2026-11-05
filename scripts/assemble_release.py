@@ -23,6 +23,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     ntfs=json.loads((dist/f'ntfs-results-{platform}-{arch}.json').read_text());assert ntfs['version']==f'rescue {VERSION}' and ntfs['status']=='passed' and ntfs['checks']>=27
     for prefix,minimum in [('discovery',20),('remnant',12)]:
         proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text());assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['source_unchanged']
+    raid=json.loads((dist/f'raid-results-{platform}-{arch}.json').read_text());assert raid['version']==f'rescue {VERSION}' and raid['status']=='passed' and raid['checks']>=22 and raid['logical_arrays_byte_exact']==44 and raid['files_byte_exact']==73 and raid['source_unchanged']
+    if platform=='linux':
+        native=json.loads((dist/'raid-native-linux-x64.json').read_text());assert native['version']==f'rescue {VERSION}' and native['status']=='passed' and native['arrays_created']==5 and native['logical_arrays_byte_exact']==12 and native['files_byte_exact']==72 and native['source_unchanged']
     if platform=='linux':
         proof=json.loads((dist/'quickformat-results-linux-x64.json').read_text());assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['actual_quickformat'] and not proof['metadata_edited'] and proof['cli_files_byte_exact']==100 and proof['mcp_files_byte_exact']==100
     if platform=='windows':

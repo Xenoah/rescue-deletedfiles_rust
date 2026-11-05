@@ -19,6 +19,8 @@ from e2e_ntfs_extents import main as ntfs_extents
 from e2e_discovery import main as discovery
 from e2e_ntfs_remnants import main as remnants
 from e2e_quickformat import main as quickformat
+from e2e_raid import main as raid
+from e2e_raid_native import main as raid_native
 from e2e_ntfs_native import main as ntfs_native
 from e2e_imaging import main as imaging
 from e2e_imaging_native import main as imaging_native
@@ -73,6 +75,8 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    result['raid_verification']=raid(binary,(a.output/'raid-results.json').resolve())
+    if a.platform=='linux':result['raid_native_verification']=raid_native(binary,(a.output/'raid-native-results.json').resolve())
     result['discovery_verification']=discovery(binary,(a.output/'discovery-results.json').resolve())
     result['remnant_verification']=remnants(binary,(a.output/'remnant-results.json').resolve())
     if a.platform=='linux':result['quickformat_verification']=quickformat(binary,(a.output/'quickformat-results.json').resolve())

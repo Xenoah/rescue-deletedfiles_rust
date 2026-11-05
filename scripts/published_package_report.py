@@ -17,6 +17,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     jpeg=run['jpeg_verification'];assert jpeg['status']=='passed' and jpeg['jpeg_candidates_exact']==33 and jpeg['malformed_cases']==33 and jpeg['cli_mcp_byte_exact'] and jpeg['source_unchanged']
     documents=run['document_verification'];assert documents['status']=='passed' and documents['valid_variants']>=23 and documents['rejected_corrupt_or_unsupported']>=30 and documents['binary_sha256']==run['binary_sha256']
     ntfs=run['ntfs_extension_verification'];assert ntfs['status']=='passed' and ntfs['checks']>=27 and ntfs['binary_sha256']==run['binary_sha256']
+    raid=run['raid_verification'];assert raid['status']=='passed' and raid['checks']>=22 and raid['logical_arrays_byte_exact']==44 and raid['files_byte_exact']==73 and raid['binary_sha256']==run['binary_sha256']
+    if run['published_release']['platform']=='linux':
+        raid=run['raid_native_verification'];assert raid['status']=='passed' and raid['arrays_created']==5 and raid['logical_arrays_byte_exact']==12 and raid['files_byte_exact']==72 and raid['binary_sha256']==run['binary_sha256']
     for name,minimum in [('discovery_verification',20),('remnant_verification',12)]:
         proof=run[name];assert proof['status']=='passed' and proof['checks']>=minimum and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
     if platform=='linux':

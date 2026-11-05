@@ -51,7 +51,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse
+          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -72,7 +72,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all thirteen suites)
+      - name: Debug CLI and MCP integration (all fourteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -82,7 +82,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all thirteen suites)
+      - name: Release CLI and MCP integration (all fourteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
       - name: Record JPEG entropy and pixel verification
         run: python scripts/ci_command.py python scripts/e2e_jpeg.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output jpeg-results.json
@@ -94,6 +94,12 @@ jobs:
         run: python scripts/ci_command.py python scripts/e2e_discovery.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output discovery-results.json
       - name: Record detached NTFS and synthetic quick-format verification
         run: python scripts/ci_command.py python scripts/e2e_ntfs_remnants.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output remnant-results.json
+      - name: Record RAID missing-member, parity and reconstruction evidence
+        run: python scripts/ci_command.py python scripts/e2e_raid.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output raid-results.json
+      - name: Independent kernel mdadm RAID5 and RAID6 arrays
+        if: runner.os == 'Linux'
+        timeout-minutes: 6
+        run: python scripts/ci_command.py python scripts/e2e_raid_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output raid-native-results.json
       - name: Independent actual NTFS quick-format
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_quickformat.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output quickformat-results.json
@@ -146,6 +152,11 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('ntfs-results.json','dist/ntfs-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect volume and remnant evidence
         run: python -c "import shutil;shutil.copyfile('discovery-results.json','dist/discovery-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('remnant-results.json','dist/remnant-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect RAID evidence
+        run: python -c "import shutil;shutil.copyfile('raid-results.json','dist/raid-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect kernel mdadm evidence
+        if: runner.os == 'Linux'
+        run: python -c "import shutil;shutil.copyfile('raid-native-results.json','dist/raid-native-linux-x64.json')"
       - name: Collect independent quick-format evidence
         if: runner.os == 'Linux'
         run: python -c "import shutil;shutil.copyfile('quickformat-results.json','dist/quickformat-results-linux-x64.json')"
@@ -175,6 +186,7 @@ jobs:
             dist/discovery-*.json
             dist/remnant-*.json
             dist/quickformat-*.json
+            dist/raid-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

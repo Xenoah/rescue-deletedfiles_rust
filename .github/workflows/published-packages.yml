@@ -6,13 +6,13 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.13
+        default: v0.2.0-alpha.14
         required: true
 permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.13' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.14' }}
 jobs:
   test:
     strategy:
@@ -51,12 +51,12 @@ jobs:
           python-version: '3.12'
       - name: Match test driver and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py scripts/e2e_jpeg.py scripts/e2e_documents.py scripts/e2e_imaging.py scripts/e2e_imaging_native.py scripts/e2e_ntfs_extents.py scripts/e2e_ntfs_native.py scripts/e2e_discovery.py scripts/e2e_ntfs_remnants.py scripts/e2e_quickformat.py scripts/independent_ntfs.py scripts/make_carve_fixture.py tests/corpus tests/jpeg
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py scripts/e2e_jpeg.py scripts/e2e_documents.py scripts/e2e_imaging.py scripts/e2e_imaging_native.py scripts/e2e_ntfs_extents.py scripts/e2e_ntfs_native.py scripts/e2e_discovery.py scripts/e2e_ntfs_remnants.py scripts/e2e_quickformat.py scripts/e2e_raid.py scripts/e2e_raid_native.py scripts/independent_ntfs.py scripts/make_carve_fixture.py tests/corpus tests/jpeg
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse
+          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm
       - name: Test public CLI after packaging and signing
         if: runner.os != 'Linux'
         shell: bash

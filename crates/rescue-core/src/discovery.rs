@@ -209,40 +209,44 @@ fn probe(path: &Path, region: &SourceRegion, budget: u64) -> (Result<Vec<String>
         Err(e) => return (Err(e), 0),
     };
     image.limit_reads(budget.min(PROBE_BYTES));
-    let result = (|| {
-        match region.filesystem {
-            Some(FileSystem::Ntfs) => {
-                let ntfs = Ntfs::open(&mut image)?;
-                // Anchor the runlist to the independently read base MFT record.
-                if ntfs.mft.read(&mut image, 0, ntfs.geometry.record)?
-                    != image.read(ntfs.geometry.mft, ntfs.geometry.record)?
-                {
-                    return Err(invalid("MFT first extent disagrees with boot location"));
-                }
-                let root = ntfs
-                    .record(&mut image, 5)?
-                    .ok_or_else(|| invalid("MFT root directory absent"))?;
-                if !root.in_use
-                    || !root.directory
-                    || root.base != 0
-                    || root.parent != 5
-                    || root.parent_sequence != root.sequence
-                    || !root.unsupported.is_empty()
-                {
-                    return Err(invalid("MFT root directory ownership"));
-                }
-                let mut evidence = vec![
-                    "Validated NTFS geometry, MFT fixups and complete MFT runlist".into(),
-                    "Cross-checked MFT base extent and root record 5".into(),
-                ];
-                evidence.extend(ntfs.warnings.clone());
-                Ok(evidence)
-            }
-            Some(FileSystem::Fat32 | FileSystem::Exfat) => crate::fat::probe(&mut image),
-            _ => Err(invalid("unsupported filesystem")),
-        }
-    })();
+    let result = probe_image(&mut image, region.filesystem);
     (result, image.bytes_read())
+}
+pub(crate) fn probe_image(
+    image: &mut Image,
+    filesystem: Option<FileSystem>,
+) -> Result<Vec<String>> {
+    match filesystem {
+        Some(FileSystem::Ntfs) => {
+            let ntfs = Ntfs::open(image)?;
+            // Anchor the runlist to the independently read base MFT record.
+            if ntfs.mft.read(image, 0, ntfs.geometry.record)?
+                != image.read(ntfs.geometry.mft, ntfs.geometry.record)?
+            {
+                return Err(invalid("MFT first extent disagrees with boot location"));
+            }
+            let root = ntfs
+                .record(image, 5)?
+                .ok_or_else(|| invalid("MFT root directory absent"))?;
+            if !root.in_use
+                || !root.directory
+                || root.base != 0
+                || root.parent != 5
+                || root.parent_sequence != root.sequence
+                || !root.unsupported.is_empty()
+            {
+                return Err(invalid("MFT root directory ownership"));
+            }
+            let mut evidence = vec![
+                "Validated NTFS geometry, MFT fixups and complete MFT runlist".into(),
+                "Cross-checked MFT base extent and root record 5".into(),
+            ];
+            evidence.extend(ntfs.warnings.clone());
+            Ok(evidence)
+        }
+        Some(FileSystem::Fat32 | FileSystem::Exfat) => crate::fat::probe(image),
+        _ => Err(invalid("unsupported filesystem")),
+    }
 }
 
 pub fn discover_volumes(

@@ -353,7 +353,9 @@ fn mbr(image: &mut Image, boot: &[u8], sector: u64) -> Result<Vec<SourceRegion>>
     Ok(out)
 }
 pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
-    let mut image = Image::open(path)?;
+    inspect_image(&mut Image::open(path)?)
+}
+pub(crate) fn inspect_image(image: &mut Image) -> Result<SourceLayout> {
     if image.length < 512 {
         return Err(invalid("source shorter than a sector"));
     }
@@ -366,7 +368,7 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
         regions: Vec::new(),
         warnings: Vec::new(),
     };
-    if let Some(fs) = filesystem(&mut image, 0, layout.bytes)? {
+    if let Some(fs) = filesystem(image, 0, layout.bytes)? {
         layout.regions.push(SourceRegion {
             index: 0,
             name: "Volume".into(),
@@ -407,7 +409,7 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
             continue;
         }
         let mut warnings = Vec::new();
-        match gpt(&mut image, sector, &mut warnings) {
+        match gpt(image, sector, &mut warnings) {
             Ok(regions) => {
                 if !protective {
                     warnings.push("Protective MBR missing or damaged; using CRC-checked GPT without repairing the source".into());
@@ -426,7 +428,7 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
     }
     entries?;
     layout.scheme = "mbr".into();
-    layout.regions = mbr(&mut image, &boot, u64::from(layout.sector_size))?;
+    layout.regions = mbr(image, &boot, u64::from(layout.sector_size))?;
     if layout.regions.is_empty() {
         return Err(Error::Unsupported(
             "no supported volume or partition table; select carving for raw PNG search".into(),
