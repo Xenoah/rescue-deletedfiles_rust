@@ -86,6 +86,7 @@ struct App {
     collision: CollisionPolicy,
     original_root: String,
     carve: bool,
+    fragments: bool,
     extensions: String,
     path_prefix: String,
     depth: String,
@@ -205,6 +206,7 @@ impl App {
             collision: CollisionPolicy::KeepBoth,
             original_root: String::new(),
             carve: false,
+            fragments: false,
             extensions: String::new(),
             path_prefix: String::new(),
             depth: String::new(),
@@ -250,6 +252,7 @@ impl App {
             }
         };
         let s = SearchSettings {
+            fragments: !self.carve && self.fragments,
             recovered_volume: if self.carve || self.discovery_source != self.source {
                 None
             } else {
@@ -321,6 +324,7 @@ impl App {
             ..Default::default()
         });
         self.carve = settings.method == ScanMethod::Carve;
+        self.fragments = settings.fragments;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
         self.extensions = settings.extensions.join(", ");
@@ -780,6 +784,7 @@ impl App {
                     text_row(ui, "開始バイト", &mut self.range_start, "空欄: 0（ディスク/イメージの先頭）");
                     text_row(ui, "終了バイト", &mut self.range_end, "空欄: 末尾 / この位置は含みません");
                 } else {
+                    ui.checkbox(&mut self.fragments,"残存するMFTレコードも探索（クイックフォーマット後など）");
                     text_row(ui, "検索フォルダー", &mut self.path_prefix, "空欄: 全体 / 例: 写真/旅行");
                     text_row(ui, "検索深度", &mut self.depth, "空欄: 上限なし / 0: 直下 / 最大256");
                     ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");
@@ -1303,6 +1308,7 @@ impl App {
             ui.label(format!("{:?}", c.extent_evidence));
             ui.label(
                 match c.extent_evidence {
+                    rescue_core::ExtentEvidence::MetadataRemnant => "現行MFT外の残存レコード。選択したブートのクラスタサイズで位置を解釈しています。元の形式や削除状態は未確認です。",
                     rescue_core::ExtentEvidence::PngValidated => "PNGのCRC・圧縮データ・画素を検証済み。",
                     rescue_core::ExtentEvidence::JpegValidated => "JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。",
                     rescue_core::ExtentEvidence::PdfStructure => "PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。",

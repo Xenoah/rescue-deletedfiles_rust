@@ -83,7 +83,7 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region}),
+            json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false}}),
             &["source", "request_id"],
             false
         ),
@@ -438,6 +438,11 @@ impl Server {
                     .map(|v| u16::try_from(v).map_err(err))
                     .transpose()?;
                 let settings = SearchSettings {
+                    fragments: args
+                        .get("fragments")
+                        .map(|v| v.as_bool().ok_or("invalid fragments"))
+                        .transpose()?
+                        .unwrap_or(false),
                     recovered_volume: args
                         .get("recovered_volume")
                         .map(|v| serde_json::from_value(v.clone()).map_err(err))

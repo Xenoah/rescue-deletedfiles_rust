@@ -22,9 +22,16 @@ pub struct SearchSettings {
     /// A specific, independently validated alternative from volume discovery.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub recovered_volume: Option<crate::SourceRegion>,
+    #[serde(default)]
+    pub fragments: bool,
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.fragments && self.method != ScanMethod::Quick {
+            return Err(Error::Request(
+                "MFT remnants require a metadata scan".into(),
+            ));
+        }
         if self.recovered_volume.is_some() && self.method != ScanMethod::Quick {
             return Err(Error::Request(
                 "a recovered volume requires metadata scanning".into(),
@@ -132,12 +139,13 @@ impl SearchSettings {
 
 pub fn scan_with_settings(
     path: &Path,
-    options: ScanOptions,
+    mut options: ScanOptions,
     settings: &SearchSettings,
     cancel: &AtomicBool,
     progress: impl FnMut(Progress),
 ) -> Result<Session> {
     settings.validate()?;
+    options.fragments = settings.fragments;
     let mut session = match settings.method {
         ScanMethod::Quick => {
             if let Some(region) = &settings.recovered_volume {

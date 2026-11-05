@@ -9,6 +9,7 @@ mod fat;
 mod lznt1;
 mod mapped_source;
 mod ntfs;
+mod ntfs_remnants;
 mod partitions;
 mod read_map;
 mod restore;
@@ -80,6 +81,7 @@ pub enum ExtentEvidence {
     #[default]
     Unknown,
     Metadata,
+    MetadataRemnant,
     ResidualFatChain,
     SingleCluster,
     NoFatChain,
@@ -155,6 +157,8 @@ pub struct CandidateName {
 pub struct Candidate {
     pub id: String,
     pub record: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fragment_offset: Option<u64>,
     pub sequence: u16,
     #[serde(default)]
     pub stream_name: Option<String>,
@@ -256,7 +260,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if ![1, 2, 3, 4, 5, 6, 7].contains(&session.schema_version) {
+        if !(1..=8).contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -331,12 +335,14 @@ pub enum ProgressUnit {
 pub struct ScanOptions {
     pub max_records: u64,
     pub max_candidates: usize,
+    pub fragments: bool,
 }
 impl Default for ScanOptions {
     fn default() -> Self {
         Self {
             max_records: 2_000_000,
             max_candidates: 100_000,
+            fragments: false,
         }
     }
 }
@@ -367,13 +373,24 @@ fn scan_volume(
 ) -> Result<Session> {
     let mut image = Image::open_region(path, region)?;
     let fingerprint = image.fingerprint()?;
+    let schema_version = if options.fragments || region.is_some_and(|r| r.recovery_boot.is_some()) {
+        8
+    } else if region.is_some() {
+        5
+    } else {
+        3
+    };
+    let search = options.fragments.then(|| SearchSettings {
+        fragments: true,
+        ..Default::default()
+    });
     if &image.boot_read(512)?[3..11] != b"NTFS    " {
         let result = fat::scan(&mut image, options, cancel, &mut progress)?;
         if image.fingerprint()? != fingerprint {
             return Err(Error::SourceChanged);
         }
         let mut session = Session {
-            schema_version: if region.is_some() { 5 } else { 3 },
+            schema_version,
             filesystem: result.filesystem,
             id: Uuid::new_v4().to_string(),
             source: image.path.clone(),
@@ -385,7 +402,7 @@ fn scan_volume(
             truncated: result.truncated,
             invalid_records: result.invalid_records,
             warnings: result.warnings,
-            search: None,
+            search,
             region: region.cloned(),
             volumes: Vec::new(),
         };
@@ -393,23 +410,39 @@ fn scan_volume(
         image.annotate_coverage(&mut session);
         return Ok(session);
     }
-    let ntfs = Ntfs::open(&mut image)?;
+    let opened = Ntfs::open(&mut image);
     let mut session = Session {
-        schema_version: if region.is_some() { 5 } else { 3 },
+        schema_version,
         filesystem: FileSystem::Ntfs,
         id: Uuid::new_v4().to_string(),
         source: image.path.clone(),
         fingerprint,
         candidates: Vec::new(),
         scanned_records: 0,
-        total_records: ntfs.records,
+        total_records: opened.as_ref().map_or(0, |n| n.records),
         cancelled: false,
         truncated: false,
         invalid_records: 0,
-        warnings: ntfs.warnings.clone(),
-        search: None,
+        warnings: opened.as_ref().map_or_else(
+            |e| vec![format!("Current MFT is unavailable: {e}")],
+            |n| n.warnings.clone(),
+        ),
+        search,
         region: region.cloned(),
         volumes: Vec::new(),
+    };
+    let ntfs = match opened {
+        Ok(ntfs) => ntfs,
+        Err(_) if options.fragments => {
+            ntfs_remnants::scan(&mut image, &mut session, options, cancel, &mut progress)?;
+            if image.fingerprint()? != session.fingerprint {
+                return Err(Error::SourceChanged);
+            }
+            session.bound_candidates()?;
+            image.annotate_coverage(&mut session);
+            return Ok(session);
+        }
+        Err(error) => return Err(error),
     };
     let mut directories = BTreeMap::new();
     let mut parents = Vec::new();
@@ -498,6 +531,7 @@ fn scan_volume(
                             })
                             .collect();
                         session.candidates.push(Candidate {
+                            fragment_offset: None,
                             id: ntfs::candidate_id(index, record.sequence, stream.name.as_deref()),
                             record: index,
                             sequence: record.sequence,
@@ -599,12 +633,16 @@ fn scan_volume(
         session.truncated = true;
         session.warnings.push(format!("RESOURCE_LIMIT: {} candidates omitted to keep paths and the saved session within 128 MiB", candidate_count - retained));
     }
+    if options.fragments && !session.cancelled {
+        ntfs_remnants::scan(&mut image, &mut session, options, cancel, &mut progress)?;
+        session.bound_candidates()?;
+    }
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
     progress(Progress {
         scanned_records: session.scanned_records,
-        total_records: ntfs.records,
+        total_records: session.total_records,
         candidates: session.candidates.len(),
         unit: crate::ProgressUnit::Records,
     });
@@ -642,6 +680,9 @@ fn ntfs_recovery_data(
     image: &mut Image,
     candidate: &Candidate,
 ) -> Result<RecoveryData> {
+    if candidate.fragment_offset.is_some() {
+        return ntfs_remnants::recovery_data(image, Some(ntfs), candidate);
+    }
     let record = ntfs
         .record(image, candidate.record)?
         .ok_or(Error::SourceChanged)?;
@@ -694,6 +735,7 @@ fn ntfs_recovery_data(
 
 enum RecoverySource {
     Ntfs(Box<Ntfs>),
+    NtfsFragments,
     Fat(BTreeMap<String, fat::RecoveredEntry>),
     Carved,
 }
@@ -706,6 +748,7 @@ fn candidate_data(
 ) -> Result<RecoveryData> {
     match source {
         RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, image, candidate),
+        RecoverySource::NtfsFragments => ntfs_remnants::recovery_data(image, None, candidate),
         RecoverySource::Carved => carve::recovery_data(image, candidate, cancel),
         RecoverySource::Fat(entries) => {
             let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
@@ -774,7 +817,7 @@ pub fn recover_to(
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
     session.guard_output(&destination.path)?;
-    if ![1, 2, 3, 4, 5, 6, 7].contains(&session.schema_version) {
+    if !(1..=8).contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if session.filesystem == FileSystem::Disk {
@@ -802,7 +845,13 @@ pub fn recover_to(
         return Err(Error::SourceChanged);
     }
     let source = if session.filesystem == FileSystem::Ntfs {
-        RecoverySource::Ntfs(Box::new(Ntfs::open(&mut image)?))
+        match Ntfs::open(&mut image) {
+            Ok(ntfs) => RecoverySource::Ntfs(Box::new(ntfs)),
+            Err(_) if selected.iter().all(|c| c.fragment_offset.is_some()) => {
+                RecoverySource::NtfsFragments
+            }
+            Err(error) => return Err(error),
+        }
     } else if session.filesystem == FileSystem::Raw {
         RecoverySource::Carved
     } else {
@@ -861,6 +910,9 @@ pub fn recover_to(
             destination.verify()?;
             let fresh = match &source {
                 RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
+                RecoverySource::NtfsFragments => {
+                    ntfs_remnants::recovery_data(&mut image, None, candidate)?
+                }
                 RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
                 RecoverySource::Fat(entries) => {
                     let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;

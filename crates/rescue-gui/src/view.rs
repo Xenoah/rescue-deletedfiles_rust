@@ -222,6 +222,7 @@ mod tests {
     use super::*;
     fn c(id: &str, size: Option<u64>) -> Candidate {
         Candidate {
+            fragment_offset: None,
             id: id.into(),
             record: 0,
             sequence: 0,

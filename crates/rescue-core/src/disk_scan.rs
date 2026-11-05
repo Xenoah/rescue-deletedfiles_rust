@@ -19,7 +19,7 @@ pub fn scan_source(
     if layout.scheme == "volume" {
         let mut session = crate::scan_image(path, options, cancel, progress)?;
         if layout.device {
-            session.schema_version = 5;
+            session.schema_version = session.schema_version.max(5);
             session.warnings.push(LIVE_WARNING.into());
         }
         return Ok(session);
@@ -27,7 +27,7 @@ pub fn scan_source(
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
     let mut session = Session {
-        schema_version: 5,
+        schema_version: if options.fragments { 8 } else { 5 },
         filesystem: FileSystem::Disk,
         id: uuid::Uuid::new_v4().to_string(),
         source: image.path.clone(),
@@ -39,7 +39,10 @@ pub fn scan_source(
         truncated: false,
         invalid_records: 0,
         warnings: layout.warnings,
-        search: None,
+        search: options.fragments.then(|| crate::SearchSettings {
+            fragments: true,
+            ..Default::default()
+        }),
         region: None,
         volumes: Vec::new(),
     };
@@ -57,6 +60,7 @@ pub fn scan_source(
             continue;
         }
         let remaining = ScanOptions {
+            fragments: options.fragments,
             max_records: options.max_records.saturating_sub(session.scanned_records),
             max_candidates: options
                 .max_candidates
@@ -145,7 +149,7 @@ const LIVE_WARNING: &str = "Direct disk access is read-only. Mounted volumes may
 
 pub(crate) fn validate_region(session: &Session) -> Result<()> {
     if let Some(region) = &session.region {
-        if session.schema_version != 5
+        if ![5, 8].contains(&session.schema_version)
             || !session.volumes.is_empty()
             || region.filesystem != Some(session.filesystem)
         {
@@ -168,7 +172,7 @@ pub(crate) fn recover_disk(
     destination: &RecoveryDestination,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if session.schema_version != 5
+    if ![5, 8].contains(&session.schema_version)
         || session.region.is_some()
         || session.volumes.is_empty()
         || session.volumes.len() > 256

@@ -47,6 +47,11 @@ pub(crate) enum Data {
         unit: u64,
     },
 }
+impl Record {
+    pub(crate) fn has_attribute_list(&self) -> bool {
+        self.attributes.iter().any(|a| a.kind == 0x20)
+    }
+}
 impl Data {
     pub fn size(&self) -> u64 {
         match self {

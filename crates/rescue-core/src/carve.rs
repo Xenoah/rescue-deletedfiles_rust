@@ -225,6 +225,7 @@ pub(crate) fn scan_range(
             let at = offset + index as u64;
             let parsed = format.validate(&mut image, at, cancel, &mut budget, boundary);
             let mut candidate = Candidate {
+                fragment_offset: None,
                 id: format.id(at),
                 record: at,
                 sequence: 0,
@@ -434,6 +435,7 @@ mod tests {
         let s = scan_carving(
             &path,
             ScanOptions {
+                fragments: false,
                 max_records: 0,
                 max_candidates: 1,
             },

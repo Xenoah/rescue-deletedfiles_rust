@@ -105,6 +105,9 @@ enum Command {
         /// Select one validated volume returned by discover (including overlaps).
         #[arg(long)]
         volume_id: Option<String>,
+        /// Also search self-contained NTFS records outside the current MFT.
+        #[arg(long)]
+        fragments: bool,
         #[arg(long)]
         json: bool,
     },
@@ -386,6 +389,7 @@ fn run() -> Result<i32, Error> {
             range_start,
             range_end,
             volume_id,
+            fragments,
         } => {
             rescue_core::guard_output_path(&source, &work_dir)?;
             let recovered_volume = if let Some(id) = volume_id {
@@ -423,6 +427,7 @@ fn run() -> Result<i32, Error> {
                 range_start,
                 range_end,
                 recovered_volume,
+                fragments,
             };
             let session = scan_with_settings(
                 &source,

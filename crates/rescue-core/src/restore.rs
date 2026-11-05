@@ -131,7 +131,7 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
-    if ![1, 2, 3, 4, 5, 6, 7].contains(&session.schema_version) {
+    if !(1..=8).contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if cancel.load(Ordering::Relaxed) {
@@ -148,7 +148,10 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
         scan_volume(
             &session.source,
             Some(region),
-            ScanOptions::default(),
+            ScanOptions {
+                fragments: session.search.as_ref().is_some_and(|s| s.fragments),
+                ..Default::default()
+            },
             cancel,
             |_| {},
         )?
@@ -275,7 +278,13 @@ fn read_volume(
         return Err(Error::SourceChanged);
     }
     let source = match session.filesystem {
-        FileSystem::Ntfs => RecoverySource::Ntfs(Box::new(Ntfs::open(&mut image)?)),
+        FileSystem::Ntfs => match Ntfs::open(&mut image) {
+            Ok(ntfs) => RecoverySource::Ntfs(Box::new(ntfs)),
+            Err(_) if candidates.iter().all(|c| c.fragment_offset.is_some()) => {
+                RecoverySource::NtfsFragments
+            }
+            Err(error) => return Err(error),
+        },
         FileSystem::Raw => RecoverySource::Carved,
         _ => {
             let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;

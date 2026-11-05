@@ -557,6 +557,7 @@ fn candidate(
         format!("{}/{}", prefix.path, name.text)
     };
     Candidate {
+        fragment_offset: None,
         id: format!("{label}-{offset}"),
         record: offset,
         sequence: 0,
@@ -1186,10 +1187,12 @@ mod tests {
         temporary.flush().unwrap();
         for options in [
             ScanOptions {
+                fragments: false,
                 max_records: 1,
                 max_candidates: 100,
             },
             ScanOptions {
+                fragments: false,
                 max_records: 100,
                 max_candidates: 1,
             },
