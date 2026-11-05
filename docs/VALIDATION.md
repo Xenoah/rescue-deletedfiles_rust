@@ -339,3 +339,14 @@ TRIM通知有効/無効の双方を実行し、消失記述から0バイトの�
 試験専用の新規VHDだけを使い、VMのNTFS通知設定は各試験後に元へ戻した。
 ローカル最終追加試験も27条件成功、CLI SHA-256は704a56eaab50f813c5ebea49ffcccb208ca758c004e6b4c759d2309963b4c272。
 公開・署名後の実物検証は別に記録する。
+
+## 2026-11-05 — alpha.12 公開実物
+
+タグCI [41997014049](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41997014049) と
+公開後QA [41999924773](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41999924773) が全4環境で成功。
+初回QAの1環境はHTTP 504で取得が中断したため、転送だけに限定した再試行を追加し、同一の公開パッケージを再検証した。
+8インストール/ポータブル版を含む85主要資産と6追加レポート、2マニフェスト（計93資産）を取得し照合。
+署名・梱包後の実行ファイルでNTFS27条件、実削除、既存全形式、イメージ取得を実行した。
+公開Linux GUIでも21ストリームと別名検索の1データをZIP復元して正解と照合。
+公開単一HTMLは13画面・8方式・390px幅を検証し、JSエラー・外部通信はなかった。
+詳細は public-release-v0.2.0-alpha.12.json、public-gui-v0.2.0-alpha.12.json、public-browser-v0.2.0-alpha.12.json。

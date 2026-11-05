@@ -103,7 +103,7 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
 - Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
 
-alpha.12は[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41995682532)を通過。Windows実削除では21本のresidentストリームがCLI/MCPで一致しました。non-residentの長さ・runlistが消える条件は成功扱いしないことを検証。公開実物の追加検証は配布後に記録します。前版alpha.11は公開83資産まで検証済みです。[alpha.11の公開実物](docs/public-release-v0.2.0-alpha.11.json)。
+alpha.12は[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41995682532)を通過。Windows実削除では21本のresidentストリームがCLI/MCPで一致しました。non-residentの長さ・runlistが消える条件は成功扱いしないことを検証。公開後も[4環境で実行検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41999924773)し、8パッケージを含む計93資産を照合しました。[alpha.12の公開実物](docs/public-release-v0.2.0-alpha.12.json)。
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
