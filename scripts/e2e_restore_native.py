@@ -112,8 +112,22 @@ def sync_volume(mount):
         call('sync', '-f', mount)
     elif platform.system() == 'Darwin':
         call('/bin/sync')
-    # Windows CloseHandle after fsync flushes each test file; directory deletion
-    # is visible through shared native volume handles without dismounting.
+    elif platform.system() == 'Windows':
+        # FlushFileBuffers on an owned mounted volume persists NTFS metadata too.
+        # Flushing individual data streams does not force an external ATTRIBUTE_LIST.
+        import ctypes
+        from ctypes import wintypes
+        check(mount.is_absolute() and str(mount)==mount.anchor and len(mount.drive)==2,'expected owned mounted volume root')
+        k=ctypes.WinDLL('kernel32',use_last_error=True)
+        k.CreateFileW.argtypes=[wintypes.LPCWSTR,wintypes.DWORD,wintypes.DWORD,wintypes.LPVOID,wintypes.DWORD,wintypes.DWORD,wintypes.HANDLE]
+        k.CreateFileW.restype=wintypes.HANDLE
+        k.FlushFileBuffers.argtypes=[wintypes.HANDLE];k.FlushFileBuffers.restype=wintypes.BOOL
+        k.CloseHandle.argtypes=[wintypes.HANDLE];k.CloseHandle.restype=wintypes.BOOL
+        handle=k.CreateFileW('\\\\.\\'+mount.drive,0x40000000,3,None,3,0,None)
+        if handle==ctypes.c_void_p(-1).value:raise ctypes.WinError(ctypes.get_last_error())
+        try:
+            if not k.FlushFileBuffers(handle):raise ctypes.WinError(ctypes.get_last_error())
+        finally:k.CloseHandle(handle)
 
 
 def deleted_file(mount, name, data):

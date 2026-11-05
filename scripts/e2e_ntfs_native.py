@@ -29,13 +29,15 @@ def ntfs_trim_policy(value):
         proof['restored']=current()==original
         check(proof['restored'],'NTFS TRIM profile was not restored')
 
-def populate(mount):
+def populate(mount,before_delete=None):
     path=mount/'native-streams-日本語.pdf';truth={None:b'%PDF-1.4\n'+b'Native NTFS bytes\n'*512}
     for n in range(20):truth[f'stream-{n:02d}-Windows-created-extra-attribute']=bytes([n])*8192+f'ADS {n}'.encode()
     for name,payload in truth.items():
         target=path if name is None else Path(str(path)+':'+name)
         with target.open('xb') as f:f.write(payload);f.flush();os.fsync(f.fileno())
-    alias=mount/'native-alias.pdf';os.link(path,alias);path.unlink();alias.unlink();sync_volume(mount)
+    alias=mount/'native-alias.pdf';os.link(path,alias);sync_volume(mount)
+    if before_delete:before_delete(path)
+    path.unlink();alias.unlink();sync_volume(mount)
     return path,alias,truth
 
 def attribute_diagnostics(binary,source,root,candidates):
@@ -78,14 +80,19 @@ def main(binary,output):
         root=Path(tmp).resolve()
         with ntfs_trim_policy(1) as trim_policy, mounted_fixture(root) as (source,mount,filesystem):
             check(filesystem=='ntfs','NTFS fixture required')
-            path,alias,truth=populate(mount)
+            before=[]
+            def inspect_before(path):
+                snapshot=root/'before-delete';snapshot.mkdir()
+                before.extend(attribute_diagnostics(binary,source,snapshot,[{'record':path.stat().st_ino & ((1<<48)-1)}]))
+                check(before and all(d['nonzero_bytes']>0 for d in before),'OS-created attribute list was never durable: '+str(before))
+            path,alias,truth=populate(mount,inspect_before)
             # Save session and output on the runner volume, never onto the source fixture.
             scanned=run(binary,'scan','--source',source,'--work-dir',root/'work','--json')
             candidates=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
             found=[c for c in candidates if c['name'].split(':')[0] in [path.name,alias.name]]
             valid=len(found)==21 and {c['stream_name'] for c in found}==set(truth) and all(c['supported'] for c in found)
             diagnosis=None if valid else attribute_diagnostics(binary,source,root,found)
-            check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; diagnostic: '+str(diagnosis))
+            check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; before: '+str(before)+'; diagnostic: '+str(diagnosis))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
             check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
@@ -97,7 +104,7 @@ def main(binary,output):
                 job=client.wait(client.tool('recover_files',{'session_id':sid,'ids':list(names),'destination':str(root/'mcp-out'),'request_id':'recover'})['job_id'])
                 check(job['state']=='completed' and len(job['result']['results'])==21 and {r['candidate_id'] for r in job['result']['results']}==set(names) and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in job['result']['results']),'MCP native ADS content mismatch')
             finally:client.close()
-            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'trim_disabled_profile':trim_policy,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, with NTFS TRIM notifications temporarily disabled on a disposable hosted VM; original policy restored; new owned VHD only, no metadata edited'}
+            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'trim_disabled_profile':trim_policy,'attribute_list_bytes_before_deletion':before[0]['list_bytes'],'attribute_list_nonzero_before_deletion':True,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, with NTFS TRIM notifications temporarily disabled on a disposable hosted VM; original policy restored; new owned VHD only, no metadata edited'}
         # A second actual deletion with notifications enabled records whether
         # this virtual backend erases the external attribute list. Never invent it.
         negative=root/'trim-enabled';negative.mkdir()
