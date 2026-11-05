@@ -28,7 +28,7 @@ Rust40項目、11統合群、NTFSの27条件を通過しました。
 
 既存GUIの元の場所36件・ZIP36件・JPEG33件・文書/動画7件に加え、512 MiBの取得・再開照合・128範囲の読取マップ・取得後の36件復元を再検証しました。
 すべて正解データと照合し、ZIP CRCも確認しています。
-4環境のネイティブCIと、Windowsの実削除NTFS/ADS試験を実行してから公開します。Windowsのresidentストリームの復元と、non-residentストリームの削除時に長さ・runlistが消える条件を別々に検証します。後者を空ファイルの復元成功にしない保護を追加しました。
+[Windows・Linux・macOS Intel/ARMの4ネイティブVM](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41995682532)で通過しました。Windowsの実削除では21本のresidentストリームがCLI/MCPで全バイト一致。non-residentはTRIM通知の有効/無効を別々に試験し、削除時に長さ・runlistが消えるケースを空ファイルの復元成功にしないことを確認しました。
 
 `ntfs-results-*.json`、`ntfs-native-windows-x64.json`、`gui-ntfs-results.json`を検証結果として添付します。
 
