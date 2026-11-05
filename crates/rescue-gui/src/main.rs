@@ -101,6 +101,7 @@ struct App {
     collision: CollisionPolicy,
     original_root: String,
     carve: bool,
+    carve_all: bool,
     fragments: bool,
     extensions: String,
     path_prefix: String,
@@ -233,6 +234,7 @@ impl App {
             collision: CollisionPolicy::KeepBoth,
             original_root: String::new(),
             carve: false,
+            carve_all: false,
             fragments: false,
             extensions: String::new(),
             path_prefix: String::new(),
@@ -280,6 +282,11 @@ impl App {
             }
         };
         let s = SearchSettings {
+            carve_scope: if self.carve_all {
+                rescue_core::CarveScope::All
+            } else {
+                rescue_core::CarveScope::Unallocated
+            },
             fragments: !self.carve && self.fragments,
             recovered_volume: if self.carve || self.discovery_source != self.source {
                 None
@@ -345,6 +352,7 @@ impl App {
             SourceMode::Image
         };
         let settings = s.search.clone().unwrap_or_else(|| SearchSettings {
+            carve_scope: rescue_core::CarveScope::All,
             method: if s.filesystem == FileSystem::Raw {
                 ScanMethod::Carve
             } else {
@@ -353,6 +361,7 @@ impl App {
             ..Default::default()
         });
         self.carve = settings.method == ScanMethod::Carve;
+        self.carve_all = settings.carve_scope == rescue_core::CarveScope::All;
         self.fragments = settings.fragments;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
@@ -393,6 +402,7 @@ impl App {
     fn invalidate_changed_source(&mut self) {
         let changed = self.session.as_ref().is_some_and(|s| {
             let prev = s.search.clone().unwrap_or_else(|| SearchSettings {
+                carve_scope: rescue_core::CarveScope::All,
                 method: if s.filesystem == FileSystem::Raw {
                     ScanMethod::Carve
                 } else {
@@ -862,6 +872,12 @@ impl App {
                 });
                 text_row(ui, "探す拡張子", &mut self.extensions, "空欄: すべて / 例: jpg, pdf, docx, zip");
                 if self.carve {
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label("割当範囲");
+                        ui.selectable_value(&mut self.carve_all,false,"未割当領域（推奨）");
+                        ui.selectable_value(&mut self.carve_all,true,"全領域");
+                    });
+                    ui.small("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。");
                     ui.label("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。");
                     text_row(ui, "開始バイト", &mut self.range_start, "空欄: 0（ディスク/イメージの先頭）");
                     text_row(ui, "終了バイト", &mut self.range_end, "空欄: 末尾 / この位置は含みません");
@@ -950,6 +966,13 @@ impl App {
         }
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
+        if self.session.as_ref().is_some_and(|s| {
+            s.warnings
+                .iter()
+                .any(|w| w.starts_with("ALLOCATION_FALLBACK:"))
+        }) {
+            ui.colored_label(egui::Color32::YELLOW, "一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。");
+        }
         let busy = self.busy();
         ui.add_enabled_ui(!busy, |ui| {
             ui.horizontal_wrapped(|ui| {

@@ -114,6 +114,62 @@ struct Volume {
     visits: u64,
 }
 
+/// Allocation-only view for signature search. It does not infer deletion from
+/// a free cluster and does not guess around invalid/mismatched FAT copies.
+pub(crate) struct AllocationReader(Volume);
+impl AllocationReader {
+    pub(crate) fn open(image: &mut Image, cancel: &AtomicBool) -> Result<Self> {
+        let geometry = Geometry::open(image)?;
+        let mut volume = Volume {
+            geometry,
+            fat_cache: BTreeMap::new(),
+            bitmap: None,
+            upcase: Vec::new(),
+            system_clusters: Vec::new(),
+            visits: 0,
+        };
+        if volume.geometry.filesystem == FileSystem::Exfat {
+            volume.prepare_exfat(image, 1_048_576, cancel)?;
+        } else if volume.next(image, volume.geometry.root)? == 0 {
+            return Err(invalid("FAT32 root directory is marked free"));
+        }
+        Ok(Self(volume))
+    }
+    pub(crate) fn status(
+        &mut self,
+        image: &mut Image,
+        offset: u64,
+        length: u64,
+        cancel: &AtomicBool,
+    ) -> Result<AllocationStatus> {
+        let volume = &mut self.0;
+        let end = offset
+            .checked_add(length)
+            .ok_or_else(|| invalid("allocation extent overflow"))?;
+        let heap_end =
+            volume.geometry.heap + u64::from(volume.geometry.clusters) * volume.geometry.cluster;
+        if offset < volume.geometry.heap || end > heap_end {
+            return Ok(AllocationStatus::Conflict);
+        }
+        let first = (offset - volume.geometry.heap) / volume.geometry.cluster + 2;
+        let last = (end - volume.geometry.heap).div_ceil(volume.geometry.cluster) + 2;
+        for cluster in first..last {
+            if cluster.is_multiple_of(4096) && cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
+            let allocated = if volume.geometry.filesystem == FileSystem::Exfat {
+                volume.allocated(image, cluster as u32)?
+            } else {
+                volume.next(image, cluster as u32)? != 0
+            };
+            if allocated {
+                return Ok(AllocationStatus::Conflict);
+            }
+        }
+        Ok(AllocationStatus::Unallocated)
+    }
+}
+
 /// Merged cluster intervals keep large exFAT NoFatChain live files cheap to index.
 #[derive(Default, serde::Serialize, serde::Deserialize)]
 struct Owners(BTreeMap<u32, u32>);

@@ -9,7 +9,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 有料製品との性能比較は未測定です。
 
 **alpha.16開発ブランチ:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-Linuxの21統合群を通過し、Windows・macOSのネイティブ検証を進めています。
+Linuxの22統合群を通過し、Windows・macOSのネイティブ検証を進めています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -20,6 +20,12 @@ PNG/JPEGは入力8 MiB・1,677万画素、テキストは先頭64 KiB、1回の�
 
 Windowsでは、通常権限の画面から選択ディスクの読取だけを許可する機能を追加中です。
 [権限分離の設計と未完了の検証](docs/READ_ACCESS.md)。以下のダウンロード案内はalpha.15のものです。
+
+Carvingの既定範囲を未割当領域に変更しました。NTFS/FAT32/exFATの割当情報を照合し、
+割当情報を読めない範囲の全領域検索は一覧上に理由を表示します。
+GUIから2候補を復元して内容一致を確認しました。[範囲判定と実画面](docs/ALLOCATION_SCOPE.md)
+
+![未割当／全領域を選択する詳細設定](docs/images/allocation-settings.png)
 
 ![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
 

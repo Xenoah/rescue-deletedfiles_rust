@@ -1,0 +1,47 @@
+{
+  "status": "passed",
+  "version": "0.2.0-alpha.16",
+  "gui_binary_sha256": "7f8dd6b716949e5c5462339fe01ab3e4eef33d793a685b6c71078c3d562db6c4",
+  "cli_binary_sha256": "e3a4c33884366fe88e5e8f35de2c90ff54e2acfe9973f3622e69642ae35173c1",
+  "source_unchanged": true,
+  "sources": {
+    "ntfs": {
+      "path": "/tmp/rescue-ui-scope/ntfs.raw",
+      "sha256": "d02be11e63b3c2d5efbded667a11dbd50f9f0c05b07c170e02f435b29e143ad2"
+    },
+    "unknown": {
+      "path": "/tmp/rescue-ui-scope/unknown.raw",
+      "sha256": "d005bd63f297adab844037f02e7bbee993394a3b5acea842ad464710789fb875"
+    }
+  },
+  "files_byte_exact": 2,
+  "bytes_exact": 338,
+  "gui_scan_and_restore": true,
+  "fallback_visible_at_widths": [
+    1260,
+    720
+  ],
+  "screenshots": [
+    {
+      "file": "images/allocation-settings.png",
+      "sha256": "ca66f2a058399277a8299c5a69172551cb74f730036d250acdfa2425be3115fb"
+    },
+    {
+      "file": "images/allocation-evidence.png",
+      "sha256": "b4837f859ffc257b3ea6f38238a6bca952d93f2272e5ef0830eed99c82bd13b2"
+    },
+    {
+      "file": "images/allocation-restored.png",
+      "sha256": "2e56cfce85f99645313b9c391b2aab24fbd3a3704e0116d559a55e732d6bbcb2"
+    },
+    {
+      "file": "images/allocation-fallback.png",
+      "sha256": "faa2fb62379b72d282fcd34e2dd9f8952b955edb4fd5480c417fb38fd61a2c7f"
+    },
+    {
+      "file": "images/allocation-fallback-narrow.png",
+      "sha256": "842832b548fd6a50fbca17f9d5bbe80af59dbf9eb5a124b6ca064153cc99fd12"
+    }
+  ],
+  "scope": "Linux Xvfb, actual GUI clicks. Synthetic NTFS allocation map contains two free PNGs and two excluded allocated/cross-allocation PNGs; GUI scan selects and restores both free files. Separate raw image shows explicit unknown-map fallback. No native Windows UI claim."
+}

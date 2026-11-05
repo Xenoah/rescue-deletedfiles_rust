@@ -10,9 +10,25 @@ pub enum ScanMethod {
     Carve,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CarveScope {
+    #[default]
+    Unallocated,
+    All,
+}
+impl CarveScope {
+    // Sessions written before this field existed scanned all source bytes.
+    pub(crate) fn legacy_all() -> Self {
+        Self::All
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SearchSettings {
     pub method: ScanMethod,
+    #[serde(default = "CarveScope::legacy_all")]
+    pub carve_scope: CarveScope,
     pub extensions: Vec<String>,
     pub path_prefix: String,
     /// Maximum folder levels below the selected path. None has no extra limit.
@@ -154,15 +170,7 @@ pub fn scan_with_settings(
                 crate::scan_source(path, options, cancel, progress)?
             }
         }
-        ScanMethod::Carve => crate::carve::scan_range(
-            path,
-            options,
-            settings.range_start,
-            settings.range_end,
-            &settings.extensions,
-            cancel,
-            progress,
-        )?,
+        ScanMethod::Carve => crate::carve::scan_range(path, options, settings, cancel, progress)?,
     };
     let discovered = session.candidates.len();
     let disk = session.filesystem == crate::FileSystem::Disk;

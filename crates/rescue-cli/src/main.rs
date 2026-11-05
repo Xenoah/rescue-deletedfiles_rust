@@ -155,6 +155,9 @@ enum Command {
         work_dir: PathBuf,
         #[arg(long, default_value = "quick", value_parser = ["quick", "carve"])]
         mode: String,
+        /// Search unallocated clusters by default; unreadable maps fall back explicitly.
+        #[arg(long, default_value = "unallocated", value_parser = ["unallocated", "all"])]
+        carve_scope: String,
         #[arg(long = "extension", value_delimiter = ',')]
         extensions: Vec<String>,
         #[arg(long, default_value = "")]
@@ -579,6 +582,7 @@ fn run() -> Result<i32, Error> {
             work_dir,
             json: compact,
             mode,
+            carve_scope,
             extensions,
             path_prefix,
             max_depth,
@@ -612,6 +616,11 @@ fn run() -> Result<i32, Error> {
                 None
             };
             let settings = SearchSettings {
+                carve_scope: if carve_scope == "all" {
+                    rescue_core::CarveScope::All
+                } else {
+                    rescue_core::CarveScope::Unallocated
+                },
                 method: if mode == "carve" {
                     ScanMethod::Carve
                 } else {

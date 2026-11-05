@@ -382,6 +382,7 @@ fn render(mut session: Session) -> Result<Preview> {
                 return Err(Error::SourceChanged);
             }
         }
+        carve::validate_scope(&mut image, &session, &old, &cancel)?;
         let bytes = image.read(old.record, size as usize)?;
         if format!("{:x}", Sha256::digest(&bytes)) != old.record_sha256
             || image.fingerprint()? != session.fingerprint

@@ -1,7 +1,9 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
 mod container;
 mod indexed;
+mod scope;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
+pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
 mod movie;
 mod pdf;
@@ -21,7 +23,7 @@ use uuid::Uuid;
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
-const PROVENANCE: &str = "Contiguous carving: original name, path, deletion and allocation status are unknown. Live files and embedded images may also be found.";
+const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
 fn charge(budget: &mut u64, amount: usize) -> Result<()> {
     *budget = budget
@@ -143,18 +145,24 @@ pub fn scan_carving(
     cancel: &AtomicBool,
     progress: impl FnMut(Progress),
 ) -> Result<Session> {
-    scan_range(path, options, 0, None, &[], cancel, progress)
+    let settings = crate::SearchSettings {
+        method: crate::ScanMethod::Carve,
+        carve_scope: crate::CarveScope::All,
+        ..Default::default()
+    };
+    scan_range(path, options, &settings, cancel, progress)
 }
 
 pub(crate) fn scan_range(
     path: &Path,
     options: ScanOptions,
-    start: u64,
-    end: Option<u64>,
-    extensions: &[String],
+    settings: &crate::SearchSettings,
     cancel: &AtomicBool,
     mut progress: impl FnMut(Progress),
 ) -> Result<Session> {
+    let start = settings.range_start;
+    let end = settings.range_end;
+    let extensions = &settings.extensions;
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
     let boundary = end.unwrap_or(image.length);
@@ -166,10 +174,11 @@ pub(crate) fn scan_range(
         schema_version: 6, filesystem: FileSystem::Raw, id: Uuid::new_v4().to_string(),
         source: image.path.clone(), fingerprint, candidates: Vec::new(), scanned_records: 0,
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
-        search: None,
+        search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
         warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
+    let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let png_allowed = Format::Png.allowed(extensions);
     let jpeg_allowed = Format::Jpeg.allowed(extensions);
     let pdf_allowed = Format::Pdf.allowed(extensions);
@@ -211,6 +220,19 @@ pub(crate) fn scan_range(
             } else {
                 continue;
             };
+            let at = offset + index as u64;
+            let allocation = match scope.status(at, 1, cancel) {
+                Ok(status) => status,
+                Err(Error::Cancelled) => {
+                    session.cancelled = true;
+                    session.scanned_records = at - start;
+                    break 'scan;
+                }
+                Err(error) => return Err(error),
+            };
+            if allocation == AllocationStatus::Conflict {
+                continue;
+            }
             if format == Format::Zip && zip_records.remove(&(offset + index as u64)) {
                 continue;
             }
@@ -248,6 +270,18 @@ pub(crate) fn scan_range(
             };
             match parsed {
                 Ok((validated_format, bytes, records)) => {
+                    candidate.allocation_status = match scope.status(at, bytes.len() as u64, cancel)
+                    {
+                        Ok(status) => status,
+                        Err(Error::Cancelled) => {
+                            session.cancelled = true;
+                            break 'scan;
+                        }
+                        Err(error) => return Err(error),
+                    };
+                    if candidate.allocation_status == AllocationStatus::Conflict {
+                        continue;
+                    }
                     candidate.id = validated_format.id(at);
                     candidate.name = validated_format.name(at);
                     candidate.original_path = candidate.name.clone();
@@ -296,6 +330,7 @@ pub(crate) fn scan_range(
         }
         offset += count;
         session.scanned_records = offset - start;
+        scope.append_warnings(&mut session);
         progress(Progress {
             scanned_records: offset - start,
             total_records: boundary - start,
@@ -308,6 +343,7 @@ pub(crate) fn scan_range(
             .warnings
             .push("Scan stopped at a resource limit; remaining bytes were not searched.".into());
     }
+    scope.append_warnings(&mut session);
     if missing {
         session.truncated = true;
         session.warnings.push("MISSING_RANGES: acquired image has unread/failed bytes; signatures there were not searched. Parsers reject payloads crossing a missing range.".into());

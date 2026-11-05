@@ -8,6 +8,8 @@ use std::{collections::BTreeSet, path::PathBuf};
 #[derive(Serialize, Deserialize)]
 struct Checkpoint {
     version: u32,
+    #[serde(default = "crate::CarveScope::legacy_all")]
+    scope: crate::CarveScope,
     identity: AcquisitionIdentity,
     options: ScanOptions,
     start: u64,
@@ -37,7 +39,8 @@ pub(crate) fn scan(
     };
     image.annotate_coverage(&mut header);
     let checkpoint = Checkpoint {
-        version: 1,
+        version: 2,
+        scope: settings.carve_scope,
         identity: image.acquisition_identity()?,
         options,
         start: settings.range_start,
@@ -65,7 +68,9 @@ pub(crate) fn resume(
         .ok_or_else(|| Error::Request("missing carving settings".into()))?;
     settings.validate()?;
     let mut image = Image::open(&header.source)?;
-    if saved.version != 1
+    if ![1, 2].contains(&saved.version)
+        || saved.scope != settings.carve_scope
+        || (saved.version == 1 && saved.scope != crate::CarveScope::All)
         || saved.start > saved.next
         || saved.next > saved.end
         || saved.end > image.length
@@ -94,6 +99,7 @@ pub(crate) fn resume(
         return Err(Error::SourceChanged);
     }
     image.validate_raid(&header)?;
+    let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     header.cancelled = false;
     let mut committed = writer.index().status()?.candidates;
     let mut batch = Vec::new();
@@ -120,6 +126,18 @@ pub(crate) fn resume(
             let Some(format) = detect(rest, &settings.extensions) else {
                 continue;
             };
+            let allocation = match scope.status(at, 1, cancel) {
+                Ok(status) => status,
+                Err(Error::Cancelled) => {
+                    header.cancelled = true;
+                    saved.next = at;
+                    break 'scan;
+                }
+                Err(error) => return Err(error),
+            };
+            if allocation == AllocationStatus::Conflict {
+                continue;
+            }
             if format == Format::Zip && saved.zip_records.remove(&at) {
                 continue;
             }
@@ -158,6 +176,18 @@ pub(crate) fn resume(
                 saved.end,
             ) {
                 Ok((found, bytes, records)) => {
+                    candidate.allocation_status = match scope.status(at, bytes.len() as u64, cancel)
+                    {
+                        Ok(status) => status,
+                        Err(Error::Cancelled) => {
+                            header.cancelled = true;
+                            break 'scan;
+                        }
+                        Err(error) => return Err(error),
+                    };
+                    if candidate.allocation_status == AllocationStatus::Conflict {
+                        continue;
+                    }
                     candidate.id = found.id(at);
                     candidate.name = found.name(at);
                     candidate.original_path = candidate.name.clone();
@@ -207,6 +237,7 @@ pub(crate) fn resume(
             }
             saved.next = at + 1;
             if batch.len() >= 128 {
+                scope.append_warnings(&mut header);
                 commit(&mut writer, &image, &mut header, &batch, "running", &saved)?;
                 committed += batch.len() as u64;
                 batch.clear();
@@ -217,6 +248,7 @@ pub(crate) fn resume(
             }
         }
         saved.next = start + count;
+        scope.append_warnings(&mut header);
         commit(&mut writer, &image, &mut header, &batch, "running", &saved)?;
         committed += batch.len() as u64;
         batch.clear();
@@ -228,6 +260,7 @@ pub(crate) fn resume(
             .warnings
             .push("Scan stopped at a resource limit; remaining bytes were not searched.".into());
     }
+    scope.append_warnings(&mut header);
     if saved.missing {
         header.truncated = true;
         header.warnings.push("MISSING_RANGES: failed/unread signatures were not searched; payloads crossing gaps are unavailable.".into());

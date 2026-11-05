@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "version": "rescue 0.2.0-alpha.16",
+  "binary_sha256": "e3a4c33884366fe88e5e8f35de2c90ff54e2acfe9973f3622e69642ae35173c1",
+  "checks": 19,
+  "cases": [
+    "ntfs_whole_payload_allocation_and_cross_cluster",
+    "ntfs_json_index_mcp_scope_parity",
+    "ntfs_legacy_all_scope_recovery",
+    "fat32_whole_payload_allocation_and_cross_cluster",
+    "fat32_json_index_mcp_scope_parity",
+    "fat32_legacy_all_scope_recovery",
+    "allocation_change_outside_fingerprint_rejected_before_restore_and_preview",
+    "exfat_whole_payload_allocation_and_cross_cluster",
+    "exfat_json_index_mcp_scope_parity",
+    "exfat_legacy_all_scope_recovery",
+    "mbr_mixed_volume_allocation_offsets",
+    "gpt_mixed_volume_allocation_offsets",
+    "ntfs_explicit_unknown_allocation_fallback",
+    "fat32_explicit_unknown_allocation_fallback",
+    "exfat_explicit_unknown_allocation_fallback",
+    "raw_explicit_unknown_allocation_fallback",
+    "process_loss_resume_preserves_scope_and_bytes",
+    "edited_checkpoint_scope_rejected",
+    "legacy_v1_checkpoint_keeps_all_scope"
+  ],
+  "files_byte_exact": 24,
+  "source_unchanged": true,
+  "scope": "Independent synthetic NTFS $Bitmap, FAT32 mirrored FAT, exFAT bitmap and MBR/GPT. Allocation evidence is current ownership, never proof of deletion or original bytes. Read buffers still span allocated regions."
+}

@@ -61,7 +61,7 @@ pub use restore::{
     CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,
     restore_files_with_roots, restore_zip, restore_zip_with_roots,
 };
-pub use search::{ScanMethod, SearchSettings, scan_with_settings};
+pub use search::{CarveScope, ScanMethod, SearchSettings, scan_with_settings};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub use source::Fingerprint;
