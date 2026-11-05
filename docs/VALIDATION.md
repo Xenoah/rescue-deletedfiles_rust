@@ -396,3 +396,14 @@ Linuxカーネルmdadmの5配列、欠損条件を含む12論理像と72ファ�
 
 スクリーンショット・技術説明・全証跡を統合した[最終組立CI 42015825600](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42015825600)も全4 VMとrelease組立で成功（16分21秒）。
 タグ公開時にも同一コミットで全検証を再実行し、配布物のチェックサムを作成する。
+
+## 2026-11-05 — alpha.14 公開実物
+
+タグCI [42018369639](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42018369639) と
+公開後QA [42019897888](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42019897888) が全4環境で成功。
+8インストール/ポータブル版を含む115主要資産と6追加レポート、2マニフェスト（計123資産）を取得し照合。
+署名・梱包後の実行ファイルでRAID22条件・44論理像・73ファイルを各環境で照合し、既存全形式・実削除試験も通過。
+Linuxではmdadmで実際に作った5配列・12論理像・72ファイルを照合した。
+公開Linux GUIではデータ2スロット欠損RAID6から36ファイルを復元し、ZIP・CRC・SHA-256・使用メンバー/パリティ記録・元媒体不変を確認。
+公開単一HTMLは19画面・11方式・390px幅を検証し、JSエラー・外部通信はなかった。
+[配布物](public-release-v0.2.0-alpha.14.json)・[GUI](public-gui-v0.2.0-alpha.14.json)・[HTML](public-browser-v0.2.0-alpha.14.json)。
