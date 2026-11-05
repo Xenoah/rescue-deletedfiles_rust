@@ -12,17 +12,24 @@ from e2e_disks import native_source, disk_image
 from e2e_formats import corpus_load, ntfs_image, file_hash
 
 
-def main(binary, output):
+def main(binary, output, limited=False):
     check(platform.system()=='Windows','Windows broker native test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
     grants=[];cases=[]
+    def invoke(arguments):
+        command=[str(binary),*map(str,arguments)]
+        if limited:
+            from windows_restricted import run_limited
+            return run_limited(command,timeout=60)
+        return subprocess.run(command,capture_output=True,text=True,encoding='utf-8',timeout=60)
     def permitted(*args):
-        p=subprocess.run([str(binary),'--request-read-access',*map(str,args)],capture_output=True,text=True,encoding='utf-8',timeout=60)
+        p=invoke(['--request-read-access',*args])
         check(p.returncode==0,'broker command failed: '+p.stdout+' '+p.stderr)
         accesses=[json.loads(line)['read_access'] for line in p.stderr.splitlines() if line.startswith('{"read_access":')]
         check(len(accesses)==1,'missing or ambiguous read permission receipt: '+p.stderr)
         access=accesses[0]
         check(access['read_only'] and access['helper_exited'] and access['granted_access'] & 1 and not access['granted_access'] & 0xd0156,access)
+        if limited:check(not access['parent_elevated'],'the parser parent was elevated')
         grants.append(access)
         return json.loads(p.stdout)
     with tempfile.TemporaryDirectory(prefix='rescue-owned-broker-',dir=output.parent) as temporary:
@@ -33,6 +40,10 @@ def main(binary, output):
         truth={'p1:'+key:value for key,value in original.items()}
         with native_source(disk,root) as (_,source,backing):
             backing_before=file_hash(backing)
+            if limited:
+                denied=invoke(['inspect','--source',source,'--json'])
+                check(denied.returncode==4 and 'IO_ERROR' in denied.stderr and 'os error 5' in denied.stderr,'limited parent unexpectedly read the device without a grant: '+denied.stdout+denied.stderr)
+                cases.append('unelevated_parent_cannot_open_disk_without_explicit_permission')
             inspected=permitted('inspect','--source',source,'--json')
             check(len(inspected['layout']['regions'])==1,'disk query through transferred handle')
             scanned=permitted('scan','--indexed','--source',source,'--work-dir',root/'work','--json')
@@ -72,4 +83,11 @@ def main(binary, output):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();main(a.binary.resolve(),a.output.resolve())
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');a=p.parse_args()
+    if a.limited:
+        from windows_restricted import silent_admin_consent
+        with silent_admin_consent() as policy:
+            result=main(a.binary.resolve(),a.output.resolve(),limited=True)
+        result['uac_policy']=policy
+        a.output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    else:main(a.binary.resolve(),a.output.resolve())

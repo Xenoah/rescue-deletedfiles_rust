@@ -115,6 +115,10 @@ jobs:
         if: runner.os == 'Windows'
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_read_access_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output read-access-native-results.json
+      - name: Unelevated Windows parent and read-only helper with restored UAC test policy
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_read_access_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --limited --output read-access-limited-results.json
       - name: Native capacity failure, permission denial and acquisition resume
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_imaging_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-native-results.json
@@ -173,7 +177,7 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('ntfs-native-results.json','dist/ntfs-native-windows-x64.json')"
       - name: Collect Windows read-access evidence
         if: runner.os == 'Windows'
-        run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json')"
+        run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json');shutil.copyfile('read-access-limited-results.json','dist/read-access-limited-windows-x64.json')"
       - name: Collect acquisition evidence
         run: python -c "import shutil;shutil.copyfile('imaging-results.json','dist/imaging-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('imaging-native-results.json','dist/imaging-native-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4

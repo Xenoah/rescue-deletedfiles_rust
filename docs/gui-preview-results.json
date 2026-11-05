@@ -1,0 +1,82 @@
+{
+  "status": "passed",
+  "cli_sha256": "5570824a360c79158b51f7cbf48970ca624df915a9c58ffe9ee4d0b928e936ba",
+  "gui_sha256": "f53b135ff052f109605cfc52074bfe256f6e46d5416d617286a7f7ee0c3bc2c5",
+  "large_exports": [
+    {
+      "path": "/tmp/rescue-ui-v16/large-exports/preview-098298a7-6191-4163-a24e-6ccf2c35ca9e.png",
+      "sha256": "c3ee3bcf885d2a9691f95ec4a80dfe7c331c618ad2dd6a71e8d7c986f8965675",
+      "kind": "image",
+      "width": 512,
+      "height": 256,
+      "rgba_exact": true
+    },
+    {
+      "path": "/tmp/rescue-ui-v16/large-exports/preview-24a0fa7b-b580-40b4-9ac6-609c95432541.txt",
+      "sha256": "16847d138bb7a1d453d95937596a886c5ee4310fcde7382f4599aa4c7d02e55b",
+      "kind": "text",
+      "literal_utf8_exact": true
+    }
+  ],
+  "application_version": "0.2.0-alpha.16",
+  "screenshots": [
+    {
+      "file": "images/preview-png.png",
+      "sha256": "d28c252635acef1b5fc52a49134cd50f09f7810173efd3dcffb252d5f6c5a6f5"
+    },
+    {
+      "file": "images/preview-jpeg.png",
+      "sha256": "75c8500965bca6abffc717fe5a48fd25e7b4a011521cba664456d26918222808"
+    },
+    {
+      "file": "images/preview-text.png",
+      "sha256": "29c6e625b16d5a1cb7f355be26020d11cc201d206ab6faff0f2a810e98777c22"
+    },
+    {
+      "file": "images/preview-narrow.png",
+      "sha256": "f877b495cfc4236d56ce622e4c42080cc5a72481b522abd7b43e9ddfe8476602"
+    },
+    {
+      "file": "images/preview-large.png",
+      "sha256": "b92993f4ba0c5d340067d5412d77eec39b569dd00de3fca62ddc6dfd0916c3e8"
+    },
+    {
+      "file": "images/preview-large-narrow.png",
+      "sha256": "583a052fcdb1a3a66829ba7fda1800fbc57c4877e032858efe1e25826b3872d8"
+    },
+    {
+      "file": "images/preview-utf16.png",
+      "sha256": "b92993f4ba0c5d340067d5412d77eec39b569dd00de3fca62ddc6dfd0916c3e8"
+    },
+    {
+      "file": "images/preview-unsupported.png",
+      "sha256": "e6ed4d777a2db01ba2bfccff029cce756388717d01332a2d562ec25f43e17006"
+    }
+  ],
+  "gui_actions": [
+    "open indexed candidate",
+    "focus row and open preview",
+    "PNG",
+    "JPEG",
+    "UTF-8 Japanese",
+    "UTF-16 Japanese",
+    "1024x512 to 512x256 thumbnail",
+    "720x520 text and image layout",
+    "unsupported PDF retains recovery candidate",
+    "Escape closes dialog"
+  ],
+  "scope": "Linux actual GUI on Xvfb, synthetic regular images. GUI rendering was visually inspected; separately exported CLI previews were compared with independently calculated RGBA and literal UTF-8. No native Windows GUI, interactive UAC or physical recovery-rate claim.",
+  "source_unchanged": true,
+  "source_oracles": [
+    {
+      "source": "36-file NTFS fixture",
+      "sha256": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
+      "comparison": "previously recorded full source SHA-256"
+    },
+    {
+      "source": "large PNG and UTF-16 fixture",
+      "sha256": "c98196df60a0c719d81cebe41067e7bbdd791fe0d70ba1bbec7ed1b20c08a6fb",
+      "comparison": "independently regenerated fixture full SHA-256"
+    }
+  ]
+}

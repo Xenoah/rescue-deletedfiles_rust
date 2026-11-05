@@ -1,5 +1,11 @@
 # 隔離プレビュー
 
+![PNGを512×256へ縮小した実GUI](images/preview-large.png)
+
+![日本語テキストを表示する狭いウィンドウ](images/preview-narrow.png)
+
+[実GUIの検証記録](gui-preview-results.json)。画像はalpha.16のLinux実GUIで、合成RAWと独立した画素・文字列の正解を使っています。
+
 alpha.16の開発ブランチでGUI・CLI・MCPへ接続しました。公開前のOS検証を続けています。
 プレビューは表示用の派生データです。元ファイルの保存や、削除前の内容との一致を意味しません。
 
