@@ -51,7 +51,8 @@ def main(binary,output=None):
                     time.sleep(.1)
                 data=2 if level=='raid6' else 3
                 length=int(call('sudo','blockdev','--getsize64',md));check(length==data*8*1024*1024,'kernel capacity differs')
-                component=int((sysfs/'component_size').read_text())*512
+                # md component_size is KiB; per-member offset is 512-byte sectors.
+                component=int((sysfs/'component_size').read_text())*1024
                 check(component==8*1024*1024,'kernel component length differs')
                 members=[]
                 for index,(device,path) in enumerate(zip(loops,paths)):
