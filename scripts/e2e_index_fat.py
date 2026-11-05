@@ -15,7 +15,7 @@ def pages(binary,path):
         if cursor is None:return result
 
 
-def large(source,kind,maker):
+def large(source,kind,maker,count=4096,tail=False):
     truth,unsupported,meta=maker(source);cluster=meta['cluster'];address=lambda c:meta['heap']+(c-2)*cluster
     initial=[2,8] if kind=='fat32' else [2,40]
     with source.open('r+b') as f:
@@ -23,11 +23,19 @@ def large(source,kind,maker):
         for c in initial:f.seek(address(c));original+=f.read(cluster)
         slots=[original[i:i+32] for i in range(0,len(original),32)]
         slots=slots[:next(i for i,s in enumerate(slots) if s[0]==0)]
-        for i in range(4096):
+        for i in range(count):
             if kind=='fat32':slots.append(sfn(f'F{i:07d}TXT'.encode(),0,0))
             else:slots.extend(exfat_set(f'empty-{i:04d}.txt',0,0,contiguous=False))
+        tail_slot=len(slots)
+        if tail:
+            payload=b'known first cluster\n' if kind=='fat32' else b'known first exFAT cluster'
+            if kind=='fat32':slots.append(sfn(b'LAST    PRF',30,len(payload)))
+            else:slots.extend(exfat_set('late.prf',190,len(payload),contiguous=False))
         data=b''.join(slots)+bytes(32);count=(len(data)+cluster-1)//cluster
         chain=initial+list(range(2000,2000+count-2));data=data.ljust(count*cluster,b'\0')
+        if tail:
+            offset=address(chain[tail_slot*32//cluster])+tail_slot*32%cluster
+            truth[f'{kind}-{offset}']=payload
         for copy in range(2 if kind=='fat32' else 1):
             base=meta['fat']+(copy*meta['fat_sectors']*512 if kind=='fat32' else 0)
             for i,c in enumerate(chain):

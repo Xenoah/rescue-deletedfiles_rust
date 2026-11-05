@@ -1,6 +1,7 @@
 //! Read the complete selected batch before creating anything on its source disk.
 //! The legacy streaming API remains available for large, separate-disk jobs.
 use crate::*;
+pub(crate) mod validation;
 use serde::{Deserialize, Serialize};
 use std::io::ErrorKind;
 
@@ -138,57 +139,12 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
     }
-    if Image::open_region(&session.source, session.region.as_ref())?.fingerprint()?
-        != session.fingerprint
-    {
-        return Err(Error::SourceChanged);
+    validation::layout(session)?;
+    if ids.len() > 100_000 {
+        return Err(Error::Limit("select at most 100,000 candidates".into()));
     }
-    // Paths, sizes and extents come from a new source scan, never from JSON.
-    let fresh = if let Some(region) = &session.region {
-        disk_scan::validate_region(session)?;
-        scan_volume(
-            &session.source,
-            Some(region),
-            ScanOptions {
-                fragments: session.search.as_ref().is_some_and(|s| s.fragments),
-                ..Default::default()
-            },
-            cancel,
-            |_| {},
-        )?
-    } else {
-        let settings = session.search.clone().unwrap_or_else(|| SearchSettings {
-            method: if session.filesystem == FileSystem::Raw {
-                ScanMethod::Carve
-            } else {
-                ScanMethod::Quick
-            },
-            ..Default::default()
-        });
-        scan_with_settings(
-            &session.source,
-            ScanOptions::default(),
-            &settings,
-            cancel,
-            |_| {},
-        )?
-    };
-    if fresh.cancelled {
-        return Err(Error::Cancelled);
-    }
-    if fresh.raid != session.raid
-        || fresh.fingerprint != session.fingerprint
-        || fresh.filesystem != session.filesystem
-        || fresh.region != session.region
-        || fresh.volumes.len() != session.volumes.len()
-        || fresh
-            .volumes
-            .iter()
-            .zip(&session.volumes)
-            .any(|(a, b)| a.region != b.region || a.fingerprint != b.fingerprint)
-    {
-        return Err(Error::SourceChanged);
-    }
+    let by_id: BTreeMap<_, _> = session.candidates.iter().map(|c| (&c.id, c)).collect();
+    let mut metadata_bytes = 0u64;
     let mut selected = BTreeMap::new();
     let mut batch = Batch {
         files: Vec::new(),
@@ -199,32 +155,26 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
         if !unique.insert(id) {
             continue;
         }
-        let old = session
-            .candidates
-            .iter()
-            .find(|c| c.id == *id)
+        let old = by_id
+            .get(id)
             .ok_or_else(|| Error::Request(format!("unknown candidate: {id}")))?;
-        let Some(candidate) = fresh.candidates.iter().find(|c| c.id == *id) else {
-            let mut result = result_for(id);
-            result.error = Some("SOURCE_CHANGED: candidate is no longer present".into());
-            batch.failures.push(result);
-            continue;
-        };
-        if old.record_sha256 != candidate.record_sha256
-            || old.record != candidate.record
-            || old.sequence != candidate.sequence
-            || old.stream_name != candidate.stream_name
-        {
-            let mut result = result_for(id);
-            result.error = Some("SOURCE_CHANGED: candidate metadata changed".into());
-            batch.failures.push(result);
-            continue;
+        metadata_bytes += serialized_size(*old)?;
+        if metadata_bytes > CANDIDATE_BYTES {
+            return Err(Error::Limit("selected metadata exceeds 128 MiB".into()));
         }
-        selected.insert(id.clone(), candidate.clone());
+        if session.filesystem == FileSystem::Disk
+            && !session
+                .volumes
+                .iter()
+                .any(|v| old.id.starts_with(&format!("p{}:", v.region.index)))
+        {
+            return Err(Error::SourceChanged);
+        }
+        selected.insert(id.clone(), (*old).clone());
     }
     let mut used = 0u64;
-    if fresh.filesystem == FileSystem::Disk {
-        for volume in &fresh.volumes {
+    if session.filesystem == FileSystem::Disk {
+        for volume in &session.volumes {
             let prefix = format!("p{}:", volume.region.index);
             let candidates: Vec<_> = selected
                 .values()
@@ -234,7 +184,7 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
             if candidates.is_empty() {
                 continue;
             }
-            let mut child = fresh.clone();
+            let mut child = session.clone();
             child.filesystem = volume.region.filesystem.ok_or(Error::SourceChanged)?;
             child.region = Some(volume.region.clone());
             child.fingerprint = volume.fingerprint.clone();
@@ -253,10 +203,10 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
         }
     } else {
         read_volume(
-            &fresh,
+            session,
             selected.into_values().collect(),
             "",
-            fresh.region.as_ref().map(|r| r.index),
+            session.region.as_ref().map(|r| r.index),
             cancel,
             &mut used,
             &mut batch,
@@ -289,9 +239,13 @@ fn read_volume(
         },
         FileSystem::Raw => RecoverySource::Carved,
         _ => {
-            let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;
-            if fresh.cancelled {
-                return Err(Error::Cancelled);
+            let ids = candidates
+                .iter()
+                .map(|c| c.id.strip_prefix(prefix).unwrap_or(&c.id).to_owned())
+                .collect();
+            let fresh = validation::fat_selection(&mut image, &ids, cancel)?;
+            if fresh.filesystem != session.filesystem {
+                return Err(Error::SourceChanged);
             }
             RecoverySource::Fat(
                 fresh
@@ -302,6 +256,7 @@ fn read_volume(
             )
         }
     };
+    let mut parents = indexed_scan::Parents::default();
     for mut candidate in candidates {
         if cancel.load(Ordering::Relaxed) {
             return Err(Error::Cancelled);
@@ -314,12 +269,28 @@ fn read_volume(
                 .strip_prefix(prefix)
                 .ok_or(Error::SourceChanged)?
                 .into();
-            candidate.original_path = candidate
-                .original_path
-                .strip_prefix(&format!("P{}/", partition.unwrap()))
-                .ok_or(Error::SourceChanged)?
-                .into();
         }
+        let candidate = match validation::candidate(
+            &source,
+            &mut image,
+            &candidate,
+            &mut parents,
+            session,
+            cancel,
+        ) {
+            Ok(candidate) => candidate,
+            Err(Error::Cancelled) => return Err(Error::Cancelled),
+            Err(error) => {
+                if let Error::MissingRanges(ranges) = &error {
+                    result.status = "incomplete".into();
+                    result.missing_ranges = ranges.clone();
+                }
+                result.error = Some(format!("{}: {error}", error.code()));
+                result.raid_reads = image.take_raid_trace();
+                batch.failures.push(result);
+                continue;
+            }
+        };
         let mut memory_limit = false;
         let attempt = (|| -> Result<PreparedFile> {
             let data = candidate_data(&source, &mut image, &candidate, cancel)?;

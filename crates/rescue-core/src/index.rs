@@ -12,7 +12,7 @@ use std::{
 };
 
 const APP_ID: i32 = 0x52534349;
-const SCHEMA: i32 = 2;
+const SCHEMA: i32 = 3;
 const MAX_ROW: usize = 8 * 1024 * 1024;
 const MAX_CHECKPOINT: usize = 32 * 1024 * 1024;
 pub const MAX_PAGE: usize = 1000;
@@ -222,6 +222,28 @@ fn day_key(date: &Option<crate::FileTimestamp>) -> String {
         |d| d.value.chars().take(10).collect(),
     )
 }
+
+// A bounded set of literal trigrams only narrows candidates. instr() below is
+// the authority for exact substring semantics, including punctuation/Unicode.
+fn search_terms(text: &str) -> Option<String> {
+    let chars: Vec<_> = text.chars().collect();
+    if chars.len() < 3 || text.contains('\0') {
+        return None;
+    }
+    let step = (chars.len() - 2).div_ceil(64);
+    let terms: std::collections::BTreeSet<String> = chars
+        .windows(3)
+        .step_by(step)
+        .map(|letters| letters.iter().collect::<String>())
+        .collect();
+    Some(
+        terms
+            .into_iter()
+            .map(|term| format!("\"{}\"", term.replace('"', "\"\"")))
+            .collect::<Vec<_>>()
+            .join(" AND "),
+    )
+}
 fn nonnegative(value: i64) -> Result<u64> {
     u64::try_from(value).map_err(|_| Error::Request("negative index sequence".into()))
 }
@@ -371,8 +393,26 @@ impl CandidateIndex {
         let group = query.group.column();
         let direction = if query.descending { "DESC" } else { "ASC" };
         let comparison = if query.descending { "<" } else { ">" };
+        let text = query.text.to_lowercase();
+        let terms = search_terms(&text);
+        let fixed = if query.group == IndexGroup::None {
+            if rank == "zero_rank" {
+                "AND empty_key='' AND zero_rank=0"
+            } else {
+                "AND empty_key=''"
+            }
+        } else if rank == "zero_rank" {
+            "AND zero_rank=0"
+        } else {
+            ""
+        };
         let sql = format!(
-            "SELECT seq,{column},payload,{rank},{group} FROM candidate WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
+            "SELECT seq,{column},payload,{rank},{group} FROM candidate WHERE seq<=?1 AND (?2='' OR instr(search_text,?2)>0) AND (?3=0 OR supported=1) {fixed} {} {} ORDER BY {group} ASC,{rank} ASC,{column} {direction},seq {direction} LIMIT ?6",
+            if terms.is_some() {
+                "AND seq IN(SELECT rowid FROM candidate_search WHERE candidate_search MATCH ?9)"
+            } else {
+                ""
+            },
             if cursor.is_some() {
                 if !query.descending {
                     format!("AND ({group},{rank},{column},seq)>(?7,?8,?4,?5)")
@@ -390,9 +430,12 @@ impl CandidateIndex {
         let mut statement = budget.0.prepare(&sql)?;
         // Bind named indices only when present: first pages have no cursor parameters.
         statement.raw_bind_parameter(1, watermark as i64)?;
-        statement.raw_bind_parameter(2, query.text.to_lowercase())?;
+        statement.raw_bind_parameter(2, text)?;
         statement.raw_bind_parameter(3, query.supported_only)?;
         statement.raw_bind_parameter(6, (limit + 1) as i64)?;
+        if let Some(terms) = terms {
+            statement.raw_bind_parameter(9, terms)?;
+        }
         if let Some(c) = cursor {
             statement.raw_bind_parameter(4, &c.last_key)?;
             statement.raw_bind_parameter(5, c.last_sequence as i64)?;
@@ -515,7 +558,8 @@ impl IndexWriter {
 CREATE TABLE engine_item(namespace INTEGER NOT NULL,seq INTEGER NOT NULL,payload TEXT NOT NULL,PRIMARY KEY(namespace,seq)) STRICT;
 CREATE TABLE checkpoint(singleton INTEGER PRIMARY KEY CHECK(singleton=1),session TEXT NOT NULL,state TEXT NOT NULL,engine TEXT NOT NULL,resumable INTEGER NOT NULL,engine_state TEXT NOT NULL,watermark INTEGER NOT NULL CHECK(watermark>=0),index_id TEXT NOT NULL) STRICT;
 CREATE TABLE candidate(seq INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE,payload TEXT NOT NULL,discovery_key TEXT NOT NULL,name_key TEXT NOT NULL,path_key TEXT NOT NULL,size_key TEXT NOT NULL,created_key TEXT NOT NULL,modified_key TEXT NOT NULL,search_text TEXT NOT NULL,supported INTEGER NOT NULL,
-type_key TEXT NOT NULL,state_key TEXT NOT NULL,zero_rank INTEGER NOT NULL CHECK(zero_rank=0),size_rank INTEGER NOT NULL,created_rank INTEGER NOT NULL,modified_rank INTEGER NOT NULL,folder_key TEXT NOT NULL,created_day TEXT NOT NULL,modified_day TEXT NOT NULL,size_group TEXT NOT NULL,initial_key TEXT NOT NULL,empty_key TEXT NOT NULL CHECK(empty_key='')) STRICT;"))?;
+type_key TEXT NOT NULL,state_key TEXT NOT NULL,zero_rank INTEGER NOT NULL CHECK(zero_rank=0),size_rank INTEGER NOT NULL,created_rank INTEGER NOT NULL,modified_rank INTEGER NOT NULL,folder_key TEXT NOT NULL,created_day TEXT NOT NULL,modified_day TEXT NOT NULL,size_group TEXT NOT NULL,initial_key TEXT NOT NULL,empty_key TEXT NOT NULL CHECK(empty_key='')) STRICT;
+CREATE VIRTUAL TABLE candidate_search USING fts5(search_text,content='candidate',content_rowid='seq',tokenize='trigram case_sensitive 1',detail=none);"))?;
         for sort in [
             IndexSort::Discovery,
             IndexSort::Name,
@@ -716,17 +760,23 @@ type_key TEXT NOT NULL,state_key TEXT NOT NULL,zero_rank INTEGER NOT NULL CHECK(
                     }
                 })
                 .unwrap_or_else(|| "\u{10ffff}".into());
-            transaction.execute(
-                "INSERT INTO candidate VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,0,?14,?15,?16,?17,?18,?19,?20,?21,'')",
+            transaction.prepare_cached(
+                "INSERT INTO candidate VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,0,?14,?15,?16,?17,?18,?19,?20,?21,'')")?.execute(
                 params![sequence as i64,candidate.id,json,format!("{sequence:020}"),candidate.name.to_lowercase(),candidate.original_path.to_lowercase(),candidate.size.map_or_else(String::new,|s|format!("{s:020}")),created_key,modified_key,search.to_lowercase(),candidate.supported,kind,state,u8::from(candidate.size.is_none()),created_rank,modified_rank,folder,day_key(&candidate.created),day_key(&candidate.modified),size_group,initial],
             )?;
+            transaction
+                .prepare_cached("INSERT INTO candidate_search(rowid,search_text) VALUES(?1,?2)")?
+                .execute(params![sequence as i64, search.to_lowercase()])?;
         }
 
         for row in staged {
-            transaction.execute(
-                "INSERT INTO engine_item VALUES(?1,?2,?3)",
-                params![row.namespace as i64, row.sequence as i64, row.payload],
-            )?;
+            transaction
+                .prepare_cached("INSERT INTO engine_item VALUES(?1,?2,?3)")?
+                .execute(params![
+                    row.namespace as i64,
+                    row.sequence as i64,
+                    row.payload
+                ])?;
         }
         transaction.execute("UPDATE checkpoint SET session=?1,state=?2,resumable=?3,engine_state=?4,watermark=?5 WHERE singleton=1",params![header,state,resumable,checkpoint,sequence as i64])?;
         transaction.commit()?;
@@ -804,6 +854,83 @@ mod tests {
             modified: None,
         }
     }
+    #[test]
+    fn trigram_search_preserves_literal_unicode_and_copy_migration() {
+        let root = tempfile::tempdir().unwrap();
+        let h = header(root.path());
+        let mut writer = IndexWriter::create(root.path(), &h, "test", &0).unwrap();
+        let long = "x".repeat(500) + "日本語終端.txt";
+        let values = [
+            candidate(1, "日本語の資料.pdf"),
+            candidate(2, "a\"b [OR] * test.txt"),
+            candidate(3, "École and e\u{301}cole.txt"),
+            candidate(4, "\0ABC\nxy.txt"),
+            candidate(5, &long),
+        ];
+        writer.commit(&h, &values, "completed", false, &0).unwrap();
+        for text in [
+            "日本語",
+            "a\"b",
+            "[OR]",
+            "* test",
+            "ÉCOLE",
+            "e\u{301}cole",
+            "\0ABC",
+            "\nxy",
+            "",
+            "x",
+            "不存在",
+            &long,
+        ] {
+            for descending in [false, true] {
+                let query = IndexQuery {
+                    text: text.into(),
+                    sort: IndexSort::Name,
+                    descending,
+                    ..Default::default()
+                };
+                let actual = writer.index.page(&query, None, 100).unwrap();
+                let got: std::collections::BTreeSet<_> =
+                    actual.candidates.iter().map(|c| &c.id).collect();
+                let expected: std::collections::BTreeSet<_> = values
+                    .iter()
+                    .filter(|c| {
+                        format!("{}\n{}", c.name, c.original_path)
+                            .to_lowercase()
+                            .contains(&text.to_lowercase())
+                    })
+                    .map(|c| &c.id)
+                    .collect();
+                assert_eq!(got, expected, "{text:?}");
+            }
+        }
+        let original = writer.index.path.clone();
+        drop(writer);
+        let db = Connection::open(&original).unwrap();
+        db.execute_batch("DROP TABLE candidate_search; PRAGMA user_version=2;")
+            .unwrap();
+        drop(db);
+        let before = fs::read(&original).unwrap();
+        let copy = IndexWriter::import_session(&original, root.path()).unwrap();
+        assert_eq!(fs::read(&original).unwrap(), before);
+        let restored = CandidateIndex::open(&copy).unwrap();
+        assert_eq!(
+            restored
+                .page(
+                    &IndexQuery {
+                        text: "日本語終端".into(),
+                        ..Default::default()
+                    },
+                    None,
+                    10
+                )
+                .unwrap()
+                .candidates[0]
+                .id,
+            "id-5"
+        );
+    }
+
     #[test]
     fn stable_pages_and_exclusive_writer_survive_new_commits() {
         let root = tempfile::tempdir().unwrap();
@@ -986,7 +1113,7 @@ mod tests {
         assert_eq!(fs::read(&old).unwrap(), original);
         let migrated = CandidateIndex::open(&copy).unwrap();
         let status = migrated.status().unwrap();
-        assert_eq!(status.schema_version, 2);
+        assert_eq!(status.schema_version, SCHEMA as u32);
         assert_eq!(status.state, "paused");
         assert!(status.resumable);
         assert_eq!(

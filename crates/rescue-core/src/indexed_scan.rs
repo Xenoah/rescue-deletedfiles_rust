@@ -580,7 +580,7 @@ fn commit(
 }
 type Parent = (u16, u64, u16, String);
 #[derive(Default)]
-struct Parents {
+pub(crate) struct Parents {
     cache: BTreeMap<u64, Option<Parent>>,
 }
 impl Parents {
@@ -636,7 +636,7 @@ impl Parents {
         Ok((parts.join("/"), verified))
     }
 }
-fn make_candidate(
+pub(crate) fn make_candidate(
     ntfs: &Ntfs,
     image: &mut Image,
     index: u64,

@@ -1,6 +1,7 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 mod acquisition_ui;
 mod discovery_ui;
+mod index_ui;
 mod raid_ui;
 mod view;
 use eframe::egui;
@@ -46,6 +47,9 @@ enum SourceMode {
     Image,
 }
 enum Message {
+    Indexed(Box<index_ui::Loaded>),
+    IndexResumed(Box<index_ui::Loaded>),
+    IndexProgress(rescue_core::IndexedProgress),
     RaidChecked(Box<rescue_core::RaidInspection>, Option<PathBuf>),
     RaidSearched(Box<rescue_core::RaidSearchResult>),
     ImagingProgress(rescue_core::AcquisitionProgress),
@@ -61,6 +65,7 @@ enum Message {
     Error(String),
 }
 struct App {
+    index: index_ui::State,
     raid: raid_ui::State,
     discovery_dialog: bool,
     discovery_running: bool,
@@ -118,7 +123,7 @@ struct App {
     primary_rect: Option<egui::Rect>,
 }
 impl App {
-    fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, session: Option<PathBuf>) -> Self {
         #[cfg(windows)]
         if let Some(state) = &cc.wgpu_render_state {
             let info = state.adapter.get_info();
@@ -178,10 +183,14 @@ impl App {
         }
         let mut app = Self::blank();
         app.refresh_disks();
+        if let Some(path) = session {
+            app.open_session(path);
+        }
         app
     }
     fn blank() -> Self {
         Self {
+            index: index_ui::State::default(),
             raid: raid_ui::State::default(),
             discovery_dialog: false,
             discovery_running: false,
@@ -314,6 +323,7 @@ impl App {
         base.join(".rescue-work")
     }
     fn install_session(&mut self, s: Session, path: &Path) {
+        self.index = index_ui::State::default();
         self.source = s.source.to_string_lossy().into_owned();
         self.source_mode = if rescue_core::is_device(&s.source) {
             SourceMode::Disk
@@ -379,6 +389,7 @@ impl App {
             self.source != s.source.to_string_lossy() || self.settings().as_ref() != Ok(&prev)
         });
         if changed {
+            self.index = index_ui::State::default();
             self.session = None;
             self.selected.clear();
             self.focused = None;
@@ -405,7 +416,18 @@ impl App {
         };
         let source = PathBuf::from(&self.source);
         let work = self.work_path();
-        let persist = !self.work.trim().is_empty() && guard_output_path(&source, &work).is_ok();
+        let guarded = guard_output_path(&source, &work);
+        if !self.work.trim().is_empty()
+            && let Err(error) = &guarded
+        {
+            self.status = format!("再開用の作業フォルダーを使用できません: {error}");
+            return;
+        }
+        let persist = guarded.is_ok()
+            && (!self.work.trim().is_empty() || self.save_mode != SaveMode::Original);
+        self.index = index_ui::State::default();
+        self.filter.clear();
+        let query = self.index_query();
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
@@ -422,21 +444,32 @@ impl App {
         self.progress = Progress::default();
         self.status = "スキャン中…".into();
         thread::spawn(move || {
-            let r = scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
-                let _ = tx.try_send(Message::Progress(p));
-            })
-            .and_then(|s| {
-                let path = if persist {
-                    s.save(&work)?
-                } else {
-                    PathBuf::new()
-                };
-                Ok((s, path))
-            });
-            let _ = tx.send(match r {
-                Ok((s, p)) => Message::Scanned(Box::new(s), p),
-                Err(e) => Message::Error(e.to_string()),
-            });
+            let result = if persist {
+                rescue_core::scan_indexed(
+                    &source,
+                    &work,
+                    ScanOptions {
+                        max_records: 100_000_000,
+                        max_candidates: 10_000_000,
+                        fragments: settings.fragments,
+                    },
+                    &settings,
+                    &cancel,
+                    |p| {
+                        let _ = tx.try_send(Message::IndexProgress(p));
+                    },
+                )
+                .map_err(|e| e.to_string())
+                .and_then(|path| index_ui::load(path, query))
+                .map(|loaded| Message::Indexed(Box::new(loaded)))
+            } else {
+                scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
+                    let _ = tx.try_send(Message::Progress(p));
+                })
+                .map(|session| Message::Scanned(Box::new(session), PathBuf::new()))
+                .map_err(|e| e.to_string())
+            };
+            let _ = tx.send(result.unwrap_or_else(Message::Error));
         });
     }
     fn start_recovery(&mut self) {
@@ -451,6 +484,7 @@ impl App {
         if self.selected.is_empty() {
             return;
         }
+        let index_path = self.index.path.clone();
         let ids = self.selected.iter().cloned().collect::<Vec<_>>();
         let dest = PathBuf::from(&self.destination);
         let mode = self.save_mode;
@@ -470,6 +504,19 @@ impl App {
         self.stage = Stage::Recovering;
         self.status = "選択したファイルを復元中…".into();
         thread::spawn(move || {
+            let session = if let Some(path) = index_path {
+                match rescue_core::CandidateIndex::open(&path)
+                    .and_then(|index| index.selected_session(&ids))
+                {
+                    Ok(session) => session,
+                    Err(error) => {
+                        let _ = tx.send(Message::Error(error.to_string()));
+                        return;
+                    }
+                }
+            } else {
+                session
+            };
             let r = if mode == SaveMode::Zip {
                 restore_zip(&session, &ids, &dest, collision, &cancel).map(|r| Message::Finished {
                     status: format!(
@@ -537,6 +584,7 @@ impl App {
         });
     }
     fn receive(&mut self) {
+        self.receive_index();
         if let Some(result) = self.map_messages.as_ref().and_then(|rx| rx.try_recv().ok()) {
             self.map_messages = None;
             match result {
@@ -604,6 +652,13 @@ impl App {
                         view::size_text(Some(result.summary.failed_bytes)),
                         view::size_text(Some(result.summary.unattempted_bytes))
                     );
+                }
+                Message::Indexed(loaded) => self.install_index(*loaded),
+                Message::IndexResumed(loaded) => self.accept_resumed_index(*loaded),
+                Message::IndexProgress(p) => {
+                    self.report = format!("索引: {}", p.index.display());
+                    self.index.path = Some(p.index);
+                    self.progress = p.progress;
                 }
                 Message::Progress(p) => self.progress = p,
                 Message::Discovered(result) => {
@@ -803,8 +858,8 @@ impl App {
                     text_row(ui, "検索深度", &mut self.depth, "空欄: 上限なし / 0: 直下 / 最大256");
                     ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");
                 }
-                path_row(ui, "セッション保存先（任意）", &mut self.work, Picker::Folder);
-                ui.small("空欄・同じディスクの場合、スキャン結果はメモリーに保持します。");
+                path_row(ui, "再開用の作業フォルダー（任意）", &mut self.work, Picker::Folder);
+                ui.small("空欄では保存先の近くに索引を作ります。元の場所への復元・同じ物理ディスクの場合はメモリーに保持します。再開には安全な作業フォルダーを指定してください。");
                 if self.save_mode == SaveMode::Original {
                     path_row(ui, "元ボリュームのルート（任意）", &mut self.original_root, Picker::Folder);
                     ui.small("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。");
@@ -817,23 +872,16 @@ impl App {
     }
     /// Drawn after content so Tab order follows the form, then the stable action row.
     fn actions_ui(&mut self, ui: &mut egui::Ui) {
+        self.remember_selection_sizes();
         ui.separator();
         if self.stage == Stage::Settings {
             ui.horizontal_wrapped(|ui| {
                 if ui.button("保存したセッションを開く").clicked()
                     && let Some(p) = rfd::FileDialog::new()
-                        .add_filter("Rescue session", &["json"])
+                        .add_filter("Rescue session / index", &["json", "sqlite", "db"])
                         .pick_file()
                 {
-                    match Session::load(&p) {
-                        Ok(session) => {
-                            self.install_session(session, &p);
-                            self.status =
-                                "セッションを読み込みました。保存先は設定で確認してください。"
-                                    .into();
-                        }
-                        Err(e) => self.status = e.to_string(),
-                    }
+                    self.open_session(p);
                 }
                 if self.session.is_some() && ui.button("結果へ戻る").clicked() {
                     self.stage = Stage::Selecting;
@@ -851,17 +899,7 @@ impl App {
                 ui.weak("ファイルの選択はスキャン後");
             });
         } else if !self.busy() {
-            let bytes = self
-                .session
-                .as_ref()
-                .map(|s| {
-                    s.candidates
-                        .iter()
-                        .filter(|c| self.selected.contains(&c.id))
-                        .filter_map(|c| c.size)
-                        .fold(0u64, u64::saturating_add)
-                })
-                .unwrap_or(0);
+            let bytes = self.selected_bytes();
             ui.horizontal_wrapped(|ui| {
                 ui.label(format!(
                     "{} 件選択 · {}",
@@ -884,7 +922,7 @@ impl App {
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let response = ui.add_enabled(
-                        !self.selected.is_empty(),
+                        !self.selected.is_empty() && !self.index.loading(),
                         egui::Button::new("選択したファイルを復元")
                             .min_size(egui::vec2(224.0, 36.0)),
                     );
@@ -932,13 +970,20 @@ impl App {
                 {
                     self.view_dirty = true;
                 }
-                if ui.button("表示中の候補を選択").clicked()
+                if ui
+                    .add_enabled(
+                        !self.index.loading()
+                            && (self.index.path.is_none()
+                                || self.index.query == self.index_query()),
+                        egui::Button::new("表示中の候補を選択"),
+                    )
+                    .clicked()
                     && let Some(s) = &self.session
                 {
                     let needle = self.filter.to_lowercase();
                     for c in &s.candidates {
                         if c.supported && c.matches_path_text(&needle) {
-                            self.selected.insert(c.id.clone());
+                            set_selected(&mut self.selected, &c.id, true);
                         }
                     }
                 }
@@ -947,16 +992,21 @@ impl App {
                 }
             });
         });
+        self.indexed_controls(ui);
         if self.view_dirty {
             if let Some(s) = &self.session {
-                self.rows = view::rows(
-                    &s.candidates,
-                    &self.filter,
-                    self.sort,
-                    self.descending,
-                    self.group,
-                    &self.closed,
-                );
+                self.rows = if self.index.path.is_some() {
+                    view::indexed_rows(&s.candidates, self.group, &self.closed)
+                } else {
+                    view::rows(
+                        &s.candidates,
+                        &self.filter,
+                        self.sort,
+                        self.descending,
+                        self.group,
+                        &self.closed,
+                    )
+                };
             }
             self.view_dirty = false;
         }
@@ -972,7 +1022,9 @@ impl App {
     }
     fn details_ui(&mut self, ui: &mut egui::Ui) {
         ui.spacing_mut().item_spacing.y = 3.0;
-        let busy = self.busy();
+        let busy = self.busy()
+            || self.index.loading()
+            || (self.index.path.is_some() && self.index.query != self.index_query());
         let mut sort_clicked = None;
         let mut toggle = None;
         let Some(session) = &self.session else {
@@ -1151,7 +1203,9 @@ impl App {
         let Some(s) = &self.session else {
             return;
         };
-        let busy = matches!(self.stage, Stage::Recovering | Stage::Scanning);
+        let busy = self.busy()
+            || self.index.loading()
+            || (self.index.path.is_some() && self.index.query != self.index_query());
         let cols = (ui.available_width() / 132.0).floor().max(1.0) as usize;
         let mut tiles = Vec::<Vec<&Row>>::new();
         let mut chunk = Vec::new();
@@ -1286,7 +1340,12 @@ impl App {
             return;
         };
         ui.label(format!(
-            "{} 候補 / {} 対応",
+            "{}{} 候補 / {} 対応",
+            if self.index.path.is_some() {
+                "表示中 "
+            } else {
+                ""
+            },
             s.candidates.len(),
             s.candidates.iter().filter(|c| c.supported).count()
         ));
@@ -1414,7 +1473,9 @@ fn status_label(status: &str) -> &str {
 }
 fn set_selected(ids: &mut BTreeSet<String>, id: &str, selected: bool) {
     if selected {
-        ids.insert(id.to_owned());
+        if ids.len() < 100_000 {
+            ids.insert(id.to_owned());
+        }
     } else {
         ids.remove(id);
     }
@@ -1525,7 +1586,11 @@ impl App {
         {
             ctx.memory_mut(|m| m.request_focus(egui::Id::new("result-search")));
         }
-        if self.busy() || self.disk_messages.is_some() || self.map_messages.is_some() {
+        if self.busy()
+            || self.disk_messages.is_some()
+            || self.map_messages.is_some()
+            || self.index.loading()
+        {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
@@ -1588,6 +1653,14 @@ impl App {
                                 )
                             }),
                     );
+                    if self.stage == Stage::Scanning
+                        && self.index.path.is_some()
+                        && ui.button("中断して保存").clicked()
+                    {
+                        self.cancel.store(true, Ordering::Relaxed);
+                        self.status =
+                            "中断を要求しました。再開位置の保存完了を待っています。".into();
+                    }
                     if ui.button("取消").clicked() {
                         self.cancel.store(true, Ordering::Relaxed);
                         self.status = "取消を要求しました。処理の終了を待っています。".into();
@@ -1673,6 +1746,25 @@ impl Drop for App {
     }
 }
 fn main() -> eframe::Result {
+    let args = std::env::args_os().skip(1).collect::<Vec<_>>();
+    let session = match args.as_slice() {
+        [] => None,
+        [flag, path] if flag == "--session" => Some(PathBuf::from(path)),
+        [flag] if flag == "--version" => {
+            println!("rescue-gui {}", rescue_core::VERSION);
+            return Ok(());
+        }
+        [flag] if flag == "--help" => {
+            println!(
+                "rescue-gui [--session FILE]\nOpen a saved JSON session or SQLite scan index."
+            );
+            return Ok(());
+        }
+        _ => {
+            eprintln!("Usage: rescue-gui [--session FILE]");
+            std::process::exit(2);
+        }
+    };
     eframe::run_native(
         "Rescue — File Recovery",
         eframe::NativeOptions {
@@ -1685,7 +1777,7 @@ fn main() -> eframe::Result {
                 .with_min_inner_size([720.0, 520.0]),
             ..Default::default()
         },
-        Box::new(|cc| Ok(Box::new(App::new(cc)))),
+        Box::new(move |cc| Ok(Box::new(App::new(cc, session)))),
     )
 }
 #[cfg(test)]
@@ -1700,6 +1792,8 @@ mod tests {
             app.stage = stage;
             if stage != Stage::Settings {
                 app.session = Some(session(FileSystem::Ntfs));
+                app.index.path = Some(PathBuf::from("saved/session.sqlite"));
+                app.index.query = app.index_query();
             }
             for zoom in [1.0, 1.5, 2.0] {
                 ctx.set_zoom_factor(zoom);
@@ -1754,6 +1848,42 @@ mod tests {
             warnings: vec![],
             search: None,
         }
+    }
+    #[test]
+    fn selected_ids_and_sizes_survive_page_changes_without_retaining_candidates() {
+        let mut app = App::blank();
+        app.session = Some(session(FileSystem::Ntfs));
+        let candidate = |id: &str, size| Candidate {
+            id: id.into(),
+            record: 0,
+            fragment_offset: None,
+            sequence: 1,
+            stream_name: None,
+            name: id.into(),
+            original_path: id.into(),
+            path_verified: false,
+            alternate_names: vec![],
+            size: Some(size),
+            supported: true,
+            warnings: vec![],
+            record_sha256: String::new(),
+            extent_evidence: Default::default(),
+            allocation_status: Default::default(),
+            created: None,
+            modified: None,
+        };
+        app.session.as_mut().unwrap().candidates = vec![candidate("first", 100)];
+        set_selected(&mut app.selected, "first", true);
+        app.remember_selection_sizes();
+        app.session.as_mut().unwrap().candidates = vec![candidate("second", 900)];
+        set_selected(&mut app.selected, "second", true);
+        app.remember_selection_sizes();
+        assert_eq!(app.selected.len(), 2);
+        assert_eq!(app.selected_bytes(), 1000);
+        assert_eq!(app.session.as_ref().unwrap().candidates.len(), 1);
+        set_selected(&mut app.selected, "first", false);
+        app.remember_selection_sizes();
+        assert_eq!(app.selected_bytes(), 900);
     }
     #[test]
     fn inventory_completion_is_received_after_leaving_settings() {

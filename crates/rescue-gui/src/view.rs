@@ -117,7 +117,23 @@ fn compare_date(
     rank(a).cmp(&rank(b)).then_with(|| match (a, b) {
         (Some(a), Some(b)) => ordered(
             match (a.unix_seconds, b.unix_seconds) {
-                (Some(a), Some(b)) => a.cmp(&b),
+                (Some(sa), Some(sb)) => sa.cmp(&sb).then_with(|| {
+                    let fraction = |value: &str| {
+                        let mut result = [b'0'; 9];
+                        if let Some((_, rest)) = value.split_once('.') {
+                            for (i, c) in rest
+                                .bytes()
+                                .take_while(u8::is_ascii_digit)
+                                .take(9)
+                                .enumerate()
+                            {
+                                result[i] = c;
+                            }
+                        }
+                        result
+                    };
+                    fraction(&a.value).cmp(&fraction(&b.value))
+                }),
                 _ => a.value.cmp(&b.value),
             },
             descending,
@@ -213,6 +229,28 @@ pub fn rows(
         if !closed.contains(&key) {
             rows.extend(indices.into_iter().map(Row::File));
         }
+    }
+    rows
+}
+
+/// Keep the global SQL order, including group and unknown-value ranks. Group
+/// counts describe only the visible page and never imply a whole-index count.
+pub fn indexed_rows(candidates: &[Candidate], by: GroupBy, closed: &BTreeSet<String>) -> Vec<Row> {
+    let mut rows = vec![];
+    let mut at = 0;
+    while at < candidates.len() {
+        let key = group(&candidates[at], by);
+        let mut end = at + 1;
+        while end < candidates.len() && group(&candidates[end], by) == key {
+            end += 1;
+        }
+        if by != GroupBy::None {
+            rows.push(Row::Group(key.clone(), end - at));
+        }
+        if !closed.contains(&key) {
+            rows.extend((at..end).map(Row::File));
+        }
+        at = end;
     }
     rows
 }

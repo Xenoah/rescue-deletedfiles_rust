@@ -254,3 +254,19 @@ pub(crate) fn recovery_data(
         allocation_status,
     })
 }
+
+pub(crate) fn revalidate_candidate(
+    image: &mut Image,
+    current: Option<&Ntfs>,
+    candidate: &Candidate,
+) -> Result<Candidate> {
+    let geometry = ntfs::Geometry::parse(image)?;
+    let offset = candidate.fragment_offset.ok_or(Error::SourceChanged)?;
+    let (number, r) = record(image, &geometry, current, offset)?;
+    let stream = r
+        .streams
+        .iter()
+        .find(|s| s.name == candidate.stream_name)
+        .ok_or(Error::SourceChanged)?;
+    Ok(make_candidate(image, current, offset, number, &r, stream))
+}

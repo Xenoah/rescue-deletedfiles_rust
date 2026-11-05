@@ -373,6 +373,33 @@ pub(crate) fn recovery_data(
     })
 }
 
+pub(crate) fn revalidate_candidate(
+    image: &mut Image,
+    candidate: &Candidate,
+    cancel: &AtomicBool,
+) -> Result<Candidate> {
+    let data = recovery_data(image, candidate, cancel)?;
+    Ok(Candidate {
+        id: candidate.id.clone(),
+        record: candidate.record,
+        sequence: 0,
+        fragment_offset: None,
+        stream_name: None,
+        original_path: data.name.clone(),
+        name: data.name,
+        path_verified: false,
+        alternate_names: Vec::new(),
+        size: Some(data.data.size()),
+        supported: true,
+        warnings: data.warnings,
+        record_sha256: candidate.record_sha256.clone(),
+        extent_evidence: data.extent_evidence,
+        allocation_status: data.allocation_status,
+        created: None,
+        modified: None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

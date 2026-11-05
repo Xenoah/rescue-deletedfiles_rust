@@ -881,7 +881,8 @@ pub fn recover_to(
     } else if session.filesystem == FileSystem::Raw {
         RecoverySource::Carved
     } else {
-        let fresh = fat::scan(&mut image, ScanOptions::default(), cancel, |_| {})?;
+        let wanted = selected.iter().map(|c| c.id.clone()).collect();
+        let fresh = restore::validation::fat_selection(&mut image, &wanted, cancel)?;
         if fresh.cancelled {
             return Err(Error::Cancelled);
         }

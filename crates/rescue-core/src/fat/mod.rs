@@ -606,6 +606,19 @@ pub(crate) fn scan(
     image: &mut Image,
     options: ScanOptions,
     cancel: &AtomicBool,
+    progress: impl FnMut(Progress),
+) -> Result<Scan> {
+    scan_selected(image, options, None, cancel, progress)
+}
+
+/// Still traverse all live ownership and deleted directory ancestry, but retain
+/// only requested files. A late selected file must not inherit the legacy
+/// candidate limit, and early matches cannot bypass later allocation conflicts.
+pub(crate) fn scan_selected(
+    image: &mut Image,
+    options: ScanOptions,
+    selected: Option<&BTreeSet<String>>,
+    cancel: &AtomicBool,
     mut progress: impl FnMut(Progress),
 ) -> Result<Scan> {
     let geometry = Geometry::open(image)?;
@@ -654,6 +667,7 @@ pub(crate) fn scan(
         }
     }
     let mut entries = Vec::new();
+    let mut selected_bytes = 0u64;
     let mut directory_clusters: BTreeMap<u32, usize> = BTreeMap::new();
     let mut parents = Vec::new();
     let mut conflicted = BTreeSet::new();
@@ -953,7 +967,17 @@ pub(crate) fn scan(
                         live.push_back(child);
                     }
                 } else if is_deleted {
-                    entries.push((entry, origin));
+                    if selected.is_none_or(|ids| ids.contains(&entry.candidate.id)) {
+                        if selected.is_some() {
+                            selected_bytes += crate::serialized_size(&entry.candidate)?;
+                            if selected_bytes > crate::CANDIDATE_BYTES {
+                                return Err(Error::Limit(
+                                    "selected FAT metadata exceeds 128 MiB".into(),
+                                ));
+                            }
+                        }
+                        entries.push((entry, origin));
+                    }
                 } else if scan.filesystem == FileSystem::Exfat && entry.contiguous && entry.size > 0
                 {
                     let count = entry.size.div_ceil(volume.geometry.cluster);
