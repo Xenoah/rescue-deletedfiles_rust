@@ -33,7 +33,7 @@ Linuxの実GUIで512 MiBを取得し、全バイト一致、128範囲のマッ�
 再開照合、取得イメージからの36ファイルのZIP復元とCRCを検証しました。
 元の場所36件・ZIP36件・JPEG33件・文書/動画7件の既存GUIシナリオも全バイト一致しました。
 
-4ネイティブ環境の容量不足・権限拒否・実ディスク取得と、公開パッケージの検証結果は完了後に追記します。
+[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41979409874) が7分8秒で成功しました。Windows・Linux・macOS Intel/Apple Siliconで、試験専用ボリュームの容量不足・空き解放後の再開・権限拒否を検証。読取専用の実仮想ディスクからの取得と、そのイメージの108ファイル復元も全バイト一致しました。Rust38項目・10統合群・35形式・864ディスク観測・実削除PDF・GUI起動・8配布物を通過。公開パッケージの再取得検証は別途追記します。
 `imaging-results-*.json`、`imaging-native-*.json`、`gui-imaging-results.json` に結果を収録します。
 
 ## 技術説明UI
