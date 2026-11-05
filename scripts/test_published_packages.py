@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 import subprocess
 import tarfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from e2e_formats import main as formats
@@ -29,9 +31,17 @@ def main():
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-alpha\.\d+)?',a.tag):raise ValueError('invalid release tag')
     base=f'https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/{a.tag}/'
     def download(name,limit):
-        with urllib.request.urlopen(base+name,timeout=60) as response:data=response.read(limit+1)
-        if len(data)>limit:raise RuntimeError('release download too large')
-        return data
+        for attempt in range(4):
+            try:
+                request=urllib.request.Request(base+name+f'?download_attempt={attempt}',headers={'Cache-Control':'no-cache'})
+                with urllib.request.urlopen(request,timeout=60) as response:data=response.read(limit+1)
+                if len(data)>limit:raise RuntimeError('release download too large')
+                return data
+            except urllib.error.HTTPError as error:
+                if error.code not in [408,429,500,502,503,504] or attempt==3:raise
+            except (urllib.error.URLError,TimeoutError):
+                if attempt==3:raise
+            time.sleep(2**attempt)
     manifest={line.split('  ',1)[1]:line.split('  ',1)[0] for line in download('SHA256SUMS.txt',128*1024).decode('ascii').splitlines()}
     def verified(name,limit):
         data=download(name,limit)

@@ -1,5 +1,7 @@
 name: Verify actual published packages
 on:
+  push:
+    tags: ['qa-v*']
   workflow_dispatch:
     inputs:
       release_tag:
@@ -30,6 +32,16 @@ jobs:
             arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Select an immutable QA tag's published release
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os,re
+          match=re.fullmatch(r'qa-(v\d+\.\d+\.\d+(?:-alpha\.\d+)?)-\d+',os.environ['GITHUB_REF_NAME'])
+          if not match:raise SystemExit('Expected qa-vVERSION-ATTEMPT tag')
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:f.write('RELEASE_TAG='+match.group(1)+'\n')
+          PY
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -64,6 +76,16 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Select an immutable QA tag's published release
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import os,re
+          match=re.fullmatch(r'qa-(v\d+\.\d+\.\d+(?:-alpha\.\d+)?)-\d+',os.environ['GITHUB_REF_NAME'])
+          if not match:raise SystemExit('Expected qa-vVERSION-ATTEMPT tag')
+          with open(os.environ['GITHUB_ENV'],'a',encoding='utf-8') as f:f.write('RELEASE_TAG='+match.group(1)+'\n')
+          PY
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
