@@ -63,6 +63,10 @@ def main(binary,output=None):
                 checks+=1;files+=count*(2 if broken else 1)
         source,found,scanned,_=verify(binary,root,'tamper','ntfs',ntfs,True)
         session=json.loads(Path(scanned['session']).read_text());id=session['candidates'][0]['id']
+        original=next(c for c in session['candidates'] if c['path_verified'] and c['size'])
+        restored=run(binary,'recover','--session',scanned['session'],'--id',original['id'],'--original','--volume-root',root/'explicit-original','--json')['results'][0]
+        expected=(root/'tamper-out'/original['original_path']).read_bytes()
+        check(restored['status']=='completed' and Path(restored['path']).read_bytes()==expected,'single recovered region did not accept explicit unnumbered root');checks+=1;files+=1
         for key,value in [('offset',2**64-1),('length',2**64-1),('recovery_boot',{'offset':0,'bytes':512,'role':'primary','sha256':'0'*64})]:
             changed=json.loads(json.dumps(session));changed['region'][key]=value;path=root/('tampered-'+key+'.json');path.write_text(json.dumps(changed))
             run(binary,'recover','--session',path,'--id',id,'--destination',root/('tampered-out-'+key),'--json',expected=4);checks+=1

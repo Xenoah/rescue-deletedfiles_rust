@@ -17,6 +17,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     jpeg=run['jpeg_verification'];assert jpeg['status']=='passed' and jpeg['jpeg_candidates_exact']==33 and jpeg['malformed_cases']==33 and jpeg['cli_mcp_byte_exact'] and jpeg['source_unchanged']
     documents=run['document_verification'];assert documents['status']=='passed' and documents['valid_variants']>=23 and documents['rejected_corrupt_or_unsupported']>=30 and documents['binary_sha256']==run['binary_sha256']
     ntfs=run['ntfs_extension_verification'];assert ntfs['status']=='passed' and ntfs['checks']>=27 and ntfs['binary_sha256']==run['binary_sha256']
+    for name,minimum in [('discovery_verification',20),('remnant_verification',12)]:
+        proof=run[name];assert proof['status']=='passed' and proof['checks']>=minimum and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
+    if platform=='linux':
+        proof=run['quickformat_verification'];assert proof['status']=='passed' and proof['actual_quickformat'] and not proof['metadata_edited'] and proof['cli_files_byte_exact']==100 and proof['mcp_files_byte_exact']==100 and proof['binary_sha256']==run['binary_sha256']
     if platform=='windows':
         native=run['ntfs_native_verification'];assert native['status']=='passed' and native['actual_deletion'] and native['cli_streams_byte_exact']==21 and native['mcp_streams_byte_exact']==21 and native['resident_stream_profile'] and len(native['nonresident_profiles'])==2 and all(p['policy']['restored'] and (p['erased_metadata_not_fabricated'] or p['retained_streams_byte_exact']==21) for p in native['nonresident_profiles']) and native['binary_sha256']==run['binary_sha256']
     image=run['imaging_verification'];assert image['status']=='passed' and image['checks']>=15 and image['binary_sha256']==run['binary_sha256']

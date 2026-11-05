@@ -569,7 +569,9 @@ fn restore_impl(
                             "original path is unknown; choose a destination folder".into(),
                         ));
                     }
-                    mappings.iter().find(|m| m.partition == file.partition).map(|m| m.path.clone())
+                    mappings.iter().find(|m| m.partition == file.partition)
+                        .or_else(|| (session.filesystem != FileSystem::Disk).then(|| mappings.iter().find(|m|m.partition.is_none())).flatten())
+                        .map(|m| m.path.clone())
                         .or_else(|| if file.region.as_ref().is_some_and(|r|r.recovery_boot.is_some()) {None} else {crate::device::mounted_root(&session.source, file.region.as_ref()).ok().flatten()})
                         .ok_or_else(|| Error::Request("original volume is not mounted or identified; provide a volume root or choose a folder".into()))?
                 }

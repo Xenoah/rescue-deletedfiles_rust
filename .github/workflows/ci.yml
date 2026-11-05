@@ -71,7 +71,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all eleven suites)
+      - name: Debug CLI and MCP integration (all thirteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -81,7 +81,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all eleven suites)
+      - name: Release CLI and MCP integration (all thirteen suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
       - name: Record JPEG entropy and pixel verification
         run: python scripts/ci_command.py python scripts/e2e_jpeg.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output jpeg-results.json
@@ -89,6 +89,13 @@ jobs:
         run: python scripts/ci_command.py python scripts/e2e_documents.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output document-results.json
       - name: Record NTFS extension, allocation and alias verification
         run: python scripts/ci_command.py python scripts/e2e_ntfs_extents.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output ntfs-results.json
+      - name: Record lost-volume and damaged-boot verification
+        run: python scripts/ci_command.py python scripts/e2e_discovery.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output discovery-results.json
+      - name: Record detached NTFS and synthetic quick-format verification
+        run: python scripts/ci_command.py python scripts/e2e_ntfs_remnants.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output remnant-results.json
+      - name: Independent actual NTFS quick-format
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_quickformat.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output quickformat-results.json
       - name: Actual Windows NTFS ADS deletion on an owned VHD
         if: runner.os == 'Windows'
         timeout-minutes: 5
@@ -136,6 +143,11 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('document-results.json','dist/document-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect NTFS extension evidence
         run: python -c "import shutil;shutil.copyfile('ntfs-results.json','dist/ntfs-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect volume and remnant evidence
+        run: python -c "import shutil;shutil.copyfile('discovery-results.json','dist/discovery-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('remnant-results.json','dist/remnant-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect independent quick-format evidence
+        if: runner.os == 'Linux'
+        run: python -c "import shutil;shutil.copyfile('quickformat-results.json','dist/quickformat-results-linux-x64.json')"
       - name: Collect Windows native NTFS evidence
         if: runner.os == 'Windows'
         run: python -c "import shutil;shutil.copyfile('ntfs-native-results.json','dist/ntfs-native-windows-x64.json')"
@@ -159,6 +171,9 @@ jobs:
             dist/document-results-*.json
             dist/imaging-*.json
             dist/ntfs-*.json
+            dist/discovery-*.json
+            dist/remnant-*.json
+            dist/quickformat-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

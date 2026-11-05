@@ -95,9 +95,11 @@ impl App {
                     }
                 }
             });
-            ui.separator();ui.horizontal_wrapped(|ui| {
-                if ui.button("閉じる").clicked() {close=true;}
-                if ui.add_enabled(self.discovered_id.is_some(),egui::Button::new("この領域を設定に使用")).clicked() {use_selected=true;}
+            ui.separator();ui.horizontal(|ui| {
+                if ui.add_sized([72.0,36.0],egui::Button::new("閉じる")).clicked() {close=true;}
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui| {
+                    if ui.add_enabled(self.discovered_id.is_some(),egui::Button::new("この領域を設定に使用").min_size(egui::vec2(220.0,36.0))).clicked() {use_selected=true;}
+                });
             });
         });
         if use_selected {
