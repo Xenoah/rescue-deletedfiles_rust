@@ -104,8 +104,18 @@ def native_source(raw,root):
             check(p.returncode==0,p.stdout+p.stderr);return p.stdout.strip()
         ps('Mount-DiskImage -ImagePath $env:RESCUE_TEST_VHD -Access ReadOnly -NoDriveLetter | Out-Null')
         try:
-            number=int(ps('$i=Get-DiskImage -ImagePath $env:RESCUE_TEST_VHD; if(-not $i.Attached){throw "fixture not attached"}; ($i | Get-Disk).Number'))
-            yield [],Path(r'\\.\PhysicalDrive'+str(number)),vhd
+            # The image provider knows its own device path even when the
+            # separate MSFT_Disk inventory has not published that disk yet.
+            # Never choose a device by a global inventory or a guessed number.
+            device=ps('$d=$null; for($n=0;$n -lt 40;$n++){ '
+                          '$i=Get-DiskImage -ImagePath $env:RESCUE_TEST_VHD; '
+                          'if(-not $i.Attached){throw "fixture not attached"}; '
+                          '$d=$i.DevicePath; '
+                          'if($d){break}; Start-Sleep -Milliseconds 250 }; '
+                          'if(-not $d){throw "owned VHD has no device path"}; $d')
+            prefix='\\\\.\\PhysicalDrive'
+            check(device.startswith(prefix) and device[len(prefix):].isdigit(),'unexpected owned VHD device path')
+            yield [],Path(device),vhd
         finally:ps('Dismount-DiskImage -ImagePath $env:RESCUE_TEST_VHD | Out-Null')
     else:raise RuntimeError('unsupported native test OS')
 
