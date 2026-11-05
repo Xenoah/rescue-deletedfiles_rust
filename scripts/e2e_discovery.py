@@ -62,7 +62,7 @@ def main(binary,output=None):
                 source,found,scanned,count=verify(binary,root,kind+'-'+str(broken),kind,make,broken,mcp=broken)
                 checks+=1;files+=count*(2 if broken else 1)
         source,found,scanned,_=verify(binary,root,'tamper','ntfs',ntfs,True)
-        session=json.loads(Path(scanned['session']).read_text());id=session['candidates'][0]['id']
+        session=json.loads(Path(scanned['session']).read_text(encoding="utf-8"));id=session['candidates'][0]['id']
         original=next(c for c in session['candidates'] if c['path_verified'] and c['size'])
         restored=run(binary,'recover','--session',scanned['session'],'--id',original['id'],'--original','--volume-root',root/'explicit-original','--json')['results'][0]
         expected=(root/'tamper-out'/original['original_path']).read_bytes()

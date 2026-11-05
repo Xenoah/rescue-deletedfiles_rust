@@ -58,7 +58,7 @@ def main(binary,output=None):
             r=run(binary,'recover','--session',s['session'],'--id',selected[0]['id'],'--original','--volume-root',root/f'original-{broken}','--json',expected=5)
             check(r['results'][0]['path'] is None,'invented original path');count+=1
             check(hashlib.sha256(source.read_bytes()).hexdigest()==before,'remnant scan/recovery modified source')
-            changed=json.loads(Path(s['session']).read_text());target=next(c for c in changed['candidates'] if c['id']==selected[0]['id']);target['fragment_offset']+=512
+            changed=json.loads(Path(s['session']).read_text(encoding="utf-8"));target=next(c for c in changed['candidates'] if c['id']==selected[0]['id']);target['fragment_offset']+=512
             edited=root/f'edited-{broken}.json';edited.write_text(json.dumps(changed))
             r=run(binary,'recover','--session',edited,'--id',selected[0]['id'],'--stream','--destination',root/f'tamper-out-{broken}','--json',expected=5)
             check(r['results'][0]['path'] is None,'tampered record offset used');count+=1
