@@ -338,7 +338,7 @@ def main(binary,corpus,output,use_independent):
         positive(binary,disk,{'p1:'+key:value for key,value in sources['ntfs-contiguous'][1].items()},root,'whole-disk-'+scheme+'-metadata',rows)
         carving(binary,disk,files,root,'whole-disk-'+scheme,rows,True,False)
     unavailable=[]
-    for feature,args in [('RAID 0/1/5/6/10/JBOD',['raid','--help']),('raw-device imaging',['image','--help']),('checkpoint resume',['resume','--help'])]:
+    for feature,args in [('RAID 0/1/5/6/10/JBOD',['raid','--help']),('scan checkpoint resume',['resume','--help'])]:
         call=subprocess.run([str(binary),*args],capture_output=True,text=True,encoding='utf-8',timeout=15)
         check(call.returncode==2,'an unimplemented command unexpectedly exists')
         unavailable.append({'feature':feature,'exit_code':call.returncode,'status':'not_implemented'})
