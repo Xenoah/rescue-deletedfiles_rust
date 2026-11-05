@@ -4,12 +4,12 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.8
+        default: v0.2.0-alpha.9
         required: true
 permissions:
   contents: read
 env:
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.8' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.9' }}
 jobs:
   test:
     strategy:
@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
       - name: Match test driver and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py tests/corpus
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py scripts/e2e_jpeg.py scripts/make_carve_fixture.py tests/corpus tests/jpeg
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |

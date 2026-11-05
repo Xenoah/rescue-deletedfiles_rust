@@ -3,3 +3,4 @@
 third_party/licenses/** -text
 
 tests/corpus/files/** -text
+tests/jpeg/*.jpg -text

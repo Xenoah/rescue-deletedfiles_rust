@@ -3,9 +3,9 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイル数と内容の完全性を優先して開発しています。
 
-**v0.2.0-alpha.8：元の場所へ戻す・同じディスクへの保存・同名ファイルの連番／スキップ。**
-物理ディスクのMBR／GPTを読み取り、NTFS・FAT32・exFATの各パーティションをまとめて探索します。静止PNGのcarvingと保存済みRAWイメージも利用できます。
-RAIDの再構成、読取不良のイメージ取得、PNG以外のcarvingは未対応です。有料製品との性能比較は未検証です。
+**v0.2.0-alpha.9：管理情報のないJPEG写真の探索・構造／圧縮データ／画素の検証。**
+物理ディスクのMBR／GPTを読み取り、NTFS・FAT32・exFATの各パーティションをまとめて探索します。PNG・JPEGのcarvingと保存済みRAWイメージも利用できます。
+RAIDの再構成、読取不良のイメージ取得、PDF／ZIP／MP4等のcarvingは未対応です。有料製品との性能比較は未検証です。
 [対応範囲](docs/ALPHA.md)・[製品仕様](docs/SPEC.md)・[進捗](docs/GOAL.md)
 
 ![名前・作成日時・更新日時・種類・サイズを列で表示する実GUI](docs/images/details-view.png)
@@ -14,16 +14,20 @@ RAIDの再構成、読取不良のイメージ取得、PNG以外のcarvingは未
 元のフォルダー、種類、作成日、更新日、サイズ、名前の先頭、復元可否でグループ化できます。
 画像はLinux / Xvfb上の実GUIと、35形式の実ファイルを入れた合成NTFSボリュームイメージです。表示日時はテスト用の値です。
 
+[JPEG探索の使い方と検証範囲](docs/JPEG-CARVING.md)。元の場所への復元・同じディスク・同名処理も引き続き使えます。
+
+![JPEGの詳細ビューと圧縮データの検証根拠を表示する実GUI](docs/images/jpeg-carving.png)
+
 ## ダウンロード
 
-[この版のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.8)
+[この版のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.9)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-windows-x64-portable.zip) |
-| Linux x64 | [Debian/Ubuntu用DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-macos-arm64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-macos-x64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/rescue-0.2.0-alpha.8-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-portable.zip) |
+| Linux x64 | [Debian/Ubuntu用DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64-portable.zip) |
 
 Windows版はユーザー単位でインストールし、スタートメニューから起動できます。VCランタイムを静的リンクしています。描画はDirect3D 12（wgpu）を使用します。
 Linux版はglibc 2.35以降（Ubuntu 22.04相当）、X11／Wayland・OpenGL環境が必要です。DEBはGUIメニューとCLIを登録します。
@@ -47,7 +51,7 @@ macOSはアドホック署名のみで、Developer ID署名・公証はありま
 
 Quickの検索フォルダー・深度は各ボリュームを基準にします。ディスク全体の結果には`P1/`等の識別用パスと`p1:`等の候補IDを付けます。深度0は指定フォルダー直下、空欄は追加の深度制限なし。
 範囲・深度・拡張子は検出結果を絞り、使用中領域との競合確認はボリューム全体を調べます。
-Carvingは指定バイト範囲の静止PNGを探索します。終了位置は範囲に含めず、範囲外へはみ出すPNGを対応済みにしません。
+Carvingは指定バイト範囲のPNG・JPEGを探索します。終了位置は範囲に含めず、範囲外へはみ出す画像を対応済みにしません。
 
 ![フォルダーでグループ化したアイコン表示](docs/images/icons-view.png)
 
@@ -62,20 +66,23 @@ Windowsでは管理者として起動してください。Linux・macOSはデバ
 
 ## 技術説明のインテリジェンスUI
 
-[通信不要の操作できる技術説明HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/intelligence.html)で、
+[通信不要の操作できる技術説明HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/intelligence.html)で、
 操作の流れ、実画面、検索と保存の根拠・制限を確認できます。READMEとリリースには毎回、実画面と技術説明を掲載します。
 GUIでも「復元の根拠」を開くと、候補の配置・割当状態・警告・保存結果を確認できます。
 
-![操作フローと技術的根拠を切り替えて確認するインテリジェンスUI](docs/images/technical-ui-v8.png)
+![操作フローと技術的根拠を切り替えて確認するインテリジェンスUI](docs/images/technical-ui-v9.png)
 
 | 方式 | 根拠と検証 | 分からないこと |
 | --- | --- | --- |
 | Quick | MFT / FAT / NoFatChainの配置、親参照、一部の割当競合 | 一般の形式の内容の完全性、NTFSの割当競合 |
 | PNG carving | 全チャンクCRC、zlib終端・Adler-32・展開長、パレット・画素、再読込ハッシュ | 元の名前・階層・割当・削除状態 |
+| JPEG carving | セグメント、Huffman、全MCU、リスタート、プログレッシブ係数、画素、再読込ハッシュ | 元の名前・階層・日時・割当・削除状態、削除前の内容との一致 |
 | 日時表示 | NTFS FILETIME、FAT DOS時刻、exFATのUTCオフセット | 記録のない日時、FATのタイムゾーン |
 | ZIP保存 | ファイル別SHA-256、ZIPのCRC、ZIP全体SHA-256、結果レポート | 削除前の内容との一致は正解データの照合が必要 |
 
 ## クラウドでの復元検証
+
+alpha.9は追加58項目でJPEG32枚と埋込サムネイルの33候補をCLI／MCPで全バイト照合。破損33条件を拒否しました。Linux実GUIからのJPEG33件のZIP保存と、既存35形式36ファイルの元の場所／ZIP保存も照合しています。[JPEGの検証記録](docs/JPEG-CARVING.md)・[実GUIのJSON](docs/gui-jpeg-results.json)。4ネイティブ環境の検証と実配布物の照合をリリース条件にしています。
 
 alpha.8の公開インストール／ポータブル8配布物、48添付ファイルと追加6レポートのSHA-256を実取得で照合しました。[照合JSON](docs/public-release-v0.2.0-alpha.8.json)を参照。
 [公開後の4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)では、署名・梱包後のCLIそのもので35形式、864件のディスク試験、元の場所・同名処理の追加試験、新規仮想媒体で実際に削除したPDFのCLI／MCP復元が成功しています。実HDD／SSD一般の復元率を示すものではありません。
@@ -111,7 +118,7 @@ PowerShellでの例。`scan`の返すセッションと、`results`の候補ID�
 
 フォルダー保存は`--archive`の代わりに`--destination 'E:\Recovered'`。
 個別選択は`--all`の代わりに`--id <候補ID>`を繰り返します。
-PNG探索は`scan --mode carve --range-start 0 --range-end 10485760`。終了位置を省略するとイメージ末尾です。
+PNG・JPEG探索は`scan --mode carve --range-start 0 --range-end 10485760`。終了位置を省略すると入力末尾です。JPEGだけを探す場合は `--extension jpg` を追加します。
 Linux/macOSでも同じ引数を`rescue`に渡します。
 
 MCPクライアントから、ローカルstdioサーバーを起動します。
@@ -122,7 +129,7 @@ MCPクライアントから、ローカルstdioサーバーを起動します。
 
 `list_sources`、`start_scan`、`get_job`、`list_candidates`、`recover_files`、`cancel_job`、`get_report`を提供します。
 `start_scan`は`mode`、`extensions`配列、`path_prefix`、`max_depth`、`range_start`／`range_end`に対応。
-`recover_files`は`output_format: "directory"`または`"zip"`を指定できます。ZIPの`destination`はZIPのフルパスです。
+`recover_files`は`output_format: "directory"`、`"zip"`、`"original"`を指定できます。ZIPの`destination`はZIPのフルパスです。
 開始操作には`request_id`が必要で、返された`job_id`を`get_job`で確認します。許可済みの入力・出力だけを使用します。
 
 ## 開発・配布

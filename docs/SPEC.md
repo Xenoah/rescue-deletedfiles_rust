@@ -572,3 +572,7 @@ GUIはalphaでegui/eframeを採用。RAIDの互換プロファイルは、その
 ### alpha.8 保存先要件の更新（2026-11-04）
 
 ユーザー指定により別媒体限定を解除し、元の場所への復元・同じ媒体への保存・連番／スキップ・同名フォルダー統合を追加した。alpha.7の別媒体限定は当時の実装記録。現行の動作と上限は[SAME-LOCATION.md](SAME-LOCATION.md)を参照する。
+
+### alpha.9 JPEG carving（2026-11-05 JST）
+
+連続した8ビットHuffman JPEG（逐次・プログレッシブ）の探索と検証を追加。画像デコーダーの修復動作を成功判定に使わず、全MCUと圧縮データの過不足を別途検証する。元の名前・日時・削除状態は不明のまま表示する。範囲と上限は[JPEG-CARVING.md](JPEG-CARVING.md)を参照。PDF／ZIP／MP4等の追加carvingは未完了。

@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 仕様 | 対象全カテゴリ、GUI/CLI/MCP、比較・受入基準 | mainに公開済み |
 | v0.1 alpha | NTFS RAWの基本復元、GUI/CLI/MCP、正解付きテスト、Windows成果物 | v0.1.0-alpha.2公開済み。Windows/Linux CI成功、公開ZIPのSHA-256一致 |
-| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。JPEG等は未完了 |
+| v0.2 alpha | FAT32/exFAT、圧縮/ADS、主要形式のcarving | 圧縮/ADS・FAT32/exFATの基本復元をv0.2.0-alpha.3で公開済み。Windows/Linux CI・公開ZIPのSHA-256一致を確認。PNG carving・根拠を示すGUI・技術説明UIをv0.2.0-alpha.4で公開済み。Windows/Linux CI・全配布物のSHA-256一致を確認。alpha.9でJPEGの実装・ローカル検証済み。PDF／ZIP／MP4等は未完了 |
 | v0.3 alpha | 実デバイス、読取マップ、イメージ取得、論理破損 | alpha.7でデバイスの読み取り専用アクセスとMBR/EBR/GPTを先行実装。読取マップ・イメージ取得は未完了 |
 | v0.4 alpha | 対応RAIDの仮想再構成 | 未着手 |
 | v0.9 beta | 統合、異常系、大容量、Windows操作性 | 未着手 |
@@ -28,9 +28,9 @@ Windows debug/releaseのCLI/MCP実行は[公開CI](https://github.com/Xenoah/res
 各小区切りでも検証後にタグを追加し、既存タグは付け替えない。
 v0.2.0-alpha.1は[CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41664246239)成功、
 公開ZIPのSHA-256一致を確認済み。alpha.3ではFAT32/exFATの13ファイルと異常系・取消17項目を検証。
-最新の[3 OS版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.6)と
+alpha.6の[3 OS版リリース](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.6)と
 [成功したタグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41837157548)を確認済み。
-次はJPEG/PDF/ZIP/MP4等の主要形式へcarvingを拡張する。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
+次はPDF/ZIP/MP4等の主要形式へcarvingを拡張する。FATのチェーン喪失時の推測や壊れたブート領域の探索は未完了。
 この環境には/goalの登録・継続実行ツールがないため、会話終了後の自動実行は登録していない。
 
 README・リリースには毎回、実際の画面、技術的根拠、検証環境・制限を掲載する。
@@ -69,3 +69,7 @@ alpha.7は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/
 alpha.8の[4ネイティブ環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)が成功。新規仮想媒体の実削除・元の場所へのCLI/MCP復元、8配布物と全添付の組立まで通過した。タグ発行後、公開した実ファイルを再取得して照合する。
 
 alpha.8は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41932655121)で4環境の検証を通過して[公開済み](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.8)。公開8配布物・48一次添付・追加6レポートを実取得で照合し、[署名／梱包後CLIの4環境検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)と公開Linux GUIの元の場所36件・ZIP36件・既存保持／スキップも通過した。元の場所・同名処理の今回の実装と公開は完了。PNG以外のcarving・イメージ取得・RAID・商用比較は後続工程。
+
+## alpha.9 JPEG探索
+
+通常・プログレッシブJPEGを、独立した圧縮データ検査と画素展開で検証する。32枚＋埋込サムネイル33候補、追加58項目（破損33条件）、実GUIのJPEG ZIP33件を照合済み。PNGとの混在、旧セッション読込、元の場所／ZIP36件も維持。4環境のネイティブCIと公開配布物そのものの試験を経て公開する。詳細は[JPEG-CARVING.md](JPEG-CARVING.md)。以降のPDF／ZIP／MP4、読取マップ、RAID、商用比較は後続工程。

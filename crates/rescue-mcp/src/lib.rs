@@ -75,7 +75,7 @@ fn tools() -> Value {
         ),
         tool(
             "start_scan",
-            "Scan a regular image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG with CRC and pixel decoding. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
+            "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG with structure and pixel decoding (JPEG entropy is checked without repair). Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
             json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
             &["source", "request_id"],
             false
@@ -218,7 +218,7 @@ impl Server {
         let result = match name {
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
-                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","native_read_only_disks","mbr_gpt_partitions"],"version":rescue_core::VERSION}),
+                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","jpeg_raw_carving","native_read_only_disks","mbr_gpt_partitions"],"version":rescue_core::VERSION}),
             ),
             "start_scan" => {
                 let carve = match args.get("mode") {

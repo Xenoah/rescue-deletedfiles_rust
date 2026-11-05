@@ -130,7 +130,7 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
-    if ![1, 2, 3, 4, 5].contains(&session.schema_version) {
+    if ![1, 2, 3, 4, 5, 6].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if cancel.load(Ordering::Relaxed) {

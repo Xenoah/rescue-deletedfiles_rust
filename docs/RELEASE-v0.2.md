@@ -1,48 +1,47 @@
-# Rescue v0.2.0-alpha.8
+# Rescue v0.2.0-alpha.9
 
-**「PDFを消してしまった → 元の場所へ戻す」に対応しました。** 同じディスクにも保存できます。GUI・CLI・MCPは共通の復元と衝突処理を使います。
+**管理情報が失われたJPEG写真を、構造・圧縮データ・画素まで検証して復元できるようになりました。** 通常のJPEGとプログレッシブJPEGをGUI・CLI・MCPで探索します。
 
-![元の場所への復元と同名処理の設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.8/docs/images/original-location.png)
+![JPEG候補の詳細列と検証根拠](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/jpeg-carving.png)
 
 ## 変更
 
-- 保存方式に「元の場所へ戻す」を追加。確認した元の階層・名前とマウント先を使います。指定フォルダーとZIP保存も利用できます。
-- 既存ファイルは上書きせず、復元側を `資料 (復元 1).pdf` のように保存。同名フォルダーは統合します。スキップも選べます。
-- ファイルがフォルダー名を塞いでいる場合は復元側フォルダーを連番にし、配下のファイルをまとめます。大文字・小文字だけが違う名前も衝突として扱います。
-- 選択ファイルをすべて先に読み出してから保存。同じ媒体ではスキャン用の作業フォルダーやセッションを作りません。合計512 MiBまで。超過は出力作成前に停止します。
-- CLIにセッション保存不要の `restore --source C: --name report.pdf --original --json` を追加。大きいジョブには別媒体への `recover --stream` も残しています。
-- MCPの `recover_files` に `output_format: "original"`、`collision: "keep_both" / "skip"`、`volume_roots` を追加。明示した出力ルートの制限を維持します。
+- 詳細設定に「PNG・JPEG / Carving」。拡張子の `jpg`・`jpeg`・`jpe` はJPEGを選び、空欄はPNGとJPEGの両方を探索。指定バイト範囲内だけを解析します。
+- SOF0／SOF1／SOF2の8ビットHuffman DCT。グレースケール、RGB／YCbCr、CMYK、一般的なサブサンプリング、成分別スキャン、リスタートマーカーに対応します。
+- 全MCU、Huffman符号、ゼロ／EOBの連続数、プログレッシブ係数帯・差分、リスタート位置・順序、パディングを独立検査。欠損ビットを補うデコーダーの動作で成功扱いにしません。
+- 画素展開も通過した候補を `jpeg_validated` と表示。保存直前に構造と全JPEGハッシュを再検証し、再圧縮せず元バイトを保存します。
+- 既存の詳細列・グループ表示、元の場所への復元、同じディスクへの保存、連番／スキップ、同名フォルダー統合、ZIP保存も利用できます。
+- 新しいcarvingセッションはスキーマ6。従来の1〜5も読み込めます。
 
-![名前・日時・種類・サイズの列とグループ](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.8/docs/images/details-view.png)
+## 技術説明と実行結果
 
-## 技術説明と検証
+独立したPillow／libjpegと小さな別エンコーダーで32枚を生成・再読込。埋込サムネイルを含む33候補をCLI／MCPで全バイト照合しました。追加58項目には、途中切断・余剰データ・リスタート不正等の破損33条件、拡張子、範囲、ZIP、同名処理、改変セッション、ソース変更の再検証を含みます。
 
-保存済みJSONのパス・サイズ・配置を信頼せず、ディスクの管理情報を再探索して選択データを読み出します。全読出しと入力の再検証が終わってから、排他的な新規作成で保存します。通常の保存にハードリンクは不要です。MCPは固定したディレクトリーハンドルでルート差替えや範囲外のリンクを拒否します。
+Linux実GUIでも33候補をZIP保存し、元バイト・CRC・SHA-256と入力無変更を確認。既存35形式36ファイルの元の場所／ZIP保存、既存PDF保持、36日時も再照合しました。
 
-- CLI／MCPの追加61項目でPDF、36ファイルの階層保存、衝突・スキップ、改変セッション、上限、ZIP CRCを確認。
-- Linuxの実GUIで元の場所へ36ファイルを復元し、正解バイト・SHA-256が一致。既存PDFは無変更、復元PDFは連番。GUIのZIP保存でも36ファイル・36日時を照合。
-- 4つのネイティブCIで、作成した仮想媒体に実際にPDFを保存・削除し、CLI／MCPで同じボリュームの元の場所へ復元する試験を必須化。WindowsはNTFS、Linux／macOSはexFAT。
-- 従来のRustテスト、7つのCLI／MCP統合群、35形式・36ファイル、MBR／GPT、各OS864件のディスク試験、インストール／ポータブルの検証とGUI起動確認も継続。
+![JPEG33候補のZIP保存が完了した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/jpeg-restored.png)
 
-実行結果は添付の `restore-native-*.json`、`restore-results-*.json`、`disk-results-*.json`、`verification-*.json`、`gui-flow-results.json` を参照してください。公開した配布物そのものの追加検証は完了後に別途追記します。
+4ネイティブ環境でRustテスト・8統合群・35形式・読み取り専用仮想ディスク864件・新規仮想媒体の実削除PDF復元・GUI起動・8配布物を検証して公開します。添付の `jpeg-results-*.json`、`gui-jpeg-results.json`、`restore-native-*.json`、`disk-results-*.json`、`verification-*.json` に結果を収録。公開実行ファイルそのものの追加検証は完了後に追記します。
 
-![元の場所への保存が36件完了した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.8/docs/images/original-restored.png)
+[通信不要の操作できる技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/intelligence.html)では、6つの実画面と5つの探索・保存方式を切り替えられます。
 
-[通信不要の操作できる技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.8/intelligence.html)で、実画面と探索・元の場所への保存の根拠を切り替えられます。
-
-![技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.8/docs/images/technical-ui-v8.png)
+![JPEGの技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/technical-ui-v9.png)
 
 ## ダウンロード
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | `windows-x64-setup.exe` | `windows-x64-portable.zip` |
-| Linux x64 | `linux-x64.deb` | `linux-x64-portable.tar.gz` |
-| macOS Apple Silicon | `macos-arm64.pkg` | `macos-arm64-portable.zip` |
-| macOS Intel | `macos-x64.pkg` | `macos-x64-portable.zip` |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64-portable.zip) |
 
-添付ファイル名の先頭は `rescue-0.2.0-alpha.8-`。`SHA256SUMS.txt`で照合できます。Linuxはglibc 2.35以降。macOSは13以降、アドホック署名でDeveloper ID署名・公証はありません。
+`SHA256SUMS.txt`で照合できます。Linuxはglibc 2.35以降。macOSは13以降、アドホック署名でDeveloper ID署名・公証はありません。
 
-同じディスクへの保存は未選択の削除データに影響する可能性があります。元のパスが不明な候補、FAT32の推定した削除名、PNG carvingは指定フォルダーへ保存してください。実SSDのTRIM、上書き、物理故障で失われたバイトは復元できません。PNG以外のcarving、読取マップ・イメージ取得、RAID再構成、有料製品との比較は未完了です。
+JPEGは連続配置のみ。符号化データ64 MiB、画素用予約（幅×高さ×4）64 MiB、DCT係数128 MiB、256スキャンまで。12ビット、算術・可逆・階層JPEG、DNL、未完了のプログレッシブ係数帯、断片再構成は未対応です。PNG・JPEG共通で1探索4 GiBの検証予算を使い、上限到達は未探索領域を明示します。
 
-[仕様](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.8/docs/SAME-LOCATION.md) · [対応範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.8/docs/ALPHA.md) · [検証](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.8/docs/VALIDATION.md)
+JPEGには全体CRCがなく、検証成功は削除前の内容との一致保証ではありません。元の名前・日時・削除状態は不明で、使用中画像や埋込サムネイルも候補になります。carvingの候補はフォルダーかZIPへ保存してください。同じディスクへの保存は全選択データを先に読み出します（合計512 MiBまで）。未選択の削除データに影響する可能性があります。
+
+PDF／ZIP／MP4等のcarving、読取マップ・イメージ取得、RAID、有料製品比較は後続工程です。TRIMや上書きで失われたバイトは復元できません。
+
+[JPEGの仕様とテスト](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/JPEG-CARVING.md) · [対応範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/ALPHA.md) · [検証](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/VALIDATION.md)

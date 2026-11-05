@@ -1,3 +1,9 @@
+# alpha.9 JPEG探索と既存保存フロー
+
+[実GUIのJPEG画面](images/jpeg-carving.png)で33候補を選択してZIP保存し、正解の全バイト・CRC・SHA-256・入力無変更を照合した。[JPEG GUIの記録](gui-jpeg-results.json)。JPEGのみの拡張子指定、詳細列、サイズ、未知の日時とパス、検証根拠を実操作で確認した。
+
+同じLinux debug実行ファイルで既存36ファイルの元の場所への復元と既存PDF保持、ZIP36件と36日時も再照合した。[元の場所](gui-original-results.json)・[保存フローと6画面](ui-flow-results.json)。すべて人工生成イメージで、Windows／macOSの手動操作や実媒体の復元率とは区別する。
+
 # alpha.8 元の場所への復元
 
 Linux / Xvfbの実GUIで、合成NTFSボリュームから35形式・36ファイルを元の階層へ復元した。既存のsample.pdfを残し、復元側はsample (復元 1).pdfになった。全36件の正解バイト・SHA-256と入力イメージの無変更を照合。[元の場所の記録](gui-original-results.json)を参照。

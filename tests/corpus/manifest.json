@@ -13,7 +13,7 @@
       "bytes": 767,
       "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
       "validated_by": "Pillow decode",
-      "carving_supported": false
+      "carving_supported": true
     },
     {
       "format": "PNG",

@@ -245,3 +245,9 @@ Windowsの実NTFS仮想媒体で、空の非resident DATAがhighest VCN=-1を持
 公開Linux GUI（SHA-256: 2777e20c298b135e0a22925bbd38f68f32a582d459066851421eea0308e643ae）でも元の場所へ36件、既存PDF保持、36件スキップ、ZIP36件と表示日時36件、入力イメージの全体無変更を再確認。6画面を実撮影した。公開HTMLも5画面・4方式・390px幅でJSエラー／外部リクエストなし。[公開配布物](public-release-v0.2.0-alpha.8.json)・[元の場所](public-gui-original-v0.2.0-alpha.8.json)・[GUI ZIP](public-gui-v0.2.0-alpha.8.json)・[HTML](public-browser-v0.2.0-alpha.8.json)が機械可読記録。
 
 実デバイス試験は新規の仮想媒体に限る。実SSDのTRIM、物理故障、未対応FS、商用製品との復元率比較、Windows/macOS GUIの手動操作は検証したと主張しない。
+
+## 2026-11-05 JST / alpha.9 JPEG
+
+Rust 31項目、fmt、workspace/all-targets clippy（警告をエラー扱い）、8統合群をローカルで通過。追加JPEG58項目は32枚＋埋込サムネイル33候補のCLI/MCP全バイト一致、破損33条件の拒否、PNG混在、範囲、拡張子同義語、ZIP、衝突、改変セッション、元ファイル変更の再検証を含む。独立エンコーダーの正解は tests/jpeg。35形式の900観測中730件が正解一致し、未対応・上書き済みケースは期待どおり未復元。これは一般的な復元率の分母ではない。
+
+Linux実GUIでJPEG33候補のZIP、既存35形式36ファイルの元の場所／ZIP、既存PDF保持、36日時を照合。入力イメージ全体のSHA-256は不変。ネイティブ4環境と公開実行ファイルの検証はCIの機械可読記録に分けて記載する。

@@ -1,12 +1,12 @@
-//! Bounded, contiguous PNG carving. Deletion and allocation status remain unknown.
+//! Bounded contiguous PNG/JPEG carving. Deletion and allocation remain unknown.
+mod jpeg;
+mod png;
 use crate::{
     AllocationStatus, Candidate, Error, ExtentEvidence, FileSystem, Progress, ProgressUnit,
     RecoveryData, Result, ScanOptions, Session, ntfs::Data, source::Image,
 };
-use flate2::{Decompress, FlushDecompress, Status};
 use sha2::{Digest, Sha256};
 use std::{
-    io::Cursor,
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -14,259 +14,74 @@ use uuid::Uuid;
 
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
-const MAX_PNG: usize = 64 * 1024 * 1024;
-const MAX_CHUNKS: usize = 65_536;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
-const PROVENANCE: &str = "Contiguous PNG carving: original name, path, deletion and allocation status are unknown. Live files and embedded images may also be found.";
+const PROVENANCE: &str = "Contiguous PNG/JPEG carving: original name, path, deletion and allocation status are unknown. Live files and embedded images may also be found.";
 
-fn invalid(message: &str) -> Error {
-    Error::Invalid(format!("PNG: {message}"))
-}
 fn charge(budget: &mut u64, amount: usize) -> Result<()> {
     *budget = budget
         .checked_sub(amount as u64)
-        .ok_or_else(|| Error::Limit("PNG scan validation budget exhausted".into()))?;
+        .ok_or_else(|| Error::Limit("carving scan validation budget exhausted".into()))?;
     Ok(())
 }
 
-/// Exact filtered scanline length, including the seven Adam7 subimages.
-fn inflated_size(info: &png::Info<'_>) -> Result<usize> {
-    let passes = if info.interlaced {
-        vec![
-            (0, 0, 8, 8),
-            (4, 0, 8, 8),
-            (0, 4, 4, 8),
-            (2, 0, 4, 4),
-            (0, 2, 2, 4),
-            (1, 0, 2, 2),
-            (0, 1, 1, 2),
-        ]
-    } else {
-        vec![(0, 0, 1, 1)]
-    };
-    let bits = info.color_type.samples() as u64 * info.bit_depth as u64;
-    let mut size = 0u64;
-    for (x, y, dx, dy) in passes {
-        let width = u64::from(info.width).saturating_sub(x).div_ceil(dx);
-        let height = u64::from(info.height).saturating_sub(y).div_ceil(dy);
-        if width == 0 || height == 0 {
-            continue;
-        }
-        size = size
-            .checked_add(
-                (width * bits)
-                    .div_ceil(8)
-                    .checked_add(1)
-                    .and_then(|row| row.checked_mul(height))
-                    .ok_or_else(|| invalid("scanline size overflow"))?,
-            )
-            .ok_or_else(|| invalid("image size overflow"))?;
-    }
-    if size > (MAX_PNG * 2) as u64 {
-        return Err(Error::Limit("PNG filtered scanlines exceed 128 MiB".into()));
-    }
-    Ok(size as usize)
+#[derive(Clone, Copy)]
+enum Format {
+    Png,
+    Jpeg,
 }
-
-fn strict_zlib(input: &[u8], expected: usize, cancel: &AtomicBool) -> Result<()> {
-    let mut stream = Decompress::new(true);
-    // One extra byte distinguishes exact output from trailing decoded data.
-    let mut output = vec![0; expected + 1];
-    loop {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(Error::Cancelled);
-        }
-        let before = (stream.total_in(), stream.total_out());
-        let status = stream
-            .decompress(
-                &input[before.0 as usize..],
-                &mut output[before.1 as usize..],
-                FlushDecompress::Finish,
-            )
-            .map_err(|e| invalid(&format!("zlib: {e}")))?;
-        if stream.total_out() > expected as u64 {
-            return Err(invalid("extra decoded scanline data"));
-        }
-        if status == Status::StreamEnd {
-            if stream.total_out() != expected as u64 || stream.total_in() != input.len() as u64 {
-                return Err(invalid("zlib extent or decoded length mismatch"));
-            }
-            return Ok(());
-        }
-        if before == (stream.total_in(), stream.total_out()) {
-            return Err(invalid("incomplete zlib stream or checksum"));
+impl Format {
+    fn prefix(self) -> &'static str {
+        match self {
+            Self::Png => "png",
+            Self::Jpeg => "jpeg",
         }
     }
-}
-
-/// Independently determines the extent, validates every chunk CRC, then decodes pixels.
-/// Text/ICC payloads are retained verbatim; their compressed contents are not interpreted.
-fn validate(
-    image: &mut Image,
-    offset: u64,
-    cancel: &AtomicBool,
-    budget: &mut u64,
-    boundary: u64,
-) -> Result<Vec<u8>> {
-    if offset.checked_add(8).is_none_or(|end| end > boundary) {
-        return Err(invalid("signature outside selected range"));
-    }
-    let mut bytes = image.read(offset, 8)?;
-    charge(budget, 8)?;
-    if bytes != SIGNATURE {
-        return Err(invalid("signature"));
-    }
-    let mut has_idat = false;
-    let mut ended_idat = false;
-    let mut has_palette = false;
-    let mut finished = false;
-    let mut idat = Vec::new();
-    let mut palette_entries = 0;
-    for index in 0..MAX_CHUNKS {
-        if cancel.load(Ordering::Relaxed) {
-            return Err(Error::Cancelled);
-        }
-        let start = offset
-            .checked_add(bytes.len() as u64)
-            .ok_or_else(|| invalid("offset overflow"))?;
-        if start.checked_add(8).is_none_or(|end| end > boundary) {
-            return Err(invalid("chunk header outside selected range"));
-        }
-        let header = image.read(start, 8)?;
-        charge(budget, 8)?;
-        let length = u32::from_be_bytes(header[..4].try_into().unwrap()) as usize;
-        let kind = &header[4..8];
-        if length > MAX_PNG || bytes.len().saturating_add(length + 12) > MAX_PNG {
-            return Err(Error::Limit("PNG encoded extent exceeds 64 MiB".into()));
-        }
-        if !kind.iter().all(u8::is_ascii_alphabetic) || !kind[2].is_ascii_uppercase() {
-            return Err(invalid("chunk type"));
-        }
-        if (index == 0 && (kind != b"IHDR" || length != 13)) || (index != 0 && kind == b"IHDR") {
-            return Err(invalid("IHDR order or length"));
-        }
-        match kind {
-            b"acTL" | b"fcTL" | b"fdAT" => {
-                return Err(Error::Unsupported("animated PNG carving".into()));
-            }
-            b"PLTE" => {
-                if has_palette
-                    || has_idat
-                    || length == 0
-                    || length > 768
-                    || !length.is_multiple_of(3)
-                {
-                    return Err(invalid("PLTE order or length"));
-                }
-                has_palette = true;
-            }
-            b"IDAT" => {
-                if ended_idat {
-                    return Err(invalid("nonconsecutive IDAT"));
-                }
-                has_idat = true;
-            }
-            b"IEND" => {
-                if length != 0 || !has_idat {
-                    return Err(invalid("IEND without image data"));
-                }
-            }
-            b"IHDR" => {}
-            _ if kind[0].is_ascii_uppercase() => {
-                return Err(Error::Unsupported("unknown critical PNG chunk".into()));
-            }
-            _ => {}
-        }
-        if has_idat && kind != b"IDAT" {
-            ended_idat = true;
-        }
-        if start
-            .checked_add(length as u64 + 12)
-            .is_none_or(|end| end > boundary)
-        {
-            return Err(invalid("PNG extends outside selected range"));
-        }
-        charge(budget, length + 4)?;
-        let body = image.read(start + 8, length + 4)?;
-        let mut crc = crc32fast::Hasher::new();
-        crc.update(kind);
-        crc.update(&body[..length]);
-        if crc.finalize() != u32::from_be_bytes(body[length..].try_into().unwrap()) {
-            return Err(invalid("chunk CRC mismatch"));
-        }
-        if kind == b"PLTE" {
-            palette_entries = length / 3;
-        }
-        if kind == b"IDAT" {
-            idat.extend_from_slice(&body[..length]);
-        }
-        bytes.extend_from_slice(&header);
-        bytes.extend_from_slice(&body);
-        if kind == b"IEND" {
-            finished = true;
-            break;
+    fn extension(self) -> &'static str {
+        match self {
+            Self::Png => "png",
+            Self::Jpeg => "jpg",
         }
     }
-    if !finished {
-        return Err(Error::Limit("PNG chunk count exceeds 65536".into()));
+    fn id(self, offset: u64) -> String {
+        format!("{}-{offset:016x}", self.prefix())
     }
-    let mut decoder =
-        png::Decoder::new_with_limits(Cursor::new(&bytes), png::Limits { bytes: MAX_PNG });
-    decoder.ignore_checksums(false);
-    decoder.set_ignore_text_chunk(true);
-    decoder.set_ignore_iccp_chunk(true);
-    let mut reader = decoder.read_info().map_err(|e| invalid(&e.to_string()))?;
-    let info = reader.info();
-    let depth = info.bit_depth as usize;
-    let indexed = info.color_type == png::ColorType::Indexed;
-    if ((info.color_type == png::ColorType::Grayscale
-        || info.color_type == png::ColorType::GrayscaleAlpha)
-        && has_palette)
-        || (indexed && (!has_palette || palette_entries > 1usize << depth))
-    {
-        return Err(invalid("PLTE does not match color type or bit depth"));
+    fn name(self, offset: u64) -> String {
+        format!("{}_{offset:016x}.{}", self.prefix(), self.extension())
     }
-    let width = info.width as usize;
-    let raw_size = inflated_size(info)?;
-    charge(budget, raw_size)?;
-    strict_zlib(&idat, raw_size, cancel)?;
-    drop(idat);
-    let length = reader
-        .output_buffer_size()
-        .filter(|n| *n <= MAX_PNG)
-        .ok_or_else(|| Error::Limit("PNG decoded pixels exceed 64 MiB".into()))?;
-    charge(budget, length)?;
-    if cancel.load(Ordering::Relaxed) {
-        return Err(Error::Cancelled);
-    }
-    let mut pixels = vec![0; length];
-    let output = reader
-        .next_frame(&mut pixels)
-        .map_err(|e| invalid(&e.to_string()))?;
-    if indexed {
-        let mask = (1usize << depth) - 1;
-        for row in pixels[..output.buffer_size()].chunks_exact(output.line_size) {
-            for x in 0..width {
-                let position = x * depth;
-                let index = (row[position / 8] as usize >> (8 - depth - position % 8)) & mask;
-                if index >= palette_entries {
-                    return Err(invalid("pixel index outside PLTE"));
-                }
-            }
+    fn evidence(self) -> ExtentEvidence {
+        match self {
+            Self::Png => ExtentEvidence::PngValidated,
+            Self::Jpeg => ExtentEvidence::JpegValidated,
         }
     }
-    reader.finish().map_err(|e| invalid(&e.to_string()))?;
-    if cancel.load(Ordering::Relaxed) {
-        return Err(Error::Cancelled);
+    fn allowed(self, extensions: &[String]) -> bool {
+        extensions.is_empty()
+            || extensions.iter().any(|ext| {
+                let ext = ext
+                    .trim()
+                    .trim_start_matches("*.")
+                    .trim_start_matches('.')
+                    .to_ascii_lowercase();
+                ext == "*"
+                    || match self {
+                        Self::Png => ext == "png",
+                        Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
+                    }
+            })
     }
-    Ok(bytes)
-}
-
-fn name(offset: u64) -> String {
-    format!("png_{offset:016x}.png")
-}
-fn id(offset: u64) -> String {
-    format!("png-{offset:016x}")
+    fn validate(
+        self,
+        image: &mut Image,
+        at: u64,
+        cancel: &AtomicBool,
+        budget: &mut u64,
+        boundary: u64,
+    ) -> Result<Vec<u8>> {
+        match self {
+            Self::Png => png::validate(image, at, cancel, budget, boundary),
+            Self::Jpeg => jpeg::validate(image, at, cancel, budget, boundary),
+        }
+    }
 }
 
 /// Scans every byte of a regular image. `max_records` bounds signature attempts;
@@ -277,7 +92,7 @@ pub fn scan_carving(
     cancel: &AtomicBool,
     progress: impl FnMut(Progress),
 ) -> Result<Session> {
-    scan_range(path, options, 0, None, cancel, progress)
+    scan_range(path, options, 0, None, &[], cancel, progress)
 }
 
 pub(crate) fn scan_range(
@@ -285,6 +100,7 @@ pub(crate) fn scan_range(
     options: ScanOptions,
     start: u64,
     end: Option<u64>,
+    extensions: &[String],
     cancel: &AtomicBool,
     mut progress: impl FnMut(Progress),
 ) -> Result<Session> {
@@ -295,13 +111,15 @@ pub(crate) fn scan_range(
         return Err(Error::Request("scan range outside image".into()));
     }
     let mut session = Session {
-        schema_version: 4, filesystem: FileSystem::Raw, id: Uuid::new_v4().to_string(),
+        schema_version: 6, filesystem: FileSystem::Raw, id: Uuid::new_v4().to_string(),
         source: image.path.clone(), fingerprint, candidates: Vec::new(), scanned_records: 0,
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: None,
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG only; <=64 MiB encoded and decoded pixels, <=128 MiB filtered scanlines, <=65536 chunks per file; 4 GiB validation budget. Progress counters use bytes. Ancillary text/ICC contents are not semantically validated.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG and 8-bit Huffman JPEG; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
+    let png_allowed = Format::Png.allowed(extensions);
+    let jpeg_allowed = Format::Jpeg.allowed(extensions);
     let mut offset = start;
     let mut budget = VALIDATION_BUDGET;
     'scan: while offset < boundary {
@@ -311,10 +129,15 @@ pub(crate) fn scan_range(
         }
         let count = WINDOW.min(boundary - offset);
         let buffer = image.read(offset, (count + 7).min(boundary - offset) as usize)?;
-        for (index, window) in buffer.windows(8).enumerate().take(count as usize) {
-            if window != SIGNATURE {
+        for index in 0..count as usize {
+            let rest = &buffer[index..];
+            let format = if png_allowed && rest.starts_with(SIGNATURE) {
+                Format::Png
+            } else if jpeg_allowed && rest.starts_with(&[0xff, 0xd8, 0xff]) {
+                Format::Jpeg
+            } else {
                 continue;
-            }
+            };
             if cancel.load(Ordering::Relaxed) {
                 session.cancelled = true;
                 break 'scan;
@@ -327,14 +150,14 @@ pub(crate) fn scan_range(
                 break 'scan;
             }
             let at = offset + index as u64;
-            let parsed = validate(&mut image, at, cancel, &mut budget, boundary);
+            let parsed = format.validate(&mut image, at, cancel, &mut budget, boundary);
             let mut candidate = Candidate {
-                id: id(at),
+                id: format.id(at),
                 record: at,
                 sequence: 0,
                 stream_name: None,
-                name: name(at),
-                original_path: name(at),
+                name: format.name(at),
+                original_path: format.name(at),
                 path_verified: false,
                 size: None,
                 supported: false,
@@ -350,7 +173,7 @@ pub(crate) fn scan_range(
                     candidate.size = Some(bytes.len() as u64);
                     candidate.supported = true;
                     candidate.record_sha256 = format!("{:x}", Sha256::digest(&bytes));
-                    candidate.extent_evidence = ExtentEvidence::PngValidated;
+                    candidate.extent_evidence = format.evidence();
                 }
                 Err(Error::Cancelled) => {
                     session.cancelled = true;
@@ -403,7 +226,14 @@ pub(crate) fn recovery_data(
     candidate: &Candidate,
     cancel: &AtomicBool,
 ) -> Result<RecoveryData> {
-    if candidate.id != id(candidate.record)
+    let format = if candidate.id == Format::Png.id(candidate.record) {
+        Format::Png
+    } else if candidate.id == Format::Jpeg.id(candidate.record) {
+        Format::Jpeg
+    } else {
+        return Err(Error::SourceChanged);
+    };
+    if candidate.id != format.id(candidate.record)
         || candidate.sequence != 0
         || candidate.stream_name.is_some()
     {
@@ -411,15 +241,15 @@ pub(crate) fn recovery_data(
     }
     let mut budget = VALIDATION_BUDGET;
     let boundary = image.length;
-    let bytes = validate(image, candidate.record, cancel, &mut budget, boundary)?;
+    let bytes = format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
     if candidate.record_sha256 != format!("{:x}", Sha256::digest(&bytes)) {
         return Err(Error::SourceChanged);
     }
     Ok(RecoveryData {
         data: Data::Resident(bytes),
-        name: name(candidate.record),
+        name: format.name(candidate.record),
         warnings: vec![PROVENANCE.into()],
-        extent_evidence: ExtentEvidence::PngValidated,
+        extent_evidence: format.evidence(),
         allocation_status: AllocationStatus::Unknown,
     })
 }

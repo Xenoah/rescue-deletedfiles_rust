@@ -71,6 +71,7 @@ pub enum ExtentEvidence {
     SingleCluster,
     NoFatChain,
     PngValidated,
+    JpegValidated,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -207,7 +208,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if ![1, 2, 3, 4, 5].contains(&session.schema_version) {
+        if ![1, 2, 3, 4, 5, 6].contains(&session.schema_version) {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -647,7 +648,7 @@ pub fn recover_to(
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
     session.guard_output(&destination.path)?;
-    if ![1, 2, 3, 4, 5].contains(&session.schema_version) {
+    if ![1, 2, 3, 4, 5, 6].contains(&session.schema_version) {
         return Err(Error::Unsupported("session schema".into()));
     }
     if session.filesystem == FileSystem::Disk {

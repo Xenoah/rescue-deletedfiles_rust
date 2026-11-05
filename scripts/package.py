@@ -112,7 +112,7 @@ Homepage: https://github.com/Xenoah/rescue-deletedfiles_rust
 Depends: libc6 (>= 2.35), libgcc-s1, libstdc++6, libx11-6, libxcursor1, libxrandr2, libxi6, libxkbcommon0, libxkbcommon-x11-0, libwayland-client0, libgl1, libegl1
 Recommends: xdg-desktop-portal, xdg-desktop-portal-gtk, fonts-noto-cjk
 Description: Read-only disk recovery GUI, CLI and MCP server
- NTFS, FAT32, exFAT metadata recovery and contiguous PNG carving.
+ NTFS, FAT32, exFAT metadata recovery and contiguous PNG/JPEG carving.
 ''',encoding='utf-8')
             (debroot/'usr/bin').mkdir(parents=True)
             for name in ['rescue','rescue-gui']:(debroot/'usr/bin'/name).symlink_to('/opt/rescue/'+name)

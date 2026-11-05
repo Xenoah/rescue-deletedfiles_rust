@@ -1,7 +1,7 @@
-# v0.2.0-alpha.8 の対応範囲
+# v0.2.0-alpha.9 の対応範囲
 
 Quickは物理ディスク・ボリューム・RAWイメージを読み取り専用で開きます。MBR／EBR／GPTの境界を検証し、NTFS・FAT32・exFATの各パーティションを探索します。GPTはヘッダーと配列のCRC、主・副の整合性を確認します。一方が壊れた場合は有効な方を警告付きで使い、修復は行いません。
-Carvingはディスク全体または指定した開始以上・終了未満のバイト範囲で静止PNGを探索します。未対応ファイルシステムの管理情報は解釈しません。
+Carvingはディスク全体または指定した開始以上・終了未満のバイト範囲でPNG・JPEGを探索します。未対応ファイルシステムの管理情報は解釈しません。
 
 Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロックデバイス、macOSは`/dev/[r]diskN[sM]`を受け付けます。GUIはディスク選択を既定にし、イメージは補助モードです。Windowsの管理者権限、Unixのデバイス読取権限が必要です。
 
@@ -20,10 +20,11 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
   復元時にはディレクトリーを再探索し、セッションの任意バイト位置を信頼しません。
 - 連続配置の静止PNG carving：全チャンクCRC、厳密なzlib終端・Adler-32・展開長、パレット、画素の展開、復元時の構造・全PNGハッシュ照合。
   色形式・ビット深度の各合法な組合せ、Adam7、分割IDATに対応します。
+- 8ビットHuffman JPEGの連続配置carving。SOF0／SOF1／SOF2、全MCU・圧縮データの過不足・リスタート・プログレッシブ係数・画素を検証。[具体的な対応と上限](JPEG-CARVING.md)。
 - 設定 → スキャン → 選択 → 復元のGUI。保存先とフォルダー／ZIPをスキャン前に設定。
 - 既定の詳細ビュー：名前・作成日時・更新日時・種類・サイズ・状態。列の昇降順・幅変更と7種のグループ化。アイコン表示も同じ選択を保持。
 - NTFS FILETIME、FAT DOS、exFAT UTCオフセットの日時表示。欠損値や不明なタイムゾーンを推測しない。
-- Quickの元パス・深度・拡張子フィルター、PNG carvingの開始／終了バイト。CLI/MCPも同じ設定を使用。
+- Quickの元パス・深度・拡張子フィルター、PNG・JPEG carvingの開始／終了バイト。CLI/MCPも同じ設定を使用。
 - ZIP64保存：作業領域へ復元 → 無圧縮ZIPと結果レポート → CRC・ZIP全体SHA-256 → 上書きなしの公開。取消・失敗時は一時領域を保持。
 - Recovery Intelligenceパネル：配置・形式、割当・名前、保存・SHA-256を区別して表示。
 - CLI、egui/eframeのGUI、ローカルstdio MCP。
@@ -41,7 +42,7 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
 - EFS、属性リストの追加extentsは未対応です。ディレクトリー自体のADSは未対応です。
   圧縮単位の指数が4以外、クラスターが4096バイトを超える圧縮も未対応です。
   $MFT自体が属性リストを必要とする場合は、この版ではスキャンを開始できません。
-- PNG以外のcarving、RAIDの再構成、イメージ取得、読取不良のマップ・再開、失われたパーティションの総当たり探索は後続フェーズです。
+- PDF／ZIP／MP4等のcarving、RAIDの再構成、イメージ取得、読取不良のマップ・再開、失われたパーティションの総当たり探索は後続フェーズです。
 - 最大256パーティション、GPT配列16MiB・4096エントリー、EBRチェーン128まで。重複・循環・範囲外・主副GPTの不一致・ハイブリッドMBRは拒否します。512/4096セクターのディスクイメージを検証します。未対応パーティションの省略は警告とtruncatedで示します。
 - 同じディスクへの保存と元の場所への復元は[保存仕様](SAME-LOCATION.md)に従います。選択データは合計512 MiBまで先に読み出します。
 - FAT12/16、dual-FATのTexFAT、未知のexFAT revisionは未対応です。
@@ -61,10 +62,10 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
   FATは16,384ディレクトリー、階層64、ディレクトリー64MiB、チェーン1,048,576クラスター、
   解析全体で200万クラスター訪問に制限します。上限到達はtruncatedまたはRESOURCE_LIMITで示します。
   FATの総レコード数は探索完了前には不明で、total_records=0です。
-- 通常ボリュームイメージのQuickはschema_version=3、Carvingは4（filesystem=raw）、デバイスQuickとパーティション集合は5を生成します。
-  v1〜v5を読み込めます。パーティションのIDは`pN:`、元パスは`PN/`を付け、境界と各ボリュームの指紋を保存します。復元時は表を再解析して照合し、JSONの任意オフセットを信頼しません。PNGのrecordはバイトオフセット、
-  record_sha256はPNG全体のSHA-256です。Carvingのscanned_records/total_recordsはバイト数、
-  invalid_recordsは検証未通過のPNG署名数です。進捗APIはunit=bytesを付けて区別します。
+- 通常ボリュームイメージのQuickはschema_version=3、Carvingは6（filesystem=raw、従来のPNGセッションは4）、デバイスQuickとパーティション集合は5を生成します。
+  v1〜v6を読み込めます。パーティションのIDは`pN:`、元パスは`PN/`を付け、境界と各ボリュームの指紋を保存します。復元時は表を再解析して照合し、JSONの任意オフセットを信頼しません。PNG／JPEGのrecordはバイトオフセット、
+  record_sha256は画像全体のSHA-256です。Carvingのscanned_records/total_recordsはバイト数、
+  invalid_recordsは検証未通過のPNG／JPEG署名数です。進捗APIはunit=bytesを付けて区別します。
 - セッションはJSON、最大128MiB。保存・読込の上限は共通で、候補とパスの予算超過は省略数とtruncatedを記録します。
   全候補を保持する大容量索引・メモリ目標の達成は未検証です。
 - MCPは同時に1ジョブ、最大32ジョブ・4セッション。再起動するとプロセス内の履歴は消えます。
@@ -88,6 +89,7 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
     python scripts/e2e_streams.py --binary target/debug/rescue.exe
     python scripts/e2e_fat.py --binary target/debug/rescue.exe
     python scripts/e2e_carve.py --binary target/debug/rescue.exe
+    python scripts/e2e_jpeg.py --binary target/debug/rescue.exe
     python scripts/e2e_audit.py --binary target/debug/rescue.exe
 
 Linuxでは最後の実行ファイル名をrescueにします。

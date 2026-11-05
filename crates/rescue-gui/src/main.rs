@@ -622,8 +622,8 @@ impl App {
   if self.save_mode!=SaveMode::Original {let picker=if self.save_mode==SaveMode::Zip{Picker::Zip}else{Picker::Folder};path_row(ui,"保存先",&mut self.destination,picker);}else{ui.label("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補は、フォルダー保存を選んでください。");}
   ui.horizontal(|ui|{ui.label("同じ名前がある場合");ui.selectable_value(&mut self.collision,CollisionPolicy::KeepBoth,"両方を残す（復元 1）");ui.selectable_value(&mut self.collision,CollisionPolicy::Skip,"スキップ");});ui.small("既存ファイルは上書きしません。同名フォルダーは統合します。");
   ui.add_space(16.0);ui.collapsing("詳細設定 — 検索方式・範囲・深度・拡張子",|ui|{
-   ui.horizontal(|ui|{ui.label("検索方式");ui.selectable_value(&mut self.carve,false,"管理情報 / Quick");ui.selectable_value(&mut self.carve,true,"PNG / Carving");});text_row(ui,"探す拡張子",&mut self.extensions,"空欄: すべて / 例: jpg, png, docx, zip");
-   if self.carve{ui.label("連続配置の静止PNGをCRC・画素まで検証します。PNG以外のcarvingは未対応です。");text_row(ui,"開始バイト",&mut self.range_start,"空欄: 0（イメージ先頭）");text_row(ui,"終了バイト",&mut self.range_end,"空欄: 末尾 / この位置は範囲に含みません");}else{text_row(ui,"検索フォルダー",&mut self.path_prefix,"空欄: 全体 / イメージ内のパス（例: 写真/旅行）");text_row(ui,"検索深度",&mut self.depth,"空欄: 上限なし / 0: 指定フォルダー直下 / 最大256");ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");}
+   ui.horizontal(|ui|{ui.label("検索方式");ui.selectable_value(&mut self.carve,false,"管理情報 / Quick");ui.selectable_value(&mut self.carve,true,"PNG・JPEG / Carving");});text_row(ui,"探す拡張子",&mut self.extensions,"空欄: すべて / 例: jpg, png, docx, zip");
+   if self.carve{ui.label("連続配置のPNG・JPEGを構造と画素まで検証します。JPEGは圧縮データの過不足も確認します。元の名前・削除状態は不明です。");text_row(ui,"開始バイト",&mut self.range_start,"空欄: 0（イメージ先頭）");text_row(ui,"終了バイト",&mut self.range_end,"空欄: 末尾 / この位置は範囲に含みません");}else{text_row(ui,"検索フォルダー",&mut self.path_prefix,"空欄: 全体 / イメージ内のパス（例: 写真/旅行）");text_row(ui,"検索深度",&mut self.depth,"空欄: 上限なし / 0: 指定フォルダー直下 / 最大256");ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");}
    path_row(ui,"セッションの保存先（任意）",&mut self.work,Picker::Folder);ui.small("空欄・同じディスクの場合、スキャン結果はメモリーに保持します。");
    if self.save_mode==SaveMode::Original {path_row(ui,"元ボリュームのルート（任意）",&mut self.original_root,Picker::Folder);ui.small("通常は自動判定します。イメージや判定できないボリュームでは、元のボリュームのルートを指定してください。ディスク全体の複数パーティションはCLIで個別に指定できます。");}
   });self.invalidate_changed_source();ui.add_space(18.0);ui.horizontal(|ui|{
@@ -1081,10 +1081,11 @@ impl App {
             ui.strong("配置の根拠");
             ui.label(format!("{:?}", c.extent_evidence));
             ui.label(
-                if c.extent_evidence == rescue_core::ExtentEvidence::PngValidated {
-                    "PNGのCRC・圧縮データ・画素を検証済み。"
-                } else {
-                    "管理情報から配置を取得。形式の内容検証は未実施。"
+                match c.extent_evidence {
+                    rescue_core::ExtentEvidence::PngValidated => "PNGのCRC・圧縮データ・画素を検証済み。",
+                    rescue_core::ExtentEvidence::JpegValidated => "JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。",
+                    rescue_core::ExtentEvidence::Unknown => "配置と形式の検証は未完了です。候補の警告を確認してください。",
+                    _ => "管理情報から配置を取得。形式の内容検証は未実施。",
                 },
             );
             ui.separator();

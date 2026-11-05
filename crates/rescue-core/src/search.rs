@@ -41,7 +41,7 @@ impl SearchSettings {
         }
         if self.method == ScanMethod::Quick && (self.range_start != 0 || self.range_end.is_some()) {
             return Err(Error::Request(
-                "byte ranges are available for PNG carving only".into(),
+                "byte ranges are available for carving only".into(),
             ));
         }
         if self.method == ScanMethod::Carve
@@ -97,7 +97,11 @@ impl SearchSettings {
                 .trim_start_matches("*.")
                 .trim_start_matches('.')
                 .to_lowercase();
-            ext == "*" || name.ends_with(&(".".to_owned() + &ext))
+            (candidate.id.starts_with("jpeg-")
+                && name.ends_with(".jpg")
+                && matches!(ext.as_str(), "jpeg" | "jpe"))
+                || ext == "*"
+                || name.ends_with(&(".".to_owned() + &ext))
         })
     }
 }
@@ -117,6 +121,7 @@ pub fn scan_with_settings(
             options,
             settings.range_start,
             settings.range_end,
+            &settings.extensions,
             cancel,
             progress,
         )?,

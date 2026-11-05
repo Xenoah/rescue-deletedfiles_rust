@@ -42,7 +42,7 @@ def make(root):
         data=path.read_bytes()
         entries.append({'format':label,'extension':ext,'category':category,'file':str(path.relative_to(root)).replace('\\','/'),
                         'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest(),'validated_by':reader,
-                        'carving_supported':ext=='png'})
+                        'carving_supported':ext in ('png','jpg')})
     image=Image.new('RGB',(32,32));image.putdata([(x*7%256,y*7%256,(x+y)*5%256) for y in range(32) for x in range(32)])
     def picture(path,fmt,**kw):image.save(path,format=fmt,**kw)
     def picture_valid(path):
