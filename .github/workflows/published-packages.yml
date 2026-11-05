@@ -104,5 +104,8 @@ jobs:
           gh release view "$RELEASE_TAG" --json body --jq .body > current-release.md
           python scripts/published_package_report.py --tag "$RELEASE_TAG" --input-dir evidence --output report --body current-release.md --updated-body updated-release.md
           gh release upload "$RELEASE_TAG" report/* --clobber
+          if [ "$RELEASE_TAG" = "v0.2.0-alpha.13" ] && gh release view "$RELEASE_TAG" --json assets --jq '.assets[].name' | grep -Fxq remnant_verification; then
+            gh release delete-asset "$RELEASE_TAG" remnant_verification --yes
+          fi
           gh release edit "$RELEASE_TAG" --notes-file updated-release.md
           cat report/published-format-verification.md >> "$GITHUB_STEP_SUMMARY"
