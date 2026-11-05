@@ -1,7 +1,7 @@
-# v0.2.0-alpha.9 の対応範囲
+# v0.2.0-alpha.10 の対応範囲
 
 Quickは物理ディスク・ボリューム・RAWイメージを読み取り専用で開きます。MBR／EBR／GPTの境界を検証し、NTFS・FAT32・exFATの各パーティションを探索します。GPTはヘッダーと配列のCRC、主・副の整合性を確認します。一方が壊れた場合は有効な方を警告付きで使い、修復は行いません。
-Carvingはディスク全体または指定した開始以上・終了未満のバイト範囲でPNG・JPEGを探索します。未対応ファイルシステムの管理情報は解釈しません。
+Carvingはディスク全体または指定した開始以上・終了未満のバイト範囲でPNG/JPEG/PDF/ZIP/Office/MP4/MOVを探索します。未対応ファイルシステムの管理情報は解釈しません。
 
 Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロックデバイス、macOSは`/dev/[r]diskN[sM]`を受け付けます。GUIはディスク選択を既定にし、イメージは補助モードです。Windowsの管理者権限、Unixのデバイス読取権限が必要です。
 
@@ -42,7 +42,7 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
 - EFS、属性リストの追加extentsは未対応です。ディレクトリー自体のADSは未対応です。
   圧縮単位の指数が4以外、クラスターが4096バイトを超える圧縮も未対応です。
   $MFT自体が属性リストを必要とする場合は、この版ではスキャンを開始できません。
-- PDF／ZIP／MP4等のcarving、RAIDの再構成、イメージ取得、読取不良のマップ・再開、失われたパーティションの総当たり探索は後続フェーズです。
+- RAIDの再構成、イメージ取得、読取不良のマップ・再開、失われたパーティションの総当たり探索は後続フェーズです。
 - 最大256パーティション、GPT配列16MiB・4096エントリー、EBRチェーン128まで。重複・循環・範囲外・主副GPTの不一致・ハイブリッドMBRは拒否します。512/4096セクターのディスクイメージを検証します。未対応パーティションの省略は警告とtruncatedで示します。
 - 同じディスクへの保存と元の場所への復元は[保存仕様](SAME-LOCATION.md)に従います。選択データは合計512 MiBまで先に読み出します。
 - FAT12/16、dual-FATのTexFAT、未知のexFAT revisionは未対応です。
@@ -63,9 +63,9 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
   解析全体で200万クラスター訪問に制限します。上限到達はtruncatedまたはRESOURCE_LIMITで示します。
   FATの総レコード数は探索完了前には不明で、total_records=0です。
 - 通常ボリュームイメージのQuickはschema_version=3、Carvingは6（filesystem=raw、従来のPNGセッションは4）、デバイスQuickとパーティション集合は5を生成します。
-  v1〜v6を読み込めます。パーティションのIDは`pN:`、元パスは`PN/`を付け、境界と各ボリュームの指紋を保存します。復元時は表を再解析して照合し、JSONの任意オフセットを信頼しません。PNG／JPEGのrecordはバイトオフセット、
+  v1〜v7を読み込めます。パーティションのIDは`pN:`、元パスは`PN/`を付け、境界と各ボリュームの指紋を保存します。復元時は表を再解析して照合し、JSONの任意オフセットを信頼しません。PNG／JPEGのrecordはバイトオフセット、
   record_sha256は画像全体のSHA-256です。Carvingのscanned_records/total_recordsはバイト数、
-  invalid_recordsは検証未通過のPNG／JPEG署名数です。進捗APIはunit=bytesを付けて区別します。
+  invalid_recordsは検証未通過の形式署名数です。進捗APIはunit=bytesを付けて区別します。
 - セッションはJSON、最大128MiB。保存・読込の上限は共通で、候補とパスの予算超過は省略数とtruncatedを記録します。
   全候補を保持する大容量索引・メモリ目標の達成は未検証です。
 - MCPは同時に1ジョブ、最大32ジョブ・4セッション。再起動するとプロセス内の履歴は消えます。
@@ -100,3 +100,8 @@ Windowsビルドと同OS上のテストはGitHub Actionsで行います。
 LinuxでのビルドやWindowsへの型検査は、Windows実行時の検証とは区別します。
 Windows GUIの手動操作、アクセシビリティ、実物のSSD/HDDやTRIM、有料製品との比較は別途検証が必要です。
 Windows x64はVCランタイム静的リンク、Linux x64はglibc 2.35以降、macOS x64/arm64は13以降。各インストール版・ポータブル版を配布します。発行者署名はなく、macOSはアドホック署名のみで未公証です。詳細は[INSTALL.md](INSTALL.md)。
+
+## alpha.10 文書・動画と配置
+
+PDF・ZIP/ZIP64・DOCX/XLSX/PPTX・MP4/MOVの連続配置carvingを追加。[形式別の制限](DOCUMENT-CARVING.md)。画像の画素検証と、文書/動画の構造検証を区別します。
+新形式のセッションは7、既存PNG/JPEGのみは6。入力ラベル、固定操作欄、折り返し、Ctrl/Command+F、最小720×520を追加。[UIの規則](UI_GUIDELINES.md)。

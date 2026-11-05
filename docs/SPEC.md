@@ -576,3 +576,7 @@ GUIはalphaでegui/eframeを採用。RAIDの互換プロファイルは、その
 ### alpha.9 JPEG carving（2026-11-05 JST）
 
 連続した8ビットHuffman JPEG（逐次・プログレッシブ）の探索と検証を追加。画像デコーダーの修復動作を成功判定に使わず、全MCUと圧縮データの過不足を別途検証する。元の名前・日時・削除状態は不明のまま表示する。範囲と上限は[JPEG-CARVING.md](JPEG-CARVING.md)を参照。PDF／ZIP／MP4等の追加carvingは未完了。
+
+### alpha.10 文書・動画とGUI配置（2026-11-05）
+
+[DOCUMENT-CARVING.md](DOCUMENT-CARVING.md)のプロファイルと上限でPDF/ZIP/Office/MP4/MOVを追加。[UI_GUIDELINES.md](UI_GUIDELINES.md)に公式資料と採用基準を記録。全v1.0必須項目は[V1_ACCEPTANCE.md](V1_ACCEPTANCE.md)で継続管理する。

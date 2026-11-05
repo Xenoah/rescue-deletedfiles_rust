@@ -18,6 +18,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     if restore['version']!=f'rescue {VERSION}' or restore['status']!='passed' or not all(restore[k] for k in ['native_same_volume','actual_deletion','original_root_auto_detected','cli_pdf_byte_exact','mcp_pdf_byte_exact','session_work_never_created']):raise SystemExit('Native original-location recovery proof mismatch')
     jpeg=json.loads((dist/f'jpeg-results-{platform}-{arch}.json').read_text())
     if jpeg['version']!=f'rescue {VERSION}' or jpeg['status']!='passed' or jpeg['corpus_jpegs']!=32 or jpeg['jpeg_candidates_exact']!=33 or jpeg['malformed_cases']!=33 or not jpeg['cli_mcp_byte_exact'] or not jpeg['source_unchanged']:raise SystemExit('JPEG carving proof mismatch')
+    documents=json.loads((dist/f'document-results-{platform}-{arch}.json').read_text())
+    if documents['version']!=f'rescue {VERSION}' or documents['status']!='passed' or documents['valid_variants']<23 or documents['rejected_corrupt_or_unsupported']<30:raise SystemExit('Document carving proof mismatch')
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
@@ -36,13 +38,18 @@ if jpeg_gui['application_version']!=VERSION or jpeg_gui['jpeg_files_byte_exact']
 for shot in jpeg_gui['screenshots']:
     if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('JPEG screenshot proof mismatch')
 shutil.copy2(ROOT/'docs/gui-jpeg-results.json',dist/'gui-jpeg-results.json')
+document_gui=json.loads((ROOT/'docs/gui-document-results.json').read_text())
+if document_gui['application_version']!=VERSION or document_gui['document_files_byte_exact']!=7 or not document_gui['source_unchanged']:raise SystemExit('Document GUI proof mismatch')
+for shot in document_gui['screenshots']:
+    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Document screenshot proof mismatch')
+shutil.copy2(ROOT/'docs/gui-document-results.json',dist/'gui-document-results.json')
 html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
 def embedded(match):
     path=ROOT/'docs'/match.group(1)
     return 'src="data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode('ascii')+'"'
 html=re.sub(r'src="(images/[^"<>]+\.png)"',embedded,html)
 (dist/'intelligence.html').write_text(html,encoding='utf-8')
-for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v9.png','jpeg-carving.png','jpeg-restored.png','disk-selection.png','original-location.png','original-restored.png']:
+for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v10.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
     shutil.copy2(ROOT/'docs/images'/name,dist/name)
 assets=sorted(path for path in dist.iterdir() if path.is_file() and path.name!='SHA256SUMS.txt')
 (dist/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets),encoding='ascii')

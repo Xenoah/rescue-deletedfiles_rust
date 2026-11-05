@@ -1,47 +1,58 @@
-# Rescue v0.2.0-alpha.9
+# Rescue v0.2.0-alpha.10
 
-**管理情報が失われたJPEG写真を、構造・圧縮データ・画素まで検証して復元できるようになりました。** 通常のJPEGとプログレッシブJPEGをGUI・CLI・MCPで探索します。
+PDF・ZIP/Office・MP4/MOVの連続配置探索をGUI・CLI・MCPに追加しました。
+操作欄を画面下に固定し、小さい画面ではフォームとツールバーを折り返します。
+これはv1.0に向けた開発版です。必須機能の残作業は [受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.10/docs/V1_ACCEPTANCE.md) に公開しています。
 
-![JPEG候補の詳細列と検証根拠](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/jpeg-carving.png)
+![文書・Office・動画の候補と検証根拠](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.10/docs/images/document-carving.png)
 
-## 変更
+## 変更と検証範囲
 
-- 詳細設定に「PNG・JPEG / Carving」。拡張子の `jpg`・`jpeg`・`jpe` はJPEGを選び、空欄はPNGとJPEGの両方を探索。指定バイト範囲内だけを解析します。
-- SOF0／SOF1／SOF2の8ビットHuffman DCT。グレースケール、RGB／YCbCr、CMYK、一般的なサブサンプリング、成分別スキャン、リスタートマーカーに対応します。
-- 全MCU、Huffman符号、ゼロ／EOBの連続数、プログレッシブ係数帯・差分、リスタート位置・順序、パディングを独立検査。欠損ビットを補うデコーダーの動作で成功扱いにしません。
-- 画素展開も通過した候補を `jpeg_validated` と表示。保存直前に構造と全JPEGハッシュを再検証し、再圧縮せず元バイトを保存します。
-- 既存の詳細列・グループ表示、元の場所への復元、同じディスクへの保存、連番／スキップ、同名フォルダー統合、ZIP保存も利用できます。
-- 新しいcarvingセッションはスキーマ6。従来の1〜5も読み込めます。
+- PDF: classic xref、間接参照、ページ階層、streamの宣言長。増分更新のPrevも照合。
+- ZIP/ZIP64: 中央/ローカルレコード、展開長、全エントリーCRC。stored/DEFLATE、data descriptorを扱います。
+- DOCX/XLSX/PPTX: ZIP検証に加え、名前空間を解釈したContent Types XMLと主文書エントリーで分類。
+- MP4/MOV: ftyp、moov/mdat、トラックとサンプル表、全サンプル位置を検証。
+- 新形式のセッションはスキーマ7。従来1〜6の読込も維持します。保存直前に再解析と全バイトハッシュを照合。
+- 入力欄に常時ラベル、主要操作は高さ36px、Tabで操作、Ctrl/Command+Fで検索へ移動。3幅×3倍率×3画面状態を測定。
 
-## 技術説明と実行結果
+新しい69ケースで正常23変種・破損/未対応30条件を検証し、CLI/MCPで30出力が正解バイトと一致。
+既存8統合群も継続実行し、決定的な改変・切断入力1,024種の資源上限も検査します。
+35形式の管理情報復元8条件×CLI/MCPは576件一致。管理情報喪失時は連続11/36、断片2/36です。
 
-独立したPillow／libjpegと小さな別エンコーダーで32枚を生成・再読込。埋込サムネイルを含む33候補をCLI／MCPで全バイト照合しました。追加58項目には、途中切断・余剰データ・リスタート不正等の破損33条件、拡張子、範囲、ZIP、同名処理、改変セッション、ソース変更の再検証を含みます。
+実Linux GUIから文書/動画7件、JPEG33件、元の場所36件、ZIP36件を復元し、正解バイト・CRC・入力不変を確認しました。
 
-Linux実GUIでも33候補をZIP保存し、元バイト・CRC・SHA-256と入力無変更を確認。既存35形式36ファイルの元の場所／ZIP保存、既存PDF保持、36日時も再照合しました。
+![7形式をZIP保存した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.10/docs/images/document-restored.png)
 
-![JPEG33候補のZIP保存が完了した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/jpeg-restored.png)
+3 OS/4 CPU環境のネイティブVMでRust・9統合群・35形式・読取専用仮想ディスク864件・実削除PDFの元の場所復元・GUI起動・8配布物を確認して公開します。
+`document-results-*.json`、`gui-document-results.json`、`restore-native-*.json`、`disk-results-*.json`、`verification-*.json` に証拠を収録。
+署名・梱包後の公開CLIの追加検証は、その完了後のレポートに記録します。
 
-4ネイティブ環境でRustテスト・8統合群・35形式・読み取り専用仮想ディスク864件・新規仮想媒体の実削除PDF復元・GUI起動・8配布物を検証して公開します。添付の `jpeg-results-*.json`、`gui-jpeg-results.json`、`restore-native-*.json`、`disk-results-*.json`、`verification-*.json` に結果を収録。公開実行ファイルそのものの追加検証は完了後に追記します。
+## 技術説明UIと配置ルール
 
-[通信不要の操作できる技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/intelligence.html)では、6つの実画面と5つの探索・保存方式を切り替えられます。
+[画像内蔵の技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/intelligence.html) は単一HTMLです。8実画面・6方式を通信せずに切り替えられます。
+[公式資料と配置の判断基準](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.10/docs/UI_GUIDELINES.md) も公開しています。
 
-![JPEGの技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.9/docs/images/technical-ui-v9.png)
+![文書と動画の技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.10/docs/images/technical-ui-v10.png)
 
 ## ダウンロード
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64-portable.zip) |
 
-`SHA256SUMS.txt`で照合できます。Linuxはglibc 2.35以降。macOSは13以降、アドホック署名でDeveloper ID署名・公証はありません。
+`SHA256SUMS.txt`で照合できます。Linuxはglibc 2.35以降、macOSは13以降。
+macOSはアドホック署名で、Developer ID署名・公証はありません。
 
-JPEGは連続配置のみ。符号化データ64 MiB、画素用予約（幅×高さ×4）64 MiB、DCT係数128 MiB、256スキャンまで。12ビット、算術・可逆・階層JPEG、DNL、未完了のプログレッシブ係数帯、断片再構成は未対応です。PNG・JPEG共通で1探索4 GiBの検証予算を使い、上限到達は未探索領域を明示します。
+新しいcarvingは1候補64 MiB、ZIP展開合計128 MiB/4,096エントリー、PDF65,536オブジェクト、動画1,048,576サンプルまで。
+PDFのxref stream/暗号化、fragmented動画/外部メディア/size=0は未対応。
+PDF描画、Office描画、動画全フレーム復号は行わず、構造検証と区別します。
+元名・日時・削除状態は不明で、PDFのEOFと動画boxによる範囲には推定が含まれます。
 
-JPEGには全体CRCがなく、検証成功は削除前の内容との一致保証ではありません。元の名前・日時・削除状態は不明で、使用中画像や埋込サムネイルも候補になります。carvingの候補はフォルダーかZIPへ保存してください。同じディスクへの保存は全選択データを先に読み出します（合計512 MiBまで）。未選択の削除データに影響する可能性があります。
+同じディスクへの保存は全選択データを先に読み出します（合計512 MiBまで）。未選択の削除データには影響する可能性があります。
+TRIMや上書きで失われたバイトは復元できません。有料製品比較は未測定です。
+RAID、読取マップ付き取得、消失領域探索、大容量索引などは次の必須工程として残っています。
 
-PDF／ZIP／MP4等のcarving、読取マップ・イメージ取得、RAID、有料製品比較は後続工程です。TRIMや上書きで失われたバイトは復元できません。
-
-[JPEGの仕様とテスト](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/JPEG-CARVING.md) · [対応範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/ALPHA.md) · [検証](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.9/docs/VALIDATION.md)
+[形式別の詳細](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.10/docs/DOCUMENT-CARVING.md) · [対応表](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.10/docs/ALPHA.md) · [検証履歴](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.10/docs/VALIDATION.md)

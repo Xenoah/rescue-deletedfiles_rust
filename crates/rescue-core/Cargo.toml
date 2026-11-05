@@ -16,6 +16,7 @@ cap-std.workspace = true
 png = "0.18.1"
 crc32fast = "1"
 flate2 = "1"
+quick-xml = "0.41.0"
 zune-core = "0.5.3"
 zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }
 same-file = "1"

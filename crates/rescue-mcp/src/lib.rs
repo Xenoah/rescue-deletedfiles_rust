@@ -75,7 +75,7 @@ fn tools() -> Value {
         ),
         tool(
             "start_scan",
-            "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG with structure and pixel decoding (JPEG entropy is checked without repair). Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
+            "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
             json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
             &["source", "request_id"],
             false

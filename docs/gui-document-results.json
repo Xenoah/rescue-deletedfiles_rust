@@ -1,0 +1,59 @@
+{
+  "application_version": "0.2.0-alpha.10",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "scope": "Actual Linux debug GUI scan/select/ZIP recovery; synthetic RAW, no physical deletion.",
+  "gui_binary_sha256": "e7a85650473e69a2737af3100536045d628b4b19f0cd415a39d0be1b42d92122",
+  "document_files_byte_exact": 7,
+  "source_unchanged": true,
+  "source_sha256": "7192a7038c1ef674a73aea1b545c801c39e6c7a405523d6f4acb863191b04adb",
+  "archive_sha256": "03ab6c5e31e819687dd2c87b29166655a056a962f9f623969b100a0527c8d408",
+  "missing_names_dates_not_invented": true,
+  "zip_crc_verified": true,
+  "files": [
+    {
+      "candidate_id": "docx-0000000000000648",
+      "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "mov-0000000000011fd4",
+      "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "mp4-0000000000011743",
+      "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "pdf-0000000000000000",
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "pptx-000000000000a8b8",
+      "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "xlsx-0000000000009589",
+      "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+      "byte_exact": true
+    },
+    {
+      "candidate_id": "zip-0000000000000576",
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+      "byte_exact": true
+    }
+  ],
+  "screenshots": [
+    {
+      "file": "images/document-carving.png",
+      "sha256": "c2fc31656d7f02834a61c5d4c22d7aae4eb4dc26b4bdc8e7f0e1b4333ad6268b"
+    },
+    {
+      "file": "images/document-restored.png",
+      "sha256": "3c8412601d0fd57897072d01c95811c1c6760f7451c79c54deeb2fb649d73fbc"
+    }
+  ]
+}

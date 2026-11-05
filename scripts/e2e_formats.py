@@ -217,7 +217,7 @@ def carving(binary,source,files,root,case,rows,large_png=False,erase_metadata=Tr
     hashes={r['sha256'] for r in results if r['status']=='completed'}
     check(all(r['status']=='completed' and hashlib.sha256(Path(r['path']).read_bytes()).hexdigest()==r['sha256'] for r in results),'carving output hash mismatch')
     for entry in files:
-        expected=(entry['extension']=='png' and (large_png or entry['file']!='files/noise.png')) or (entry['extension']=='jpg' and large_png)
+        expected=entry['extension'] in ('png','jpg','pdf','zip','docx','xlsx','pptx','mp4','mov','m4a') and (large_png or entry['bytes']<=512)
         exact=entry['sha256'] in hashes
         check(exact==expected,'unexpected top-level carving recovery: '+entry['file'])
         rows.append({'case':case,'frontend':'cli','format':entry['format'],'file':entry['file'],'bytes':entry['bytes'],

@@ -1,159 +1,104 @@
 # Rescue
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
-復元できるファイル数と内容の完全性を優先して開発しています。
+復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v0.2.0-alpha.9：管理情報のないJPEG写真の探索・構造／圧縮データ／画素の検証。**
-物理ディスクのMBR／GPTを読み取り、NTFS・FAT32・exFATの各パーティションをまとめて探索します。PNG・JPEGのcarvingと保存済みRAWイメージも利用できます。
-RAIDの再構成、読取不良のイメージ取得、PDF／ZIP／MP4等のcarvingは未対応です。有料製品との性能比較は未検証です。
-[対応範囲](docs/ALPHA.md)・[製品仕様](docs/SPEC.md)・[進捗](docs/GOAL.md)
+**v0.2.0-alpha.10: PDF・ZIP/Office・MP4/MOVの探索と、画面幅に合わせたGUI配置を追加。**
+現在は開発版です。v1.0の全必須機能・レビュー・3 OS試験は [受入台帳](docs/V1_ACCEPTANCE.md) で追跡します。
+RAID、読取マップ付きイメージ取得、消失領域探索、大容量索引などは未完了です。
+有料製品との性能比較は未測定です。
 
-![名前・作成日時・更新日時・種類・サイズを列で表示する実GUI](docs/images/details-view.png)
+![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
 
-列の見出しで昇順／降順を切り替え、境界をドラッグして列幅を変更できます。
-元のフォルダー、種類、作成日、更新日、サイズ、名前の先頭、復元可否でグループ化できます。
-画像はLinux / Xvfb上の実GUIと、35形式の実ファイルを入れた合成NTFSボリュームイメージです。表示日時はテスト用の値です。
-
-[JPEG探索の使い方と検証範囲](docs/JPEG-CARVING.md)。元の場所への復元・同じディスク・同名処理も引き続き使えます。
-
-![JPEGの詳細ビューと圧縮データの検証根拠を表示する実GUI](docs/images/jpeg-carving.png)
+列見出しで並べ替え、境界で列幅を変更し、元フォルダー・種類・日付・サイズ等でグループ化できます。
+画像はLinuxの実GUIと人工生成のディスクです。日時や元のフォルダーは試験用の値です。
 
 ## ダウンロード
 
-[この版のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.9)
+[v0.2.0-alpha.10のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.10)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-windows-x64-portable.zip) |
-| Linux x64 | [Debian/Ubuntu用DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64.pkg) | [.app入りZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/rescue-0.2.0-alpha.9-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/rescue-0.2.0-alpha.10-macos-x64-portable.zip) |
 
-Windows版はユーザー単位でインストールし、スタートメニューから起動できます。VCランタイムを静的リンクしています。描画はDirect3D 12（wgpu）を使用します。
-Linux版はglibc 2.35以降（Ubuntu 22.04相当）、X11／Wayland・OpenGL環境が必要です。DEBはGUIメニューとCLIを登録します。
-macOS版は13以降。PKGはApplicationsにRescue.appを置き、`rescue`コマンドを登録します。
-macOSはアドホック署名のみで、Developer ID署名・公証はありません。初回起動時のOSの許可が必要になる場合があります。
-[インストール・削除方法](docs/INSTALL.md)を参照してください。
+Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
+OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
 
 ## 操作の流れ
 
-![既定のディスク選択画面。クラウド環境ではデバイス非公開のため一覧は空です](docs/images/disk-selection.png)
+1. ディスク全体・ボリューム、または保存したRAWイメージを選択。
+2. 元の場所・任意フォルダー・ZIPと、同名ファイルの処理を設定。
+3. 必要なら詳細設定で検索方式・範囲・深度・拡張子を指定してスキャン。
+4. 復元するファイルを選択し、復元結果と保存先を確認。
 
-ディスク一覧はOSから取得します。この撮影環境ではデバイスが公開されていません。直接アクセスは各OSの仮想ディスク検証で確認します。
+![保存方法を先に設定する実画面](docs/images/settings-view.png)
 
-1. **設定**：一覧からディスク全体またはボリュームを選び、保存方法を指定。「元の場所へ戻す」、任意のフォルダー、ZIPを選べます。同名なら両方を残すかスキップを指定します。
-2. **詳細設定**：必要なら検索方式、検索フォルダー、深度、拡張子、carvingのバイト範囲を指定します。
-3. **スキャン**：処理後に詳細ビューへ進みます。日時が残っていない候補は「—」です。
-4. **ファイル選択**：検索・並べ替え・グループ化で絞り、チェックを付けます。アイコン表示にも切り替えられます。
-5. **復元**：選択ファイルを保存。ZIPにはファイルと`rescue-report.json`が入り、SHA-256も記録します。
+同じディスクにも保存できます。選択データをすべて先に読み出します（合計512 MiBまで）。
+同名ファイルは `資料 (復元 1).pdf` のように別名で残すか、スキップ。同名フォルダーは統合します。
+元の場所が確認できない候補はフォルダーかZIPへ保存してください。
+同じディスクへの保存は、未選択の削除データへ影響する可能性があります。
 
-![スキャン前にZIP保存先と詳細検索条件を設定する実GUI](docs/images/settings-view.png)
+主要操作はスクロール領域の下に固定し、入力ラベルを常に表示します。
+Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/150%/200%の配置を検査しています。
+配置の判断根拠は [Microsoft/W3Cの公式資料と採用ルール](docs/UI_GUIDELINES.md) を参照。
 
-Quickの検索フォルダー・深度は各ボリュームを基準にします。ディスク全体の結果には`P1/`等の識別用パスと`p1:`等の候補IDを付けます。深度0は指定フォルダー直下、空欄は追加の深度制限なし。
-範囲・深度・拡張子は検出結果を絞り、使用中領域との競合確認はボリューム全体を調べます。
-Carvingは指定バイト範囲のPNG・JPEGを探索します。終了位置は範囲に含めず、範囲外へはみ出す画像を対応済みにしません。
+## 復元の根拠
 
-![フォルダーでグループ化したアイコン表示](docs/images/icons-view.png)
-
-ディスクの読み取りは読み取り専用ハンドルを使います。**同じディスクにも保存できます。** 選択した全ファイルを先に読み出してから保存します（合計512 MiBまで）。同じディスクへの保存は未選択の削除データに影響する可能性があります。
-Windowsでは管理者として起動してください。Linux・macOSはデバイスを読む権限が必要です。
-「元の場所へ戻す」は管理情報から確認したパスとマウント先を使います。不明なパスは指定フォルダーへ保存できます。
-既存ファイルは残し、復元側を `資料 (復元 1).pdf` のように連番で保存します。同名フォルダーは統合します。ZIPも連番またはスキップに対応します。
-スキャン結果はメモリーに保持でき、同じディスクへセッションを書きません。512 MiBを超える復元では別媒体へのCLIの `--stream` も使えます。
-[元の場所・衝突処理・CLI／MCPの仕様](docs/SAME-LOCATION.md)
-
-![元の場所への復元設定と同名ファイルの処理を選ぶ実GUI](docs/images/original-location.png)
-
-## 技術説明のインテリジェンスUI
-
-[通信不要の操作できる技術説明HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.9/intelligence.html)で、
-操作の流れ、実画面、検索と保存の根拠・制限を確認できます。READMEとリリースには毎回、実画面と技術説明を掲載します。
-GUIでも「復元の根拠」を開くと、候補の配置・割当状態・警告・保存結果を確認できます。
-
-![操作フローと技術的根拠を切り替えて確認するインテリジェンスUI](docs/images/technical-ui-v9.png)
-
-| 方式 | 根拠と検証 | 分からないこと |
+| 方式 | 確認する内容 | 限界 |
 | --- | --- | --- |
-| Quick | MFT / FAT / NoFatChainの配置、親参照、一部の割当競合 | 一般の形式の内容の完全性、NTFSの割当競合 |
-| PNG carving | 全チャンクCRC、zlib終端・Adler-32・展開長、パレット・画素、再読込ハッシュ | 元の名前・階層・割当・削除状態 |
-| JPEG carving | セグメント、Huffman、全MCU、リスタート、プログレッシブ係数、画素、再読込ハッシュ | 元の名前・階層・日時・割当・削除状態、削除前の内容との一致 |
-| 日時表示 | NTFS FILETIME、FAT DOS時刻、exFATのUTCオフセット | 記録のない日時、FATのタイムゾーン |
-| ZIP保存 | ファイル別SHA-256、ZIPのCRC、ZIP全体SHA-256、結果レポート | 削除前の内容との一致は正解データの照合が必要 |
+| Quick | NTFSのMFT/runlist、FAT32/exFATの削除エントリーと配置 | 拡張子を問わずバイトを保存。一般の内容の形式検証は未実施 |
+| PNG / JPEG | PNGのCRC・zlib・画素、JPEGの全MCU・係数・画素 | 連続配置、元名・日時・削除状態は不明 |
+| PDF | classic xref・間接参照・ページ階層・streamの長さ | 描画未検証、EOFによる範囲推定、xref stream/暗号化は未対応 |
+| ZIP / Office | 全エントリーのCRC・展開長・管理情報、OfficeのXML分類 | stored/DEFLATE。Office描画・マクロの安全性は未検証 |
+| MP4 / MOV | moov/mdat・トラック・全サンプル位置 | 非fragmented、ftyp必須。映像/音声の全フレーム復号は未実施 |
 
-## クラウドでの復元検証
+![文書・Office・動画の7形式を選択した実GUI](docs/images/document-carving.png)
 
-alpha.9は[タグCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41939770021)で4環境すべてが成功し公開済みです。実際に取得した8配布物・55一次添付・6追加レポートのSHA-256を照合しました。[公開版の4環境検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41940947569)では、署名・梱包後のCLIそのものでもJPEG33候補、破損33条件、35形式、ディスク864件、実削除PDFの元の場所への復元が成功。[公開ファイルの照合JSON](docs/public-release-v0.2.0-alpha.9.json)。
+[文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
 
-公開Linux GUIからもJPEG33候補をZIP保存し、元バイト・CRC・SHA-256・入力不変を再確認しました。[公開GUIの記録](docs/public-gui-v0.2.0-alpha.9.json)・[公開した単体HTMLの確認](docs/public-browser-v0.2.0-alpha.9.json)。
+[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.10/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
 
-![公開Linux GUIからJPEG33候補を保存した実画面](docs/images/public-jpeg-restored-v9.png)
+![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v10.png)
 
-alpha.9は追加58項目でJPEG32枚と埋込サムネイルの33候補をCLI／MCPで全バイト照合。破損33条件を拒否しました。Linux実GUIからのJPEG33件のZIP保存と、既存35形式36ファイルの元の場所／ZIP保存も照合しています。[JPEGの検証記録](docs/JPEG-CARVING.md)・[実GUIのJSON](docs/gui-jpeg-results.json)。[4ネイティブ環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41938746415)が通過。公開配布物そのものの再取得・照合もリリース手順に含めています。
+## 検証
 
-alpha.8の公開インストール／ポータブル8配布物、48添付ファイルと追加6レポートのSHA-256を実取得で照合しました。[照合JSON](docs/public-release-v0.2.0-alpha.8.json)を参照。
-[公開後の4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41934558749)では、署名・梱包後のCLIそのもので35形式、864件のディスク試験、元の場所・同名処理の追加試験、新規仮想媒体で実際に削除したPDFのCLI／MCP復元が成功しています。実HDD／SSD一般の復元率を示すものではありません。
+- Rust 33項目、9統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
+- 35形式36ファイルの管理情報復元は8条件×CLI/MCPで576件一致。管理情報を失った連続配置は11/36、512B単位の断片配置は2/36。全900観測中755件が正解一致。上書き済み36件は元データとの一致0件で、管理情報から保存できても内容の同一性を保証しないことも確認。
+- Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
+- Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認します。
 
-公開Linux GUIでも、元の場所へ36ファイル・ZIPへ36ファイル・表示日時36件を照合し、既存PDFの保持と36件のスキップを確認しました。[公開GUIの元の場所の記録](docs/public-gui-original-v0.2.0-alpha.8.json)・[ZIP照合](docs/public-gui-v0.2.0-alpha.8.json)・[技術説明HTMLの確認](docs/public-browser-v0.2.0-alpha.8.json)を記録しています。
-
-![公開Linuxポータブルで元の場所への復元が36件完了した実画面](docs/images/public-original-restored-v8.png)
-
-
-35種類・36ファイルを正解データと照合します。管理情報が残る8条件ではCLI/MCP計576件がバイト一致しました。
-実際に削除したFAT32では512Bクラスターで14/36件、4KiBで27/36件。管理情報喪失・断片化・上書きで結果は変わります。
-alpha.7の公開LinuxポータブルのGUIでも、GPTイメージ内の36ファイルをZIP保存し、正解バイト・SHA-256・日時と一致しました。
-[公開版の保存完了画面](docs/images/public-saved-view-v7.png)と[GUI実行・照合JSON](docs/public-gui-v0.2.0-alpha.7.json)を記録しています。
-alpha.7の4環境の読み取り専用仮想ディスク試験は各864件が一致しました。alpha.8は[4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41931322681)で、新規仮想媒体上のPDFを実際に削除し、CLI・MCPから元の場所へ復元する試験も通過しました。
-[公開配布物の照合記録](docs/public-release-v0.2.0-alpha.7.json)では8配布物と37添付ファイルを照合しています。
-
-[全形式と条件の結果表](docs/CLOUD-TESTS.md)、[GUI操作の検証記録](docs/UI-FLOW.md)、[検証履歴](docs/VALIDATION.md)を公開しています。
-公開済みalpha.5の実行ファイルそのものを使った[クラウド検証HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.5/format-verification.html)も参照できます。
-実SSDのTRIMや物理障害、有料製品比較を検証した結果ではありません。
+現在の版のCIと公開パッケージの結果はリリース添付JSONと [検証履歴](docs/VALIDATION.md) に記録します。
+GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
+人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
 ## CLI / MCP
 
-PowerShellでの例。`scan`の返すセッションと、`results`の候補IDを使います。
-
-```powershell
-.\rescue.exe sources --json
-.\rescue.exe inspect --source '\\.\PhysicalDrive1' --json
-.\rescue.exe check-destination --source '\\.\PhysicalDrive1' --destination 'E:\Recovered' --json
-.\rescue.exe scan --source '\\.\PhysicalDrive1' --work-dir 'E:\RescueWork' --extension jpg,png,docx --path-prefix '写真' --max-depth 2 --json
-.\rescue.exe results --session 'E:\RescueWork\<id>.rescue-session.json' --json
-.\rescue.exe recover --session 'E:\RescueWork\<id>.rescue-session.json' --all --archive 'E:\Recovered\files.zip' --json
+```sh
+rescue sources --json
+rescue scan --source volume.raw --work-dir work --json
+rescue scan --source disk.raw --mode carve --extension pdf,docx,mp4 --work-dir work --json
+rescue results --session work/SESSION.rescue-session.json --json
+rescue recover --session work/SESSION.rescue-session.json --all --destination recovered --json
+rescue restore --source C: --name report.pdf --original --json
+rescue mcp --stdio --allow-source volume.raw --work-dir work --allow-output-root recovered
 ```
 
-フォルダー保存は`--archive`の代わりに`--destination 'E:\Recovered'`。
-個別選択は`--all`の代わりに`--id <候補ID>`を繰り返します。
-PNG・JPEG探索は`scan --mode carve --range-start 0 --range-end 10485760`。終了位置を省略すると入力末尾です。JPEGだけを探す場合は `--extension jpg` を追加します。
-Linux/macOSでも同じ引数を`rescue`に渡します。
+MCPは許可した入力・出力先を固定し、長時間処理の開始・進行取得・取消と候補検索・復元を提供します。
+詳細は `rescue --help`、[仕様](docs/SPEC.md)、[クラウドセットアップ](docs/CLOUD-TESTS.md) を参照。
 
-MCPクライアントから、ローカルstdioサーバーを起動します。
+## 開発
 
-```powershell
-.\rescue.exe mcp --stdio --allow-source '\\.\PhysicalDrive1' --work-dir 'E:\RescueWork' --allow-output-root 'E:\Recovered'
-```
-
-`list_sources`、`start_scan`、`get_job`、`list_candidates`、`recover_files`、`cancel_job`、`get_report`を提供します。
-`start_scan`は`mode`、`extensions`配列、`path_prefix`、`max_depth`、`range_start`／`range_end`に対応。
-`recover_files`は`output_format: "directory"`、`"zip"`、`"original"`を指定できます。ZIPの`destination`はZIPのフルパスです。
-開始操作には`request_id`が必要で、返された`job_id`を`get_job`で確認します。許可済みの入力・出力だけを使用します。
-
-## 開発・配布
-
-Rust 1.99.1、Python 3.12以降。WindowsはMSVC Build Tools、macOSはXcode Command Line Toolsが必要です。
-LinuxのGUIビルド依存は[CI設定](.github/workflows/ci.yml)を参照してください。
+Rust 1.99.1を固定しています。MITライセンス。
 
 ```sh
 cargo build --workspace --locked
 cargo test --workspace --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
-python scripts/e2e_formats.py --binary target/debug/rescue --output format-results/local
-cargo run -p rescue-gui --locked
 ```
 
-Windowsでは実行ファイルを`target/debug/rescue.exe`にします。テストは新しい通常ファイルのイメージだけを変更します。
-タグのCIは4つのネイティブ環境で検証し、インストール版・ポータブル版を検査してから公開します。
-配布物、検証JSON、実画面、単体HTMLのチェックサムは`SHA256SUMS.txt`に記録します。
-
-[MITライセンス](LICENSE)。各配布物に依存ライブラリの`THIRD_PARTY_NOTICES.txt`を同梱します。
+v1.0は [受入台帳](docs/V1_ACCEPTANCE.md) の必須項目を満たしてから公開します。
+未実装を既知の制限へ移して安定版と呼ぶことはしません。

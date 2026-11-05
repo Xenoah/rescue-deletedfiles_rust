@@ -87,6 +87,7 @@ struct App {
     status: String,
     report: String,
     results: Vec<RecoveryResult>,
+    primary_rect: Option<egui::Rect>,
 }
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
@@ -104,7 +105,9 @@ impl App {
         }
         cc.egui_ctx.set_visuals(egui::Visuals::dark());
         cc.egui_ctx.style_mut(|s| {
-            s.spacing.item_spacing = egui::vec2(9.0, 7.0);
+            s.spacing.item_spacing = egui::vec2(8.0, 8.0);
+            s.spacing.interact_size.y = 28.0;
+            s.spacing.button_padding = egui::vec2(8.0, 4.0);
             s.visuals.panel_fill = egui::Color32::from_rgb(25, 25, 25);
             s.visuals.extreme_bg_color = egui::Color32::from_rgb(20, 20, 20);
             s.visuals.override_text_color = Some(egui::Color32::from_gray(224));
@@ -186,6 +189,7 @@ impl App {
             status: "ディスクと保存方法を設定してください。".into(),
             report: String::new(),
             results: Vec::new(),
+            primary_rect: None,
         }
     }
     fn busy(&self) -> bool {
@@ -458,7 +462,11 @@ impl App {
                         status: format!(
                             "保存完了: {n}{skipped_label} / 不完全・失敗: {} / 取消: {}",
                             results.len() - n - skipped,
-                            cancel.load(Ordering::Relaxed)
+                            if cancel.load(Ordering::Relaxed) {
+                                "要求あり"
+                            } else {
+                                "なし"
+                            }
                         ),
                         detail,
                         results,
@@ -545,7 +553,7 @@ impl App {
     }
     fn source_ui(&mut self, ui: &mut egui::Ui) {
         ui.strong("1  スキャンするディスク");
-        ui.horizontal(|ui| {
+        ui.horizontal_wrapped(|ui| {
             let previous = self.source_mode;
             ui.selectable_value(
                 &mut self.source_mode,
@@ -558,7 +566,7 @@ impl App {
             }
         });
         if self.source_mode == SourceMode::Disk {
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 if ui
                     .add_enabled(
                         self.disk_messages.is_none(),
@@ -616,31 +624,149 @@ impl App {
         }
     }
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
-        egui::ScrollArea::vertical().show(ui,|ui|{
-  ui.set_max_width(950.0);ui.add_space(14.0);ui.heading("保存方法と検索条件");ui.label("復元するファイルは、スキャン後に選択できます。");ui.add_space(16.0);self.source_ui(ui);
-  ui.add_space(16.0);ui.strong("2  保存方法");ui.horizontal(|ui|{ui.selectable_value(&mut self.save_mode,SaveMode::Original,"元の場所へ戻す");ui.selectable_value(&mut self.save_mode,SaveMode::Directory,"フォルダーに保存");if ui.selectable_value(&mut self.save_mode,SaveMode::Zip,"ZIPファイルに保存").changed()&&!self.destination.to_lowercase().ends_with(".zip"){self.destination.clear();}});
-  if self.save_mode!=SaveMode::Original {let picker=if self.save_mode==SaveMode::Zip{Picker::Zip}else{Picker::Folder};path_row(ui,"保存先",&mut self.destination,picker);}else{ui.label("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補は、フォルダー保存を選んでください。");}
-  ui.horizontal(|ui|{ui.label("同じ名前がある場合");ui.selectable_value(&mut self.collision,CollisionPolicy::KeepBoth,"両方を残す（復元 1）");ui.selectable_value(&mut self.collision,CollisionPolicy::Skip,"スキップ");});ui.small("既存ファイルは上書きしません。同名フォルダーは統合します。");
-  ui.add_space(16.0);ui.collapsing("詳細設定 — 検索方式・範囲・深度・拡張子",|ui|{
-   ui.horizontal(|ui|{ui.label("検索方式");ui.selectable_value(&mut self.carve,false,"管理情報 / Quick");ui.selectable_value(&mut self.carve,true,"PNG・JPEG / Carving");});text_row(ui,"探す拡張子",&mut self.extensions,"空欄: すべて / 例: jpg, png, docx, zip");
-   if self.carve{ui.label("連続配置のPNG・JPEGを構造と画素まで検証します。JPEGは圧縮データの過不足も確認します。元の名前・削除状態は不明です。");text_row(ui,"開始バイト",&mut self.range_start,"空欄: 0（イメージ先頭）");text_row(ui,"終了バイト",&mut self.range_end,"空欄: 末尾 / この位置は範囲に含みません");}else{text_row(ui,"検索フォルダー",&mut self.path_prefix,"空欄: 全体 / イメージ内のパス（例: 写真/旅行）");text_row(ui,"検索深度",&mut self.depth,"空欄: 上限なし / 0: 指定フォルダー直下 / 最大256");ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");}
-   path_row(ui,"セッションの保存先（任意）",&mut self.work,Picker::Folder);ui.small("空欄・同じディスクの場合、スキャン結果はメモリーに保持します。");
-   if self.save_mode==SaveMode::Original {path_row(ui,"元ボリュームのルート（任意）",&mut self.original_root,Picker::Folder);ui.small("通常は自動判定します。イメージや判定できないボリュームでは、元のボリュームのルートを指定してください。ディスク全体の複数パーティションはCLIで個別に指定できます。");}
-  });self.invalidate_changed_source();ui.add_space(18.0);ui.horizontal(|ui|{
-   if ui.add_sized([170.0,38.0],egui::Button::new("スキャン開始")).clicked(){self.start_scan();}
- if self.session.is_some()&&ui.button("スキャン結果へ戻る").clicked(){self.stage=Stage::Selecting;}
-   if ui.button("保存したセッションを開く").clicked()&&let Some(p)=rfd::FileDialog::new().add_filter("Rescue session",&["json"]).pick_file(){match Session::load(&p){Ok(s)=>{self.install_session(s,&p);self.status="セッションを読み込みました。保存先は設定で確認してください。".into();},Err(e)=>self.status=e.to_string()}}
-  });ui.add_space(14.0);ui.small("同じディスクにも保存できます。選択したファイルをすべて先に読み出します（合計512 MiBまで）。同じディスクへの保存は、未選択の削除データを上書きする可能性があります。");
- });
+        egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show(ui, |ui| {
+            ui.set_max_width(ui.available_width().min(960.0));
+            ui.add_space(8.0);
+            ui.heading("保存方法と検索条件");
+            ui.label("ディスクをスキャンしてから、復元するファイルを選択します。");
+            ui.add_space(16.0);
+            self.source_ui(ui);
+            ui.add_space(16.0);
+            ui.strong("2  保存方法");
+            ui.horizontal_wrapped(|ui| {
+                ui.selectable_value(&mut self.save_mode, SaveMode::Original, "元の場所へ戻す");
+                ui.selectable_value(&mut self.save_mode, SaveMode::Directory, "フォルダーに保存");
+                if ui.selectable_value(&mut self.save_mode, SaveMode::Zip, "ZIPファイルに保存").changed()
+                    && !self.destination.to_lowercase().ends_with(".zip") { self.destination.clear(); }
+            });
+            if self.save_mode != SaveMode::Original {
+                let picker = if self.save_mode == SaveMode::Zip { Picker::Zip } else { Picker::Folder };
+                path_row(ui, "保存先", &mut self.destination, picker);
+            } else {
+                ui.label("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補はフォルダー保存を選んでください。");
+            }
+            ui.horizontal_wrapped(|ui| {
+                ui.label("同じ名前がある場合");
+                ui.selectable_value(&mut self.collision, CollisionPolicy::KeepBoth, "両方を残す（復元 1）");
+                ui.selectable_value(&mut self.collision, CollisionPolicy::Skip, "スキップ");
+            });
+            ui.small("既存ファイルは上書きしません。同名フォルダーは統合します。");
+            ui.add_space(16.0);
+            ui.collapsing("詳細設定 · 検索方式・範囲・深度・拡張子", |ui| {
+                ui.horizontal_wrapped(|ui| {
+                    ui.label("検索方式");
+                    ui.selectable_value(&mut self.carve, false, "管理情報 / Quick");
+                    ui.selectable_value(&mut self.carve, true, "写真・文書・動画 / Carving");
+                });
+                text_row(ui, "探す拡張子", &mut self.extensions, "空欄: すべて / 例: jpg, pdf, docx, zip");
+                if self.carve {
+                    ui.label("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。");
+                    text_row(ui, "開始バイト", &mut self.range_start, "空欄: 0（ディスク/イメージの先頭）");
+                    text_row(ui, "終了バイト", &mut self.range_end, "空欄: 末尾 / この位置は含みません");
+                } else {
+                    text_row(ui, "検索フォルダー", &mut self.path_prefix, "空欄: 全体 / 例: 写真/旅行");
+                    text_row(ui, "検索深度", &mut self.depth, "空欄: 上限なし / 0: 直下 / 最大256");
+                    ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");
+                }
+                path_row(ui, "セッション保存先（任意）", &mut self.work, Picker::Folder);
+                ui.small("空欄・同じディスクの場合、スキャン結果はメモリーに保持します。");
+                if self.save_mode == SaveMode::Original {
+                    path_row(ui, "元ボリュームのルート（任意）", &mut self.original_root, Picker::Folder);
+                    ui.small("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。");
+                }
+            });
+            self.invalidate_changed_source();
+            ui.add_space(16.0);
+            ui.small("同じディスクにも保存できます。選択したファイルをすべて先に読み出します（合計512 MiBまで）。同じディスクへの保存は、未選択の削除データを上書きする可能性があります。");
+        });
     }
-    fn results_ui(&mut self, ui: &mut egui::Ui) {
-        let busy = self.busy();
-        ui.add_enabled_ui(!busy, |ui| {
+    /// Drawn after content so Tab order follows the form, then the stable action row.
+    fn actions_ui(&mut self, ui: &mut egui::Ui) {
+        ui.separator();
+        if self.stage == Stage::Settings {
+            ui.horizontal_wrapped(|ui| {
+                if ui.button("保存したセッションを開く").clicked()
+                    && let Some(p) = rfd::FileDialog::new()
+                        .add_filter("Rescue session", &["json"])
+                        .pick_file()
+                {
+                    match Session::load(&p) {
+                        Ok(session) => {
+                            self.install_session(session, &p);
+                            self.status =
+                                "セッションを読み込みました。保存先は設定で確認してください。"
+                                    .into();
+                        }
+                        Err(e) => self.status = e.to_string(),
+                    }
+                }
+                if self.session.is_some() && ui.button("結果へ戻る").clicked() {
+                    self.stage = Stage::Selecting;
+                }
+            });
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let response = ui.add_enabled(
+                    !self.source.trim().is_empty(),
+                    egui::Button::new("スキャン開始").min_size(egui::vec2(176.0, 36.0)),
+                );
+                self.primary_rect = Some(response.rect);
+                if response.clicked() {
+                    self.start_scan();
+                }
+                ui.weak("ファイルの選択はスキャン後");
+            });
+        } else if !self.busy() {
+            let bytes = self
+                .session
+                .as_ref()
+                .map(|s| {
+                    s.candidates
+                        .iter()
+                        .filter(|c| self.selected.contains(&c.id))
+                        .filter_map(|c| c.size)
+                        .fold(0u64, u64::saturating_add)
+                })
+                .unwrap_or(0);
+            ui.horizontal_wrapped(|ui| {
+                ui.label(format!(
+                    "{} 件選択 · {}",
+                    self.selected.len(),
+                    view::size_text(Some(bytes))
+                ));
+                ui.label(match self.save_mode {
+                    SaveMode::Original => "元の場所へ戻す",
+                    SaveMode::Directory => "フォルダーに保存",
+                    SaveMode::Zip => "ZIPに保存",
+                });
+                if self.save_mode != SaveMode::Original {
+                    ui.add(egui::Label::new(&self.destination).truncate())
+                        .on_hover_text(&self.destination);
+                }
+            });
             ui.horizontal(|ui| {
                 if ui.button("設定に戻る").clicked() {
                     self.stage = Stage::Settings;
                 }
-                ui.separator();
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let response = ui.add_enabled(
+                        !self.selected.is_empty(),
+                        egui::Button::new("選択したファイルを復元")
+                            .min_size(egui::vec2(224.0, 36.0)),
+                    );
+                    self.primary_rect = Some(response.rect);
+                    if response.clicked() {
+                        self.start_recovery();
+                    }
+                });
+            });
+        } else {
+            ui.label("進行状況と取消は画面下に表示しています。");
+        }
+    }
+    fn results_ui(&mut self, ui: &mut egui::Ui) {
+        let busy = self.busy();
+        ui.add_enabled_ui(!busy, |ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label("表示");
                 ui.selectable_value(&mut self.view, ViewStyle::Details, "詳細");
                 ui.selectable_value(&mut self.view, ViewStyle::Icons, "アイコン");
@@ -658,11 +784,12 @@ impl App {
                     });
                 ui.checkbox(&mut self.show_evidence, "復元の根拠");
             });
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label("結果を検索");
                 if ui
                     .add(
                         egui::TextEdit::singleline(&mut self.filter)
+                            .id(egui::Id::new("result-search"))
                             .desired_width(280.0)
                             .hint_text("名前・元のパス"),
                     )
@@ -699,7 +826,7 @@ impl App {
             self.view_dirty = false;
         }
         ui.separator();
-        let height = (ui.available_height() - 76.0).max(80.0);
+        let height = ui.available_height().max(32.0);
         ui.allocate_ui(egui::vec2(ui.available_width(), height), |ui| {
             if self.view == ViewStyle::Details {
                 self.details_ui(ui);
@@ -707,50 +834,6 @@ impl App {
                 self.icons_ui(ui);
             }
         });
-        ui.separator();
-        ui.horizontal(|ui| {
-            let bytes = self
-                .session
-                .as_ref()
-                .map(|s| {
-                    s.candidates
-                        .iter()
-                        .filter(|c| self.selected.contains(&c.id))
-                        .filter_map(|c| c.size)
-                        .fold(0u64, u64::saturating_add)
-                })
-                .unwrap_or(0);
-            ui.label(format!(
-                "{} 件選択 · {}",
-                self.selected.len(),
-                view::size_text(Some(bytes))
-            ));
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui
-                    .add_enabled(
-                        !busy && !self.selected.is_empty(),
-                        egui::Button::new("選択したファイルを復元")
-                            .min_size(egui::vec2(215.0, 34.0)),
-                    )
-                    .clicked()
-                {
-                    self.start_recovery();
-                }
-            });
-        });
-        ui.small(format!(
-            "{} → {}",
-            match self.save_mode {
-                SaveMode::Zip => "ZIPに保存",
-                SaveMode::Directory => "フォルダーに保存",
-                SaveMode::Original => "元の場所へ戻す",
-            },
-            if self.save_mode == SaveMode::Original {
-                "確認済みの元のパス"
-            } else {
-                &self.destination
-            }
-        ));
     }
     fn details_ui(&mut self, ui: &mut egui::Ui) {
         ui.spacing_mut().item_spacing.y = 3.0;
@@ -773,7 +856,7 @@ impl App {
                 .column(Column::initial(105.0).at_least(70.0))
                 .column(Column::initial(90.0).at_least(65.0))
                 .column(Column::remainder().at_least(90.0))
-                .header(27.0, |mut row| {
+                .header(32.0, |mut row| {
                     row.col(|_| {});
                     for (col, label) in [
                         (SortColumn::Name, "名前"),
@@ -799,7 +882,7 @@ impl App {
                     }
                 })
                 .body(|body| {
-                    body.rows(24.0, self.rows.len(), |mut row| {
+                    body.rows(32.0, self.rows.len(), |mut row| {
                         match &self.rows[row.index()] {
                             Row::Group(name, count) => {
                                 row.col(|ui| {
@@ -834,13 +917,19 @@ impl App {
                                 let mut checked = self.selected.contains(&c.id);
                                 row.set_selected(checked);
                                 row.col(|ui| {
-                                    if ui
-                                        .add_enabled(
+                                    let response = ui.add_enabled(
+                                        c.supported && !busy,
+                                        egui::Checkbox::without_text(&mut checked),
+                                    );
+                                    response.widget_info(|| {
+                                        egui::WidgetInfo::selected(
+                                            egui::WidgetType::Checkbox,
                                             c.supported && !busy,
-                                            egui::Checkbox::without_text(&mut checked),
+                                            checked,
+                                            format!("{}を復元対象に選択", c.name),
                                         )
-                                        .changed()
-                                    {
+                                    });
+                                    if response.changed() {
                                         set_selected(&mut self.selected, &c.id, checked);
                                     }
                                 });
@@ -1084,6 +1173,9 @@ impl App {
                 match c.extent_evidence {
                     rescue_core::ExtentEvidence::PngValidated => "PNGのCRC・圧縮データ・画素を検証済み。",
                     rescue_core::ExtentEvidence::JpegValidated => "JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。",
+                    rescue_core::ExtentEvidence::PdfStructure => "PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。",
+                    rescue_core::ExtentEvidence::ZipCrcValidated => "ZIPの管理情報・展開長・全エントリーCRCを検証。Officeの表示内容は未確認です。",
+                    rescue_core::ExtentEvidence::MediaStructure => "動画のコンテナー・サンプル位置を検証。映像・音声の全フレーム復号は未実施です。",
                     rescue_core::ExtentEvidence::Unknown => "配置と形式の検証は未完了です。候補の警告を確認してください。",
                     _ => "管理情報から配置を取得。形式の内容検証は未実施。",
                 },
@@ -1166,18 +1258,23 @@ enum Picker {
     Zip,
 }
 fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) {
+    let label_id = ui.label(label).id;
     ui.horizontal(|ui| {
-        ui.add_sized([110.0, 24.0], egui::Label::new(label));
-        ui.add(
-            egui::TextEdit::singleline(value)
-                .desired_width((ui.available_width() - 64.0).max(80.0)),
-        );
-        if ui.button("参照").clicked() {
-            let d = rfd::FileDialog::new();
+        ui.add_sized(
+            [(ui.available_width() - 72.0).max(40.0), 28.0],
+            egui::TextEdit::singleline(value).id_salt(label),
+        )
+        .labelled_by(label_id);
+        if ui
+            .add_sized([64.0, 28.0], egui::Button::new("参照"))
+            .on_hover_text(format!("{label}を選択"))
+            .clicked()
+        {
+            let dialog = rfd::FileDialog::new();
             let path = match picker {
-                Picker::Open => d.pick_file(),
-                Picker::Folder => d.pick_folder(),
-                Picker::Zip => d
+                Picker::Open => dialog.pick_file(),
+                Picker::Folder => dialog.pick_folder(),
+                Picker::Zip => dialog
                     .add_filter("ZIP", &["zip"])
                     .set_file_name("recovered.zip")
                     .save_file(),
@@ -1189,14 +1286,14 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
     });
 }
 fn text_row(ui: &mut egui::Ui, label: &str, value: &mut String, hint: &str) {
-    ui.horizontal(|ui| {
-        ui.add_sized([110.0, 24.0], egui::Label::new(label));
-        ui.add(
-            egui::TextEdit::singleline(value)
-                .desired_width(ui.available_width())
-                .hint_text(hint),
-        );
-    });
+    let label_id = ui.label(label).id;
+    ui.add_sized(
+        [ui.available_width(), 28.0],
+        egui::TextEdit::singleline(value)
+            .id_salt(label)
+            .hint_text(hint),
+    )
+    .labelled_by(label_id);
 }
 fn folder_icon(ui: &mut egui::Ui, size: f32) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
@@ -1232,9 +1329,14 @@ fn file_icon(ui: &mut egui::Ui, size: f32) {
         );
     }
 }
-impl eframe::App for App {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.receive();
+impl App {
+    fn render(&mut self, ctx: &egui::Context) {
+        self.primary_rect = None;
+        if matches!(self.stage, Stage::Selecting | Stage::Finished)
+            && ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::F))
+        {
+            ctx.memory_mut(|m| m.request_focus(egui::Id::new("result-search")));
+        }
         if self.busy() || self.disk_messages.is_some() {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
@@ -1304,23 +1406,52 @@ impl eframe::App for App {
                 });
             }
         });
-        if self.show_evidence && self.session.is_some() && self.stage != Stage::Settings {
+        let wide = ctx.content_rect().width() >= 1008.0;
+        if self.show_evidence && wide && self.session.is_some() && self.stage != Stage::Settings {
             egui::SidePanel::right("evidence")
                 .default_width(280.0)
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical().show(ui, |ui| self.intelligence(ui));
                 });
         }
-        egui::CentralPanel::default().show(ctx, |ui| match self.stage {
-            Stage::Settings => self.setup_ui(ui),
-            Stage::Scanning => {
-                ui.add_space(40.0);
-                ui.heading("スキャンしています");
-                ui.label(&self.source);
-                ui.label("完了後、復元するファイルを選択できます。");
-            }
-            _ => self.results_ui(ui),
+        egui::CentralPanel::default().show(ctx, |ui| {
+            let height = (ui.available_height() - 100.0).max(32.0);
+            ui.allocate_ui_with_layout(
+                egui::vec2(ui.available_width(), height),
+                egui::Layout::top_down(egui::Align::Min),
+                |ui| {
+                    ui.set_min_height(height);
+                    match self.stage {
+                        Stage::Settings => self.setup_ui(ui),
+                        Stage::Scanning => {
+                            ui.add_space(24.0);
+                            ui.heading("スキャンしています");
+                            ui.label(&self.source);
+                            ui.label("完了後、復元するファイルを選択できます。");
+                        }
+                        _ => self.results_ui(ui),
+                    }
+                },
+            );
+            self.actions_ui(ui);
         });
+        if self.show_evidence && !wide && self.session.is_some() && self.stage != Stage::Settings {
+            let mut open = true;
+            egui::Window::new("復元の根拠")
+                .open(&mut open)
+                .default_width(320.0)
+                .vscroll(true)
+                .show(ctx, |ui| self.intelligence(ui));
+            if !open {
+                self.show_evidence = false;
+            }
+        }
+    }
+}
+impl eframe::App for App {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        self.receive();
+        self.render(ctx);
     }
 }
 impl Drop for App {
@@ -1338,7 +1469,7 @@ fn main() -> eframe::Result {
             renderer: eframe::Renderer::Glow,
             viewport: egui::ViewportBuilder::default()
                 .with_inner_size([1260.0, 820.0])
-                .with_min_inner_size([900.0, 620.0]),
+                .with_min_inner_size([720.0, 520.0]),
             ..Default::default()
         },
         Box::new(|cc| Ok(Box::new(App::new(cc)))),
@@ -1347,6 +1478,46 @@ fn main() -> eframe::Result {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn primary_action_stays_inside_resized_viewports_and_scroll_content() {
+        let ctx = egui::Context::default();
+        let mut app = App::blank();
+        app.source_mode = SourceMode::Image;
+        for stage in [Stage::Settings, Stage::Selecting, Stage::Finished] {
+            app.stage = stage;
+            if stage != Stage::Settings {
+                app.session = Some(session(FileSystem::Ntfs));
+            }
+            for zoom in [1.0, 1.5, 2.0] {
+                ctx.set_zoom_factor(zoom);
+                for size in [[1260.0, 820.0], [720.0, 520.0], [1008.0, 620.0]] {
+                    for _ in 0..3 {
+                        let _ = ctx.run(
+                            egui::RawInput {
+                                screen_rect: Some(egui::Rect::from_min_size(
+                                    egui::Pos2::ZERO,
+                                    egui::vec2(size[0] * zoom, size[1] * zoom),
+                                )),
+                                ..Default::default()
+                            },
+                            |ctx| app.render(ctx),
+                        );
+                    }
+                    let rect = app.primary_rect.expect("primary action exists");
+                    let viewport = ctx.content_rect();
+                    assert!(
+                        viewport.contains_rect(rect),
+                        "{stage:?} {size:?} at {zoom}: button {rect:?}, viewport {viewport:?}"
+                    );
+                    assert!(rect.height() >= 36.0 && rect.width() >= 176.0);
+                    assert!(
+                        viewport.bottom() - rect.bottom() < 100.0,
+                        "primary action must remain near the bottom"
+                    );
+                }
+            }
+        }
+    }
     fn session(fs: FileSystem) -> Session {
         Session {
             schema_version: 4,
