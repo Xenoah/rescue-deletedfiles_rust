@@ -54,6 +54,7 @@ fn result_for(id: &str) -> RecoveryResult {
         extent_evidence: ExtentEvidence::Unknown,
         allocation_status: AllocationStatus::Unknown,
         archive_entry: None,
+        missing_ranges: Vec::new(),
     }
 }
 fn component(value: &str) -> String {
@@ -368,6 +369,10 @@ fn read_volume(
             Err(e @ (Error::Cancelled | Error::SourceChanged)) => return Err(e),
             Err(e) if memory_limit => return Err(e),
             Err(e) => {
+                if let Error::MissingRanges(ranges) = &e {
+                    result.status = "incomplete".into();
+                    result.missing_ranges = ranges.clone();
+                }
                 result.error = Some(format!("{}: {e}", e.code()));
                 batch.failures.push(result);
             }

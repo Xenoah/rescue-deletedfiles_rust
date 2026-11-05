@@ -27,11 +27,13 @@ struct Job {
     progress: Progress,
     result: Value,
     cancel: Arc<AtomicBool>,
+    details: Value,
 }
 #[derive(Default)]
 struct State {
     jobs: BTreeMap<String, Job>,
     sessions: BTreeMap<String, Session>,
+    acquired_images: std::collections::BTreeSet<PathBuf>,
 }
 struct Server {
     config: Config,
@@ -79,6 +81,20 @@ fn tools() -> Value {
             json!({"source":string,"request_id":string,"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0}}),
             &["source", "request_id"],
             false
+        ),
+        tool(
+            "start_image",
+            "Acquire an allowed disk to an empty directory inside an output root. RAW + read map preserve failed/unread ranges. Durable multi-pass retries, cancel and resume. Physical source and destination must differ. Generated images become scan sources for this server session.",
+            json!({"source":string,"destination":string,"request_id":string,"block_size":{"type":"integer","minimum":512,"maximum":16777216,"default":4194304},"retries":{"type":"integer","minimum":0,"maximum":3,"default":2},"resume":{"type":"boolean","default":false}}),
+            &["source", "destination", "request_id"],
+            false
+        ),
+        tool(
+            "get_read_map",
+            "Read acquisition coverage for an allowed or server-generated image.",
+            json!({"image":string,"offset":{"type":"integer","minimum":0},"limit":{"type":"integer","minimum":1,"maximum":1000},"map_digest":string}),
+            &["image"],
+            true
         ),
         tool(
             "get_job",
@@ -132,7 +148,7 @@ impl Server {
             .iter()
             .all(|source| rescue_core::guard_output_path(source, &config.work_dir).is_ok());
         for source in &config.sources {
-            rescue_core::inspect_image(source)?;
+            rescue_core::validate_source(source)?;
         }
         if persist_sessions {
             fs::create_dir_all(&config.work_dir)?;
@@ -187,6 +203,7 @@ impl Server {
                 progress: Progress::default(),
                 result: Value::Null,
                 cancel: cancel.clone(),
+                details: Value::Null,
             },
         );
         Ok((id, cancel))
@@ -204,7 +221,7 @@ impl Server {
         if object.keys().any(|key| !properties.contains_key(key)) {
             return Err("unknown argument".into());
         }
-        if name == "start_scan" || name == "recover_files" {
+        if matches!(name, "start_scan" | "recover_files" | "start_image") {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
             if let Some((previous, result)) = self.requests.get(request) {
@@ -218,8 +235,110 @@ impl Server {
         let result = match name {
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
-                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","jpeg_raw_carving","native_read_only_disks","mbr_gpt_partitions"],"version":rescue_core::VERSION}),
+                "generated_images":self.state.lock().unwrap().acquired_images,
+                "capabilities":["ntfs_raw_quick_scan","fat32_raw_quick_scan","exfat_raw_quick_scan","png_raw_carving","jpeg_raw_carving","document_media_carving","native_read_only_disks","mbr_gpt_partitions","resumable_acquisition","read_map"],"version":rescue_core::VERSION}),
             ),
+            "get_read_map" => {
+                let path = rescue_core::canonical_source_path(Path::new(field(args, "image")?))
+                    .map_err(err)?;
+                if !self.config.sources.contains(&path)
+                    && !self.state.lock().unwrap().acquired_images.contains(&path)
+                {
+                    return Err("image is outside the allowlist".into());
+                }
+                let offset = args
+                    .get("offset")
+                    .map(|v| v.as_u64().ok_or("invalid offset"))
+                    .transpose()?
+                    .unwrap_or(0);
+                let limit = args
+                    .get("limit")
+                    .map(|v| {
+                        v.as_u64()
+                            .filter(|n| (1..=1000).contains(n))
+                            .ok_or("invalid limit")
+                    })
+                    .transpose()?
+                    .unwrap_or(100) as usize;
+                let expected = args
+                    .get("map_digest")
+                    .map(|v| v.as_str().ok_or("invalid map_digest"))
+                    .transpose()?;
+                serde_json::to_value(
+                    rescue_core::read_map_page(&path, offset, limit, expected).map_err(err)?,
+                )
+                .map_err(err)
+            }
+            "start_image" => {
+                let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
+                    .map_err(err)?;
+                if !self.config.sources.contains(&path) {
+                    return Err("source is outside the allowlist".into());
+                }
+                let destination = PathBuf::from(field(args, "destination")?);
+                let block_size = args
+                    .get("block_size")
+                    .map(|v| {
+                        v.as_u64()
+                            .filter(|n| *n >= 512 && *n <= 16 * 1024 * 1024)
+                            .ok_or("invalid block_size")
+                    })
+                    .transpose()?
+                    .unwrap_or(4 * 1024 * 1024) as u32;
+                let retries = args
+                    .get("retries")
+                    .map(|v| v.as_u64().filter(|n| *n <= 3).ok_or("invalid retries"))
+                    .transpose()?
+                    .unwrap_or(2) as u8;
+                let resume = args
+                    .get("resume")
+                    .map(|v| v.as_bool().ok_or("invalid resume"))
+                    .transpose()?
+                    .unwrap_or(false);
+                let roots = self.output_roots.clone();
+                let (id, cancel) = self.create_job()?;
+                let shared = self.state.clone();
+                let job_id = id.clone();
+                self.threads.push(thread::spawn(move || {
+                    let result = rescue_core::acquire_image_with_roots(
+                        &path,
+                        &destination,
+                        rescue_core::AcquisitionOptions {
+                            block_size,
+                            retries,
+                            resume,
+                        },
+                        Some(&roots),
+                        &cancel,
+                        |progress| {
+                            let mut state = shared.lock().unwrap();
+                            let job = state.jobs.get_mut(&job_id).unwrap();
+                            job.progress = Progress {
+                                scanned_records: progress.completed_bytes,
+                                total_records: progress.total_bytes,
+                                candidates: 0,
+                                unit: rescue_core::ProgressUnit::Bytes,
+                            };
+                            job.details = serde_json::to_value(progress).unwrap();
+                        },
+                    );
+                    let mut state = shared.lock().unwrap();
+                    match result {
+                        Ok(result) => {
+                            state.acquired_images.insert(result.image.clone());
+                            let job = state.jobs.get_mut(&job_id).unwrap();
+                            job.state = result.state.clone();
+                            job.result = serde_json::to_value(result).unwrap();
+                        }
+                        Err(e) => {
+                            let job = state.jobs.get_mut(&job_id).unwrap();
+                            job.state = "failed".into();
+                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                        }
+                    }
+                }));
+                Ok(json!({"job_id":id,"state":"running"}))
+            }
             "start_scan" => {
                 let carve = match args.get("mode") {
                     None => false,
@@ -271,7 +390,9 @@ impl Server {
                 settings.validate().map_err(err)?;
                 let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
                     .map_err(err)?;
-                if !self.config.sources.contains(&path) {
+                if !self.config.sources.contains(&path)
+                    && !self.state.lock().unwrap().acquired_images.contains(&path)
+                {
                     return Err("source is outside the allowlist".into());
                 }
                 if self.state.lock().unwrap().sessions.len() >= 4 {
@@ -317,7 +438,7 @@ impl Server {
                     job.state = "cancelling".into();
                 }
                 Ok(
-                    json!({"job_id":id,"state":job.state,"progress":job.progress,"result":job.result}),
+                    json!({"job_id":id,"state":job.state,"progress":job.progress,"details":job.details,"result":job.result}),
                 )
             }
             "list_candidates" | "get_report" => {
@@ -527,7 +648,7 @@ impl Server {
             }
             _ => Err("unknown tool".into()),
         };
-        if (name == "start_scan" || name == "recover_files")
+        if matches!(name, "start_scan" | "recover_files" | "start_image")
             && let Ok(ref value) = result
         {
             self.requests.insert(

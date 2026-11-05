@@ -20,6 +20,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     if jpeg['version']!=f'rescue {VERSION}' or jpeg['status']!='passed' or jpeg['corpus_jpegs']!=32 or jpeg['jpeg_candidates_exact']!=33 or jpeg['malformed_cases']!=33 or not jpeg['cli_mcp_byte_exact'] or not jpeg['source_unchanged']:raise SystemExit('JPEG carving proof mismatch')
     documents=json.loads((dist/f'document-results-{platform}-{arch}.json').read_text())
     if documents['version']!=f'rescue {VERSION}' or documents['status']!='passed' or documents['valid_variants']<23 or documents['rejected_corrupt_or_unsupported']<30:raise SystemExit('Document carving proof mismatch')
+    image=json.loads((dist/f'imaging-results-{platform}-{arch}.json').read_text());assert image['version']==f'rescue {VERSION}' and image['status']=='passed' and image['checks']>=15
+    image_native=json.loads((dist/f'imaging-native-{platform}-{arch}.json').read_text());assert image_native['version']==f'rescue {VERSION}' and image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged']
+    assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)

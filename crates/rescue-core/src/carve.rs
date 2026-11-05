@@ -178,13 +178,16 @@ pub(crate) fn scan_range(
     let mut attempts = 0u64;
     let mut offset = start;
     let mut budget = VALIDATION_BUDGET;
+    let mut missing = false;
     'scan: while offset < boundary {
         if cancel.load(Ordering::Relaxed) {
             session.cancelled = true;
             break;
         }
         let count = WINDOW.min(boundary - offset);
-        let buffer = image.read(offset, (count + 21).min(boundary - offset) as usize)?;
+        let (buffer, gaps) =
+            image.read_available(offset, (count + 21).min(boundary - offset) as usize)?;
+        missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
             let format = if png_allowed && rest.starts_with(SIGNATURE) {
@@ -299,6 +302,10 @@ pub(crate) fn scan_range(
         session
             .warnings
             .push("Scan stopped at a resource limit; remaining bytes were not searched.".into());
+    }
+    if missing {
+        session.truncated = true;
+        session.warnings.push("MISSING_RANGES: acquired image has unread/failed bytes; signatures there were not searched. Parsers reject payloads crossing a missing range.".into());
     }
     session.bound_candidates()?;
     if image.fingerprint()? != session.fingerprint {

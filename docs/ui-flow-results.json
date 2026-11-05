@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "time_utc": "2026-11-05T05:02:26.548786+00:00",
+  "time_utc": "2026-11-05T05:54:14.324287+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
-  "application_version": "0.2.0-alpha.10",
+  "application_version": "0.2.0-alpha.11",
   "scope": "GUI settings/scan/selection/ZIP recovery on Linux Xvfb; synthetic NTFS dates/folders; real corpus bytes",
-  "gui_binary_sha256": "e7a85650473e69a2737af3100536045d628b4b19f0cd415a39d0be1b42d92122",
+  "gui_binary_sha256": "fc5b34c34f6239a3e8dcf23c32ae0ad2cf287b0c56308f7cc6461ffe2710e00c",
   "gui_build": "Linux debug, separate from release native package startup checks",
   "source_sha256_before_and_after": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
-  "archive_sha256": "a9c415741b0918708d3db97e157b2e5ae956c5743d8caccf5ef7bbaa1f095efd",
+  "archive_sha256": "7d716844daaa87987a378f131e929e7024ae6a50bf73715f19a0daeb40dbb68d",
   "files_byte_exact": 36,
   "recorded_dates_matched": 36,
   "windows_manual_gui_test": false,
@@ -17,37 +17,37 @@
       "file": "images/disk-selection.png",
       "width": 1260,
       "height": 820,
-      "sha256": "19619e3c0b5c52624d7107a3ffc88286f45609782ae5c9fa83c238ce53ebcd0e"
+      "sha256": "dd23d1b7497516fb5fbd269d5b0f51c426c875f164bc3c7392a53e4488bdd9b6"
     },
     {
       "file": "images/settings-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "90f9196f04b5d41d01e6dc4523d6732d037ff69bcc8dffbebe6250d3a389ad47"
+      "sha256": "b1cab1a03e0c1afc196f6e6efc0a39c4dd4b10dd38655a97769fd89e499c4355"
     },
     {
       "file": "images/details-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "f1c9019b901f39a40d615233d11a00392c111245e3dc8d05f6910743f6b02981"
+      "sha256": "c36a344ba39544306ae7fd433f120f564d304673f4abf1d15ac1f0c22613cb68"
     },
     {
       "file": "images/icons-view.png",
       "width": 1260,
       "height": 820,
-      "sha256": "fa4ff51726f778c6b36f2e985b21944d33f73a74d250ef1d64eb200a6ec4393c"
+      "sha256": "dbb18fa8995951d1f9a2434c36149aa5a323e91c7127c079862d2db6178c1913"
     },
     {
       "file": "images/original-location.png",
       "width": 1260,
       "height": 820,
-      "sha256": "31dc770bfc752f5cf614a051c36157800cdf11e0810e640fc5a6a87157fb5d3a"
+      "sha256": "00d57d5a1fa5dda874fb958d2a05d425af6b3e68533e73b95361c96b292dec7a"
     },
     {
       "file": "images/original-restored.png",
       "width": 1260,
       "height": 820,
-      "sha256": "d7757025b589261919dfca525fb7392b68f194ee4615b8e341fff0239353bfcb"
+      "sha256": "133e2a666759f75853ff6ecbb3869a313fd56de389056efbd878c77f51e43fb0"
     }
   ],
   "files": [

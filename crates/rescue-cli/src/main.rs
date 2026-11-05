@@ -22,6 +22,37 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Acquire a disk into a durable RAW image/read-map pair. The output directory must be empty.
+    Image {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        destination: PathBuf,
+        #[arg(long,default_value_t=4*1024*1024)]
+        block_size: u32,
+        #[arg(long, default_value_t = 2)]
+        retries: u8,
+        #[arg(long)]
+        resume: bool,
+        /// Emit durable progress as JSON lines on stderr, while the final result remains on stdout.
+        #[arg(long)]
+        progress: bool,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Inspect acquisition coverage without reading damaged source media.
+    ReadMap {
+        #[arg(long)]
+        image: PathBuf,
+        #[arg(long, default_value_t = 0)]
+        offset: u64,
+        #[arg(long, default_value_t = 100)]
+        limit: usize,
+        #[arg(long)]
+        map_digest: Option<String>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Validate that output and source use different physical disks, without writing.
     CheckDestination {
         #[arg(long)]
@@ -219,6 +250,56 @@ fn run() -> Result<i32, Error> {
             .map_err(|e| Error::Request(e.to_string()))?;
     }
     match cli.command {
+        Command::Image {
+            source,
+            destination,
+            block_size,
+            retries,
+            resume,
+            progress,
+            json: compact,
+        } => {
+            let result = rescue_core::acquire_image(
+                &source,
+                &destination,
+                rescue_core::AcquisitionOptions {
+                    block_size,
+                    retries,
+                    resume,
+                },
+                &cancel,
+                |p| {
+                    if progress {
+                        eprintln!("{}", serde_json::to_string(&p).unwrap());
+                    }
+                },
+            )?;
+            let code = match result.state.as_str() {
+                "completed" => 0,
+                "cancelled" => 130,
+                _ => 5,
+            };
+            print(serde_json::to_value(result)?, compact);
+            Ok(code)
+        }
+        Command::ReadMap {
+            image,
+            offset,
+            limit,
+            map_digest,
+            json: compact,
+        } => {
+            print(
+                serde_json::to_value(rescue_core::read_map_page(
+                    &image,
+                    offset,
+                    limit,
+                    map_digest.as_deref(),
+                )?)?,
+                compact,
+            );
+            Ok(0)
+        }
         Command::CheckDestination {
             source,
             destination,

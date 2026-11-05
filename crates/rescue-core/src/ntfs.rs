@@ -78,7 +78,20 @@ impl Data {
                         .min(end.min(*initialized) - cursor)
                         as usize;
                     if let Some(physical) = run.physical {
-                        let chunk = image.read(physical + (cursor - run.logical), count)?;
+                        let address = physical + (cursor - run.logical);
+                        let chunk = image.read(address, count).map_err(|e| match e {
+                            Error::MissingRanges(mut ranges) => {
+                                for gap in &mut ranges {
+                                    gap.logical_offset = Some(
+                                        cursor
+                                            + (gap.source_offset - image.absolute_offset(address)),
+                                    );
+                                    gap.logical_length = Some(gap.length);
+                                }
+                                Error::MissingRanges(ranges)
+                            }
+                            other => other,
+                        })?;
                         out[(cursor - offset) as usize..(cursor - offset) as usize + count]
                             .copy_from_slice(&chunk);
                     }
@@ -97,7 +110,18 @@ impl Data {
                 while cursor < end.min(*initialized) {
                     let start = cursor / unit * unit;
                     let required = (initialized - start).min(*unit);
-                    let decoded = compression_unit(image, runs, start, *unit, required)?;
+                    let decoded = compression_unit(image, runs, start, *unit, required).map_err(
+                        |e| match e {
+                            Error::MissingRanges(mut ranges) => {
+                                for gap in &mut ranges {
+                                    gap.logical_offset = Some(start);
+                                    gap.logical_length = Some(required);
+                                }
+                                Error::MissingRanges(ranges)
+                            }
+                            other => other,
+                        },
+                    )?;
                     let count = (start + required - cursor).min(end - cursor) as usize;
                     let within = (cursor - start) as usize;
                     let into = (cursor - offset) as usize;

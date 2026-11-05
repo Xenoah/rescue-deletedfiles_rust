@@ -13,6 +13,8 @@ import zipfile
 from e2e_formats import main as formats
 from e2e_jpeg import main as jpeg
 from e2e_documents import main as documents
+from e2e_imaging import main as imaging
+from e2e_imaging_native import main as imaging_native
 from e2e_features import main as features
 from e2e_disks import main as disks
 from e2e_restore import main as restore_paths
@@ -57,6 +59,8 @@ def main():
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['jpeg_verification']=jpeg(binary,(a.output/'jpeg-results.json').resolve())
     result['document_verification']=documents(binary,(a.output/'document-results.json').resolve())
+    result['imaging_verification']=imaging(binary,(a.output/'imaging-results.json').resolve())
+    result['imaging_native_verification']=imaging_native(binary,(a.output/'imaging-native-results.json').resolve())
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))

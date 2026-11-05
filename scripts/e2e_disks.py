@@ -134,6 +134,12 @@ def native_test(binary,disk,truth,root,rows):
                 diagnostics[label]={key:value[key] for key in fields if key in value}
             print('macOS disk topology:',json.dumps(diagnostics),flush=True)
         positive(executable,device,truth,root,'native-read-only-disk',rows,hash_source=backing)
+        acquired=run(executable,'image','--source',device,'--destination',root/'native-acquisition','--json')
+        check(acquired['state']=='completed' and file_hash(Path(acquired['image']))==before,'native acquisition bytes differ')
+        scan=run(executable,'scan','--source',acquired['image'],'--work-dir',root/'acquired-work','--json')
+        recovered=run(executable,'recover','--session',scan['session'],'--all','--destination',root/'acquired-out','--json')
+        check(len(recovered['results'])==len(truth),'acquired disk omitted files')
+        for file in recovered['results']:check(file['status']=='completed' and file_hash(Path(file['path']))==truth[file['candidate_id']]['sha256'],'acquired native file mismatch')
         # The output guard can be checked without reading user file contents or writing anything.
         host_same=None
         for item in inventory:
@@ -160,7 +166,7 @@ def native_test(binary,disk,truth,root,rows):
         check(file_hash(backing)==backing_before,'read-only backing file changed while attached')
     check(file_hash(backing)==backing_before,'backing file changed on detach')
     check(file_hash(disk)==before,'native source changed')
-    return {'device_path':str(device),'backing_sha256_before_and_after':backing_before,'raw_image_sha256_before_and_after':before,'legacy_same_disk_entry_points_rejected':['scan work','stream folder recovery','stream ZIP work/output'],'same_disk_mcp_memory_only':True}
+    return {'device_path':str(device),'backing_sha256_before_and_after':backing_before,'raw_image_sha256_before_and_after':before,'legacy_same_disk_entry_points_rejected':['scan work','stream folder recovery','stream ZIP work/output'],'same_disk_mcp_memory_only':True,'acquisition_byte_exact':True,'acquired_files_byte_exact':len(truth),'read_map':acquired['summary']}
 
 
 def main(binary,output,native):

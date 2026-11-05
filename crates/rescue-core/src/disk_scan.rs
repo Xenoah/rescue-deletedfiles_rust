@@ -76,7 +76,12 @@ pub fn scan_source(
         });
         let mut volume = match volume {
             Ok(volume) => volume,
-            Err(error @ (Error::Invalid(_) | Error::Unsupported(_) | Error::Limit(_))) => {
+            Err(
+                error @ (Error::Invalid(_)
+                | Error::Unsupported(_)
+                | Error::Limit(_)
+                | Error::MissingRanges(_)),
+            ) => {
                 session.truncated = true;
                 session.warnings.push(format!(
                     "Partition {} could not be scanned: {error}",

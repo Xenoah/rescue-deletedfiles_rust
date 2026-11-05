@@ -71,7 +71,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all nine suites)
+      - name: Debug CLI and MCP integration (all ten suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -81,12 +81,17 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all nine suites)
+      - name: Release CLI and MCP integration (all ten suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
       - name: Record JPEG entropy and pixel verification
         run: python scripts/ci_command.py python scripts/e2e_jpeg.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output jpeg-results.json
       - name: Record document and media carving verification
         run: python scripts/ci_command.py python scripts/e2e_documents.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output document-results.json
+      - name: Record resumable acquisition and read-map verification
+        run: python scripts/ci_command.py python scripts/e2e_imaging.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-results.json
+      - name: Native capacity failure, permission denial and acquisition resume
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_imaging_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-native-results.json
       - name: Release all-format byte verification
         run: python scripts/ci_command.py python scripts/e2e_formats.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output format-results/release
       - name: Independent deletion and all formats on Linux
@@ -123,6 +128,8 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('jpeg-results.json','dist/jpeg-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect document and media carving evidence
         run: python -c "import shutil;shutil.copyfile('document-results.json','dist/document-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Collect acquisition evidence
+        run: python -c "import shutil;shutil.copyfile('imaging-results.json','dist/imaging-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('imaging-native-results.json','dist/imaging-native-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.platform }}-${{ matrix.arch }}
@@ -139,6 +146,7 @@ jobs:
             dist/restore-*.json
             dist/jpeg-results-*.json
             dist/document-results-*.json
+            dist/imaging-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

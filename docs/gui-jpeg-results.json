@@ -1,12 +1,12 @@
 {
-  "application_version": "0.2.0-alpha.10",
+  "application_version": "0.2.0-alpha.11",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "scope": "Actual Linux debug GUI scan/select/ZIP recovery; synthetic RAW, no physical deletion.",
-  "gui_binary_sha256": "e7a85650473e69a2737af3100536045d628b4b19f0cd415a39d0be1b42d92122",
+  "gui_binary_sha256": "fc5b34c34f6239a3e8dcf23c32ae0ad2cf287b0c56308f7cc6461ffe2710e00c",
   "jpeg_files_byte_exact": 33,
   "source_unchanged": true,
   "source_sha256": "b3fb2f44ee3a7456619c3ff5d143d738370e6557fa6c2a7cb214892afdadb5eb",
-  "archive_sha256": "e25eaa8b6c438f532952708cb1a19b4f7a3654fecb75df04a3eb5274f10e7816",
+  "archive_sha256": "7c0df821d27f8fe59983dfe7dff13eba83e30e67b2d8365e34a7558424c2d85d",
   "missing_names_dates_not_invented": true,
   "zip_crc_verified": true,
   "files": [
@@ -179,11 +179,11 @@
   "screenshots": [
     {
       "file": "images/jpeg-carving.png",
-      "sha256": "61c3863dfb50d795d2dc2e8e8b94a41239867a09baedecf6ba6e8afb738cd69d"
+      "sha256": "b335a74b5c38f65fdf0b988bb6b532f768c80a2712f2100b98e698963108a850"
     },
     {
       "file": "images/jpeg-restored.png",
-      "sha256": "0d1389b16e93b5ee779fb56aa2b73b837176c7681bd89479c6c1118eb67be2b8"
+      "sha256": "52b7e1db7bd9dbb6f394fc303891a44bf2d79f91e5319fe6ef932ad70d1470e2"
     }
   ],
   "corpus_files": 32,

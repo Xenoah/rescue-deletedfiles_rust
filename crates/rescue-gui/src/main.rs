@@ -1,4 +1,5 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+mod acquisition_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -24,6 +25,7 @@ enum Stage {
     #[default]
     Settings,
     Scanning,
+    Imaging,
     Selecting,
     Recovering,
     Finished,
@@ -42,6 +44,8 @@ enum SourceMode {
     Image,
 }
 enum Message {
+    ImagingProgress(rescue_core::AcquisitionProgress),
+    Imaged(rescue_core::AcquisitionResult),
     Progress(Progress),
     Scanned(Box<Session>, PathBuf),
     Finished {
@@ -52,6 +56,17 @@ enum Message {
     Error(String),
 }
 struct App {
+    map_dialog: bool,
+    map_source: PathBuf,
+    map_page: Option<rescue_core::ReadMapPage>,
+    map_error: String,
+    map_messages: Option<mpsc::Receiver<Result<rescue_core::ReadMapPage, String>>>,
+    image_dialog: bool,
+    image_destination: String,
+    image_resume: bool,
+    image_retries: u8,
+    image_block_size: u32,
+    image_progress: Option<rescue_core::AcquisitionProgress>,
     source: String,
     source_mode: SourceMode,
     disks: Vec<DiskSource>,
@@ -154,6 +169,17 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            map_dialog: false,
+            map_source: PathBuf::new(),
+            map_page: None,
+            map_error: String::new(),
+            map_messages: None,
+            image_dialog: false,
+            image_destination: String::new(),
+            image_resume: false,
+            image_retries: 2,
+            image_block_size: 4 * 1024 * 1024,
+            image_progress: None,
             source: String::new(),
             source_mode: SourceMode::Disk,
             disks: Vec::new(),
@@ -193,7 +219,10 @@ impl App {
         }
     }
     fn busy(&self) -> bool {
-        matches!(self.stage, Stage::Scanning | Stage::Recovering)
+        matches!(
+            self.stage,
+            Stage::Scanning | Stage::Recovering | Stage::Imaging
+        )
     }
     fn settings(&self) -> Result<SearchSettings, String> {
         let number = |s: &str| {
@@ -477,6 +506,16 @@ impl App {
         });
     }
     fn receive(&mut self) {
+        if let Some(result) = self.map_messages.as_ref().and_then(|rx| rx.try_recv().ok()) {
+            self.map_messages = None;
+            match result {
+                Ok(page) => {
+                    self.map_page = Some(page);
+                    self.map_error.clear();
+                }
+                Err(error) => self.map_error = error,
+            }
+        }
         if let Some(result) = self
             .disk_messages
             .as_ref()
@@ -503,6 +542,36 @@ impl App {
             .unwrap_or_default();
         for m in messages {
             match m {
+                Message::ImagingProgress(p) => {
+                    self.progress = Progress {
+                        scanned_records: p.completed_bytes,
+                        total_records: p.total_bytes,
+                        candidates: 0,
+                        unit: rescue_core::ProgressUnit::Bytes,
+                    };
+                    self.image_progress = Some(p);
+                }
+                Message::Imaged(result) => {
+                    self.source = result.image.to_string_lossy().into_owned();
+                    self.source_mode = SourceMode::Image;
+                    self.stage = Stage::Settings;
+                    self.report = format!(
+                        "イメージ: {}\n読取マップ: {}",
+                        result.image.display(),
+                        result.read_map.display()
+                    );
+                    self.status = format!(
+                        "イメージ取得{} · 読取済み {} · 読取失敗 {} · 未読 {}",
+                        match result.state.as_str() {
+                            "completed" => "完了",
+                            "cancelled" => "を中断",
+                            _ => "（一部取得）",
+                        },
+                        view::size_text(Some(result.summary.copied_bytes)),
+                        view::size_text(Some(result.summary.failed_bytes)),
+                        view::size_text(Some(result.summary.unattempted_bytes))
+                    );
+                }
                 Message::Progress(p) => self.progress = p,
                 Message::Scanned(s, p) => {
                     self.status = format!(
@@ -631,6 +700,8 @@ impl App {
             ui.label("ディスクをスキャンしてから、復元するファイルを選択します。");
             ui.add_space(16.0);
             self.source_ui(ui);
+            if ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("ディスクのイメージを作成・再開")).clicked(){self.image_dialog=true;}
+            if self.source_mode==SourceMode::Image && ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("読取マップを確認")).clicked(){self.map_source=PathBuf::from(&self.source);self.map_page=None;self.map_dialog=true;self.load_map_page(0,None);}
             ui.add_space(16.0);
             ui.strong("2  保存方法");
             ui.horizontal_wrapped(|ui| {
@@ -1206,6 +1277,22 @@ impl App {
                 if let Some(e) = &r.error {
                     ui.label(e);
                 }
+                if !r.missing_ranges.is_empty() {
+                    ui.collapsing("読めなかった範囲", |ui| {
+                        for gap in r.missing_ranges.iter().take(100) {
+                            ui.label(format!(
+                                "元媒体 {} から {} bytes / ファイル位置 {}",
+                                gap.source_offset,
+                                gap.length,
+                                gap.logical_offset
+                                    .map_or_else(|| "不明".into(), |at| at.to_string())
+                            ));
+                        }
+                        if r.missing_ranges.len() > 100 {
+                            ui.label("残りの範囲は復元レポートに記録しています。");
+                        }
+                    });
+                }
             } else {
                 ui.label("未保存");
             }
@@ -1337,7 +1424,7 @@ impl App {
         {
             ctx.memory_mut(|m| m.request_focus(egui::Id::new("result-search")));
         }
-        if self.busy() || self.disk_messages.is_some() {
+        if self.busy() || self.disk_messages.is_some() || self.map_messages.is_some() {
             ctx.request_repaint_after(std::time::Duration::from_millis(100));
         }
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
@@ -1354,7 +1441,11 @@ impl App {
                         ),
                         (3, "ファイル選択", self.stage == Stage::Selecting),
                         (2, "スキャン", self.stage == Stage::Scanning),
-                        (1, "設定", self.stage == Stage::Settings),
+                        (
+                            1,
+                            "設定",
+                            matches!(self.stage, Stage::Settings | Stage::Imaging),
+                        ),
                     ] {
                         ui.colored_label(
                             if active {
@@ -1375,25 +1466,27 @@ impl App {
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
             ui.label(&self.status);
             if self.busy() {
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     ui.spinner();
                     let fraction = if self.progress.total_records > 0 {
                         self.progress.scanned_records as f32 / self.progress.total_records as f32
                     } else {
                         0.0
                     };
-                    ui.add(egui::ProgressBar::new(fraction).desired_width(360.0).text(
-                        if self.stage == Stage::Recovering {
-                            "ファイルを保存中…".into()
-                        } else {
-                            format!(
-                                "{} / {} {:?}",
-                                self.progress.scanned_records,
-                                self.progress.total_records,
-                                self.progress.unit
-                            )
-                        },
-                    ));
+                    ui.add(
+                        egui::ProgressBar::new(fraction)
+                            .desired_width(ui.available_width().min(360.0))
+                            .text(if self.stage == Stage::Recovering {
+                                "ファイルを保存中…".into()
+                            } else {
+                                format!(
+                                    "{} / {} {:?}",
+                                    self.progress.scanned_records,
+                                    self.progress.total_records,
+                                    self.progress.unit
+                                )
+                            }),
+                    );
                     if ui.button("取消").clicked() {
                         self.cancel.store(true, Ordering::Relaxed);
                         self.status = "取消を要求しました。処理の終了を待っています。".into();
@@ -1429,12 +1522,19 @@ impl App {
                             ui.label(&self.source);
                             ui.label("完了後、復元するファイルを選択できます。");
                         }
+                        Stage::Imaging => self.imaging_status(ui),
                         _ => self.results_ui(ui),
                     }
                 },
             );
             self.actions_ui(ui);
         });
+        if self.image_dialog && !self.busy() {
+            self.imaging_dialog(ctx);
+        }
+        if self.map_dialog && !self.busy() {
+            self.read_map_dialog(ctx);
+        }
         if self.show_evidence && !wide && self.session.is_some() && self.stage != Stage::Settings {
             let mut open = true;
             egui::Window::new("復元の根拠")

@@ -1,3 +1,4 @@
+mod acquisition;
 mod archive;
 mod carve;
 mod destination;
@@ -5,13 +6,19 @@ mod device;
 mod disk_scan;
 mod fat;
 mod lznt1;
+mod mapped_source;
 mod ntfs;
 mod partitions;
+mod read_map;
 mod restore;
 mod search;
 mod source;
 mod timestamps;
 
+pub use acquisition::{
+    AcquisitionOptions, AcquisitionProgress, AcquisitionResult, ReadMapPage, ReadMapRange,
+    acquire_image, acquire_image_with_roots, inspect_read_map, read_map_page,
+};
 pub use archive::{ArchiveRecovery, recover_zip, recover_zip_to};
 use cap_std::{
     ambient_authority,
@@ -22,6 +29,7 @@ pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device
 pub use disk_scan::scan_source;
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
+pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
 pub use restore::{
     CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,
     restore_files_with_roots, restore_zip, restore_zip_with_roots,
@@ -107,6 +115,8 @@ pub enum Error {
     UnsafeDestination(String),
     #[error("operation cancelled")]
     Cancelled,
+    #[error("source contains unread or failed byte ranges")]
+    MissingRanges(Vec<MissingRange>),
     #[error("invalid request: {0}")]
     Request(String),
 }
@@ -121,6 +131,7 @@ impl Error {
             Self::SourceChanged => "SOURCE_CHANGED",
             Self::DestinationChanged => "DESTINATION_CHANGED",
             Self::Cancelled => "CANCELLED",
+            Self::MissingRanges(_) => "MISSING_RANGES",
             Self::UnsafeDestination(_) => "UNSAFE_DESTINATION",
             Self::Request(_) => "INVALID_REQUEST",
         }
@@ -299,6 +310,10 @@ impl Default for ScanOptions {
 pub fn inspect_image(path: &Path) -> Result<Fingerprint> {
     Image::open(path)?.fingerprint()
 }
+/// Validate a read-only source handle and geometry without probing potentially damaged sectors.
+pub fn validate_source(path: &Path) -> Result<()> {
+    Image::open(path).map(|_| ())
+}
 
 pub fn scan_image(
     path: &Path,
@@ -327,7 +342,7 @@ fn scan_volume(
             schema_version: if region.is_some() { 5 } else { 3 },
             filesystem: result.filesystem,
             id: Uuid::new_v4().to_string(),
-            source: image.path,
+            source: image.path.clone(),
             fingerprint,
             candidates: result.entries.into_iter().map(|e| e.candidate).collect(),
             scanned_records: result.scanned_records,
@@ -341,6 +356,7 @@ fn scan_volume(
             volumes: Vec::new(),
         };
         session.bound_candidates()?;
+        image.annotate_coverage(&mut session);
         return Ok(session);
     }
     let ntfs = Ntfs::open(&mut image)?;
@@ -491,6 +507,7 @@ fn scan_volume(
         candidates: session.candidates.len(),
         unit: crate::ProgressUnit::Records,
     });
+    image.annotate_coverage(&mut session);
     Ok(session)
 }
 
@@ -507,6 +524,8 @@ pub struct RecoveryResult {
     pub allocation_status: AllocationStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub archive_entry: Option<String>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub missing_ranges: Vec<MissingRange>,
 }
 
 struct RecoveryData {
@@ -715,6 +734,7 @@ pub fn recover_to(
                 extent_evidence: ExtentEvidence::Unknown,
                 allocation_status: AllocationStatus::Unknown,
                 archive_entry: None,
+                missing_ranges: Vec::new(),
             });
             continue;
         }
@@ -729,6 +749,7 @@ pub fn recover_to(
             extent_evidence: ExtentEvidence::Unknown,
             allocation_status: AllocationStatus::Unknown,
             archive_entry: None,
+            missing_ranges: Vec::new(),
         };
         let attempt = (|| -> Result<()> {
             // Media were checked before opening this pinned destination. Recheck
@@ -801,9 +822,12 @@ pub fn recover_to(
             Ok(())
         })();
         if let Err(error) = attempt {
+            if let Error::MissingRanges(ranges) = &error {
+                result.missing_ranges = ranges.clone();
+            }
             result.status = if matches!(error, Error::Cancelled) {
                 "cancelled"
-            } else if result.path.is_some() {
+            } else if result.path.is_some() || matches!(error, Error::MissingRanges(_)) {
                 "incomplete"
             } else {
                 "failed"

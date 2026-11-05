@@ -1,4 +1,6 @@
-use crate::{Error, Result, device};
+use crate::{
+    AcquisitionIdentity, Error, MissingRange, Result, device, mapped_source::MappedSource,
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -22,6 +24,36 @@ pub(crate) struct Image {
     base: u64,
     total: u64,
     device: Option<device::DeviceInfo>,
+    mapped: Option<MappedSource>,
+}
+pub(crate) fn map_path(image: &Path) -> PathBuf {
+    let mut name = image.as_os_str().to_owned();
+    name.push(".rmap");
+    PathBuf::from(name)
+}
+fn regular_file_identity(file: &File) -> Result<String> {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::MetadataExt;
+        let metadata = file.metadata()?;
+        Ok(format!("file:{}:{}", metadata.dev(), metadata.ino()))
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawHandle;
+        use windows_sys::Win32::Storage::FileSystem::{
+            BY_HANDLE_FILE_INFORMATION, GetFileInformationByHandle,
+        };
+        let mut info: BY_HANDLE_FILE_INFORMATION = unsafe { std::mem::zeroed() };
+        // A read-only identity query on the already opened source handle.
+        if unsafe { GetFileInformationByHandle(file.as_raw_handle(), &mut info) } == 0 {
+            return Err(std::io::Error::last_os_error().into());
+        }
+        Ok(format!(
+            "file:{}:{}:{}",
+            info.dwVolumeSerialNumber, info.nFileIndexHigh, info.nFileIndexLow
+        ))
+    }
 }
 impl Image {
     pub fn open(path: &Path) -> Result<Self> {
@@ -29,7 +61,19 @@ impl Image {
         let (file, device) = device::open(&path)?;
         // Windows raw handles do not implement ordinary file metadata queries.
         // Do not eagerly evaluate a file-length fallback for a device.
-        let total = if let Some(device) = &device {
+        let mapped = if device.is_none()
+            && (path
+                .file_name()
+                .is_some_and(|n| n.to_string_lossy().ends_with(".rescue.raw"))
+                || map_path(&path).try_exists()?)
+        {
+            Some(MappedSource::open(&map_path(&path), &file)?)
+        } else {
+            None
+        };
+        let total = if let Some(map) = &mapped {
+            map.length()
+        } else if let Some(device) = &device {
             device.bytes
         } else {
             file.metadata()?.len()
@@ -41,6 +85,7 @@ impl Image {
             base: 0,
             total,
             device,
+            mapped,
         })
     }
     pub fn open_region(path: &Path, region: Option<&crate::SourceRegion>) -> Result<Self> {
@@ -66,10 +111,81 @@ impl Image {
         Ok(image)
     }
     pub fn sector_size(&self) -> u32 {
-        self.device.as_ref().map(|d| d.sector).unwrap_or(512)
+        self.mapped
+            .as_ref()
+            .map(|m| m.sector())
+            .or_else(|| self.device.as_ref().map(|d| d.sector))
+            .unwrap_or(512)
+    }
+    pub fn has_read_map(&self) -> bool {
+        self.mapped.is_some()
+    }
+    pub fn annotate_coverage(&self, session: &mut crate::Session) {
+        if let Some(map) = &self.mapped
+            && map.missing_bytes() > 0
+        {
+            session.truncated = true;
+            session.warnings.push(format!("MISSING_RANGES: the acquired source contains {} unread/failed bytes; metadata and payloads crossing these ranges are unavailable.",map.missing_bytes()));
+        }
+    }
+    pub fn acquisition_identity(&self) -> Result<AcquisitionIdentity> {
+        let modified_ns = if self.device.is_none() {
+            Some(
+                self.file
+                    .metadata()?
+                    .modified()?
+                    .duration_since(UNIX_EPOCH)
+                    .map_err(|_| Error::Invalid("source timestamp precedes Unix epoch".into()))?
+                    .as_nanos()
+                    .to_string(),
+            )
+        } else {
+            None
+        };
+        let identity = if let Some(original) = &self.device {
+            let current = device::device_info(&self.file, &self.path)?;
+            if original != &current {
+                return Err(Error::SourceChanged);
+            }
+            current.identity
+        } else {
+            if self.file.metadata()?.len() != self.total {
+                return Err(Error::SourceChanged);
+            }
+            let current = File::open(&self.path)?;
+            if same_file::Handle::from_file(current)?
+                != same_file::Handle::from_file(self.file.try_clone()?)?
+            {
+                return Err(Error::SourceChanged);
+            }
+            regular_file_identity(&self.file)?
+        };
+        Ok(AcquisitionIdentity {
+            path: self.path.clone(),
+            length: self.total,
+            sector_size: self.sector_size(),
+            identity,
+            modified_ns,
+        })
+    }
+    pub fn reject_same_file(&self, other: &File) -> Result<()> {
+        // Acquisition outputs have already been checked to be regular files on
+        // separate media. Windows raw-device handles do not support file IDs.
+        if self.device.is_some() {
+            return Ok(());
+        }
+        if same_file::Handle::from_file(self.file.try_clone()?)?
+            == same_file::Handle::from_file(other.try_clone()?)?
+        {
+            return Err(Error::UnsafeDestination("output aliases the source".into()));
+        }
+        Ok(())
     }
     pub fn is_device(&self) -> bool {
         self.device.is_some()
+    }
+    pub fn absolute_offset(&self, offset: u64) -> u64 {
+        self.base + offset
     }
     pub fn read(&mut self, offset: u64, length: usize) -> Result<Vec<u8>> {
         let end = offset
@@ -85,6 +201,9 @@ impl Image {
             .base
             .checked_add(offset)
             .ok_or_else(|| Error::Invalid("read overflow".into()))?;
+        if let Some(map) = &mut self.mapped {
+            return map.read(&mut self.file, absolute, length);
+        }
         if let Some(device) = &self.device {
             let sector = u64::from(device.sector);
             let start = absolute / sector * sector;
@@ -118,8 +237,33 @@ impl Image {
         self.file.read_exact(&mut bytes)?;
         Ok(bytes)
     }
+    /// Only scanners/fingerprints use this. Parsers and recovered payloads always use strict read().
+    pub fn read_available(
+        &mut self,
+        offset: u64,
+        length: usize,
+    ) -> Result<(Vec<u8>, Vec<MissingRange>)> {
+        if offset
+            .checked_add(length as u64)
+            .is_none_or(|end| end > self.length)
+        {
+            return Err(Error::Invalid("read extends beyond selected volume".into()));
+        }
+        if let Some(map) = &mut self.mapped {
+            return map.read_available(&mut self.file, self.base + offset, length);
+        }
+        self.read(offset, length).map(|b| (b, Vec::new()))
+    }
     pub fn fingerprint(&mut self) -> Result<Fingerprint> {
-        let modified_ns = if let Some(original) = &self.device {
+        let modified_ns = if let Some(map) = &self.mapped {
+            map.check(&self.file)?;
+            format!(
+                "mapped:{}:{}:{}",
+                map.digest(),
+                self.file.metadata()?.len(),
+                self.base
+            )
+        } else if let Some(original) = &self.device {
             let current = device::device_info(&self.file, &self.path)?;
             if &current != original {
                 return Err(Error::SourceChanged);
@@ -154,7 +298,11 @@ impl Image {
             self.length.saturating_sub(size as u64),
         ] {
             hash.update(offset.to_le_bytes());
-            hash.update(self.read(offset, size)?);
+            let (bytes, gaps) = self.read_available(offset, size)?;
+            hash.update(bytes);
+            if !gaps.is_empty() {
+                hash.update(serde_json::to_vec(&gaps)?);
+            }
         }
         Ok(Fingerprint {
             length: self.length,
