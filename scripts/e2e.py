@@ -23,9 +23,9 @@ def inside(path, root):
     return any(parent.samefile(root) for parent in Path(path).parents)
 
 
-def run(binary, *args, expected=0):
+def run(binary, *args, expected=0, timeout=30):
     p = subprocess.run([str(binary), *map(str, args)], capture_output=True, text=True,
-                       encoding="utf-8", timeout=30)
+                       encoding="utf-8", timeout=timeout)
     check(p.returncode == expected, f"exit {p.returncode}, expected {expected}: {args}\n{p.stdout}\n{p.stderr}")
     return json.loads(p.stdout) if p.stdout.strip() else p.stderr
 

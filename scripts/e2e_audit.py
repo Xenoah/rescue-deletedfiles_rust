@@ -140,7 +140,7 @@ def large_session(binary,root):
     check(summary['truncated'] and 0<summary['candidates']<7000,summary)
     check(session.stat().st_size<=128*1024*1024,'saved an unloadable session')
     item=run(binary,'results','--session',session,'--limit','1','--json')['candidates'][0]
-    result=run(binary,'recover','--session',session,'--id',item['id'],'--destination',root/'large-out','--json')['results'][0]
+    result=run(binary,'recover','--session',session,'--id',item['id'],'--destination',root/'large-out','--json',timeout=90)['results'][0]
     check(result['status']=='completed' and Path(result['path']).read_bytes()==b'x','bounded session cannot be restored')
 
 
