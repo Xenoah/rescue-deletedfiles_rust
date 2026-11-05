@@ -282,6 +282,34 @@ impl Pipe {
 fn pipe_name(nonce: &str) -> String {
     format!(r"\\.\pipe\RescueRead-{nonce}")
 }
+thread_local! { static HELPER_STAGE: std::cell::Cell<u32> = const { std::cell::Cell::new(1) }; }
+fn setup_stage(stage: u32) {
+    HELPER_STAGE.with(|s| s.set(stage));
+}
+fn helper_exit_error(code: u32) -> Error {
+    if code & 0xf000_0000 == 0xa000_0000 {
+        let stage = match (code >> 24) & 15 {
+            1 => "arguments",
+            2 => "elevation",
+            3 => "session",
+            4 => "open_parent",
+            5 => "parent_creation",
+            6 => "same_executable",
+            7 => "open_pipe",
+            8 => "pipe_mode",
+            9 => "pipe_peer",
+            _ => "handoff",
+        };
+        Error::Request(format!(
+            "read broker setup failed at {stage}; Windows error {}",
+            code & 0x00ff_ffff
+        ))
+    } else {
+        Error::Request(format!(
+            "read broker exited before connecting; exit code {code:#010x}"
+        ))
+    }
+}
 fn server(nonce: &str) -> Result<Pipe> {
     // BA permits an explicitly chosen administrator credential at the UAC prompt.
     // The exact returned helper PID is checked before any request is sent.
@@ -528,9 +556,11 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
             return Err(error.into());
         }
         if unsafe { WaitForSingleObject(helper.0, 0) } == WAIT_OBJECT_0 {
-            return Err(Error::Request(
-                "read broker exited before connecting".into(),
-            ));
+            let mut code = 4;
+            if unsafe { GetExitCodeProcess(helper.0, &mut code) } == 0 {
+                return Err(os_error());
+            }
+            return Err(helper_exit_error(code));
         }
         wait(pipe.deadline, cancel)?;
     }
@@ -598,14 +628,17 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
 }
 
 fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
+    setup_stage(2);
     if Uuid::parse_str(nonce).is_err() || !elevated()? {
         return Err(Error::Request(
             "read broker requires explicit elevation".into(),
         ));
     }
+    setup_stage(3);
     if session(std::process::id())? != session(parent_pid)? {
         return Err(Error::Request("read broker session mismatch".into()));
     }
+    setup_stage(4);
     let parent = Handle::new(unsafe {
         OpenProcess(
             PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_DUP_HANDLE,
@@ -613,12 +646,15 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
             parent_pid,
         )
     })?;
+    setup_stage(5);
     if creation(parent.0)? != parent_created {
         return Err(Error::Request("read broker parent identity changed".into()));
     }
+    setup_stage(6);
     same_executable(parent.0)?;
     let cancel = AtomicBool::new(false);
     let deadline = Instant::now() + Duration::from_secs(30);
+    setup_stage(7);
     let file = loop {
         // Identification-only SQOS prevents the unelevated pipe server from
         // impersonating this elevated helper's token.
@@ -635,6 +671,7 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
             Err(error) => return Err(error.into()),
         }
     };
+    setup_stage(8);
     let mode = PIPE_NOWAIT;
     if unsafe {
         SetNamedPipeHandleState(
@@ -647,12 +684,14 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
     {
         return Err(os_error());
     }
+    setup_stage(9);
     let mut peer = 0;
     if unsafe { GetNamedPipeServerProcessId(file.as_raw_handle(), &mut peer) } == 0
         || peer != parent_pid
     {
         return Err(Error::Request("read broker server PID mismatch".into()));
     }
+    setup_stage(10);
     let mut pipe = Pipe { file, deadline };
     let request: Request = pipe.receive(&cancel)?;
     if request.nonce != nonce {
@@ -737,7 +776,16 @@ pub(super) fn entry() -> Option<i32> {
             .map_err(|_| Error::Request("read broker parent time".into()))?;
         helper(args[1], pid, created)
     })();
-    Some(if result.is_ok() { 0 } else { 4 })
+    Some(match result {
+        Ok(()) => 0,
+        Err(error) => {
+            let os = match error {
+                Error::Io(error) => error.raw_os_error().unwrap_or(0) as u32,
+                _ => 0,
+            };
+            (0xa000_0000 | HELPER_STAGE.with(|s| s.get() << 24) | (os & 0x00ff_ffff)) as i32
+        }
+    })
 }
 
 #[derive(Serialize, Deserialize)]

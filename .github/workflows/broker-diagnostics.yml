@@ -1,0 +1,45 @@
+name: Windows read broker diagnostics
+on:
+  push:
+    branches: ['v1-broker-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: broker-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PYTHONUTF8: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+jobs:
+  broker:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-2022-x64-rust-1.99.1-
+      - run: cargo fetch --locked
+      - run: python scripts/ci_command.py cargo build --release -p rescue-cli --target x86_64-pc-windows-msvc --locked --offline
+      - name: Explicit reader on owned read-only VHD
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_read_access_native.py --binary target/x86_64-pc-windows-msvc/release/rescue.exe --output read-access.json
+      - name: Restricted parent and elevated one-shot reader
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_read_access_native.py --binary target/x86_64-pc-windows-msvc/release/rescue.exe --output read-access-limited.json --limited
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-reader-diagnostics
+          path: read-access*.json
+          if-no-files-found: ignore
