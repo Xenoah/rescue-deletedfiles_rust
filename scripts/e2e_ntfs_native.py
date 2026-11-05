@@ -2,11 +2,44 @@
 
 No host disk is formatted. OS-created native metadata is never edited by this test.
 """
-import argparse, hashlib, json, os, platform, subprocess, tempfile
+import argparse, hashlib, json, os, platform, struct, subprocess, tempfile
 from pathlib import Path
 from e2e import Client, run, check
 from e2e_restore_native import mounted_fixture, sync_volume
 
+
+def attribute_diagnostics(binary,source,root,candidates):
+    """Read only the owned fixture through Rescue; bound failure diagnostics."""
+    acquired=run(binary,'image','--source',source,'--destination',root/'diagnostic-image','--json')
+    raw=(root/'diagnostic-image/image.rescue.raw').read_bytes()
+    bps=struct.unpack_from('<H',raw,11)[0];cluster=bps*raw[13];mft=struct.unpack_from('<Q',raw,48)[0]*cluster;code=struct.unpack_from('<b',raw,64)[0];size=(1<<-code) if code<0 else code*cluster
+    result=[]
+    for candidate in candidates[:2]:
+        record=bytearray(raw[mft+candidate['record']*size:mft+(candidate['record']+1)*size]);usa,count=struct.unpack_from('<HH',record,4)
+        for n in range(1,count):record[n*bps-2:n*bps]=record[usa+2*n:usa+2*n+2]
+        at=struct.unpack_from('<H',record,20)[0]
+        while at+24<=len(record):
+            kind,length=struct.unpack_from('<II',record,at)
+            if kind==0xffffffff or length<24:break
+            if kind==0x20:
+                attr=record[at:at+length]
+                if attr[8]:
+                    data_size=struct.unpack_from('<Q',attr,48)[0];pos=struct.unpack_from('<H',attr,32)[0];lcn=0;data=bytearray();runs=[]
+                    while pos<len(attr) and attr[pos]:
+                        header=attr[pos];pos+=1;a=header&15;b=header>>4
+                        if not a or a>8 or b>8:break
+                        count=int.from_bytes(attr[pos:pos+a],'little');pos+=a;lcn+=int.from_bytes(attr[pos:pos+b],'little',signed=True);pos+=b;runs.append([lcn,count]);data+=raw[lcn*cluster:(lcn+count)*cluster]
+                    data=data[:data_size]
+                else:
+                    data_size,offset=struct.unpack_from('<IH',attr,16);data=attr[offset:offset+data_size];runs=[]
+                rows=[];pos=0
+                while pos+8<=len(data) and len(rows)<30:
+                    kind,length=struct.unpack_from('<IH',data,pos);rows.append([pos,kind,length,bytes(data[pos:pos+32]).hex()])
+                    if length<26 or pos+length>len(data):break
+                    pos+=length
+                result.append({'record':candidate['record'],'list_bytes':data_size,'runs':runs,'entries':rows,'nonzero_bytes':sum(x!=0 for x in data)})
+            at+=length
+    return result
 
 def main(binary,output):
     check(platform.system()=='Windows','native NTFS scenario requires Windows')
@@ -26,7 +59,9 @@ def main(binary,output):
             scanned=run(binary,'scan','--source',source,'--work-dir',root/'work','--json')
             candidates=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
             found=[c for c in candidates if c['name'].split(':')[0] in [path.name,alias.name]]
-            check(len(found)==21 and {c['stream_name'] for c in found}==set(truth) and all(c['supported'] for c in found),'native deleted attributes missing or unsupported: '+str(found))
+            valid=len(found)==21 and {c['stream_name'] for c in found}==set(truth) and all(c['supported'] for c in found)
+            diagnosis=None if valid else attribute_diagnostics(binary,source,root,found)
+            check(valid,'native deleted attributes missing or unsupported: '+str(found)+'; diagnostic: '+str(diagnosis))
             result=run(binary,'recover','--session',scanned['session'],*[v for c in found for v in ['--id',c['id']]],'--destination',root/'out','--json')['results']
             names={c['id']:c['stream_name'] for c in found}
             check(len(result)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in result),'native ADS content mismatch')
