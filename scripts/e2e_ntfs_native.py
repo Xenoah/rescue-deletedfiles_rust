@@ -2,11 +2,41 @@
 
 No host disk is formatted. OS-created native metadata is never edited by this test.
 """
-import argparse, hashlib, json, os, platform, struct, subprocess, tempfile
+import argparse, hashlib, json, os, platform, re, struct, subprocess, tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from e2e import Client, run, check
-from e2e_restore_native import mounted_fixture, sync_volume
+from e2e_restore_native import mounted_fixture, sync_volume, call
 
+
+@contextmanager
+def ntfs_trim_policy(value):
+    # Only a disposable GitHub-hosted VM may change this machine-wide NTFS
+    # setting. The original value is restored even when a test fails.
+    check(os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_ENVIRONMENT')=='github-hosted','TRIM profile requires a disposable GitHub-hosted test VM')
+    def current():
+        text=call('fsutil.exe','behavior','query','DisableDeleteNotify')
+        match=re.search(r'^NTFS DisableDeleteNotify\s*=\s*([01])',text,re.M)
+        check(match is not None,'NTFS TRIM setting unavailable: '+text)
+        return int(match.group(1))
+    original=current();proof={'original_disable_delete_notify':original,'test_disable_delete_notify':value,'restored':False}
+    try:
+        call('fsutil.exe','behavior','set','DisableDeleteNotify','NTFS',str(value))
+        check(current()==value,'NTFS TRIM profile was not applied')
+        yield proof
+    finally:
+        call('fsutil.exe','behavior','set','DisableDeleteNotify','NTFS',str(original))
+        proof['restored']=current()==original
+        check(proof['restored'],'NTFS TRIM profile was not restored')
+
+def populate(mount):
+    path=mount/'native-streams-日本語.pdf';truth={None:b'%PDF-1.4\n'+b'Native NTFS bytes\n'*512}
+    for n in range(20):truth[f'stream-{n:02d}-Windows-created-extra-attribute']=bytes([n])*8192+f'ADS {n}'.encode()
+    for name,payload in truth.items():
+        target=path if name is None else Path(str(path)+':'+name)
+        with target.open('xb') as f:f.write(payload);f.flush();os.fsync(f.fileno())
+    alias=mount/'native-alias.pdf';os.link(path,alias);path.unlink();alias.unlink();sync_volume(mount)
+    return path,alias,truth
 
 def attribute_diagnostics(binary,source,root,candidates):
     """Read only the owned fixture through Rescue; bound failure diagnostics."""
@@ -46,15 +76,9 @@ def main(binary,output):
     output.parent.mkdir(parents=True,exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='rescue-owned-ntfs-',dir=output.parent) as tmp:
         root=Path(tmp).resolve()
-        with mounted_fixture(root) as (source,mount,filesystem):
+        with ntfs_trim_policy(1) as trim_policy, mounted_fixture(root) as (source,mount,filesystem):
             check(filesystem=='ntfs','NTFS fixture required')
-            path=mount/'native-streams-日本語.pdf';truth={None:b'%PDF-1.4\n'+b'Native NTFS bytes\n'*512}
-            for n in range(20):truth[f'stream-{n:02d}-Windows-created-extra-attribute']=bytes([n])*8192+f'ADS {n}'.encode()
-            for name,payload in truth.items():
-                target=path if name is None else Path(str(path)+':'+name)
-                with target.open('xb') as f:f.write(payload);f.flush();os.fsync(f.fileno())
-            # The last name deletion releases the file and its attribute extents.
-            alias=mount/'native-alias.pdf';os.link(path,alias);path.unlink();alias.unlink();sync_volume(mount)
+            path,alias,truth=populate(mount)
             # Save session and output on the runner volume, never onto the source fixture.
             scanned=run(binary,'scan','--source',source,'--work-dir',root/'work','--json')
             candidates=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
@@ -73,7 +97,25 @@ def main(binary,output):
                 job=client.wait(client.tool('recover_files',{'session_id':sid,'ids':list(names),'destination':str(root/'mcp-out'),'request_id':'recover'})['job_id'])
                 check(job['state']=='completed' and len(job['result']['results'])==21 and {r['candidate_id'] for r in job['result']['results']}==set(names) and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in job['result']['results']),'MCP native ADS content mismatch')
             finally:client.close()
-            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, on a new owned VHD only; no metadata edited'}
+            result={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'os':platform.system(),'actual_deletion':True,'native_ntfs':True,'cli_streams_byte_exact':21,'mcp_streams_byte_exact':21,'names_deduplicated':True,'trim_disabled_profile':trim_policy,'scope':'20 OS-created ADS and the unnamed stream, deletion of both hard-link names, with NTFS TRIM notifications temporarily disabled on a disposable hosted VM; original policy restored; new owned VHD only, no metadata edited'}
+        # A second actual deletion with notifications enabled records whether
+        # this virtual backend erases the external attribute list. Never invent it.
+        negative=root/'trim-enabled';negative.mkdir()
+        with ntfs_trim_policy(0) as enabled_policy, mounted_fixture(negative) as (source,mount,filesystem):
+            path,alias,truth=populate(mount)
+            scanned=run(binary,'scan','--source',source,'--work-dir',negative/'work','--json')
+            rows=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
+            found=[c for c in rows if c['name'].split(':')[0] in [path.name,alias.name]]
+            check(found,'deleted NTFS metadata unexpectedly absent')
+            diagnosis=attribute_diagnostics(binary,source,negative,found)
+            zeroed=bool(diagnosis) and all(d['list_bytes']>0 and d['nonzero_bytes']==0 for d in diagnosis)
+            if zeroed:
+                check(all(not c['supported'] for c in found),'erased list incorrectly marked recoverable')
+            else:
+                check(len(found)==21 and all(c['supported'] for c in found),'retained metadata is unsupported: '+str(found)+'; '+str(diagnosis))
+                restored=run(binary,'recover','--session',scanned['session'],'--all','--destination',negative/'out','--json')['results'];names={c['id']:c['stream_name'] for c in found}
+                check(len(restored)==21 and all(r['status']=='completed' and Path(r['path']).read_bytes()==truth[names[r['candidate_id']]] for r in restored),'enabled-TRIM retained bytes mismatch')
+            result['trim_enabled_profile']={'policy':enabled_policy,'attribute_list_zeroed':zeroed,'erased_metadata_not_fabricated':zeroed,'retained_streams_byte_exact':0 if zeroed else 21}
         output.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result));return result
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();main(a.binary.resolve(),a.output.resolve())

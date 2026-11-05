@@ -29,6 +29,11 @@ impl Entry {
     }
 }
 fn entries(raw: &[u8]) -> Result<Vec<Entry>> {
+    if !raw.is_empty() && raw.iter().all(|b| *b == 0) {
+        return Err(invalid(
+            "attribute list is entirely zero; original metadata is unavailable (discard or overwrite possible)",
+        ));
+    }
     let mut at = 0;
     let mut entries = Vec::new();
     let mut unique = BTreeSet::new();
