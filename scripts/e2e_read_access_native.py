@@ -12,6 +12,29 @@ from e2e_disks import native_source, disk_image
 from e2e_formats import corpus_load, ntfs_image, file_hash
 
 
+def native_query_diagnostics(source):
+    """Read-only IOCTL evidence for this test's owned VHD only."""
+    import ctypes as c
+    from ctypes import wintypes as w
+    k=c.WinDLL('kernel32',use_last_error=True)
+    k.CreateFileW.argtypes=[w.LPCWSTR,w.DWORD,w.DWORD,c.c_void_p,w.DWORD,w.DWORD,w.HANDLE]
+    k.CreateFileW.restype=w.HANDLE
+    k.DeviceIoControl.argtypes=[w.HANDLE,w.DWORD,c.c_void_p,w.DWORD,c.c_void_p,w.DWORD,c.POINTER(w.DWORD),c.c_void_p]
+    k.DeviceIoControl.restype=w.BOOL
+    k.CloseHandle.argtypes=[w.HANDLE];k.CloseHandle.restype=w.BOOL
+    handle=k.CreateFileW(str(source),0x80000000,3,None,3,0,None)
+    if handle==w.HANDLE(-1).value:return {'open_error':c.get_last_error()}
+    result={}
+    try:
+        for name,code,data in [('geometry',0x70000,b''),('geometry_ex',0x700a0,b''),('length',0x7405c,b''),('alignment',0x2d1400,bytes([6])+bytes(11)),('layout',0x70050,b'')]:
+            incoming=c.create_string_buffer(data) if data else None
+            out=c.create_string_buffer(4096);size=w.DWORD()
+            ok=k.DeviceIoControl(handle,code,incoming,len(data),out,len(out),c.byref(size),None)
+            result[name]={'ok':bool(ok),'error':0 if ok else c.get_last_error(),'bytes':size.value,'prefix':out.raw[:min(size.value,64)].hex()}
+    finally:k.CloseHandle(handle)
+    return result
+
+
 def main(binary, output, limited=False):
     check(platform.system()=='Windows','Windows broker native test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
@@ -52,7 +75,8 @@ def main(binary, output, limited=False):
                 if baseline.returncode==0:break
                 if 'IO_ERROR' not in baseline.stderr:break
                 time.sleep(.25)
-            check(baseline.returncode==0,'owned VHD baseline read failed before broker: '+baseline.stdout+' '+baseline.stderr)
+            if baseline.returncode!=0:
+                raise AssertionError('owned VHD baseline read failed before broker: '+baseline.stdout+' '+baseline.stderr+' native queries: '+json.dumps(native_query_diagnostics(source)))
             layout=json.loads(baseline.stdout)['layout']
             check(layout['bytes']==disk.stat().st_size and len(layout['regions'])==1,'owned VHD baseline geometry differs')
             cases.append('owned_vhd_readable_before_permission_handoff')
