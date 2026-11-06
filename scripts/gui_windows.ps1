@@ -64,13 +64,18 @@ public static class RescueOwnedWindow {
         if(previousImeLayout==IntPtr.Zero || ImeRestored)return;
         Guid empty=Guid.Empty;
         var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
-        try {manager.ActivateProfile(2,(ushort)(previousImeLayout.ToInt64()&65535),ref empty,ref empty,previousImeLayout,0x20000000);}
+        try {manager.ActivateProfile(2,(ushort)(previousImeLayout.ToInt64()&65535),ref empty,ref empty,previousImeLayout,0x20000004);}
         finally {Marshal.ReleaseComObject(manager);}
+        // TSF profile activation alone need not change an inactive window's
+        // thread HKL. Request the saved layout on this owned HWND as well.
+        UIntPtr result;
+        if(SendMessageTimeout(hwnd,0x50,UIntPtr.Zero,previousImeLayout,2,5000,out result)==IntPtr.Zero)
+            throw new Exception("Owned GUI did not process input-layout restoration");
         for(int i=0;i<30;i++) {
             System.Threading.Thread.Sleep(100);
             if(GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero))==previousImeLayout) {ImeRestored=true;return;}
         }
-        throw new Exception("Owned GUI input layout was not restored");
+        throw new Exception("Owned GUI input layout was not restored: expected="+previousImeLayout.ToInt64()+", actual="+GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero)).ToInt64());
     }
     public static string EnableJapaneseIme(IntPtr hwnd,string serviceId,string profileId) {
         previousImeLayout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
