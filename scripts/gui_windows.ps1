@@ -3,6 +3,7 @@
 param([Parameter(Mandatory=$true)][string]$Config)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -12,6 +13,36 @@ public static class RescueOwnedWindow {
     public static extern bool UiaHasServerSideProvider(IntPtr hwnd);
     [DllImport("user32.dll", SetLastError=true)]
     public static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, UIntPtr wparam, IntPtr lparam, uint flags, uint timeout, out UIntPtr result);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+    public static extern IntPtr GetProp(IntPtr hwnd, string name);
+}
+'@
+Add-Type -ReferencedAssemblies PresentationFramework,PresentationCore,WindowsBase -TypeDefinition @'
+using System;
+using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Interop;
+public static class RescueWpfProbe {
+    static Window window;
+    static ManualResetEvent ready = new ManualResetEvent(false);
+    public static IntPtr Handle;
+    public static string Error;
+    public static void Start() {
+        var thread = new Thread(() => {
+            try {
+                window = new Window { Title="Rescue owned UIA baseline", Width=320, Height=180 };
+                window.Content = new Button { Content="Rescue native baseline button" };
+                window.Show(); Handle = new WindowInteropHelper(window).Handle; ready.Set();
+                System.Windows.Threading.Dispatcher.Run();
+            } catch(Exception error) { Error=error.ToString(); ready.Set(); }
+        });
+        thread.SetApartmentState(ApartmentState.STA); thread.IsBackground=true; thread.Start();
+        if(!ready.WaitOne(10000)) throw new Exception("Owned WPF baseline did not start");
+    }
+    public static void Stop() {
+        if(window!=null) window.Dispatcher.BeginInvoke(new Action(() => {window.Close();System.Windows.Threading.Dispatcher.ExitAllFrames();}));
+    }
 }
 '@
 $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -77,6 +108,14 @@ function Snapshot {
     return $result
 }
 try {
+    [RescueWpfProbe]::Start()
+    $script:baseline = @{error=[RescueWpfProbe]::Error}
+    try {
+        $probe = [System.Windows.Automation.AutomationElement]::FromHandle([RescueWpfProbe]::Handle)
+        $script:baseline.framework=$probe.Current.FrameworkId
+        $script:baseline.children=$probe.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition).Count
+        $script:baseline.server_side=[RescueOwnedWindow]::UiaHasServerSideProvider([RescueWpfProbe]::Handle)
+    } finally { [RescueWpfProbe]::Stop() }
     $script:owned = Start-Process -FilePath $cfg.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $cfg.root 'stdout.txt') -RedirectStandardError (Join-Path $cfg.root 'stderr.txt')
     $until = [DateTime]::UtcNow.AddSeconds(30)
     do {
@@ -103,6 +142,8 @@ try {
     $message = [RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0x3d,[UIntPtr]::Zero,[IntPtr](-25),2,2000,[ref]$messageResult)
     $script:provider.getobject_completed=$message -ne [IntPtr]::Zero
     $script:provider.getobject_result=$messageResult.ToUInt64()
+    $script:provider.accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
+    $script:provider.baseline=$script:baseline
     $description = [System.Windows.Automation.AutomationProperty]::LookupById(30107)
     if ($null -ne $description) {$script:provider.description=$script:root.GetCurrentPropertyValue($description)}
     Invoke-Control 'Saved image'
