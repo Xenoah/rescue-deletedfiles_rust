@@ -3,7 +3,7 @@
 param([Parameter(Mandatory=$true)][string]$Config)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
-Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase
+Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
@@ -17,7 +17,7 @@ public static class RescueOwnedWindow {
     public static extern IntPtr GetProp(IntPtr hwnd, string name);
 }
 '@
-Add-Type -ReferencedAssemblies PresentationFramework,PresentationCore,WindowsBase -TypeDefinition @'
+Add-Type -ReferencedAssemblies PresentationFramework,PresentationCore,WindowsBase,System.Xaml -TypeDefinition @'
 using System;
 using System.Threading;
 using System.Windows;
