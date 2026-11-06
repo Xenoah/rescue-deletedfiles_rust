@@ -40,6 +40,10 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-results.json --limited
+      - name: Native UIA under the desktop owner's existing limited token
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-desktop.json --desktop-token
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -47,6 +51,7 @@ jobs:
           path: |
             gui-native-results.json
             gui-native-unlimited.json
+            gui-native-desktop.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/std*.txt
           if-no-files-found: ignore

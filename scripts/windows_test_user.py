@@ -10,6 +10,54 @@ import secrets
 
 
 @contextmanager
+def desktop_test_user():
+    """Borrow the active desktop owner's existing unelevated token, read-only.
+
+    UI Automation's provider transport needs the interactive logon session,
+    not merely a token with access to the same window station. No account,
+    password, profile, desktop ACL, or UAC policy is changed by this fixture.
+    """
+    if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('RUNNER_ENVIRONMENT')!='github-hosted':
+        raise RuntimeError('desktop token fixture requires a disposable GitHub-hosted VM')
+    import ctypes as c
+    from ctypes import wintypes as w
+    user=c.WinDLL('user32',use_last_error=True)
+    kernel=c.WinDLL('kernel32',use_last_error=True)
+    security=c.WinDLL('advapi32',use_last_error=True)
+    def api(lib,name,args,result=w.BOOL):
+        f=getattr(lib,name);f.argtypes=args;f.restype=result;return f
+    shell=api(user,'GetShellWindow',[],w.HWND)
+    owner=api(user,'GetWindowThreadProcessId',[w.HWND,c.POINTER(w.DWORD)],w.DWORD)
+    open_process=api(kernel,'OpenProcess',[w.DWORD,w.BOOL,w.DWORD],w.HANDLE)
+    open_token=api(security,'OpenProcessToken',[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)])
+    info=api(security,'GetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)])
+    sid_text=api(security,'ConvertSidToStringSidW',[c.c_void_p,c.POINTER(w.LPWSTR)])
+    close=api(kernel,'CloseHandle',[w.HANDLE]);free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
+    def checked(ok):
+        if not ok:raise c.WinError(c.get_last_error())
+    process=None;token=w.HANDLE();linked=w.HANDLE();sid=w.LPWSTR()
+    try:
+        hwnd=shell()
+        if not hwnd:raise RuntimeError('active desktop has no shell window')
+        pid=w.DWORD();checked(owner(hwnd,c.byref(pid)))
+        process=open_process(0x1000,False,pid.value);checked(process)
+        checked(open_token(process,0x000b,c.byref(token)))
+        kind=w.DWORD();needed=w.DWORD()
+        checked(info(token,18,c.byref(kind),c.sizeof(kind),c.byref(needed)))
+        if kind.value==2:
+            checked(info(token,19,c.byref(linked),c.sizeof(linked),c.byref(needed)));selected=linked
+        elif kind.value==3:selected=token
+        else:raise RuntimeError(f'desktop owner has no UAC split token: type={kind.value}')
+        data=c.create_string_buffer(256);checked(info(selected,1,data,len(data),c.byref(needed)))
+        checked(sid_text(c.c_void_p.from_buffer(data),c.byref(sid)))
+        yield {'token':selected,'sid':sid.value,'proof':{'account':'existing desktop owner','shell_pid':pid.value,'method':'read-only shell token','account_modified':False,'profile_loaded':False}}
+    finally:
+        if sid:free(c.cast(sid,c.c_void_p))
+        for handle in [linked,token,process]:
+            if handle:close(handle)
+
+
+@contextmanager
 def interactive_test_user():
     if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('RUNNER_ENVIRONMENT')!='github-hosted':
         raise RuntimeError('test account requires a disposable GitHub-hosted VM')

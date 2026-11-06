@@ -11,7 +11,7 @@ from e2e import check
 from e2e_formats import corpus_load,ntfs_image,file_hash
 
 
-def main(binary,output,limited=False):
+def main(binary,output,limited=False,desktop=False):
     check(platform.system()=='Windows','native Windows GUI test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
     # Keep failed UIA trees and logs next to the result; all names are unique.
@@ -27,9 +27,9 @@ def main(binary,output,limited=False):
     check(powershell.is_file(),'system PowerShell executable is missing')
     command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
     if limited:
-        from windows_test_user import interactive_test_user
+        from windows_test_user import interactive_test_user,desktop_test_user
         from windows_restricted import run_limited
-    with interactive_test_user() if limited else nullcontext(None) as identity:
+    with (desktop_test_user() if desktop else interactive_test_user()) if limited else nullcontext(None) as identity:
         if limited:
             subprocess.run(['icacls',str(root),'/grant','*'+identity['sid']+':(OI)(CI)M'],check=True,capture_output=True)
             completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True)
@@ -53,4 +53,4 @@ def main(binary,output,limited=False):
     output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps({'status':'passed','files_byte_exact':2,'bytes_exact':proof['bytes_exact'],'uia_steps':len(tree['steps'])}))
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited)
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');p.add_argument('--desktop-token',action='store_true');a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited or a.desktop_token,a.desktop_token)
