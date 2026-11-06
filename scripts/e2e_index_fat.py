@@ -2,7 +2,7 @@
 import argparse,hashlib,json,os,signal,sqlite3,struct,subprocess,tempfile,time
 from pathlib import Path
 import e2e_fat
-from e2e import Client,check,run
+from e2e import Client,check,run, candidate_evidence
 from make_fat_fixture import fat32,exfat,exfat_set,sfn,file_hash
 
 
@@ -11,7 +11,7 @@ def pages(binary,path):
     while True:
         args=['results','--session',path,'--limit','1000','--json']
         if cursor:args+=['--cursor',json.dumps(cursor)]
-        page=run(binary,*args);result+=page['candidates'];cursor=page['next_cursor']
+        page=run(binary,*args);result+=candidate_evidence(page);cursor=page['next_cursor']
         if cursor is None:return result
 
 

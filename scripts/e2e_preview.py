@@ -99,8 +99,19 @@ def main(binary,output=None):
             check(json.loads(error)['error']['code']=='RESOURCE_LIMIT' and 4<=elapsed<10,(elapsed,error))
             process=subprocess.Popen([str(binary),'preview','--session',str(blocked),'--id',raw['candidates'][0]['id'],
                 '--destination',str(root/'cancelled-out'),'--json'],stdout=subprocess.PIPE,stderr=subprocess.PIPE)
-            time.sleep(.3);start=time.monotonic();process.send_signal(signal.SIGINT);process.communicate(timeout=5)
-            check(process.returncode==130 and time.monotonic()-start<2,'preview cancel did not stop worker')
+            # Wait for the real worker, not an arbitrary startup sleep. Sending
+            # SIGINT before main installs its handler only tests process startup.
+            ready=False;deadline=time.monotonic()+3
+            while process.poll() is None and time.monotonic()<deadline:
+                listing=subprocess.check_output(['ps','-axo','pid=,ppid='],text=True)
+                ready=any(int(parts[1])==process.pid for line in listing.splitlines() if len(parts:=line.split())==2)
+                if ready:break
+                time.sleep(.02)
+            start=time.monotonic()
+            if process.poll() is None:process.send_signal(signal.SIGINT)
+            stdout,stderr=process.communicate(timeout=5)
+            elapsed=time.monotonic()-start
+            check(ready and process.returncode==130 and elapsed<2,{'error':'preview cancel did not stop worker','worker_observed':ready,'returncode':process.returncode,'seconds':elapsed,'stdout':stdout.decode(errors='replace'),'stderr':stderr.decode(errors='replace')})
             check(not (root/'blocked-out').exists() and not (root/'cancelled-out').exists(),'cancelled preview published output')
             cases.extend(['actual_blocking_open_wall_time_watchdog','actual_worker_cancellation'])
 

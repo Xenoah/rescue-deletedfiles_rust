@@ -1,7 +1,7 @@
 """Real CLI crash/resume, stable cursor, byte recovery and legacy-copy checks."""
 import argparse, hashlib, json, os, signal, sqlite3, subprocess, tempfile, time
 from pathlib import Path
-from e2e import check, run, Client
+from e2e import check, run, Client, candidate_evidence
 from make_fixture import build, record, resident, filename, MFT_LCN, SECTOR, RECORD
 
 
@@ -43,7 +43,7 @@ def main(binary, output=None):
         check(saved['record']>=256 and count==watermark and watermark>=6,'torn checkpoint or candidate batch')
         checks.append('forced_exit_atomic_checkpoint')
         resumed=run(binary,'resume','--session',path,'--json');check(resumed['index']['state']=='completed','resume state')
-        new=run(binary,'results','--session',path,'--limit','1000','--json')['candidates'];check(new==expected,'resume metadata differs from independent legacy path')
+        new=candidate_evidence(run(binary,'results','--session',path,'--limit','1000','--json'));check(new==expected,'resume metadata differs from independent legacy path')
         checks.append('resume_exact_candidates_no_duplicates')
         old_snapshot=run(binary,'results','--session',path,'--sort','name','--limit','1000','--cursor',json.dumps(cursor),'--json')
         check(old_snapshot['watermark']==page['watermark'] and len(old_snapshot['candidates'])==page['watermark']-1,'snapshot changed after later commit')
@@ -57,7 +57,7 @@ def main(binary, output=None):
         checks.append('indexed_recovery_byte_exact')
         imported=run(binary,'index-import','--session',legacy_path,'--work-dir',root/'import','--json')
         check(legacy_path.read_bytes()==legacy_bytes,'migration overwrote original')
-        check(run(binary,'results','--session',imported['session'],'--limit','1000','--json')['candidates']==expected,'migration candidate mismatch')
+        check(candidate_evidence(run(binary,'results','--session',imported['session'],'--limit','1000','--json'))==expected,'migration candidate mismatch')
         checks.append('legacy_copy_migration')
         client=Client(binary,source,root/'mcp-work',root/'mcp-output')
         try:
@@ -81,7 +81,7 @@ def main(binary, output=None):
             check(resumed['job_id']!=started['job_id'],'resuming mutated original job')
             done=client.wait(resumed['job_id']);check(done['state']=='completed',done)
             check(client.tool('get_job',{'job_id':started['job_id']})['state']=='paused','job history overwritten')
-            candidates=client.tool('list_candidates',{'session_id':session,'limit':1000})['candidates'];check(candidates==expected,'MCP index candidates differ')
+            candidates=candidate_evidence(client.tool('list_candidates',{'session_id':session,'limit':1000}));check(candidates==expected,'MCP index candidates differ')
             recovered=client.tool('recover_files',{'session_id':session,'ids':[c['id'] for c in candidates],'destination':str(root/'mcp-output'/'files.zip'),'output_format':'zip','request_id':'recover'})
             check(client.wait(recovered['job_id'])['state']=='completed','MCP indexed recovery')
             with zipfile.ZipFile(root/'mcp-output'/'files.zip') as z:
@@ -93,7 +93,7 @@ def main(binary, output=None):
         try:
             client.rpc('initialize',{'protocolVersion':'2024-11-05','capabilities':{},'clientInfo':{'name':'reopen-test','version':'1'}})
             opened=client.tool('open_session',{'path':index_path});check(opened['session_id']==session,'session reopen ID')
-            check(client.tool('list_candidates',{'session_id':session,'limit':1000})['candidates']==expected,'reopened MCP index')
+            check(candidate_evidence(client.tool('list_candidates',{'session_id':session,'limit':1000}))==expected,'reopened MCP index')
             checks.append('mcp_restart_reopen_index')
         finally:client.close()
         # Repeat cancellation cooperatively on Unix. Windows terminate is already

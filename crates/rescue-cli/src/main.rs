@@ -779,7 +779,7 @@ fn run() -> Result<i32, Error> {
             print(
                 json!({"schema_version":1,"session_id":session.id,"total":matching.len(),
                 "filesystem":session.filesystem,
-                "offset":offset,"candidates":matching.iter().skip(offset).take(limit).collect::<Vec<_>>()}),
+                "offset":offset,"candidates":matching.iter().skip(offset).take(limit).map(|c|c.in_session(&session.id)).collect::<Vec<_>>()}),
                 compact,
             );
             Ok(0)
@@ -955,6 +955,7 @@ fn run() -> Result<i32, Error> {
             let session = Session::load(&session)?;
             print(
                 json!({"schema_version":1,"session_id":session.id,"source":session.source,
+                "source_info":session.source_info,
                 "filesystem":session.filesystem,
                 "source_fingerprint":session.fingerprint,"candidates":session.candidates.len(),
                 "supported":session.candidates.iter().filter(|c|c.supported).count(),

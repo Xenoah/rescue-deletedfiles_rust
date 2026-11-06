@@ -17,6 +17,15 @@ def check(condition, message):
     if not condition:
         raise AssertionError(message)
 
+def candidate_evidence(page):
+    """Check public session scope, then compare evidence to stored index rows."""
+    import uuid
+    session_id=page['session_id'];uuid.UUID(session_id)
+    rows=page['candidates']
+    check(all(row.get('session_id')==session_id for row in rows),'candidate belongs to another session')
+    return [{key:value for key,value in row.items() if key!='session_id'} for row in rows]
+
+
 def inside(path, root):
     # Windows canonical paths may carry \\?\; macOS /var aliases /private/var.
     # Check directory identity instead of comparing those spellings.

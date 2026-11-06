@@ -219,9 +219,17 @@ impl Image {
         if self.raid.as_ref().map(|r| &r.evidence) != session.raid.as_ref() {
             return Err(Error::SourceChanged);
         }
+        if let Some(expected) = &session.source_info
+            && (!expected.same_object(&self.source_info()?)
+                || expected.offset != session.region.as_ref().map_or(0, |r| r.offset)
+                || expected.length != session.fingerprint.length)
+        {
+            return Err(Error::SourceChanged);
+        }
         Ok(())
     }
-    pub fn annotate_coverage(&self, session: &mut crate::Session) {
+    pub fn annotate_coverage(&self, session: &mut crate::Session) -> Result<()> {
+        session.source_info = Some(self.source_info()?);
         if let Some(raid) = &self.raid {
             session.schema_version = 9;
             session.raid = Some(raid.evidence.clone());
@@ -233,6 +241,37 @@ impl Image {
             session.truncated = true;
             session.warnings.push(format!("MISSING_RANGES: the acquired source contains {} unread/failed bytes; metadata and payloads crossing these ranges are unavailable.",map.missing_bytes()));
         }
+        Ok(())
+    }
+    pub fn source_info(&self) -> Result<crate::SourceInfo> {
+        use crate::{SourceInfo, SourceKind};
+        let read_map = self.mapped.as_ref().map(|map| map.source_info());
+        let (kind, identity) = if let Some(raid) = &self.raid {
+            (SourceKind::Raid, raid.evidence.identity_sha256.clone())
+        } else if let Some(map) = &self.mapped {
+            map.check(&self.file)?;
+            (SourceKind::Acquisition, map.source_info().summary.image_id)
+        } else {
+            let identity = self.acquisition_identity()?.identity;
+            (
+                if self.device.is_some() {
+                    SourceKind::Device
+                } else {
+                    SourceKind::Image
+                },
+                identity,
+            )
+        };
+        Ok(SourceInfo {
+            id: SourceInfo::identifier(kind, &identity),
+            kind,
+            bytes: self.total,
+            sector_size: self.sector_size(),
+            offset: self.base,
+            length: self.length,
+            identity,
+            read_map,
+        })
     }
     pub fn acquisition_identity(&self) -> Result<AcquisitionIdentity> {
         if let Some(raid) = &self.raid {

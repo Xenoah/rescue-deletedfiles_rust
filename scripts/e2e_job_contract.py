@@ -2,7 +2,7 @@
 import argparse,json,shutil,sqlite3,subprocess,tempfile,time
 from pathlib import Path
 import jsonschema
-from e2e import Client,check,run
+from e2e import Client,check,run, candidate_evidence
 from make_fixture import build
 from make_fat_fixture import file_hash
 
@@ -72,7 +72,7 @@ def main(binary,output=None):
             check(not copied['details']['pause_supported'] and bool(copied['details']['pause_reason']),'migration pause contract')
             sid=copied['result']['session_id'];check(sid!=header['id'],'copy reused original session ID')
             check(file_hash(legacy)==legacy_hash,'import changed original JSON')
-            rows=client.tool('list_candidates',{'session_id':sid,'limit':100})['candidates']
+            rows=candidate_evidence(client.tool('list_candidates',{'session_id':sid,'limit':100}))
             check(rows==header['candidates'],'migration changed evidence')
             recovered=wait(client,client.tool('recover_files',{'session_id':sid,'ids':list(truth),'destination':str(out/'restored'),'request_id':'recover-copy'})['job_id'])
             check(recovered['state']=='completed',recovered)
@@ -87,8 +87,8 @@ def main(binary,output=None):
             migrated=wait(client,client.tool('import_session',{'path':str(earlier),'request_id':'import-schema1'})['job_id'])
             check(migrated['state']=='completed' and migrated['result']['session_id']!=sid,migrated)
             check(file_hash(earlier)==earlier_hash,'old SQLite was edited')
-            check(client.tool('list_candidates',{'session_id':migrated['result']['session_id']})['candidates']==rows,'old SQLite evidence changed')
-            check(client.tool('list_candidates',{'session_id':sid})['candidates']==rows,'original copy registration lost')
+            check(candidate_evidence(client.tool('list_candidates',{'session_id':migrated['result']['session_id']}))==rows,'old SQLite evidence changed')
+            check(candidate_evidence(client.tool('list_candidates',{'session_id':sid}))==rows,'original copy registration lost')
             checks.append('old_sqlite_copy_preserves_both_sessions_and_original_bytes')
             outside=root/'outside.json';shutil.copyfile(legacy,outside)
             denied=client.tool('import_session',{'path':str(outside),'request_id':'outside'},error=True);error(denied['structuredContent'])

@@ -190,6 +190,10 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
             child.filesystem = volume.region.filesystem.ok_or(Error::SourceChanged)?;
             child.region = Some(volume.region.clone());
             child.fingerprint = volume.fingerprint.clone();
+            if let Some(info) = &mut child.source_info {
+                info.offset = volume.region.offset;
+                info.length = volume.region.length;
+            }
             read_volume(
                 &child,
                 candidates,
@@ -852,7 +856,7 @@ fn zip_impl(
             .map_err(|e| Error::Io(std::io::Error::other(e)))?;
         serde_json::to_writer_pretty(
             &mut zip,
-            &serde_json::json!({"schema_version":1,"session_id":session.id,"raid":session.raid,"results":result.results}),
+            &serde_json::json!({"schema_version":1,"session_id":session.id,"source_info":session.source_info,"raid":session.raid,"results":result.results}),
         )?;
         let mut output = zip
             .finish()

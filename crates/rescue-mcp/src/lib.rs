@@ -191,7 +191,7 @@ fn tools() -> Value {
         tool(
             "recover_files",
             "Read the selected batch before writing. Restore to a directory, ZIP, or verified original paths. Same-disk output allowed, 512 MiB selected payload limit. Existing files are kept or skipped; same-name directories merge. All output remains inside allowed roots.",
-            json!({"session_id":string,"ids":{"type":"array","items":string,"minItems":1,"maxItems":10000},
+            json!({"session_id":string,"ids":{"type":"array","items":{"oneOf":[string,{"type":"object","properties":{"session_id":string,"id":string},"required":["session_id","id"],"additionalProperties":false}]},"minItems":1,"maxItems":10000},
                 "destination":string,"request_id":string,"output_format":{"type":"string","enum":["directory","zip","original"],"default":"directory"},
                 "collision":{"type":"string","enum":["keep_both","skip"],"default":"keep_both"},"volume_roots":{"type":"array","maxItems":256,"items":{"type":"object","properties":{"partition":{"type":["integer","null"],"minimum":1},"path":string},"required":["path"],"additionalProperties":false}}}),
             &["session_id", "ids", "request_id"],
@@ -754,6 +754,7 @@ impl Server {
                 if name == "get_report" {
                     return Ok(
                         json!({"session_id":session.id,"candidates":session.candidates.len(),
+                        "source_info":session.source_info,
                         "scanned_records":session.scanned_records,"total_records":session.total_records,
                         "cancelled":session.cancelled,"truncated":session.truncated,
                         "invalid_records":session.invalid_records,"warnings":session.warnings}),
@@ -778,6 +779,7 @@ impl Server {
                     .iter()
                     .skip(offset)
                     .take(limit as usize)
+                    .map(|c| c.in_session(&session.id))
                     .collect::<Vec<_>>();
                 Ok(
                     json!({"session_id":session.id,"total":session.candidates.len(),"offset":offset,"candidates":items}),
@@ -855,11 +857,21 @@ impl Server {
                 if ids.is_empty() || ids.len() > 10000 {
                     return Err("ids must contain 1..10000 entries".into());
                 }
+                let session_id = field(args, "session_id")?;
                 let ids = ids
                     .iter()
-                    .map(|v| v.as_str().map(str::to_owned).ok_or("invalid candidate ID"))
-                    .collect::<std::result::Result<Vec<_>, _>>()?;
-                let session_id = field(args, "session_id")?;
+                    .map(|v| {
+                        if let Some(id) = v.as_str() {
+                            return Ok(id.to_owned());
+                        }
+                        let reference: rescue_core::CandidateReference =
+                            serde_json::from_value(v.clone()).map_err(err)?;
+                        if reference.session_id != session_id {
+                            return Err("candidate reference belongs to another session".into());
+                        }
+                        Ok(reference.id)
+                    })
+                    .collect::<std::result::Result<Vec<_>, ToolError>>()?;
                 let indexed = self.state.lock().unwrap().indexes.get(session_id).cloned();
                 let session = if let Some(path) = indexed {
                     rescue_core::CandidateIndex::open(&path)

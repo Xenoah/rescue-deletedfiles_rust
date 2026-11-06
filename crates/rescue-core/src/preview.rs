@@ -297,6 +297,10 @@ fn render(mut session: Session) -> Result<Preview> {
         session.filesystem = volume.region.filesystem.ok_or(Error::SourceChanged)?;
         session.region = Some(volume.region.clone());
         session.fingerprint = volume.fingerprint.clone();
+        if let Some(info) = &mut session.source_info {
+            info.offset = volume.region.offset;
+            info.length = volume.region.length;
+        }
         session.volumes.clear();
     }
     let extension = old

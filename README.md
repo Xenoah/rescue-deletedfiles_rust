@@ -9,7 +9,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 有料製品との性能比較は未測定です。
 
 **alpha.16開発ブランチ:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-Linuxの24統合群を通過し、Windows・macOSのネイティブ検証を進めています。
+Linuxの25統合群を通過し、Windows・macOSのネイティブ検証を進めています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -17,6 +17,11 @@ Linuxの24統合群を通過し、Windows・macOSのネイティブ検証を進�
 PNG/JPEGは入力8 MiB・1,677万画素、テキストは先頭64 KiB、1回の表示は5秒・読取64 MiBを上限とします。
 実際の子プロセスで再検証とデコードを行い、プレビュー用の変換結果と元バイトの復元を区別します。
 [プレビューの仕組みと制限](docs/PREVIEW.md) · [実画面の検証記録](docs/gui-preview-results.json)
+
+ソースの種類・ID・容量・読取範囲と、セッションを明示する候補参照を追加しました。
+[共通の識別モデル](docs/SOURCE_CONTRACT.md) · [実GUIの検証](docs/gui-source-results.json)
+
+![ソースの識別とPDFの復元結果](docs/images/source-identity.png)
 
 Windowsでは、通常権限の画面から選択ディスクの読取だけを許可する機能を追加中です。
 [権限分離の設計と未完了の検証](docs/READ_ACCESS.md)。以下のダウンロード案内はalpha.15のものです。

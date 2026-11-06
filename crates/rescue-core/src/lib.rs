@@ -22,6 +22,7 @@ mod read_map;
 mod restore;
 mod search;
 mod source;
+mod source_info;
 mod source_scope;
 mod timestamps;
 
@@ -70,6 +71,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 pub use source::Fingerprint;
 use source::Image;
+pub use source_info::{CandidateReference, ScopedCandidate, SourceInfo, SourceKind, SourceReadMap};
 pub use source_scope::SourceScope;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -231,6 +233,9 @@ impl Candidate {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Session {
+    /// Absent in legacy sessions. Recomputed from the opened source for new scans.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_info: Option<SourceInfo>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raid: Option<RaidEvidence>,
     pub schema_version: u32,
@@ -421,6 +426,7 @@ fn scan_volume(
             return Err(Error::SourceChanged);
         }
         let mut session = Session {
+            source_info: None,
             raid: None,
             schema_version,
             filesystem: result.filesystem,
@@ -439,11 +445,12 @@ fn scan_volume(
             volumes: Vec::new(),
         };
         session.bound_candidates()?;
-        image.annotate_coverage(&mut session);
+        image.annotate_coverage(&mut session)?;
         return Ok(session);
     }
     let opened = Ntfs::open(&mut image);
     let mut session = Session {
+        source_info: None,
         raid: None,
         schema_version,
         filesystem: FileSystem::Ntfs,
@@ -472,7 +479,7 @@ fn scan_volume(
                 return Err(Error::SourceChanged);
             }
             session.bound_candidates()?;
-            image.annotate_coverage(&mut session);
+            image.annotate_coverage(&mut session)?;
             return Ok(session);
         }
         Err(error) => return Err(error),
@@ -679,7 +686,7 @@ fn scan_volume(
         candidates: session.candidates.len(),
         unit: crate::ProgressUnit::Records,
     });
-    image.annotate_coverage(&mut session);
+    image.annotate_coverage(&mut session)?;
     Ok(session)
 }
 
@@ -1144,6 +1151,7 @@ fn write_report(
         &mut file,
         &serde_json::json!({
             "schema_version":1, "session_id":session.id, "source":session.source,
+            "source_info":session.source_info,
             "filesystem":session.filesystem,
             "source_fingerprint":session.fingerprint, "raid":session.raid, "results":results,
             "integrity_note":"Output hashes do not prove equality with the deleted originals."

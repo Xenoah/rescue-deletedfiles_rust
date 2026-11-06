@@ -1418,6 +1418,39 @@ impl App {
             s.candidates.len(),
             s.candidates.iter().filter(|c| c.supported).count()
         ));
+        ui.collapsing("ソースの識別と範囲", |ui| {
+            ui.add(egui::Label::new(s.source.display().to_string()).wrap());
+            if let Some(info) = &s.source_info {
+                ui.label(match info.kind {
+                    rescue_core::SourceKind::Device => "ディスク／ボリューム",
+                    rescue_core::SourceKind::Image => "ディスクイメージ",
+                    rescue_core::SourceKind::Acquisition => "読取マップ付きイメージ",
+                    rescue_core::SourceKind::Raid => "仮想RAID",
+                });
+                ui.label(format!(
+                    "容量 {} / セクター {} bytes",
+                    view::size_text(Some(info.bytes)),
+                    info.sector_size
+                ));
+                ui.label(format!(
+                    "読取窓：{} から {} bytes",
+                    info.offset, info.length
+                ));
+                ui.small("ソース参照ID");
+                ui.add(egui::Label::new(&info.id).wrap());
+                if let Some(map) = &info.read_map {
+                    ui.label(format!(
+                        "取得済み {} / 未読 {} / 読取失敗 {}",
+                        view::size_text(Some(map.summary.copied_bytes)),
+                        view::size_text(Some(map.summary.unattempted_bytes)),
+                        view::size_text(Some(map.summary.failed_bytes))
+                    ));
+                }
+                ui.small("IDは媒体の識別用です。復元時には指紋と管理情報も再照合します。");
+            } else {
+                ui.small("旧版の記録です。復元時には保存した指紋と管理情報を再照合します。");
+            }
+        });
         if let Some(raid) = &s.raid {
             ui.collapsing("仮想RAIDの構成",|ui|{
                 ui.label(format!("{:?} / {:?} / ストライプ {}",raid.config.level,raid.config.layout,view::size_text(Some(u64::from(raid.config.stripe_bytes)))));
@@ -2003,6 +2036,7 @@ mod tests {
     }
     fn session(fs: FileSystem) -> Session {
         Session {
+            source_info: None,
             raid: None,
             schema_version: 4,
             region: None,

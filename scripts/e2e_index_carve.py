@@ -1,7 +1,7 @@
 """Index and JSON carving must retain the same evidence across real process loss."""
 import argparse, hashlib, json, shutil, sqlite3, subprocess, tempfile, zipfile
 from pathlib import Path
-from e2e import check,run
+from e2e import check,run, candidate_evidence
 from e2e_documents import make_variants,archive
 from e2e_jpeg import build as jpeg_fixture
 from make_carve_fixture import png
@@ -16,7 +16,7 @@ def main(binary,output=None):
             candidates=json.loads(Path(old['session']).read_text(encoding='utf-8'))['candidates']
             indexed=run(binary,'scan','--indexed','--source',source,'--mode','carve','--work-dir',root/(label+'-index'),'--json',*extra,expected=expected)
             page=run(binary,'results','--session',indexed['session'],'--limit','1000','--json')
-            check(candidates==page['candidates'],('candidate evidence differs',label))
+            check(candidates==candidate_evidence(page),('candidate evidence differs',label))
             return Path(indexed['session']),candidates
         for (name,ext),data in good.items():
             source=root/(name+'.raw');source.write_bytes(data);index,rows=compare(source,name)
@@ -52,7 +52,7 @@ def main(binary,output=None):
         db=sqlite3.connect(copy);header=json.loads(db.execute('SELECT session FROM checkpoint').fetchone()[0]);header['search']['range_start']=17;db.execute('UPDATE checkpoint SET session=?',(json.dumps(header),));db.commit();db.close()
         failed=subprocess.run([str(binary),'resume','--session',str(copy),'--json'],capture_output=True,text=True,encoding='utf-8');check(failed.returncode!=0 and 'INVALID_REQUEST' in failed.stderr,'forged scan range resumed');checks+=1
         run(binary,'resume','--session',path,'--json')
-        actual=run(binary,'results','--session',path,'--limit','1000','--json')['candidates'];check(actual==expected,'ZIP suppression/candidate positions changed after crash');checks+=1
+        actual=candidate_evidence(run(binary,'results','--session',path,'--limit','1000','--json'));check(actual==expected,'ZIP suppression/candidate positions changed after crash');checks+=1
         db=sqlite3.connect(path);done=json.loads(db.execute('SELECT engine_state FROM checkpoint').fetchone()[0]);db.close()
         check(done['validation_budget']<=saved['validation_budget'] and done['attempts']>=saved['attempts'],'resume reset resource accounting');checks+=1
         run(binary,'recover','--session',path,'--all','--archive',root/'nested.zip','--json')

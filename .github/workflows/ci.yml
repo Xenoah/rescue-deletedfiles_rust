@@ -207,6 +207,7 @@ jobs:
             dist/allocation-scope-*.json
             dist/job-contract-*.json
             dist/naming-*.json
+            dist/source-contract-*.json
             dist/read-access-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error

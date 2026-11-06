@@ -144,7 +144,7 @@ impl Segment {
         })
     }
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ReadMapSummary {
     pub schema_version: u32,
     pub image_id: String,

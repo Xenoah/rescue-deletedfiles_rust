@@ -170,6 +170,7 @@ pub(crate) fn scan_range(
         return Err(Error::Request("scan range outside image".into()));
     }
     let mut session = Session {
+        source_info: None,
         raid: None,
         schema_version: 6, filesystem: FileSystem::Raw, id: Uuid::new_v4().to_string(),
         source: image.path.clone(), fingerprint, candidates: Vec::new(), scanned_records: 0,
@@ -358,7 +359,7 @@ pub(crate) fn scan_range(
         candidates: session.candidates.len(),
         unit: ProgressUnit::Bytes,
     });
-    image.annotate_coverage(&mut session);
+    image.annotate_coverage(&mut session)?;
     Ok(session)
 }
 

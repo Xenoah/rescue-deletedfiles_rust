@@ -61,6 +61,13 @@ impl MappedSource {
     pub fn digest(&self) -> String {
         self.map.digest()
     }
+    pub fn source_info(&self) -> crate::SourceReadMap {
+        crate::SourceReadMap {
+            original_source: self.map.header.source.clone(),
+            summary: self.map.summary(),
+            sha256: self.map.digest(),
+        }
+    }
     pub fn missing_bytes(&self) -> u64 {
         let s = self.map.summary();
         s.failed_bytes + s.unattempted_bytes

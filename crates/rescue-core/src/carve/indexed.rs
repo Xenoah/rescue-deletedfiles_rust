@@ -35,9 +35,10 @@ pub(crate) fn scan(
         return Err(Error::Request("scan range outside image".into()));
     }
     let mut header=Session {
+        source_info: None,
         raid:None,schema_version:7,filesystem:FileSystem::Raw,id:Uuid::new_v4().to_string(),source:image.path.clone(),fingerprint:image.fingerprint()?,candidates:vec![],scanned_records:0,total_records:end-settings.range_start,cancelled:false,truncated:false,invalid_records:0,warnings:vec![PROVENANCE.into(),"Bounded contiguous carving with a shared 4 GiB validation budget. Progress counts source bytes. Original names, dates and deletion status are unknown.".into()],search:Some(settings.clone()),region:None,volumes:vec![],
     };
-    image.annotate_coverage(&mut header);
+    image.annotate_coverage(&mut header)?;
     let checkpoint = Checkpoint {
         version: 2,
         scope: settings.carve_scope,

@@ -112,8 +112,10 @@ def main(binary, output):
         cases.append('mcp_name_contract_and_actual_collision')
         check(hashlib.sha256(source.read_bytes()).hexdigest()==before,'source changed')
     proof={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'checks':len(cases),'cases':cases,'files_byte_exact':exact,'source_unchanged':True,'scope':__doc__.strip()}
-    output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps(proof))
+    if output:
+        output.parent.mkdir(parents=True,exist_ok=True);output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    print(json.dumps(proof))
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args();main(a.binary.resolve(),a.output.resolve())
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path);a=p.parse_args();main(a.binary.resolve(),a.output.resolve() if a.output else None)

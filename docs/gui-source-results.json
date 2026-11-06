@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.16",
+  "gui_binary_sha256": "9c30337396f74e5489a27f20604dfd4bc16c26c29c42f9c0371a8aa3cfbf419b",
+  "scope": "Actual Linux X11 GUI, fresh indexed scan of an independent 36-file NTFS corpus, source identity compared with CLI inspect, 1 PDF restored byte-exact, 1260x820 and 720x520 windows. Not native Windows UIA/IME certification.",
+  "source_info": {
+    "bytes": 8388608,
+    "id": "src-20dd8363c783fc064562b92d493a405c8f73c52802e0be5ed69945d94e85eceb",
+    "identity": "file:27:556122",
+    "kind": "image",
+    "length": 8388608,
+    "offset": 0,
+    "read_map": null,
+    "sector_size": 512
+  },
+  "source_unchanged": true,
+  "source_sha256": "5e64972166e65e8da9356ebe5c70b2d65aae04a4963025a8f0af5268de3cfa9f",
+  "files_byte_exact": 1,
+  "bytes_exact": 1367,
+  "screenshots": [
+    {
+      "file": "images/source-identity.png",
+      "sha256": "089032b4aa4ffd1a6caf211024e41e21a899dd7a67f38e2590119651c08264cb"
+    },
+    {
+      "file": "images/source-narrow.png",
+      "sha256": "2852b11a44031251076b14d04503ad4487610b12d347e7ee60b54662b02d3e9f"
+    }
+  ]
+}

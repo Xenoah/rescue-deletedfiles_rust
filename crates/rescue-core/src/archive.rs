@@ -154,7 +154,7 @@ pub fn recover_zip_to(
             .map_err(archive_error)?;
         serde_json::to_writer_pretty(
             &mut zip,
-            &serde_json::json!({"schema_version":1,"output_format":"zip","session_id":session.id,"source":session.source,"results":packed,
+            &serde_json::json!({"schema_version":1,"output_format":"zip","session_id":session.id,"source":session.source,"source_info":session.source_info,"results":packed,
             "integrity_note":"Output hashes identify saved bytes; they do not prove equality with deleted originals."}),
         )?;
         let file = zip.finish().map_err(archive_error)?;

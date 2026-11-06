@@ -19,6 +19,7 @@ pub struct SourceRegion {
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SourceLayout {
+    pub source_info: crate::SourceInfo,
     pub path: PathBuf,
     pub device: bool,
     pub bytes: u64,
@@ -360,6 +361,7 @@ pub(crate) fn inspect_image(image: &mut Image) -> Result<SourceLayout> {
         return Err(invalid("source shorter than a sector"));
     }
     let mut layout = SourceLayout {
+        source_info: image.source_info()?,
         path: image.path.clone(),
         device: image.is_device(),
         bytes: image.length,

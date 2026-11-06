@@ -104,13 +104,43 @@ pub struct IndexCursor {
     pub last_rank: u8,
     pub last_sequence: u64,
 }
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct IndexPage {
+    pub session_id: String,
     pub index_id: String,
     /// Number committed at the start of pagination, before applying filters.
     pub watermark: u64,
     pub candidates: Vec<Candidate>,
     pub next_cursor: Option<IndexCursor>,
+}
+impl Serialize for IndexPage {
+    fn serialize<S: serde::Serializer>(
+        &self,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error> {
+        #[derive(Serialize)]
+        struct Wire<'a> {
+            schema_version: u32,
+            session_id: &'a str,
+            index_id: &'a str,
+            watermark: u64,
+            candidates: Vec<crate::ScopedCandidate<'a>>,
+            next_cursor: &'a Option<IndexCursor>,
+        }
+        Wire {
+            schema_version: 1,
+            session_id: &self.session_id,
+            index_id: &self.index_id,
+            watermark: self.watermark,
+            candidates: self
+                .candidates
+                .iter()
+                .map(|c| c.in_session(&self.session_id))
+                .collect(),
+            next_cursor: &self.next_cursor,
+        }
+        .serialize(serializer)
+    }
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IndexStatus {
@@ -545,6 +575,7 @@ impl CandidateIndex {
             });
         }
         Ok(IndexPage {
+            session_id: self.session()?.id,
             index_id: status.index_id,
             watermark,
             candidates: values,
@@ -908,6 +939,7 @@ mod tests {
         let source = root.join("source.raw");
         fs::write(&source, vec![0u8; 8192]).unwrap();
         Session {
+            source_info: None,
             raid: None,
             schema_version: 3,
             filesystem: crate::FileSystem::Ntfs,

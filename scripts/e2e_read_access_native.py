@@ -100,6 +100,8 @@ def main(binary, output, limited=False, identity=None):
                 cases.append('unelevated_parent_cannot_open_disk_without_explicit_permission')
             inspected=permitted('inspect','--source',source,'--json')
             check(len(inspected['layout']['regions'])==1,'disk query through transferred handle')
+            info=inspected['layout']['source_info']
+            check(info['kind']=='device' and info['id'].startswith('src-') and info==layout['source_info'],'source identity changed after permission transfer')
             scanned=permitted('scan','--indexed','--source',source,'--work-dir',root/'work','--json')
             rows=run(binary,'results','--session',scanned['session'],'--limit',1000,'--json')['candidates']
             check({c['id'] for c in rows}==set(truth),'broker scan differs from oracle')

@@ -27,6 +27,7 @@ pub fn scan_source(
     let mut image = Image::open(path)?;
     let fingerprint = image.fingerprint()?;
     let mut session = Session {
+        source_info: None,
         raid: None,
         schema_version: if options.fragments { 8 } else { 5 },
         filesystem: FileSystem::Disk,
@@ -143,7 +144,7 @@ pub fn scan_source(
     if image.fingerprint()? != session.fingerprint {
         return Err(Error::SourceChanged);
     }
-    image.annotate_coverage(&mut session);
+    image.annotate_coverage(&mut session)?;
     session.bound_candidates()?;
     Ok(session)
 }
@@ -239,6 +240,10 @@ pub(crate) fn recover_disk(
         child.filesystem = volume.region.filesystem.unwrap();
         child.fingerprint = volume.fingerprint.clone();
         child.region = Some(volume.region.clone());
+        if let Some(info) = &mut child.source_info {
+            info.offset = volume.region.offset;
+            info.length = volume.region.length;
+        }
         child.volumes.clear();
         child.candidates = candidates;
         let child_ids = child

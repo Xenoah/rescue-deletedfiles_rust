@@ -70,6 +70,7 @@ pub fn scan_indexed(
     let layout = if let Some(region) = &settings.recovered_volume {
         crate::discovery::validate_region(source, region)?;
         SourceLayout {
+            source_info: image.source_info()?,
             path: image.path.clone(),
             bytes: image.length,
             sector_size: image.sector_size(),
@@ -131,6 +132,7 @@ pub fn scan_indexed(
         });
     }
     let mut header = Session {
+        source_info: None,
         raid: None,
         schema_version: if settings.fragments {
             8
@@ -187,7 +189,14 @@ pub fn scan_indexed(
                 .cloned(),
         );
     }
-    image.annotate_coverage(&mut header);
+    // A discovered volume uses a bounded view while the resume checkpoint
+    // separately fingerprints the whole source. Record the session's view,
+    // not the full-disk window, in its source descriptor.
+    if header.region.is_some() {
+        Image::open_region(source, header.region.as_ref())?.annotate_coverage(&mut header)?;
+    } else {
+        image.annotate_coverage(&mut header)?;
+    }
     let checkpoint = Checkpoint {
         version: 1,
         identity,

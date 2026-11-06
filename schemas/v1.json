@@ -375,6 +375,9 @@
           "items": {
             "type": "string"
           }
+        },
+        "source_info": {
+          "$ref": "#/$defs/SourceInfo"
         }
       },
       "required": [
@@ -384,7 +387,8 @@
         "sector_size",
         "scheme",
         "regions",
-        "warnings"
+        "warnings",
+        "source_info"
       ],
       "additionalProperties": false
     },
@@ -633,6 +637,10 @@
               "type": "null"
             }
           ]
+        },
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
         }
       },
       "required": [
@@ -650,7 +658,7 @@
         "allocation_status"
       ],
       "additionalProperties": false,
-      "description": "Candidate ID is scoped by the enclosing Session.id or indexed result index_id; it does not use the displayed name."
+      "description": "Persisted candidate evidence. Public rows also carry session_id through ScopedCandidate; the index stores the session ID once in its header."
     },
     "ScannedVolume": {
       "type": "object",
@@ -756,6 +764,9 @@
               "type": "null"
             }
           ]
+        },
+        "source_info": {
+          "$ref": "#/$defs/SourceInfo"
         }
       },
       "required": [
@@ -1042,6 +1053,179 @@
         "changes"
       ],
       "description": "Fresh metadata only. Original values are null for generated carving names. Metadata with an unverified path can be incomplete; use warnings. Legacy reports and pre-validation failures omit naming."
+    },
+    "ReadMapSummary": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "copied_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "failed_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "unattempted_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "created_unix_ms": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "image_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ignored_incomplete_tail": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "schema_version",
+        "length",
+        "copied_bytes",
+        "failed_bytes",
+        "unattempted_bytes",
+        "records",
+        "created_unix_ms",
+        "image_id",
+        "ignored_incomplete_tail"
+      ],
+      "additionalProperties": false
+    },
+    "SourceReadMap": {
+      "type": "object",
+      "properties": {
+        "original_source": {
+          "$ref": "#/$defs/AcquisitionIdentity"
+        },
+        "summary": {
+          "$ref": "#/$defs/ReadMapSummary"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "original_source",
+        "summary",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^src-[a-f0-9]{64}$"
+        },
+        "kind": {
+          "enum": [
+            "device",
+            "image",
+            "acquisition",
+            "raid"
+          ]
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sector_size": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 65536
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "read_map": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceReadMap"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "bytes",
+        "sector_size",
+        "offset",
+        "length",
+        "identity",
+        "read_map"
+      ],
+      "additionalProperties": false,
+      "description": "Opaque local OS/acquisition/RAID object reference, independent of names and drive letters. It is not a content hash or permission. Ranges, fingerprints, metadata and output capabilities must still be revalidated."
+    },
+    "ScopedCandidate": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/Candidate"
+        },
+        {
+          "required": [
+            "session_id"
+          ]
+        }
+      ]
+    },
+    "CandidateReference": {
+      "type": "object",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "session_id",
+        "id"
+      ],
+      "additionalProperties": false
     }
   }
 }

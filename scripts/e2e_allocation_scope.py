@@ -1,7 +1,7 @@
 """Independent allocation maps, live/free signatures and real CLI/MCP parity."""
 import argparse, json, os, sqlite3, struct, subprocess, tempfile
 from pathlib import Path
-from e2e import Client, check, run
+from e2e import Client, check, run, candidate_evidence
 from e2e_disks import disk_image
 from make_fixture import build, record, filename, resident, MFT_LCN, RECORD, SECTOR
 from make_fat_fixture import fat32, exfat, file_hash
@@ -51,7 +51,7 @@ def main(binary,output=None):
             if scope is not None:args+=['--carve-scope',scope]
             if indexed:args+=['--indexed']
             found=run(binary,*args,timeout=90)
-            rows=run(binary,'results','--session',found['session'],'--limit',1000,'--json')['candidates']
+            rows=candidate_evidence(run(binary,'results','--session',found['session'],'--limit',1000,'--json'))
             header=run(binary,'report','--session',found['session'],'--json')['session'] if indexed else json.loads(Path(found['session']).read_text(encoding='utf-8'))
             return found,rows,header
         def recover(session,rows,payload,label):
@@ -86,7 +86,7 @@ def main(binary,output=None):
                     args={'source':str(source),'mode':'carve','extensions':['png'],'indexed':True,'request_id':str(scope)}
                     if scope is not None:args['carve_scope']=scope
                     job=client.wait(client.tool('start_scan',args)['job_id']);check(job['state']=='completed',job)
-                    actual=client.tool('list_candidates',{'session_id':job['result']['session_id']})['candidates']
+                    actual=candidate_evidence(client.tool('list_candidates',{'session_id':job['result']['session_id']}))
                     check({c['record'] for c in actual}==expected,'MCP scope differs')
                 client.tool('start_scan',{'source':str(source),'mode':'carve','carve_scope':'invalid','request_id':'invalid'},error=True)
                 client.tool('start_scan',{'source':str(source),'mode':'carve','carve_scope':None,'request_id':'null'},error=True)
@@ -166,11 +166,11 @@ def main(binary,output=None):
         invalid=subprocess.run([str(binary),'resume','--session',str(copy_path),'--json'],capture_output=True,text=True,encoding='utf-8')
         check(invalid.returncode!=0 and 'INVALID_REQUEST' in invalid.stderr,'forged allocation scope resumed')
         run(binary,'resume','--session',index,'--json',timeout=90)
-        rows=run(binary,'results','--session',index,'--json')['candidates']
+        rows=candidate_evidence(run(binary,'results','--session',index,'--json'))
         check({c['record'] for c in rows}=={4096,96*1024*1024},rows)
         recover(index,rows,png(),'resumed-out');check(file_hash(source)==before,'resume changed source')
         run(binary,'resume','--session',legacy_path,'--json',timeout=90)
-        legacy_rows=run(binary,'results','--session',legacy_path,'--json')['candidates']
+        legacy_rows=candidate_evidence(run(binary,'results','--session',legacy_path,'--json'))
         check(legacy_rows==rows,'legacy scope checkpoint changed candidate evidence')
         check(run(binary,'report','--session',legacy_path,'--json')['session']['search']['carve_scope']=='all','legacy scope changed')
         recover(legacy_path,legacy_rows,png(),'legacy-resumed-out')

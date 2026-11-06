@@ -1,11 +1,13 @@
 # 共通ジョブとJSON契約（alpha.16開発版）
 
 [機械可読スキーマ](../schemas/v1.json) はJSON Schema 2020-12を使う。
-`#/$defs/Job`、`Session`、`Candidate`、`Source`、`RecoveryResult`、`OperationError` を参照できる。
+`#/$defs/Job`、`Session`、`Candidate`、`ScopedCandidate`、`CandidateReference`、
+`Source`、`SourceInfo`、`RecoveryResult`、`OperationError` を参照できる。
 形の検査と、元媒体・管理情報・出力先の実際の再検証は別に行う。
 
 MCPの `get_job` は `schema_version`、`job_id`、`kind`、`state`、`phase`、
-`progress`、`details`、`result`、`error` を返す。候補IDは親セッションまたは索引のIDと組み合わせる。
+`progress`、`details`、`result`、`error` を返す。候補参照は `session_id` と `id` を組み合わせる。索引IDはページ取得の識別に使う。
+[ソースと候補の契約](SOURCE_CONTRACT.md)を参照。
 進捗の数値フィールドは互換性のため `scanned_records` / `total_records` のままとし、
 `unit` でレコードとバイトを区別する。
 
