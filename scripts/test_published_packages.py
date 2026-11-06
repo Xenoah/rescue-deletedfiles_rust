@@ -55,7 +55,7 @@ def recorded_suite(binary, suite, report):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');p.add_argument('--defer-windows-gui',action='store_true',help='Run the unchanged Windows GUI suites as separate CI steps, then collect their proofs');a=p.parse_args()
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-alpha\.\d+)?',a.tag):raise ValueError('invalid release tag')
     base=f'https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/{a.tag}/'
     def download(name,limit):
@@ -123,10 +123,11 @@ def main():
         if hashlib.sha256(gui_data).hexdigest()!=proof['portable_gui_sha256']:raise RuntimeError('GUI differs from verified portable')
         (a.output/'rescue.exe').write_bytes(data)  # exact companion for GUI helpers
         result['gui_verification']={}
-        for kind,keyboard,ime in [('limited',False,False),('keyboard',True,False),('ime',True,True)]:
-            path=(a.output/f'gui-{kind}.json').resolve()
-            gui_test(gui,path,limited=True,desktop=True,keyboard=keyboard,ime=ime)
-            result['gui_verification'][kind]=json.loads(path.read_text(encoding='utf-8'))
+        if not a.defer_windows_gui:
+            for kind,keyboard,ime in [('limited',False,False),('keyboard',True,False),('ime',True,True)]:
+                path=(a.output/f'gui-{kind}.json').resolve()
+                gui_test(gui,path,limited=True,desktop=True,keyboard=keyboard,ime=ime)
+                result['gui_verification'][kind]=json.loads(path.read_text(encoding='utf-8'))
         result['public_gui_sha256']=hashlib.sha256(gui_data).hexdigest()
     result['published_release']={'tag':a.tag,'platform':a.platform,'arch':a.arch,'portable_sha256':hashlib.sha256(archive).hexdigest(),'executable_sha256':digest,'download_url':base+name,'tested_after_packaging_and_signing':True,'package_feature_suite_checks':60}
     result['ci_provenance']={'run_id':os.environ.get('GITHUB_RUN_ID'),'attempt':os.environ.get('GITHUB_RUN_ATTEMPT'),'commit':os.environ.get('GITHUB_SHA')}

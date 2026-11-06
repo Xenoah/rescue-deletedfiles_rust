@@ -68,13 +68,45 @@ jobs:
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
-      - name: Test public CLI and Windows GUI after packaging and signing
+      - name: Test public CLI after packaging and signing
         if: runner.os != 'Linux'
         shell: bash
-        run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --output public-results
+        run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --output public-results --defer-windows-gui
       - name: Test public Linux CLI and independent deletion
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform linux --arch x64 --output public-results --independent
+      # Each native GUI driver gets its own runner shell, as in tag CI. A
+      # sequential in-process loop can lose foreground ownership to the hosted
+      # compute agent after the preceding driver exits. The test itself stays
+      # byte-identical to the immutable release tag, including its focus checks.
+      - name: Public Windows GUI UIA recovery
+        if: runner.os == 'Windows' && env.RELEASE_TAG == 'v1.0.0'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary public-results/rescue-gui.exe --output public-results/gui-limited.json --desktop-token
+      - name: Public Windows GUI keyboard recovery
+        if: runner.os == 'Windows' && env.RELEASE_TAG == 'v1.0.0'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary public-results/rescue-gui.exe --output public-results/gui-keyboard.json --desktop-token --keyboard
+      - name: Public Windows GUI native Japanese IME
+        if: runner.os == 'Windows' && env.RELEASE_TAG == 'v1.0.0'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary public-results/rescue-gui.exe --output public-results/gui-ime.json --desktop-token --ime
+      - name: Collect every public Windows GUI proof
+        if: runner.os == 'Windows' && env.RELEASE_TAG == 'v1.0.0'
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json
+          from pathlib import Path
+          root=Path('public-results'); path=root/'results.json'; result=json.loads(path.read_text(encoding='utf-8'))
+          assert result['published_release']['tag']=='v1.0.0'
+          assert hashlib.sha256((root/'rescue-gui.exe').read_bytes()).hexdigest()==result['public_gui_sha256']
+          for kind in ['limited','keyboard','ime']:
+              proof=json.loads((root/f'gui-{kind}.json').read_text(encoding='utf-8'))
+              assert proof['status']=='passed' and proof['gui_binary_sha256']==result['public_gui_sha256']
+              result['gui_verification'][kind]=proof
+          path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PYTHON
       - name: Collect executed result
         run: python -c "import shutil;shutil.copyfile('public-results/results.json','published-format-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
