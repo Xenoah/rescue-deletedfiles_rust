@@ -11,7 +11,7 @@ import secrets
 
 @contextmanager
 def desktop_test_user():
-    """Use the desktop owner's logon with administrator access removed.
+    """Use the runner's interactive logon with administrator access removed.
 
     UI Automation's provider transport needs the interactive logon session,
     not merely a token with access to the same window station. No account,
@@ -31,7 +31,7 @@ def desktop_test_user():
         f=getattr(lib,name);f.argtypes=args;f.restype=result;return f
     shell=api(user,'GetShellWindow',[],w.HWND)
     owner=api(user,'GetWindowThreadProcessId',[w.HWND,c.POINTER(w.DWORD)],w.DWORD)
-    open_process=api(kernel,'OpenProcess',[w.DWORD,w.BOOL,w.DWORD],w.HANDLE)
+    current_process=api(kernel,'GetCurrentProcess',[],w.HANDLE)
     open_token=api(security,'OpenProcessToken',[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)])
     info=api(security,'GetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)])
     sid_text=api(security,'ConvertSidToStringSidW',[c.c_void_p,c.POINTER(w.LPWSTR)])
@@ -48,8 +48,10 @@ def desktop_test_user():
         hwnd=shell()
         if not hwnd:raise RuntimeError('active desktop has no shell window')
         pid=w.DWORD();checked(owner(hwnd,c.byref(pid)))
-        process=open_process(0x1000,False,pid.value);checked(process)
-        checked(open_token(process,0x008b,c.byref(token)))
+        # Filter our own primary token. CreateProcessAsUser can assign this
+        # restricted copy without SeAssignPrimaryTokenPrivilege; a copy of
+        # Explorer's token belongs to another process and lacks that exemption.
+        checked(open_token(current_process(),0x008b,c.byref(token)))
         kind=w.DWORD();needed=w.DWORD()
         checked(info(token,18,c.byref(kind),c.sizeof(kind),c.byref(needed)))
         if kind.value==2:
@@ -66,7 +68,7 @@ def desktop_test_user():
         else:raise RuntimeError(f'unexpected desktop elevation type: {kind.value}')
         data=c.create_string_buffer(256);checked(info(selected,1,data,len(data),c.byref(needed)))
         checked(sid_text(c.c_void_p.from_buffer(data),c.byref(sid)))
-        yield {'token':selected,'sid':sid.value,'restricted':restricted,'proof':{'account':'existing desktop owner','shell_pid':pid.value,'method':'restricted desktop token' if restricted else 'existing limited shell token','account_modified':False,'profile_loaded':False,'uac_consent_test':False}}
+        yield {'token':selected,'sid':sid.value,'restricted':restricted,'proof':{'account':'existing runner identity','shell_pid':pid.value,'method':'restricted caller token' if restricted else 'existing limited caller token','account_modified':False,'profile_loaded':False,'uac_consent_test':False}}
     finally:
         if sid:free(c.cast(sid,c.c_void_p))
         if admin:free(admin)
