@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "release": "0.2.0-alpha.16",
+  "policy": "These GUI recordings and the index benchmark were made with the listed earlier build and are not re-recorded for alpha.16. alpha.16 changed the GUI (language switch, keyboard access, preview, allocation scope); those changes have their own alpha.16 recordings (gui-preview, gui-allocation, gui-i18n, gui-job, gui-keyboard, gui-naming, gui-source). Every CLI/MCP suite was re-run on all four native VMs for alpha.16. The carried screens show the alpha.15 version label.",
+  "files": {
+    "ui-flow-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-original-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-jpeg-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-document-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-imaging-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-ntfs-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-discovery-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-raid-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-index-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-index-large-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    },
+    "index-benchmark-results.json": {
+      "recorded_version": "0.2.0-alpha.15"
+    }
+  }
+}

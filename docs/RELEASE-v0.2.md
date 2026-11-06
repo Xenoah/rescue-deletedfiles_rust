@@ -1,61 +1,87 @@
-# Rescue v0.2.0-alpha.15
+# Rescue v0.2.0-alpha.16
 
-NTFS・FAT32・exFAT・署名探索・残存MFTをディスク上の索引へ保存し、GUIから中断・再開できるようにしました。
-候補を500件ずつ表示し、ページ・検索・並替え・グループが変わっても選択IDを保持します。
-v1.0へ向けた開発版で、隔離プレビュー・Windows権限分離等の必須工程を継続しています。
+候補のPNG・JPEG・テキストを別プロセスでプレビューできるようにしました。
+GUI、CLI、MCPで同じ再検証と制限を使います。Windowsではディスクの読取許可を補助プロセスへ分離し、
+受け取ったハンドルに書込・削除・ACL変更権限がないことと、補助プロセスの終了を確認します。
 
-![ページをまたぐ選択と元フォルダー・サイズの並べ替え](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.15/docs/images/index-grouped.png)
+![画像を縮小して表示する実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/preview-large.png)
 
-## 保存と再開
+![日本語を表示する小さいウィンドウ](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/preview-narrow.png)
 
-- 候補と探索位置を同じSQLiteトランザクションで確定。OSロックで書込み所有者を1プロセスに制限します。
-- MFTのレコード・ストリーム、FATのフォルダー走査と未検証エントリー、署名のバイト位置・検証予算を保存します。
-- 再開時にソースの識別と領域を照合。変更時は自動再開を拒否し、旧JSON/SQLiteは新しいコピーへ移行します。
-- 検索・並替えはGUIとは別スレッドで実行。ページのカーソルは追加候補の上限を保持し、表示途中の入替わりを防ぎます。
-- 復元前の再スキャンが旧10万候補/200万レコードで止まる問題を修正。選択した管理情報だけを保持して再検証します。
-- 保存済みの名前・階層・サイズを信頼せず、元媒体から再取得します。先行読取512 MiBと同名ファイルの保持を継続します。
+画像入力8 MiB、1,677万画素、表示512px、文字列先頭64 KiB、読取64 MiB、5秒を上限とします。
+プレビュー非対応のPDF等も復元候補として保持します。表示用の変換結果は元バイトの完全性保証ではありません。
 
-![中断した索引からGUIで再開](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.15/docs/images/index-paused.png)
+[操作できる技術説明UI](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/intelligence.html)には、67枚の実画面と20方式の説明を収録しました。
+プレビュー8画面・割当範囲5画面・停止と移行8画面・名前の履歴2画面・ソース識別2画面はalpha.16、以前の画面はalpha.15として明記しています。
+390px幅を含む全切替操作、JavaScriptエラー0件、外部通信0件を確認しました。
 
-[索引・コピー移行・資源上限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.15/docs/INDEX.md)
+![隔離プレビューの制限とGUI/CLI/MCPを説明するUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/technical-ui-v16.png)
 
-## 検証
+CarvingはNTFS/FAT32/exFATの未割当領域を既定にしました。候補の全内容の割当を確認し、
+割当情報がない範囲の全領域検索は一覧上に表示します。全領域の指定と旧セッションの再開も維持します。
+独立試験は19条件・24ファイルの内容一致、実GUIのスキャン・選択・復元は2件338バイトを照合しました。
 
-Rust53項目と20統合群を通過。各FSで100,010候補より後、NTFSでは200万レコードより後のファイルを
-CLI/MCPから復元して6出力をバイト照合しました。強制終了、複数プロセスの競合、コピー移行、予算保持、
-ソース変更、MCPの再送・履歴・許可範囲も検証しています。
-実GUIでは1,256候補の3ページから選んだ4件をZIPへ復元し、877件での中断から再開・選択保持を確認しました。
-Ctrl+F・Tab・720×520を実画面で検証。Windows/macOSの手動スクリーンリーダー評価とは区別します。
+![未割当領域と全領域を選択する詳細設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/allocation-settings.png)
 
-1,000万候補を開いた実GUIから3ファイル/138バイトをZIPへ復元し、正解とCRCを照合しました。
-消失領域の指紋と復元対象領域の不一致も修正し、GUIの6ファイルとCLI/MCPの76出力を再検証しました。
+イメージ取得の一時停止・再開とセッションのコピー移行をGUI・MCPに追加しました。
+ジョブの種類、工程、進捗、構造化エラーを共通契約にし、JSON Schemaも同梱します。
+独立した12条件に加え、実GUIで512 MiBの停止・再開と、移行後36ファイル152,325バイトの一致を確認しました。
 
-最終CLI測定は11条件×20回でID・順序が一致。p95は16.5〜263.6 ms、500万件目の降順は28.1 ms。
-まれな部分一致の200 ms目標は未達です。GUI込みのRSSは走査時約169.4 MB、ページ取得時約159.4 MB。
-1 TiBは合成疎ファイルの論理容量で、実媒体の全読取速度やGUI描画応答を測った値ではありません。
-[測定の生値・バイナリーSHA-256・旧測定の失敗](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.15/docs/index-benchmark-results.json)。
+![旧セッションを保持してコピーする実画面](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/jobs-migration-settings.png)
 
-タグのCIではWindows・Linux・macOS Intel/ARMの4ネイティブVMで検証してから8パッケージを公開します。
-公開後はダウンロードした実行ファイルで索引6群を含む再検証を実行します。
+![移行した36ファイルの復元結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/jobs-migration-restored.png)
 
-![1,000万候補から選んだ3ファイルを復元](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.15/docs/images/index-large-restored.png)
+元の名前と名前変更の履歴を、GUI・CLI・MCP・ZIPのレポートに追加しました。
+同名の保持、使用できない文字、ADS、生成名を区別し、14条件・13出力をバイト照合しました。
+CLIの `--stream` にも保存直前の管理情報・割当範囲の再検証を適用しています。
 
-## 技術説明UI
+![既存PDFを残した実GUIの変更履歴](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/naming-history.png)
 
-[画像を内蔵した単一HTML](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/intelligence.html)で、
-30実画面と12方式を通信なしで切り替えられます。索引の保存・検索・再開・選択復元の仕組みを追加しています。
-[Microsoft/W3Cの配置基準](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.15/docs/UI_GUIDELINES.md)を適用しています。
+[名前の根拠と変更理由](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/NAMING.md)
 
-![索引と再開の技術説明UI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.15/docs/images/technical-ui-v15.png)
+ソースの種類・ID・範囲を共通化し、MCPはセッションを明示した候補参照も受け付けます。
+旧記録を維持し、改変IDや別セッションの参照を復元前に拒否します。
+
+![入力の識別情報を表示した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/source-identity.png)
+
+[ソースと候補の契約](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/SOURCE_CONTRACT.md)
+
+日本語と英語の操作表示を切り替えられます。`--language en` でも起動できます。
+日本語の元名、検索語、選択を保持して、実GUIでPDFとテキストの2件1,428バイトを復元・照合しました。
+完了メッセージも切り替わります。[実装と検証範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/LANGUAGE.md)
+
+![英語の画面から日本語のファイルを復元](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/i18n-restored-en.png)
+
+列幅変更の見えないTab停止を修正し、見出しの左右キーと境界のドラッグを両立しました。
+狭い画面のスクロール領域にも名前、フォーカス枠、キー操作を追加しています。
+実GUIでPDFをキーボードから復元して1,367バイトを照合し、完了後のSpaceで保存レポートを開きました。
+
+![復元後のフォーカスとレポート操作](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/keyboard-finished.png)
+
+![狭い画面で矢印キーによる横スクロール](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/keyboard-scroll.png)
+
+[操作基準](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/UI_GUIDELINES.md) · [実GUIの照合記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/gui-keyboard-results.json)
+
+Linuxでは70 Rust項目を通過。復元エンジンの25統合群は3 OS・4ネイティブ環境のリリースCIで通過しています。プレビューの独立検査は画像10件・テキスト12件、
+破損画像・画素上限・改変した管理情報・取消・タイムアウト・MCP許可範囲を含む11条件です。
+Windowsの権限分離はネイティブVMで実UAC分離トークンの8条件・VHD36ファイル・3プレビュー・64 MiB取得を照合しました。
+人が操作するUAC画面とWindows UIAの評価は継続中です。公開後はダウンロードした実行ファイルで再検証します。
+
+## 持ち越した画面記録
+
+変更していない既存の流れ（36ファイル復元、JPEG/文書、イメージ取得、NTFS、消失領域、RAID、索引、1,000万候補）の
+実GUI記録と索引の性能測定はalpha.15のビルドのものです。[持ち越し台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/gui-evidence-carryover.json)に版を明記しています。
+
+[プレビュー](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/PREVIEW.md) · [検索範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/ALLOCATION_SCOPE.md) · [共通ジョブ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/JOB_CONTRACT.md) · [Windows権限分離](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/READ_ACCESS.md) · [受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/V1_ACCEPTANCE.md)
 
 ## ダウンロード
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64-portable.zip) |
 
 
 `SHA256SUMS.txt`で照合できます。Linuxはglibc 2.35以降、macOSは13以降。

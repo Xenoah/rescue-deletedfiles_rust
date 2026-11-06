@@ -3,13 +3,13 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v0.2.0-alpha.15: 全探索方式の永続索引・中断と再開・ページ表示を追加。**
+**v0.2.0-alpha.16: 隔離プレビュー、Windowsの読取権限分離、未割当領域を既定にしたcarving、日英切替を追加。**
 現在は開発版です。v1.0の全必須機能・レビュー・3 OS試験は [受入台帳](docs/V1_ACCEPTANCE.md) で追跡します。
-大規模性能の評価、隔離プレビュー、Windows権限分離などを進めています。
+大規模性能の評価、PDF等のプレビュー、WindowsのUAC実操作・UIAの評価などを進めています。
 有料製品との性能比較は未測定です。
 
-**alpha.16開発ブランチ:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-Linuxの25統合群を通過し、Windows・macOSのネイティブ検証を進めています。
+**alpha.16:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
+25統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで通過しています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -33,8 +33,8 @@ Tab・Spaceによる選択と復元、列見出しの左右キーによる幅変
 
 ![キーボードでPDFを復元し、保存レポートへ移動した実GUI](docs/images/keyboard-finished.png)
 
-Windowsでは、通常権限の画面から選択ディスクの読取だけを許可する機能を追加中です。
-[権限分離の設計と未完了の検証](docs/READ_ACCESS.md)。以下のダウンロード案内はalpha.15のものです。
+Windowsでは、通常権限の画面から選択ディスクの読取だけを補助プロセスに許可できます（GUI「ディスクの読取を許可」、CLI `--request-read-access`）。
+受け取ったハンドルに書込・削除・ACL変更権限がないことを確認します。人が操作するUAC画面の評価は未実施です。[権限分離の設計と検証範囲](docs/READ_ACCESS.md)
 
 Carvingの既定範囲を未割当領域に変更しました。NTFS/FAT32/exFATの割当情報を照合し、
 割当情報を読めない範囲の全領域検索は一覧上に理由を表示します。
@@ -61,14 +61,14 @@ MCPのジョブには種類・工程・構造化エラーを追加し、再開�
 
 ## ダウンロード
 
-[v0.2.0-alpha.15のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.15)
+[v0.2.0-alpha.16のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.16)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/rescue-0.2.0-alpha.15-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64-portable.zip) |
 
 Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
 OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
@@ -184,9 +184,16 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 
 [文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
 
-[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.15/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
+[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
 
 ![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v15.png)
+
+## alpha.16で持ち越した画面記録
+
+alpha.16で変更した画面（プレビュー・検索範囲・停止と移行・名前の履歴・ソース識別・日英切替・キーボード）はalpha.16で記録しました。
+変更していない既存の流れ（36ファイル復元、JPEG/文書、イメージ取得、NTFS、消失領域、RAID、索引、1,000万候補の測定）の
+実GUI記録はalpha.15のビルドのもので、画面の版表示もalpha.15です。[持ち越し台帳](docs/gui-evidence-carryover.json)に版を明記し、
+CLI/MCPの全試験はalpha.16で4ネイティブVMとも再実行しています。
 
 ## 検証
 
