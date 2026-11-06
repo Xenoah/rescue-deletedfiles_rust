@@ -38,12 +38,14 @@ def native_query_diagnostics(source):
 def main(binary, output, limited=False):
     check(platform.system()=='Windows','Windows broker native test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
-    grants=[];cases=[]
+    grants=[];cases=[];token_profiles=[]
     def invoke(arguments):
         command=[str(binary),*map(str,arguments)]
         if limited:
             from windows_restricted import run_limited
-            return run_limited(command,timeout=60)
+            result=run_limited(command,timeout=60)
+            token_profiles.append(result.token_profile)
+            return result
         return subprocess.run(command,capture_output=True,text=True,encoding='utf-8',timeout=60)
     def permitted(*args):
         p=invoke(['--request-read-access',*args])
@@ -122,7 +124,7 @@ def main(binary, output, limited=False):
             'binary_sha256':file_hash(binary),'checks':len(cases),'cases':cases,'files_byte_exact':len(truth),
             'previews_verified':previews,'source_unchanged':True,'grants':grants,
             'unelevated_parent_tested':all(not g['parent_elevated'] for g in grants),
-            'interactive_uac_tested':False,'scope':__doc__.strip()}
+            'interactive_uac_tested':False,'parent_token_profiles':token_profiles,'scope':__doc__.strip()}
     output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps(result));return result
 
 
