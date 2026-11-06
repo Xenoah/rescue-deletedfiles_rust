@@ -70,11 +70,14 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
             duplicate=api(security,'DuplicateToken',[w.HANDLE,c.c_int,c.POINTER(w.HANDLE)])
             sid_from_text=api(security,'ConvertStringSidToSidW',[w.LPCWSTR,c.POINTER(c.c_void_p)])
             membership=api(security,'CheckTokenMembership',[w.HANDLE,c.c_void_p,c.POINTER(w.BOOL)])
-            is_restricted=api(security,'IsTokenRestricted',[w.HANDLE])
             free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
             impersonation=w.HANDLE();admin=c.c_void_p()
             try:
-                checked(is_restricted(limited));checked(duplicate(limited,2,c.byref(impersonation)))
+                # IsTokenRestricted tests a restricting SID list only; our
+                # deny-only groups/removed privileges use TokenHasRestrictions.
+                filtered=w.DWORD();checked(get_info(limited,21,c.byref(filtered),c.sizeof(filtered),c.byref(returned)))
+                if not filtered.value:raise AssertionError('desktop token was not filtered')
+                checked(duplicate(limited,2,c.byref(impersonation)))
                 checked(sid_from_text('S-1-5-32-544',c.byref(admin)))
                 enabled=w.BOOL();checked(membership(impersonation,admin,c.byref(enabled)))
                 if enabled.value:raise AssertionError('restricted UI test still has administrator membership')
