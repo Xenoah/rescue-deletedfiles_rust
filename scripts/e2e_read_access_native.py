@@ -4,7 +4,7 @@ Checks the actual ShellExecute helper, kernel-granted rights, child-preview hand
 transfer and byte-exact recovery. Records the parent token; an elevated runner
 does not establish interactive UAC consent or an unelevated desktop UI result.
 """
-import argparse, hashlib, io, json, platform, subprocess, tempfile
+import argparse, hashlib, io, json, platform, subprocess, tempfile, time
 from pathlib import Path
 from PIL import Image
 from e2e import check, run
@@ -36,10 +36,26 @@ def main(binary, output, limited=False):
         root=Path(temporary).resolve();volume=root/'ntfs.raw';disk=root/'disk.raw'
         corpus=list(corpus_load(Path(__file__).resolve().parent.parent/'tests/corpus'))
         original,_=ntfs_image(volume,corpus,'fragmented')
-        disk_image(disk,[volume],512,'mbr');before=file_hash(disk)
+        disk_image(disk,[volume],512,'mbr')
+        # Use a conventional VHD capacity while preserving the independent MBR
+        # partition bytes. The extra logical source bytes are verified zeros.
+        with disk.open('r+b') as f:f.truncate(max(disk.stat().st_size,64*1024*1024))
+        before=file_hash(disk)
         truth={'p1:'+key:value for key,value in original.items()}
         with native_source(disk,root) as (_,source,backing):
             backing_before=file_hash(backing)
+            # Mount completion and DevicePath publication can precede storage
+            # geometry readiness. Probe only this owned VHD with the existing
+            # admin runner; later limited-parent checks still require denial.
+            for attempt in range(40):
+                baseline=subprocess.run([str(binary),'inspect','--source',str(source),'--json'],capture_output=True,text=True,encoding='utf-8',timeout=15)
+                if baseline.returncode==0:break
+                if 'IO_ERROR' not in baseline.stderr:break
+                time.sleep(.25)
+            check(baseline.returncode==0,'owned VHD baseline read failed before broker: '+baseline.stdout+' '+baseline.stderr)
+            layout=json.loads(baseline.stdout)['layout']
+            check(layout['bytes']==disk.stat().st_size and len(layout['regions'])==1,'owned VHD baseline geometry differs')
+            cases.append('owned_vhd_readable_before_permission_handoff')
             if limited:
                 denied=invoke(['inspect','--source',source,'--json'])
                 check(denied.returncode==4 and 'IO_ERROR' in denied.stderr and 'os error 5' in denied.stderr,'limited parent unexpectedly read the device without a grant: '+denied.stdout+denied.stderr)
