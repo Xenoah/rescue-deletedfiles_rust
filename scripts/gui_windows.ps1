@@ -7,6 +7,10 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
+[ComImport,Guid("71C6E74C-0F28-11D8-A82A-00065B84435C"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+public interface RescueInputProfileManager {
+    void ActivateProfile(uint type,ushort language,ref Guid service,ref Guid profile,IntPtr layout,uint flags);
+}
 public static class RescueOwnedWindow {
     [DllImport("advapi32.dll", SetLastError=true)]
     static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
@@ -54,19 +58,26 @@ public static class RescueOwnedWindow {
     [DllImport("imm32.dll")] static extern bool ImmIsIME(IntPtr layout);
     [DllImport("imm32.dll", CharSet=CharSet.Unicode)] static extern uint ImmGetDescription(IntPtr layout,System.Text.StringBuilder text,uint size);
     [DllImport("imm32.dll")] static extern IntPtr ImmGetDefaultIMEWnd(IntPtr hwnd);
-    public static string EnableJapaneseIme(IntPtr hwnd) {
-        IntPtr layout=LoadKeyboardLayout("E0010411",1);
-        if(layout==IntPtr.Zero)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        UIntPtr result;
-        if(SendMessageTimeout(hwnd,0x50,UIntPtr.Zero,layout,2,5000,out result)==IntPtr.Zero)throw new Exception("Owned GUI did not accept Japanese input-language request");
-        layout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
-        if(!ImmIsIME(layout) || (layout.ToInt64()&65535)!=0x411)throw new Exception("Japanese native IME is not installed/active: "+layout.ToInt64());
+    public static string EnableJapaneseIme(IntPtr hwnd,string serviceId,string profileId) {
+        // Modern Microsoft IME is a TSF profile; the old E0010411 HKL can
+        // silently return the English fallback even with Japanese FOD present.
+        Guid service=new Guid(serviceId),profile=new Guid(profileId);
+        var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
+        try {manager.ActivateProfile(1,0x411,ref service,ref profile,IntPtr.Zero,0x20000005);}
+        finally {Marshal.ReleaseComObject(manager);}
+        IntPtr layout=IntPtr.Zero;
+        for(int i=0;i<30;i++) {
+            System.Threading.Thread.Sleep(100);
+            layout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
+            if((layout.ToInt64()&65535)==0x411)break;
+        }
+        if((layout.ToInt64()&65535)!=0x411)throw new Exception("Japanese TSF profile did not activate for the owned GUI: "+layout.ToInt64());
         var description=new System.Text.StringBuilder(256);ImmGetDescription(layout,description,256);
-        IntPtr ime=ImmGetDefaultIMEWnd(hwnd);
+        IntPtr ime=ImmGetDefaultIMEWnd(hwnd);UIntPtr result;
         if(ime==IntPtr.Zero)throw new Exception("Owned GUI has no native IME window");
         SendMessageTimeout(ime,0x283,new UIntPtr(6),new IntPtr(1),2,5000,out result);
         SendMessageTimeout(ime,0x283,new UIntPtr(2),new IntPtr(0x19),2,5000,out result);
-        return description.ToString()+" / HKL="+layout.ToInt64();
+        return description.ToString()+" / TSF="+serviceId+"/"+profileId+" / HKL="+layout.ToInt64()+" / IMM="+ImmIsIME(layout);
     }
     public static void RomanKeys(string value) {foreach(char c in value) Tap((ushort)Char.ToUpperInvariant(c));}
     [StructLayout(LayoutKind.Sequential)]
@@ -240,7 +251,11 @@ function Set-ImeQuery {
     Set-WinUserLanguageList $languages -Force
     $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
     [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
-    $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle)
+    $tips=@((Get-WinUserLanguageList|Where-Object LanguageTag -eq 'ja-JP').InputMethodTips)
+    $script:imeDiagnostic=@{tips=$tips}
+    $tip=$tips|Where-Object {$_ -match '\{[0-9A-Fa-f-]+\}\{[0-9A-Fa-f-]+\}'}|Select-Object -First 1
+    if (!$tip -or $tip -notmatch '(\{[0-9A-Fa-f-]+\})(\{[0-9A-Fa-f-]+\})') {throw "Japanese TSF profile is not registered: $tips"}
+    $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$Matches[1],$Matches[2])
     Start-Sleep -Milliseconds 500
     [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(27)
     Start-Sleep -Milliseconds 300
@@ -366,7 +381,7 @@ try {
     @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
-    $evidence = @{status='failed';gui_token=$script:guiToken;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
+    $evidence = @{status='failed';gui_token=$script:guiToken;native_ime_debug=$script:imeDiagnostic;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
     try {
         $evidence.window_title=$script:owned.MainWindowTitle
         $evidence.root_name=$script:root.Current.Name
