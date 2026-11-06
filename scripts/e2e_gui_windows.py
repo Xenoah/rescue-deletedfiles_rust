@@ -4,7 +4,7 @@ This initial suite verifies UIA actions and names, not a physical keyboard, a
 screen-reader product, or an installed Japanese IME. Only its own process and
 regular fixture files are touched. Failed-tree evidence is kept for diagnosis.
 """
-import argparse,json,platform,subprocess,tempfile,zipfile
+import argparse,json,os,platform,subprocess,tempfile,zipfile
 from contextlib import nullcontext
 from pathlib import Path
 from e2e import check
@@ -23,7 +23,9 @@ def main(binary,output,limited=False):
         if entry['path'].name=='sample.txt':entry['path']=entry['path'].with_name('原文.txt')
     truth,_=ntfs_image(source,corpus,'fragmented');before=file_hash(source)
     config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文'},ensure_ascii=False),encoding='utf-8')
-    command=['powershell.exe','-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
+    powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
+    check(powershell.is_file(),'system PowerShell executable is missing')
+    command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
     if limited:
         from windows_test_user import interactive_test_user
         from windows_restricted import run_limited
