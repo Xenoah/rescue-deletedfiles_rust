@@ -1,7 +1,10 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 #[macro_use]
 mod language;
+#[cfg(test)]
+mod accessibility;
 mod acquisition_ui;
+mod columns;
 mod discovery_ui;
 mod index_ui;
 mod preview_ui;
@@ -9,6 +12,7 @@ mod raid_ui;
 #[cfg(windows)]
 mod read_access_ui;
 mod session_ui;
+mod text_input;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -124,6 +128,7 @@ struct App {
     focused: Option<String>,
     filter: String,
     view: ViewStyle,
+    column_widths: [f32; 5],
     sort: SortColumn,
     descending: bool,
     group: GroupBy,
@@ -263,6 +268,7 @@ impl App {
             focused: None,
             filter: String::new(),
             view: ViewStyle::Details,
+            column_widths: columns::DEFAULT,
             sort: SortColumn::Name,
             descending: false,
             group: GroupBy::None,
@@ -1095,7 +1101,7 @@ impl App {
                 ui.selectable_value(&mut self.view, ViewStyle::Details, tr!("詳細", "Details"));
                 ui.selectable_value(&mut self.view, ViewStyle::Icons, tr!("アイコン", "Icons"));
                 ui.separator();
-                ui.label(tr!("グループ", "Group"));
+                let group_label = ui.label(tr!("グループ", "Group"));
                 egui::ComboBox::from_id_salt("group")
                     .selected_text(self.group.label())
                     .show_ui(ui, |ui| {
@@ -1105,7 +1111,9 @@ impl App {
                                 self.view_dirty = true;
                             }
                         }
-                    });
+                    })
+                    .response
+                    .labelled_by(group_label.id);
                 ui.checkbox(
                     &mut self.show_evidence,
                     tr!("復元の根拠", "Recovery evidence"),
@@ -1122,15 +1130,16 @@ impl App {
                 }
             });
             ui.horizontal_wrapped(|ui| {
-                ui.label(tr!("結果を検索", "Search results"));
-                if ui
-                    .add(
-                        egui::TextEdit::singleline(&mut self.filter)
-                            .id(egui::Id::new("result-search"))
-                            .desired_width(280.0)
-                            .hint_text(tr!("名前・元のパス", "Name or original path")),
-                    )
-                    .changed()
+                let search_label = ui.label(tr!("結果を検索", "Search results"));
+                if text_input::singleline(
+                    ui,
+                    &mut self.filter,
+                    egui::Id::new("result-search"),
+                    search_label.id,
+                    280.0,
+                    tr!("名前・元のパス", "Name or original path"),
+                )
+                .changed()
                 {
                     self.view_dirty = true;
                 }
@@ -1195,29 +1204,34 @@ impl App {
             return;
         };
         egui::ScrollArea::horizontal().show(ui, |ui| {
-            ui.set_min_width(1030.0);
+            ui.set_min_width((self.column_widths.iter().sum::<f32>() + 173.0).max(1030.0));
+            let top = ui.cursor().top();
+            let spacing = ui.spacing().item_spacing.x;
+            let mut edges = [0.0; 5];
             TableBuilder::new(ui)
                 .id_salt("files-table")
-                .resizable(true)
                 .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                 .column(Column::exact(27.0))
-                .column(Column::initial(250.0).at_least(140.0))
-                .column(Column::initial(178.0).at_least(110.0))
-                .column(Column::initial(178.0).at_least(110.0))
-                .column(Column::initial(105.0).at_least(70.0))
-                .column(Column::initial(90.0).at_least(65.0))
+                .column(Column::exact(self.column_widths[0]))
+                .column(Column::exact(self.column_widths[1]))
+                .column(Column::exact(self.column_widths[2]))
+                .column(Column::exact(self.column_widths[3]))
+                .column(Column::exact(self.column_widths[4]))
                 .column(Column::remainder().at_least(90.0))
                 .header(32.0, |mut row| {
                     row.col(|_| {});
-                    for (col, label) in [
+                    for (index, (col, label)) in [
                         (SortColumn::Name, tr!("名前", "Name")),
                         (SortColumn::Created, tr!("作成日時", "Date created")),
                         (SortColumn::Modified, tr!("更新日時", "Date modified")),
                         (SortColumn::Type, tr!("種類", "Type")),
                         (SortColumn::Size, tr!("サイズ", "Size")),
                         (SortColumn::State, tr!("状態", "Status")),
-                    ] {
-                        row.col(|ui| {
+                    ]
+                    .into_iter()
+                    .enumerate()
+                    {
+                        let (rect, _) = row.col(|ui| {
                             let text = format!(
                                 "{label}{}",
                                 if self.sort == col {
@@ -1226,10 +1240,17 @@ impl App {
                                     ""
                                 }
                             );
-                            if ui.selectable_label(self.sort == col, text).clicked() {
+                            let response = ui.selectable_label(self.sort == col, text);
+                            if let Some(width) = self.column_widths.get_mut(index) {
+                                columns::keyboard_width(ui, &response, width, index);
+                            }
+                            if response.clicked() {
                                 sort_clicked = Some(col);
                             }
                         });
+                        if let Some(edge) = edges.get_mut(index) {
+                            *edge = rect.right() + spacing * 0.5;
+                        }
                     }
                 })
                 .body(|body| {
@@ -1287,6 +1308,9 @@ impl App {
                                     if response.changed() {
                                         set_selected(&mut self.selected, &c.id, checked);
                                     }
+                                    if response.changed() || response.has_focus() {
+                                        self.focused = Some(c.id.clone());
+                                    }
                                 });
                                 row.col(|ui| {
                                     ui.horizontal(|ui| {
@@ -1301,11 +1325,11 @@ impl App {
                                                 "{}\n{}",
                                                 c.original_path, c.id
                                             ));
-                                        if label.clicked() {
+                                        if label.has_focus() || label.clicked() {
                                             self.focused = Some(c.id.clone());
-                                            if c.supported && !busy {
-                                                set_selected(&mut self.selected, &c.id, !checked);
-                                            }
+                                        }
+                                        if label.clicked() && c.supported && !busy {
+                                            set_selected(&mut self.selected, &c.id, !checked);
                                         }
                                     });
                                 });
@@ -1350,6 +1374,13 @@ impl App {
                         }
                     })
                 });
+            columns::boundaries(
+                ui,
+                &edges,
+                top,
+                ui.min_rect().bottom(),
+                &mut self.column_widths,
+            );
         });
         if let Some(col) = sort_clicked {
             if self.sort == col {
@@ -1866,11 +1897,14 @@ fn responsive_modal(ctx: &egui::Context, name: &str, max_width: f32) -> egui::Mo
 fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) {
     let label_id = ui.label(label).id;
     ui.horizontal(|ui| {
-        ui.add_sized(
-            [(ui.available_width() - 72.0).max(40.0), 28.0],
-            egui::TextEdit::singleline(value).id_salt(label),
-        )
-        .labelled_by(label_id);
+        text_input::singleline(
+            ui,
+            value,
+            ui.make_persistent_id(label),
+            label_id,
+            (ui.available_width() - 72.0).max(40.0),
+            "",
+        );
         if ui
             .add_sized([64.0, 28.0], egui::Button::new(tr!("参照", "Browse")))
             .on_hover_text(tr_format!("{label}を選択", "Choose {label}"))
@@ -1896,13 +1930,14 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
 }
 fn text_row(ui: &mut egui::Ui, label: &str, value: &mut String, hint: &str) {
     let label_id = ui.label(label).id;
-    ui.add_sized(
-        [ui.available_width(), 28.0],
-        egui::TextEdit::singleline(value)
-            .id_salt(label)
-            .hint_text(hint),
-    )
-    .labelled_by(label_id);
+    text_input::singleline(
+        ui,
+        value,
+        ui.make_persistent_id(label),
+        label_id,
+        ui.available_width(),
+        hint,
+    );
 }
 fn folder_icon(ui: &mut egui::Ui, size: f32) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
@@ -2296,7 +2331,7 @@ mod tests {
             }
         }
     }
-    fn session(fs: FileSystem) -> Session {
+    pub(super) fn session(fs: FileSystem) -> Session {
         Session {
             source_info: None,
             raid: None,

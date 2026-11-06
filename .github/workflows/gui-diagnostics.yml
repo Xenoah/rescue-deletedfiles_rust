@@ -1,0 +1,46 @@
+name: Windows GUI accessibility diagnostics
+on:
+  push:
+    branches: ['v1-ui-*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: gui-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PYTHONUTF8: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+jobs:
+  gui:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-2022-x64-rust-1.99.1-
+      - run: cargo fetch --locked
+      - run: python scripts/ci_command.py cargo test -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Native UIA settings, Unicode names, selection and exact recovery
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-results.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-gui-diagnostics
+          path: |
+            gui-native-results.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/std*.txt
+          if-no-files-found: ignore
