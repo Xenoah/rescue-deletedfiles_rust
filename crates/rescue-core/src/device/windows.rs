@@ -14,7 +14,7 @@ use windows_sys::Win32::{
     System::{
         IO::DeviceIoControl,
         Ioctl::{
-            FSCTL_ALLOW_EXTENDED_DASD_IO, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX,
+            FSCTL_ALLOW_EXTENDED_DASD_IO, IOCTL_DISK_GET_DRIVE_GEOMETRY,
             IOCTL_DISK_GET_LENGTH_INFO, IOCTL_STORAGE_GET_DEVICE_NUMBER,
             IOCTL_STORAGE_QUERY_PROPERTY,
         },
@@ -132,7 +132,11 @@ pub fn info(file: &File, _path: &Path) -> Result<DeviceInfo> {
             .try_into()
             .map_err(|_| Error::Invalid("disk length query".into()))?,
     );
-    let geometry = control(file, IOCTL_DISK_GET_DRIVE_GEOMETRY_EX, &[], 1024)?;
+    // Extended geometry also requests partition metadata. A readable disk with
+    // a damaged/uninitialized layout can reject that query (ERROR_IO_DEVICE).
+    // Recovery needs the basic sector geometry and the independent length,
+    // never a valid OS partition inventory as a prerequisite for opening it.
+    let geometry = control(file, IOCTL_DISK_GET_DRIVE_GEOMETRY, &[], 24)?;
     let sector = u32_at(&geometry, 20)?;
     let serial = control(file, IOCTL_STORAGE_QUERY_PROPERTY, &[0; 12], 4096)
         .ok()
