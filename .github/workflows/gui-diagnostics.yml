@@ -4,6 +4,10 @@ on:
     branches: ['v1-ui-*']
   workflow_dispatch:
     inputs:
+      diagnostic_run:
+        description: Reuse an earlier diagnostic executable with identical product sources; 0 rebuilds
+        type: number
+        default: 0
       legacy_cross_user:
         description: Rerun known cross-logon transport and scheduled-token diagnostics
         type: boolean
@@ -11,7 +15,7 @@ on:
       native_run:
         description: Existing successful native CI run with identical product sources; 0 rebuilds
         type: number
-        default: 42235348093
+        default: 0
 permissions:
   contents: read
   actions: read
@@ -34,7 +38,7 @@ jobs:
           python-version: '3.12'
       - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - uses: actions/cache/restore@v4
-        if: ${{ !(inputs.native_run > 0) }}
+        if: ${{ !(inputs.native_run > 0) && !(inputs.diagnostic_run > 0) }}
         with:
           path: |
             ~/.cargo/registry
@@ -43,11 +47,11 @@ jobs:
           key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
           restore-keys: windows-2022-x64-rust-1.99.1-
       - run: cargo fetch --locked
-        if: ${{ !(inputs.native_run > 0) }}
+        if: ${{ !(inputs.native_run > 0) && !(inputs.diagnostic_run > 0) }}
       - run: python scripts/ci_command.py cargo test -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
-        if: ${{ !(inputs.native_run > 0) }}
+        if: ${{ !(inputs.native_run > 0) && !(inputs.diagnostic_run > 0) }}
       - run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
-        if: ${{ !(inputs.native_run > 0) }}
+        if: ${{ !(inputs.native_run > 0) && !(inputs.diagnostic_run > 0) }}
       - name: Require identical product sources for artifact diagnostics
         if: ${{ inputs.native_run > 0 }}
         shell: bash
@@ -77,6 +81,25 @@ jobs:
           with zipfile.ZipFile(next(root.glob('*-portable.zip'))) as archive:
               for name,kind in [('rescue.exe','cli'),('rescue-gui.exe','gui')]:
                   data=archive.read(name); assert hashlib.sha256(data).hexdigest()==proof['portable_'+kind+'_sha256']; (destination/name).write_bytes(data)
+          PYTHON
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.diagnostic_run > 0 }}
+        with:
+          name: gui-compiled-executable
+          path: diagnostic-built
+          run-id: ${{ inputs.diagnostic_run }}
+          github-token: ${{ github.token }}
+      - name: Check diagnostic executable source and bytes
+        if: ${{ inputs.diagnostic_run > 0 }}
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json,subprocess,shutil
+          from pathlib import Path
+          root=Path('diagnostic-built'); record=json.loads((root/'compiled-provenance.json').read_text())
+          subprocess.run(['git','diff','--exit-code',record['commit'],'--','Cargo.toml','Cargo.lock','crates'],check=True)
+          binary=root/'rescue-gui.exe'; assert hashlib.sha256(binary.read_bytes()).hexdigest()==record['sha256']
+          target=Path('target/x86_64-pc-windows-msvc/release'); target.mkdir(parents=True,exist_ok=True); shutil.copy2(binary,target/binary.name)
           PYTHON
       - name: Install Japanese input support for the native IME test
         continue-on-error: true
@@ -134,6 +157,22 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-ime.json --desktop-token --ime
+      - name: Preserve compiled executable for subsequent diagnostics
+        if: ${{ always() && hashFiles('target/x86_64-pc-windows-msvc/release/rescue-gui.exe') != '' }}
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json,os,shutil
+          from pathlib import Path
+          binary=Path('target/x86_64-pc-windows-msvc/release/rescue-gui.exe'); root=Path('diagnostic-built'); root.mkdir(exist_ok=True)
+          shutil.copy2(binary,root/binary.name)
+          (root/'compiled-provenance.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'run':os.environ['GITHUB_RUN_ID'],'sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'scope':'Compiled diagnostic executable only; not package or acceptance evidence.'}))
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        if: ${{ always() && hashFiles('diagnostic-built/compiled-provenance.json') != '' }}
+        with:
+          name: gui-compiled-executable
+          path: diagnostic-built/*
       - uses: actions/upload-artifact@v4
         if: always()
         with:

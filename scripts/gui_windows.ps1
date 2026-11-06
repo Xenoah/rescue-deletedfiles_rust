@@ -247,15 +247,17 @@ function Set-ImeQuery {
     # Register an already-installed Microsoft IME in this disposable user's
     # language list. Restore the original list in finally, even on failure.
     $script:priorLanguages=Get-WinUserLanguageList
+    $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
+    $installed="HKLM:\SOFTWARE\Microsoft\CTF\TIP\$service\LanguageProfile\0x00000411\$profile"
+    if (!(Test-Path -LiteralPath $installed)) {throw 'The installed Japanese Microsoft IME TSF registration is missing'}
     $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
+    $languages[1].InputMethodTips.Clear();$languages[1].InputMethodTips.Add("0411:$service$profile")
     Set-WinUserLanguageList $languages -Force
     $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
     [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
     $tips=@((Get-WinUserLanguageList|Where-Object LanguageTag -eq 'ja-JP').InputMethodTips)
-    $script:imeDiagnostic=@{tips=$tips}
-    $tip=$tips|Where-Object {$_ -match '\{[0-9A-Fa-f-]+\}\{[0-9A-Fa-f-]+\}'}|Select-Object -First 1
-    if (!$tip -or $tip -notmatch '(\{[0-9A-Fa-f-]+\})(\{[0-9A-Fa-f-]+\})') {throw "Japanese TSF profile is not registered: $tips"}
-    $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$Matches[1],$Matches[2])
+    $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
+    $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
     Start-Sleep -Milliseconds 500
     [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(27)
     Start-Sleep -Milliseconds 300
