@@ -27,7 +27,7 @@ def silent_admin_consent():
             if not proof['restored']:raise RuntimeError('UAC consent policy was not restored')
 
 
-def run_limited(command, *, token, timeout=60):
+def run_limited(command, *, token, timeout=60, kill_tree=False):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -56,7 +56,7 @@ def run_limited(command, *, token, timeout=60):
     terminate=api(kernel,'TerminateProcess',[w.HANDLE,w.UINT])
     def checked(value):
         if not value:raise c.WinError(c.get_last_error())
-    limited=token;process=Process()
+    limited=token;process=Process();job=None
     try:
         elevation=w.DWORD();returned=w.DWORD()
         checked(get_info(limited,20,c.byref(elevation),c.sizeof(elevation),c.byref(returned)))
@@ -77,7 +77,12 @@ def run_limited(command, *, token, timeout=60):
                 start.lpDesktop='winsta0\\default'
                 start.hStdInput,start.hStdOutput,start.hStdError=handles
                 args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
-                checked(create(limited,0,args[0],text,0x08000000,None,None,c.byref(start),c.byref(process)))
+                checked(create(limited,0,args[0],text,0x08000000|(4 if kill_tree else 0),None,None,c.byref(start),c.byref(process)))
+                if kill_tree:
+                    from windows_job import owned_process_job
+                    job=owned_process_job(process.hProcess)
+                    resume=api(kernel,'ResumeThread',[w.HANDLE],w.DWORD)
+                    if resume(process.hThread)==0xffffffff:raise c.WinError(c.get_last_error())
                 outcome=wait(process.hProcess,int(timeout*1000))
                 if outcome!=0:
                     terminate(process.hProcess,124);wait(process.hProcess,5000)
@@ -85,8 +90,11 @@ def run_limited(command, *, token, timeout=60):
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
+                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
                 return result
     finally:
+        if kill_tree and process.hProcess and not job:
+            terminate(process.hProcess,124);wait(process.hProcess,5000)
+        if job:close(job)
         for handle in [process.hThread,process.hProcess]:
             if handle:close(handle)
