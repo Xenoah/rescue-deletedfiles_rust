@@ -1,4 +1,4 @@
-name: Retry hosted runner allocation failures
+name: Retry hosted runner and artifact delivery failures
 on:
   workflow_run:
     workflows: [Verify and release, Verify actual published packages]
@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 2
     steps:
-      - name: Retry only failures before any runner steps, at most three attempts
+      - name: Retry runner allocation or artifact-only failures, at most three attempts
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -48,9 +48,21 @@ jobs:
               raise SystemExit(0)
           data=api('repos/'+repo+'/actions/runs/'+run_id+'/jobs?filter=latest&per_page=100')
           failed=[job for job in data['jobs'] if job['conclusion']=='failure']
-          if data['total_count']>100 or not failed or any(job.get('steps')!=[] for job in failed):
-              print('A runner executed steps, or no allocation-only failure was identified; no automatic retry.')
+          def infrastructure_only(job):
+              steps=job.get('steps')
+              if steps==[]:
+                  return True
+              if not isinstance(steps,list):
+                  return False
+              failures=[step for step in steps if step.get('conclusion')=='failure']
+              # A package/test/assembly failure is never retried by this rule.
+              # Existing tagged workflows use the default upload action name.
+              return bool(failures) and all(step.get('name') in (
+                  'Run actions/upload-artifact@v4', 'Upload fully assembled preview',
+                  'Upload native distributions') for step in failures)
+          if data['total_count']>100 or not failed or not all(infrastructure_only(job) for job in failed):
+              print('Failure is not exclusively runner allocation or artifact delivery; no automatic retry.')
               raise SystemExit(0)
-          print('Retrying failed jobs that never acquired a runner:',run_id)
+          print('Retrying failed jobs with allocation/artifact-only failures:',run_id)
           subprocess.run(['gh','run','rerun',run_id,'--failed'],check=True,timeout=30)
           PYCODE
