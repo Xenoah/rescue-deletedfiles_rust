@@ -276,7 +276,7 @@ function Set-ImeQuery {
     Start-Sleep -Milliseconds 500
     [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 500
     $cancelTrace=@()
-    for ($press=1;$press -le 3;$press++) {
+    for ($press=1;$press -le 2;$press++) {
         [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
         $edit=Await-Control 'Search results' 'Edit'
         $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
@@ -292,7 +292,7 @@ function Set-ImeQuery {
         $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
     } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
     if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
-    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=3;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
+    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
     $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
 }
 function Snapshot {
@@ -417,12 +417,15 @@ try {
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
 } finally {
-    if ($script:priorLanguages) {
-        Set-WinUserLanguageList $script:priorLanguages -Force
-        if ($null -ne $script:owned -and !$script:owned.HasExited) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-    }
-    if ($null -ne $script:owned) {
-        $script:owned.Refresh()
-        if (!$script:owned.HasExited) { $null = $script:owned.CloseMainWindow(); if (!$script:owned.WaitForExit(5000)) {$script:owned.Kill();$script:owned.WaitForExit()} }
+    try {
+        if ($script:priorLanguages) {
+            Set-WinUserLanguageList $script:priorLanguages -Force
+            if ($null -ne $script:owned -and !$script:owned.HasExited) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
+        }
+    } finally {
+        if ($null -ne $script:owned) {
+            $script:owned.Refresh()
+            if (!$script:owned.HasExited) { $null = $script:owned.CloseMainWindow(); if (!$script:owned.WaitForExit(5000)) {$script:owned.Kill();$script:owned.WaitForExit()} }
+        }
     }
 }

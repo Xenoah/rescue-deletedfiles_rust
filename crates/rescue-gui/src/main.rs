@@ -6,6 +6,8 @@ mod accessibility;
 mod acquisition_ui;
 mod columns;
 mod discovery_ui;
+#[cfg(any(windows, test))]
+mod ime;
 mod index_ui;
 mod preview_ui;
 mod raid_ui;
@@ -133,6 +135,8 @@ struct App {
     selected: BTreeSet<String>,
     focused: Option<String>,
     filter: String,
+    #[cfg(any(windows, test))]
+    ime: ime::Composition,
     view: ViewStyle,
     column_widths: [f32; 5],
     sort: SortColumn,
@@ -278,6 +282,8 @@ impl App {
             selected: BTreeSet::new(),
             focused: None,
             filter: String::new(),
+            #[cfg(any(windows, test))]
+            ime: ime::Composition::default(),
             view: ViewStyle::Details,
             column_widths: columns::DEFAULT,
             sort: SortColumn::Name,
@@ -2371,6 +2377,12 @@ impl App {
     }
 }
 impl eframe::App for App {
+    #[cfg(windows)]
+    fn raw_input_hook(&mut self, ctx: &egui::Context, input: &mut egui::RawInput) {
+        self.ime
+            .normalize(ctx.memory(|memory| memory.focused()), &mut input.events);
+    }
+
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.receive();
         self.render(ctx);

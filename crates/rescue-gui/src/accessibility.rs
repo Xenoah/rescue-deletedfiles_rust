@@ -3,7 +3,9 @@
 use super::*;
 use egui::accesskit::{Node, NodeId, TreeUpdate};
 
-fn frame(ctx: &egui::Context, app: &mut App, events: Vec<egui::Event>) -> TreeUpdate {
+fn frame(ctx: &egui::Context, app: &mut App, mut events: Vec<egui::Event>) -> TreeUpdate {
+    app.ime
+        .normalize(ctx.memory(|memory| memory.focused()), &mut events);
     ctx.run(
         egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
@@ -438,4 +440,38 @@ fn recovery_completion_moves_keyboard_focus_to_the_saved_report() {
     assert_eq!(name(&tree, tree.focus), "Saved locations and reports");
     key(&ctx, &mut app, egui::Key::Space, egui::Modifiers::NONE);
     assert!(app.show_report);
+}
+
+#[test]
+fn windows_ime_cancel_without_empty_preedit_keeps_committed_text_and_next_conversion() {
+    let (ctx, mut app) = app();
+    ctx.memory_mut(|memory| memory.request_focus(egui::Id::new("result-search")));
+    frame(&ctx, &mut app, vec![]);
+    // egui-winit maps Windows Preedit("", None) to Disabled. There can be
+    // another Disabled after Commit; neither may erase committed text.
+    for event in [
+        egui::ImeEvent::Enabled,
+        egui::ImeEvent::Preedit("日本語".into()),
+        egui::ImeEvent::Disabled,
+        egui::ImeEvent::Commit("日本語".into()),
+        egui::ImeEvent::Disabled,
+        egui::ImeEvent::Enabled,
+        egui::ImeEvent::Preedit("とりけし".into()),
+        egui::ImeEvent::Disabled,
+    ] {
+        frame(&ctx, &mut app, vec![egui::Event::Ime(event)]);
+    }
+    assert_eq!(app.filter, "日本語");
+    for event in [
+        egui::ImeEvent::Enabled,
+        egui::ImeEvent::Preedit("げんぶん".into()),
+        egui::ImeEvent::Preedit("原文".into()),
+        egui::ImeEvent::Disabled,
+        egui::ImeEvent::Commit("原文".into()),
+        egui::ImeEvent::Disabled,
+    ] {
+        frame(&ctx, &mut app, vec![egui::Event::Ime(event)]);
+    }
+    assert_eq!(app.filter, "日本語原文");
+    assert_eq!(app.selected.len(), 1);
 }
