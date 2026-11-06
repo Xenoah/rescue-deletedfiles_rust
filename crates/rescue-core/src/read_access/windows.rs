@@ -20,6 +20,7 @@ use windows_sys::Win32::{
     UI::{Shell::*, WindowsAndMessaging::SW_HIDE},
 };
 
+mod receiver;
 const FLAG: &str = "--rescue-read-broker";
 const FRAME: usize = 4096;
 static GRANTS: OnceLock<Mutex<BTreeMap<PathBuf, File>>> = OnceLock::new();
@@ -217,13 +218,13 @@ fn remember(path: PathBuf, file: File) -> Result<()> {
 
 struct Pipe {
     file: File,
-    deadline: Instant,
+    deadline: Option<Instant>,
 }
-fn wait(deadline: Instant, cancel: &AtomicBool) -> Result<()> {
+fn wait(deadline: Option<Instant>, cancel: &AtomicBool) -> Result<()> {
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
     }
-    if Instant::now() >= deadline {
+    if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
         return Err(Error::Request("read broker IPC timed out".into()));
     }
     std::thread::sleep(Duration::from_millis(10));
@@ -242,6 +243,9 @@ impl Pipe {
         .concat();
         let mut at = 0;
         while at < bytes.len() {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
             match self.file.write(&bytes[at..]) {
                 Ok(n) if n > 0 => at += n,
                 Ok(_) => wait(self.deadline, cancel)?,
@@ -256,6 +260,9 @@ impl Pipe {
     fn exact(&mut self, bytes: &mut [u8], cancel: &AtomicBool) -> Result<()> {
         let mut at = 0;
         while at < bytes.len() {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
             // std::fs::File maps ERROR_NO_DATA to EOF on Windows. A nonblocking
             // pipe without a frame yet must instead wait; preserve ReadFile's
             // native error so absence of data cannot look like a disconnected peer.
@@ -293,8 +300,13 @@ impl Pipe {
         if length == 0 || length > FRAME {
             return Err(Error::Limit("read broker frame".into()));
         }
+        let previous = self.deadline;
+        if previous.is_none() {
+            self.deadline = Some(Instant::now() + Duration::from_secs(30));
+        }
         let mut bytes = vec![0; length];
         self.exact(&mut bytes, cancel)?;
+        self.deadline = previous;
         Ok(serde_json::from_slice(&bytes)?)
     }
 }
@@ -372,8 +384,17 @@ fn server(nonce: &str) -> Result<Pipe> {
     std::mem::forget(handle);
     Ok(Pipe {
         file: unsafe { File::from_raw_handle(raw) },
-        deadline: Instant::now() + Duration::from_secs(30),
+        deadline: Some(Instant::now() + Duration::from_secs(30)),
     })
+}
+fn verify_client(pipe: &Pipe, expected: u32) -> Result<()> {
+    let mut peer = 0;
+    if unsafe { GetNamedPipeClientProcessId(pipe.file.as_raw_handle(), &mut peer) } == 0
+        || peer != expected
+    {
+        return Err(Error::Request("read handoff client PID mismatch".into()));
+    }
+    Ok(())
 }
 #[derive(Serialize, Deserialize)]
 struct Request {
@@ -388,16 +409,17 @@ struct Response {
     sector: u32,
     identity: String,
     error: Option<String>,
+    #[serde(default)]
+    cancelled: bool,
 }
 #[derive(Serialize, Deserialize)]
 struct Ack {
     nonce: String,
 }
 
-/// The helper alone owns this bootstrap handle in the parent. The parent makes
-/// its own read-only duplicate, then acknowledges. Every helper exit revokes the
-/// bootstrap, including broken pipes/cancellation, without double-closing a
-/// handle owned by the parent application.
+/// Normal helper completion revokes this bootstrap in the disposable receiver.
+/// If the helper is killed before its destructor runs, receiver termination
+/// revokes it instead. It is never installed in the long-lived GUI/CLI process.
 struct Bootstrap {
     process: HANDLE,
     handle: HANDLE,
@@ -516,6 +538,9 @@ fn read_rights(handle: HANDLE) -> Result<u32> {
 
 pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
     let source = source_path(path)?;
+    if cancel.load(Ordering::Relaxed) {
+        return Err(Error::Cancelled);
+    }
     if let Some(file) = granted(&source)? {
         let info = crate::device::device_info(&file, &source)?;
         return Ok(ReadAccess {
@@ -528,6 +553,32 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
             helper_exited: true,
         });
     }
+    {
+        let entries = grants()
+            .lock()
+            .map_err(|_| Error::Request("read permission registry".into()))?;
+        if entries.len() >= 16 {
+            return Err(Error::Limit("16 read-permitted devices per process".into()));
+        }
+    }
+    let (file, info) = receiver::request(&source, cancel)?;
+    let granted_access = read_rights(file.as_raw_handle())?;
+    remember(source.clone(), file)?;
+    Ok(ReadAccess {
+        source,
+        bytes: info.bytes,
+        sector_size: info.sector,
+        read_only: true,
+        granted_access,
+        parent_elevated: elevated()?,
+        helper_exited: true,
+    })
+}
+
+// Only the disposable, unelevated receiver calls this. An interrupted remote
+// duplication can therefore never leave an unowned handle in the GUI/CLI.
+fn receive_elevated(path: &Path, cancel: &AtomicBool) -> Result<(File, crate::device::DeviceInfo)> {
+    let source = source_path(path)?;
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
     }
@@ -563,7 +614,7 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
         return Err(os_error());
     }
     // UAC consent can take arbitrarily long; IPC's deadline begins afterwards.
-    pipe.deadline = Instant::now() + Duration::from_secs(30);
+    pipe.deadline = Some(Instant::now() + Duration::from_secs(30));
     loop {
         let ok = unsafe { ConnectNamedPipe(pipe.file.as_raw_handle(), std::ptr::null_mut()) };
         let error = std::io::Error::last_os_error();
@@ -583,12 +634,7 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
         }
         wait(pipe.deadline, cancel)?;
     }
-    let mut peer = 0;
-    if unsafe { GetNamedPipeClientProcessId(pipe.file.as_raw_handle(), &mut peer) } == 0
-        || peer != helper_pid
-    {
-        return Err(Error::Request("read broker client PID mismatch".into()));
-    }
+    verify_client(&pipe, helper_pid)?;
     same_executable(helper.0)?;
     pipe.send(
         &Request {
@@ -600,6 +646,9 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
     let response: Response = pipe.receive(cancel)?;
     if response.nonce != nonce {
         return Err(Error::Request("read broker nonce mismatch".into()));
+    }
+    if response.cancelled {
+        return Err(Error::Cancelled);
     }
     if let Some(error) = response.error {
         return Err(Error::Request(format!("read broker: {error}")));
@@ -633,25 +682,17 @@ pub(super) fn request(path: &Path, cancel: &AtomicBool) -> Result<ReadAccess> {
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
     }
-    let granted_access = read_rights(file.as_raw_handle())?;
-    remember(source.clone(), file)?;
-    Ok(ReadAccess {
-        source,
-        bytes: info.bytes,
-        sector_size: info.sector,
-        read_only: true,
-        granted_access,
-        parent_elevated: elevated()?,
-        helper_exited: true,
-    })
+    Ok((file, info))
 }
 
-fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
-    setup_stage(2);
-    if Uuid::parse_str(nonce).is_err() || !elevated()? {
-        return Err(Error::Request(
-            "read broker requires explicit elevation".into(),
-        ));
+fn connect_parent(
+    nonce: &str,
+    parent_pid: u32,
+    parent_created: u64,
+    allow_duplicate: bool,
+) -> Result<(Handle, Pipe)> {
+    if Uuid::parse_str(nonce).is_err() {
+        return Err(Error::Request("read handoff nonce".into()));
     }
     setup_stage(3);
     if session(std::process::id())? != session(parent_pid)? {
@@ -660,7 +701,13 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
     setup_stage(4);
     let parent = Handle::new(unsafe {
         OpenProcess(
-            PROCESS_QUERY_LIMITED_INFORMATION | PROCESS_DUP_HANDLE,
+            PROCESS_QUERY_LIMITED_INFORMATION
+                | SYNCHRONIZE
+                | if allow_duplicate {
+                    PROCESS_DUP_HANDLE
+                } else {
+                    0
+                },
             0,
             parent_pid,
         )
@@ -672,7 +719,7 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
     setup_stage(6);
     same_executable(parent.0)?;
     let cancel = AtomicBool::new(false);
-    let deadline = Instant::now() + Duration::from_secs(30);
+    let deadline = Some(Instant::now() + Duration::from_secs(30));
     setup_stage(7);
     let file = loop {
         // Identification-only SQOS prevents the unelevated pipe server from
@@ -711,7 +758,18 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
         return Err(Error::Request("read broker server PID mismatch".into()));
     }
     setup_stage(10);
-    let mut pipe = Pipe { file, deadline };
+    Ok((parent, Pipe { file, deadline }))
+}
+
+fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
+    setup_stage(2);
+    if Uuid::parse_str(nonce).is_err() || !elevated()? {
+        return Err(Error::Request(
+            "read broker requires explicit elevation".into(),
+        ));
+    }
+    let (parent, mut pipe) = connect_parent(nonce, parent_pid, parent_created, true)?;
+    let cancel = AtomicBool::new(false);
     let request: Request = pipe.receive(&cancel)?;
     if request.nonce != nonce {
         return Err(Error::Request("read broker request mismatch".into()));
@@ -735,6 +793,7 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
                     sector: 0,
                     identity: String::new(),
                     error: Some(error.to_string()),
+                    cancelled: matches!(error, Error::Cancelled),
                 },
                 &cancel,
             )?;
@@ -759,6 +818,7 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
             sector: info.sector,
             identity: info.identity,
             error: None,
+            cancelled: false,
         },
         &cancel,
     )?;
@@ -772,7 +832,10 @@ fn helper(nonce: &str, parent_pid: u32, parent_created: u64) -> Result<()> {
 }
 pub(super) fn entry() -> Option<i32> {
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
-    if args.first().is_none_or(|s| s != FLAG) {
+    if args
+        .first()
+        .is_none_or(|s| s != FLAG && s != receiver::FLAG)
+    {
         return None;
     }
     let result = (|| -> Result<()> {
@@ -793,7 +856,11 @@ pub(super) fn entry() -> Option<i32> {
         let created = args[3]
             .parse()
             .map_err(|_| Error::Request("read broker parent time".into()))?;
-        helper(args[1], pid, created)
+        if args[0] == receiver::FLAG {
+            receiver::run(args[1], pid, created)
+        } else {
+            helper(args[1], pid, created)
+        }
     })();
     Some(match result {
         Ok(()) => 0,
@@ -866,11 +933,84 @@ pub(crate) fn install_transferred(handles: Vec<Transfer>) -> Result<()> {
 mod tests {
     use super::*;
 
+    fn connected() -> (Pipe, File) {
+        let nonce = Uuid::new_v4().to_string();
+        let mut pipe = server(&nonce).unwrap();
+        unsafe {
+            ConnectNamedPipe(pipe.file.as_raw_handle(), std::ptr::null_mut());
+        }
+        let client = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(pipe_name(&nonce))
+            .unwrap();
+        let ok = unsafe { ConnectNamedPipe(pipe.file.as_raw_handle(), std::ptr::null_mut()) };
+        assert!(
+            ok != 0
+                || std::io::Error::last_os_error().raw_os_error()
+                    == Some(ERROR_PIPE_CONNECTED as i32)
+        );
+        pipe.deadline = Some(Instant::now() + Duration::from_secs(2));
+        (pipe, client)
+    }
+
+    #[test]
+    fn peer_identity_and_creation_are_checked_before_any_device_is_opened() {
+        let (pipe, _client) = connected();
+        verify_client(&pipe, std::process::id()).unwrap();
+        assert!(verify_client(&pipe, 0).is_err());
+        let nonce = Uuid::new_v4().to_string();
+        let wrong = creation(unsafe { GetCurrentProcess() }).unwrap() + 1;
+        assert!(
+            matches!(connect_parent(&nonce, std::process::id(), wrong, false), Err(Error::Request(error)) if error.contains("identity changed"))
+        );
+        assert!(
+            matches!(connect_parent("not-a-uuid", std::process::id(), wrong, false), Err(Error::Request(error)) if error.contains("nonce"))
+        );
+    }
+
+    #[test]
+    fn malformed_frames_truncation_deadline_and_pending_consent_cancel_are_bounded() {
+        for bytes in [
+            0u32.to_le_bytes().to_vec(),
+            (FRAME as u32 + 1).to_le_bytes().to_vec(),
+            vec![10, 0, 0],
+            vec![10, 0, 0, 0, b'{'],
+            vec![1, 0, 0, 0, 0xff],
+        ] {
+            let (mut pipe, mut client) = connected();
+            client.write_all(&bytes).unwrap();
+            drop(client);
+            let started = Instant::now();
+            assert!(pipe.receive::<Ack>(&AtomicBool::new(false)).is_err());
+            assert!(started.elapsed() < Duration::from_secs(1));
+        }
+        let (mut pipe, _client) = connected();
+        pipe.deadline = Some(Instant::now() + Duration::from_millis(30));
+        assert!(
+            matches!(pipe.receive::<Ack>(&AtomicBool::new(false)), Err(Error::Request(error)) if error.contains("timed out"))
+        );
+        pipe.deadline = None;
+        assert!(matches!(
+            pipe.receive::<Ack>(&AtomicBool::new(true)),
+            Err(Error::Cancelled)
+        ));
+        assert!(matches!(
+            pipe.send(
+                &Ack {
+                    nonce: "cancelled".into()
+                },
+                &AtomicBool::new(true)
+            ),
+            Err(Error::Cancelled)
+        ));
+    }
+
     #[test]
     fn nonblocking_pipe_waits_for_a_delayed_frame_and_reports_disconnect() {
         let nonce = Uuid::new_v4().to_string();
         let mut inbound = server(&nonce).unwrap();
-        inbound.deadline = Instant::now() + Duration::from_secs(2);
+        inbound.deadline = Some(Instant::now() + Duration::from_secs(2));
         unsafe {
             ConnectNamedPipe(inbound.file.as_raw_handle(), std::ptr::null_mut());
         }
@@ -905,7 +1045,7 @@ mod tests {
         std::thread::sleep(Duration::from_millis(75));
         let mut outbound = Pipe {
             file,
-            deadline: Instant::now() + Duration::from_secs(2),
+            deadline: Some(Instant::now() + Duration::from_secs(2)),
         };
         outbound
             .send(
