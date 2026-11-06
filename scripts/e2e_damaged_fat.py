@@ -69,7 +69,10 @@ def main(binary, output=None):
             check('none is chosen' in p.stderr, p.stderr)
         cases.append('ambiguous valid mirrors are refused, not guessed')
         # Unreadable sector of the first FAT copy in an acquired image.
-        acquired = run(binary, 'image', '--source', clean, '--destination', root / 'image', '--block-size', '4096', '--json')
+        # This 32 MiB FAT volume requires over 8,000 durable 4 KiB writes.
+        # Windows and macOS Intel runners can exceed the usual 30-second CLI
+        # budget; keep the small blocks so the injected gap affects only FAT 1.
+        acquired = run(binary, 'image', '--source', clean, '--destination', root / 'image', '--block-size', '4096', '--json', timeout=180)
         image = Path(acquired['image'])
         mark_gap(image, layout['fat'])
         report, recovered = recover_all(binary, image, root / 'wg', root / 'og', expected=5)
@@ -77,7 +80,7 @@ def main(binary, output=None):
             check(recovered.get(key) == data, f'unreadable FAT sector: {key} not byte-exact')
         cases.append('unreadable first-copy FAT sector served by the second copy')
     result = {'status': 'passed', 'version': subprocess.check_output([str(binary), '--version'], text=True).strip(),
-              'checks': len(cases), 'cases': cases, 'files_byte_exact': len(truth) * 4, 'source_unchanged': True, 'scope': __doc__.strip()}
+              'binary_sha256': sha(binary), 'checks': len(cases), 'cases': cases, 'files_byte_exact': len(truth) * 4, 'source_unchanged': True, 'scope': __doc__.strip()}
     if output:
         Path(output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(result, ensure_ascii=False))

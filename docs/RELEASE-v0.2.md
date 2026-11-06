@@ -62,11 +62,29 @@ CLIの `--stream` にも保存直前の管理情報・割当範囲の再検証�
 
 [操作基準](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/UI_GUIDELINES.md) · [実GUIの照合記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/gui-keyboard-results.json)
 
-Linuxでは70 Rust項目を通過。復元エンジンの25統合群は3 OS・4ネイティブ環境のリリースCIで通過しています。プレビューの独立検査は画像10件・テキスト12件、
+## 破損したUSB・SDとバイナリ書き出し
+
+FAT32の片方のFATコピーが破損・読取不能でも、有効なチェーンを示すコピーが1つだけなら採用します。
+両方が別の有効なチェーンを示す場合は推測せず拒否し、採用したコピーを警告に記録します。
+5条件を検査し、4つの破損条件で5ファイルずつ、計20出力の全バイトを正解と照合します。
+
+通常の復元で不完全になった候補は、GUIの「復元できなかった N 件をバイナリで書き出す」、
+CLIの `export-raw`、MCPの `export_unrecovered` から取り出せます。
+読めない範囲は0で埋めてJSONに位置を記録し、常に未検証のデータとして扱います。
+既存ファイルの上書きと元媒体への書き出しを拒否します。[手順と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/DAMAGED_MEDIA.md)
+
+![復元できなかったデータをバイナリで書き出した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/raw-export-done.png)
+
+## 検証
+
+Rustテストと復元エンジンの27統合群を3 OS・4ネイティブ環境のリリースCIで検証してから公開します。
+各環境でパーサーの変異試験400件も実行し、パニックがないことを確認します。
+プレビューの独立検査は画像10件・テキスト12件、
 破損画像・画素上限・改変した管理情報・取消・タイムアウト・MCP許可範囲を含む11条件です。
 Windowsの権限分離はネイティブVMで実UAC分離トークンの8条件・VHD36ファイル・3プレビュー・64 MiB取得を照合しました。
 Windows実VMのUI Automation（Invoke/Value）で設定〜検索〜選択〜ZIP復元を操作し、2件1,428バイトを照合しました（リリースCIの必須試験）。
-UIAが画面の要素を取得する前にAccessKitの接続を待つよう試験手順を修正しています。テスト用の制限アカウントからのUIA操作と、人が操作するUAC画面の評価は継続中です。公開後はダウンロードした実行ファイルで再検証します。
+UIAが画面の要素を取得する前にAccessKitの接続を待つよう試験手順を修正しています。テスト用の制限アカウントからのUIA操作と、人が操作するUAC画面の評価は継続中です。
+公開後はダウンロードした実行ファイルで、プレビュー・割当範囲・ジョブ契約・名前の履歴・ソース識別・バイナリ書き出し・破損FATを含めて再検証します。
 
 ## 持ち越した画面記録
 

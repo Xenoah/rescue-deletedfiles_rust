@@ -9,7 +9,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 有料製品との性能比較は未測定です。
 
 **alpha.16:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-25統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで通過しています。
+27統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで検証してから公開します。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)

@@ -6,13 +6,13 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.14
+        default: v0.2.0-alpha.16
         required: true
 permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.14' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.16' }}
 jobs:
   test:
     strategy:
@@ -49,9 +49,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Install independent preview and contract validators
+        run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - name: Match test driver and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts/e2e_formats.py scripts/e2e_disks.py scripts/e2e_features.py scripts/e2e_restore.py scripts/e2e_restore_native.py scripts/e2e.py scripts/e2e_jpeg.py scripts/e2e_documents.py scripts/e2e_imaging.py scripts/e2e_imaging_native.py scripts/e2e_ntfs_extents.py scripts/e2e_ntfs_native.py scripts/e2e_discovery.py scripts/e2e_ntfs_remnants.py scripts/e2e_quickformat.py scripts/e2e_raid.py scripts/e2e_raid_native.py scripts/e2e_index.py scripts/e2e_index_carve.py scripts/e2e_index_fat.py scripts/e2e_index_remnants.py scripts/e2e_index_late.py scripts/e2e_index_discovery.py scripts/make_large_fixture.py scripts/make_fat_fixture.py scripts/independent_ntfs.py scripts/make_carve_fixture.py tests/corpus tests/jpeg
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts schemas tests
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |

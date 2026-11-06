@@ -71,7 +71,7 @@ def main(binary, output=None):
         check(sha(image) == before, 'source image changed')
         cases.append('source unchanged')
     result = {'status': 'passed', 'version': subprocess.check_output([str(binary), '--version'], text=True).strip(),
-              'checks': len(cases), 'cases': cases, 'files_byte_exact': 2, 'source_unchanged': True, 'scope': __doc__.strip()}
+              'binary_sha256': sha(binary), 'checks': len(cases), 'cases': cases, 'files_byte_exact': 2, 'source_unchanged': True, 'scope': __doc__.strip()}
     if output:
         Path(output).write_text(json.dumps(result, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     print(json.dumps(result, ensure_ascii=False))

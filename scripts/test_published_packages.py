@@ -34,6 +34,13 @@ from e2e_index_fat import main as index_fat
 from e2e_index_remnants import main as index_remnants
 from e2e_index_late import main as index_late
 from e2e_index_discovery import main as index_discovery
+from e2e_preview import main as preview
+from e2e_allocation_scope import main as allocation_scope
+from e2e_job_contract import main as job_contract
+from e2e_naming import main as naming
+from e2e_source_contract import main as source_contract
+from e2e_export_raw import main as export_raw
+from e2e_damaged_fat import main as damaged_fat
 from verify_package import architecture
 
 
@@ -92,7 +99,9 @@ def main():
     result['imaging_verification']=imaging(binary,(a.output/'imaging-results.json').resolve())
     result['imaging_native_verification']=imaging_native(binary,(a.output/'imaging-native-results.json').resolve())
     for name,suite in [('index',index),('index_carve',index_carve),('index_fat',index_fat),
-                       ('index_remnants',index_remnants),('index_late',index_late),('index_discovery',index_discovery)]:
+                       ('index_remnants',index_remnants),('index_late',index_late),('index_discovery',index_discovery),
+                       ('preview',preview),('allocation_scope',allocation_scope),('job_contract',job_contract),
+                       ('naming',naming),('source_contract',source_contract),('export_raw',export_raw),('damaged_fat',damaged_fat)]:
         result[name+'_verification']=suite(binary,(a.output/(name+'-results.json')).resolve())
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
