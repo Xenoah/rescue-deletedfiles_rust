@@ -1,8 +1,10 @@
 """Temporary desktop access for an owned limited-token process on a hosted VM.
 
 Service-logon runners can have a desktop accessible only through Administrators.
-Keep its existing ACL, add the test token's own user SID without security-edit
-rights, and restore/verify both original ACLs after the child exits.
+Keep its existing ACL, add only the disposable test account's own SID, and
+restore/verify both original ACLs after the child exits. Windows' process
+initialization requires full desktop/window-station access, including their
+standard rights. This grants no disk or file access.
 """
 from contextlib import contextmanager
 import hashlib
@@ -65,13 +67,13 @@ def temporary_desktop_access(token):
     checked(get_info(token,1,token_data,len(token_data),c.byref(returned)))
     sid=SidAttributes.from_buffer(token_data).Sid
     original_station=current();checked(original_station)
-    station=None;desktop=None;changed=[];proof={'scope':'own test token user only; no WRITE_DAC/WRITE_OWNER/DELETE grant','objects':[],'restored':False}
+    station=None;desktop=None;changed=[];proof={'scope':'full desktop/window-station access for the owned disposable account only; exact original ACLs restored','objects':[],'restored':False}
     try:
         station=open_station('winsta0',False,0x60003);checked(station)
         checked(set_station(station))
         try:desktop=open_desktop('default',0,False,0x60081);checked(desktop)
         finally:checked(set_station(original_station))
-        for name,handle,rights in [('window_station',station,0x37f),('desktop',desktop,0x1ff)]:
+        for name,handle,rights in [('window_station',station,0xf037f),('desktop',desktop,0xf01ff)]:
             original,acl,before=descriptor(handle)
             item={'name':name,'permissions':rights,'integrity':integrity_label(handle),'original_acl_sha256':hashlib.sha256(before).hexdigest(),'changed':False,'restored':False};proof['objects'].append(item)
             if acl:
