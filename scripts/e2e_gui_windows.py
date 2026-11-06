@@ -29,7 +29,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
     if limited:
         from windows_test_user import interactive_test_user,desktop_test_user
         from windows_restricted import run_limited
-    with (desktop_test_user() if desktop else interactive_test_user()) if limited else nullcontext(None) as identity:
+    with (desktop_test_user() if desktop else interactive_test_user(load_profile=True)) if limited else nullcontext(None) as identity:
         if limited:
             subprocess.run(['icacls',str(root),'/grant','*'+identity['sid']+':(OI)(CI)M'],check=True,capture_output=True)
             if limited_gui:
@@ -41,7 +41,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
                 launcher.write_text("param([string]$Config)\n$ErrorActionPreference='Stop'\n$c=Get-Content -LiteralPath $Config -Raw -Encoding UTF8|ConvertFrom-Json\n$p=Start-Process -FilePath $c.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $c.root 'stdout.txt') -RedirectStandardError (Join-Path $c.root 'stderr.txt')\n$p.Id|Set-Content -LiteralPath (Join-Path $c.root 'owned-pid.txt') -Encoding UTF8\n$p.WaitForExit()\nexit $p.ExitCode\n",encoding='utf-8-sig')
                 outcomes=[];errors=[]
                 def launch():
-                    try:outcomes.append(run_limited([str(powershell),'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(launcher),'-Config',str(config)],token=identity['token'],timeout=180,kill_tree=True))
+                    try:outcomes.append(run_limited([str(powershell),'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(launcher),'-Config',str(config)],token=identity['token'],timeout=180,kill_tree=True,user_environment=True))
                     except Exception as error:errors.append(error)
                 thread=threading.Thread(target=launch);thread.start()
                 try:
@@ -56,7 +56,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
                 completed.token_profile=outcomes[0].token_profile
                 completed.token_profile['uia_driver']='runner token; only the GUI uses the limited token'
             else:
-                completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True,restricted=identity.get('restricted',False))
+                completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True,restricted=identity.get('restricted',False),user_environment=identity['proof']['profile_loaded'])
         else:
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}

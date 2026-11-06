@@ -2,7 +2,8 @@
 
 The random password exists only in this process. No host account is reused or
 modified. The temporary administrator is deleted in finally, including on test
-failure; no user profile is loaded. The returned token must be UAC-filtered.
+failure. GUI tests can load an owned profile, which is unloaded and deleted.
+The returned token must be UAC-filtered.
 """
 from contextlib import contextmanager
 import os
@@ -78,7 +79,7 @@ def desktop_test_user():
 
 
 @contextmanager
-def interactive_test_user():
+def interactive_test_user(load_profile=False):
     if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('RUNNER_ENVIRONMENT')!='github-hosted':
         raise RuntimeError('test account requires a disposable GitHub-hosted VM')
     import ctypes as c
@@ -86,6 +87,7 @@ def interactive_test_user():
     network=c.WinDLL('netapi32',use_last_error=True)
     security=c.WinDLL('advapi32',use_last_error=True)
     kernel=c.WinDLL('kernel32',use_last_error=True)
+    userenv=c.WinDLL('userenv',use_last_error=True)
     def api(lib,name,args,result=w.BOOL):
         f=getattr(lib,name);f.argtypes=args;f.restype=result;return f
     class User(c.Structure):
@@ -93,6 +95,11 @@ def interactive_test_user():
                   ('home',w.LPWSTR),('comment',w.LPWSTR),('flags',w.DWORD),('script',w.LPWSTR)]
     class Member(c.Structure):_fields_=[('sid',c.c_void_p)]
     class SidAttributes(c.Structure):_fields_=[('sid',c.c_void_p),('attributes',w.DWORD)]
+    class Profile(c.Structure):
+        _fields_=[('size',w.DWORD),('flags',w.DWORD),('username',w.LPWSTR),('path',w.LPWSTR),('default_path',w.LPWSTR),('server',w.LPWSTR),('policy',w.LPWSTR),('handle',w.HANDLE)]
+    load=api(userenv,'LoadUserProfileW',[w.HANDLE,c.POINTER(Profile)])
+    unload=api(userenv,'UnloadUserProfile',[w.HANDLE,w.HANDLE])
+    delete_profile=api(userenv,'DeleteProfileW',[w.LPCWSTR,w.LPCWSTR,w.LPCWSTR])
     add=api(network,'NetUserAdd',[w.LPCWSTR,w.DWORD,c.POINTER(User),c.POINTER(w.DWORD)],w.DWORD)
     remove=api(network,'NetUserDel',[w.LPCWSTR,w.LPCWSTR],w.DWORD)
     group_add=api(network,'NetLocalGroupAddMembers',[w.LPCWSTR,w.LPCWSTR,w.DWORD,c.POINTER(Member),w.DWORD],w.DWORD)
@@ -107,7 +114,7 @@ def interactive_test_user():
     def net_checked(code):
         if code:raise c.WinError(code)
     name='rescue-'+secrets.token_hex(5);password='Rs9!'+secrets.token_urlsafe(32)
-    created=False;token=w.HANDLE();linked=w.HANDLE();admin=c.c_void_p();sid_string=w.LPWSTR()
+    created=False;token=w.HANDLE();linked=w.HANDLE();admin=c.c_void_p();sid_string=w.LPWSTR();profile=Profile()
     proof={'account':'owned disposable local account','logon_type':'interactive','profile_loaded':False,'account_removed':False}
     try:
         user=User(name,password,0,1,None,'Rescue owned native test fixture',0x10001,None);parameter=w.DWORD()
@@ -132,13 +139,27 @@ def interactive_test_user():
         else:raise AssertionError(f'interactive test administrator lacks a UAC split token: type={kind.value}')
         checked(info(selected,1,data,len(data),c.byref(needed)))
         checked(sid_text(SidAttributes.from_buffer(data).sid,c.byref(sid_string)))
+        if load_profile:
+            from windows_restricted import profile_privileges
+            with profile_privileges():
+                profile.size=c.sizeof(profile);profile.flags=1;profile.username=name
+                checked(load(selected,c.byref(profile)))
+            proof['profile_loaded']=True;proof['profile_removed']=False
         yield {'token':selected,'sid':sid_string.value,'proof':proof}
     finally:
         password=None
-        for handle in [linked,token]:
-            if handle:close(handle)
-        if sid_string:free(c.cast(sid_string,c.c_void_p))
-        if admin:free(admin)
-        if created:
-            code=remove(None,name);proof['account_removed']=code==0
-            net_checked(code)
+        try:
+            if profile.handle:
+                from windows_restricted import profile_privileges
+                with profile_privileges():
+                    checked(unload(selected,profile.handle))
+                    checked(delete_profile(sid_string.value,None,None))
+                proof['profile_removed']=True
+        finally:
+            for handle in [linked,token]:
+                if handle:close(handle)
+            if sid_string:free(c.cast(sid_string,c.c_void_p))
+            if admin:free(admin)
+            if created:
+                code=remove(None,name);proof['account_removed']=code==0
+                net_checked(code)

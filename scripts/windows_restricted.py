@@ -27,7 +27,39 @@ def silent_admin_consent():
             if not proof['restored']:raise RuntimeError('UAC consent policy was not restored')
 
 
-def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False):
+@contextmanager
+def profile_privileges():
+    """Temporarily enable existing backup/restore privileges for our test profile."""
+    import ctypes as c
+    from ctypes import wintypes as w
+    kernel=c.WinDLL('kernel32',use_last_error=True);security=c.WinDLL('advapi32',use_last_error=True)
+    class Luid(c.Structure):_fields_=[('low',w.DWORD),('high',w.LONG)]
+    class Privilege(c.Structure):_fields_=[('id',Luid),('attributes',w.DWORD)]
+    class Privileges(c.Structure):_fields_=[('count',w.DWORD),('values',Privilege*2)]
+    kernel.GetCurrentProcess.restype=w.HANDLE
+    security.OpenProcessToken.argtypes=[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)]
+    security.LookupPrivilegeValueW.argtypes=[w.LPCWSTR,w.LPCWSTR,c.POINTER(Luid)]
+    security.AdjustTokenPrivileges.argtypes=[w.HANDLE,w.BOOL,c.POINTER(Privileges),w.DWORD,c.POINTER(Privileges),c.POINTER(w.DWORD)]
+    kernel.CloseHandle.argtypes=[w.HANDLE]
+    token=w.HANDLE();requested=Privileges();previous=Privileges();size=w.DWORD();changed=False
+    def checked(ok):
+        if not ok:raise c.WinError(c.get_last_error())
+    try:
+        checked(security.OpenProcessToken(kernel.GetCurrentProcess(),0x28,c.byref(token)))
+        requested.count=2
+        for i,name in enumerate(['SeBackupPrivilege','SeRestorePrivilege']):
+            checked(security.LookupPrivilegeValueW(None,name,c.byref(requested.values[i].id)));requested.values[i].attributes=2
+        c.set_last_error(0)
+        checked(security.AdjustTokenPrivileges(token,False,c.byref(requested),c.sizeof(previous),c.byref(previous),c.byref(size)))
+        changed=True
+        if c.get_last_error()==1300:raise RuntimeError('profile fixture privileges are unavailable')
+        yield
+    finally:
+        if changed:checked(security.AdjustTokenPrivileges(token,False,c.byref(previous),0,None,None))
+        if token:kernel.CloseHandle(token)
+
+
+def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False, user_environment=False):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -57,7 +89,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
     terminate=api(kernel,'TerminateProcess',[w.HANDLE,w.UINT])
     def checked(value):
         if not value:raise c.WinError(c.get_last_error())
-    limited=token;process=Process();job=None
+    limited=token;process=Process();job=None;environment=c.c_void_p()
     try:
         elevation=w.DWORD();returned=w.DWORD()
         checked(get_info(limited,20,c.byref(elevation),c.sizeof(elevation),c.byref(returned)))
@@ -99,13 +131,17 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
                 start.hStdInput,start.hStdOutput,start.hStdError=handles
                 args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
                 flags=0x08000000|(4 if kill_tree else 0)
+                if user_environment:
+                    userenv=c.WinDLL('userenv',use_last_error=True)
+                    create_environment=api(userenv,'CreateEnvironmentBlock',[c.POINTER(c.c_void_p),w.HANDLE,w.BOOL])
+                    checked(create_environment(c.byref(environment),limited,False));flags|=0x400
                 if restricted:
                     # Preserve the shell logon's session for a filtered copy.
                     # Secondary Logon refuses this restricted primary token;
                     # CreateProcessAsUser explicitly supports restricted tokens.
-                    checked(create_as_user(limited,args[0],text,None,None,True,flags,None,None,c.byref(start),c.byref(process)))
+                    checked(create_as_user(limited,args[0],text,None,None,True,flags,environment,None,c.byref(start),c.byref(process)))
                 else:
-                    checked(create(limited,0,args[0],text,flags,None,None,c.byref(start),c.byref(process)))
+                    checked(create(limited,0,args[0],text,flags,environment,None,c.byref(start),c.byref(process)))
                 if kill_tree:
                     from windows_job import owned_process_job
                     job=owned_process_job(process.hProcess)
@@ -121,6 +157,8 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
                 result.token_profile={'method':'restricted_desktop_token' if restricted else 'owned_interactive_uac_linked','launcher':'CreateProcessAsUserW' if restricted else 'CreateProcessWithTokenW','elevated':bool(elevation.value),'administrator_sid_enabled':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
                 return result
     finally:
+        if environment:
+            destroy=api(userenv,'DestroyEnvironmentBlock',[c.c_void_p]);destroy(environment)
         if kill_tree and process.hProcess and not job:
             terminate(process.hProcess,124);wait(process.hProcess,5000)
         if job:close(job)
