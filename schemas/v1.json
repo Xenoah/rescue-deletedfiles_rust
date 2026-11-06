@@ -1,0 +1,946 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Xenoah/rescue-deletedfiles_rust/schemas/v1.json",
+  "title": "Rescue operation contract v1",
+  "$comment": "Validate a named model via #/$defs/<name>. Shapes do not replace source revalidation, allocation checks, resource bounds or output capabilities. Opaque RAID proof extensions are validated by the Rust readers.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/Job"
+    },
+    {
+      "$ref": "#/$defs/Session"
+    },
+    {
+      "$ref": "#/$defs/Candidate"
+    },
+    {
+      "$ref": "#/$defs/Source"
+    },
+    {
+      "$ref": "#/$defs/AcquisitionIdentity"
+    },
+    {
+      "$ref": "#/$defs/RecoveryResult"
+    },
+    {
+      "$ref": "#/$defs/OperationError"
+    }
+  ],
+  "$defs": {
+    "OperationError": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "enum": [
+            "INDEX_ERROR",
+            "IO_ERROR",
+            "INVALID_JSON",
+            "INVALID_IMAGE",
+            "UNSUPPORTED",
+            "RESOURCE_LIMIT",
+            "SOURCE_CHANGED",
+            "DESTINATION_CHANGED",
+            "CANCELLED",
+            "MISSING_RANGES",
+            "UNSAFE_DESTINATION",
+            "INVALID_REQUEST"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "affected_scope": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "affected_scope"
+      ],
+      "additionalProperties": false
+    },
+    "Progress": {
+      "type": "object",
+      "properties": {
+        "scanned_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "total_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "candidates": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "unit": {
+          "enum": [
+            "records",
+            "bytes"
+          ]
+        }
+      },
+      "required": [
+        "scanned_records",
+        "total_records",
+        "candidates",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "Job": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "job_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "enum": [
+            "scan",
+            "imaging",
+            "recovery",
+            "discovery",
+            "raid_configuration",
+            "raid_search",
+            "preview",
+            "result_order",
+            "session_migration"
+          ]
+        },
+        "state": {
+          "enum": [
+            "queued",
+            "running",
+            "pausing",
+            "paused",
+            "cancelling",
+            "completed",
+            "partial",
+            "failed",
+            "cancelled"
+          ]
+        },
+        "phase": {
+          "type": "string",
+          "minLength": 1
+        },
+        "progress": {
+          "$ref": "#/$defs/Progress"
+        },
+        "details": {
+          "type": "object",
+          "properties": {
+            "pause_supported": {
+              "type": "boolean"
+            },
+            "pause_reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "pause_supported"
+          ],
+          "additionalProperties": true
+        },
+        "result": {},
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OperationError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "job_id",
+        "kind",
+        "state",
+        "phase",
+        "progress",
+        "details",
+        "result",
+        "error"
+      ],
+      "additionalProperties": false
+    },
+    "Fingerprint": {
+      "type": "object",
+      "properties": {
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "modified_ns": {
+          "type": "string"
+        },
+        "sample_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "length",
+        "modified_ns",
+        "sample_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "FileTimestamp": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "unix_seconds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "value",
+        "unix_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "FileSystem": {
+      "enum": [
+        "ntfs",
+        "fat32",
+        "exfat",
+        "raw",
+        "disk"
+      ]
+    },
+    "AllocationStatus": {
+      "enum": [
+        "unknown",
+        "unallocated",
+        "unreferenced",
+        "conflict"
+      ]
+    },
+    "ExtentEvidence": {
+      "enum": [
+        "unknown",
+        "metadata",
+        "metadata_remnant",
+        "residual_fat_chain",
+        "single_cluster",
+        "no_fat_chain",
+        "png_validated",
+        "jpeg_validated",
+        "pdf_structure",
+        "zip_crc_validated",
+        "media_structure"
+      ]
+    },
+    "RecoveryBoot": {
+      "type": "object",
+      "properties": {
+        "role": {
+          "enum": [
+            "primary",
+            "backup"
+          ]
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "role",
+        "offset",
+        "bytes",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "SourceRegion": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "name": {
+          "type": "string"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "filesystem": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileSystem"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery_boot": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecoveryBoot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "index",
+        "name",
+        "offset",
+        "length",
+        "filesystem"
+      ],
+      "additionalProperties": false
+    },
+    "Source": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "device": {
+          "type": "boolean"
+        },
+        "bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sector_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "regions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SourceRegion"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "path",
+        "device",
+        "bytes",
+        "sector_size",
+        "scheme",
+        "regions",
+        "warnings"
+      ],
+      "additionalProperties": false
+    },
+    "AcquisitionIdentity": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sector_size": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "identity": {
+          "type": "string"
+        },
+        "modified_ns": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "length",
+        "sector_size",
+        "identity",
+        "modified_ns"
+      ],
+      "additionalProperties": false
+    },
+    "SearchSettings": {
+      "type": "object",
+      "properties": {
+        "method": {
+          "enum": [
+            "quick",
+            "carve"
+          ]
+        },
+        "carve_scope": {
+          "enum": [
+            "unallocated",
+            "all"
+          ],
+          "description": "New requests default to unallocated. A missing field in an older saved session means all."
+        },
+        "extensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "path_prefix": {
+          "type": "string"
+        },
+        "max_depth": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "range_start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "range_end": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovered_volume": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRegion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fragments": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "method",
+        "extensions",
+        "path_prefix",
+        "max_depth",
+        "range_start",
+        "range_end"
+      ],
+      "additionalProperties": false
+    },
+    "CandidateName": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "original_path": {
+          "type": "string"
+        },
+        "path_verified": {
+          "type": "boolean"
+        },
+        "namespace": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3
+        }
+      },
+      "required": [
+        "name",
+        "original_path",
+        "path_verified",
+        "namespace"
+      ],
+      "additionalProperties": false
+    },
+    "Candidate": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "record": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "stream_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fragment_offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "original_path": {
+          "type": "string"
+        },
+        "path_verified": {
+          "type": "boolean"
+        },
+        "alternate_names": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CandidateName"
+          }
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "supported": {
+          "type": "boolean"
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "record_sha256": {
+          "type": "string"
+        },
+        "extent_evidence": {
+          "$ref": "#/$defs/ExtentEvidence"
+        },
+        "allocation_status": {
+          "$ref": "#/$defs/AllocationStatus"
+        },
+        "created": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "modified": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FileTimestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "record",
+        "sequence",
+        "name",
+        "original_path",
+        "path_verified",
+        "size",
+        "supported",
+        "warnings",
+        "record_sha256",
+        "extent_evidence",
+        "allocation_status"
+      ],
+      "additionalProperties": false,
+      "description": "Candidate ID is scoped by the enclosing Session.id or indexed result index_id; it does not use the displayed name."
+    },
+    "ScannedVolume": {
+      "type": "object",
+      "properties": {
+        "region": {
+          "$ref": "#/$defs/SourceRegion"
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/Fingerprint"
+        }
+      },
+      "required": [
+        "region",
+        "fingerprint"
+      ],
+      "additionalProperties": false
+    },
+    "Session": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 9
+        },
+        "filesystem": {
+          "$ref": "#/$defs/FileSystem"
+        },
+        "id": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "fingerprint": {
+          "$ref": "#/$defs/Fingerprint"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Candidate"
+          }
+        },
+        "scanned_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "total_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "cancelled": {
+          "type": "boolean"
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "invalid_records": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "search": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SearchSettings"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "region": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceRegion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ScannedVolume"
+          }
+        },
+        "raid": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "id",
+        "source",
+        "fingerprint",
+        "candidates",
+        "scanned_records",
+        "total_records",
+        "cancelled",
+        "truncated",
+        "invalid_records",
+        "warnings"
+      ],
+      "additionalProperties": false,
+      "description": "Saved JSON session or the header inside a candidate index. SQLite schema version and engine checkpoint are separate and validated by the index reader."
+    },
+    "MissingRange": {
+      "type": "object",
+      "properties": {
+        "source_offset": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "length": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "logical_offset": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logical_length": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 18446744073709551615
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "enum": [
+            "unattempted",
+            "copied",
+            "failed"
+          ]
+        }
+      },
+      "required": [
+        "source_offset",
+        "length",
+        "logical_offset",
+        "logical_length",
+        "reason"
+      ],
+      "additionalProperties": false
+    },
+    "RecoveryResult": {
+      "type": "object",
+      "properties": {
+        "candidate_id": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "partial",
+            "incomplete",
+            "failed",
+            "cancelled",
+            "skipped"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bytes_written": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 18446744073709551615
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_details": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OperationError"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extent_evidence": {
+          "$ref": "#/$defs/ExtentEvidence"
+        },
+        "allocation_status": {
+          "$ref": "#/$defs/AllocationStatus"
+        },
+        "archive_entry": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "missing_ranges": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MissingRange"
+          }
+        },
+        "raid_reads": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "candidate_id",
+        "status",
+        "path",
+        "bytes_written",
+        "sha256",
+        "error",
+        "warnings",
+        "extent_evidence",
+        "allocation_status"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

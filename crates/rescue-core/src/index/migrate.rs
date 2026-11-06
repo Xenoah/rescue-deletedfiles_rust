@@ -1,7 +1,7 @@
 //! Copy migration keeps the source database and its resumable scan state intact.
 use super::*;
 impl IndexWriter {
-    pub(super) fn import_index(path: &Path, work: &Path) -> Result<PathBuf> {
+    pub(super) fn import_index(path: &Path, work: &Path, cancel: &AtomicBool) -> Result<PathBuf> {
         regular(path)?;
         let path = path.canonicalize()?;
         let _owner = Self::owner(&path)?;
@@ -19,11 +19,17 @@ impl IndexWriter {
             return Err(Error::Unsupported("unknown index migration schema".into()));
         }
         let source = CandidateIndex { db, path };
-        let header = source.session()?;
+        let mut header = source.session()?;
         uuid::Uuid::parse_str(&header.id).map_err(|_| Error::Request("index session ID".into()))?;
         if !(1..=9).contains(&header.schema_version) || !header.candidates.is_empty() {
             return Err(Error::Request("migration header".into()));
         }
+        crate::source_scope::check(&header.source)?;
+        header.warnings.push(format!(
+            "Copied from session {}; original record retained",
+            header.id
+        ));
+        header.id = uuid::Uuid::new_v4().to_string();
         let status = source.status()?;
         if status.candidates > 10_000_000 {
             return Err(Error::Limit("migration candidate count".into()));
@@ -41,6 +47,9 @@ impl IndexWriter {
         let mut batch = vec![];
         let mut bytes = 0usize;
         while let Some(row) = rows.next()? {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
             let sequence: i64 = row.get(0)?;
             let payload: String = row.get(1)?;
             if sequence < 1 || sequence as u64 != count + 1 || payload.len() > MAX_ROW {
@@ -74,6 +83,9 @@ impl IndexWriter {
             let mut bytes = 0usize;
             let mut count = 0u64;
             while let Some(row) = rows.next()? {
+                if cancel.load(Ordering::Relaxed) {
+                    return Err(Error::Cancelled);
+                }
                 let namespace = nonnegative(row.get(0)?)?;
                 let sequence = nonnegative(row.get(1)?)?;
                 let payload: String = row.get(2)?;
@@ -96,6 +108,9 @@ impl IndexWriter {
                 count += 1;
             }
             writer.commit_staged(&header, &[], "running", false, &checkpoint, &batch)?;
+        }
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Error::Cancelled);
         }
         writer.commit(&header, &[], &status.state, status.resumable, &checkpoint)?;
         Ok(writer.index.path.clone())

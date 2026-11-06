@@ -1,5 +1,16 @@
 use super::*;
 impl App {
+    fn imaging_source(&self) -> &str {
+        if self.image_resume
+            && let Some((source, destination, image)) = &self.image_original
+            && destination == &self.image_destination
+            && (&self.source == source || &self.source == image)
+        {
+            source
+        } else {
+            &self.source
+        }
+    }
     pub(super) fn load_map_page(&mut self, offset: u64, digest: Option<String>) {
         let path = self.map_source.clone();
         let (tx, rx) = mpsc::channel();
@@ -109,7 +120,7 @@ impl App {
     pub(super) fn imaging_status(&self, ui: &mut egui::Ui) {
         ui.add_space(24.0);
         ui.heading("ディスクのイメージを取得しています");
-        ui.label(&self.source);
+        ui.label(self.imaging_source());
         ui.label(&self.image_destination);
         if let Some(p) = &self.image_progress {
             ui.label(if p.phase == "verify_resume" {
@@ -143,9 +154,9 @@ impl App {
         let response=egui::Modal::new(egui::Id::new("image-acquisition-dialog")).show(ctx,|ui|{
             ui.set_width((ctx.content_rect().width()-48.0).clamp(240.0,520.0));
             ui.heading("イメージの作成・再開");
+            ui.label(format!("取得元: {}",self.imaging_source()));
             egui::ScrollArea::vertical().max_height((ctx.content_rect().height()-160.0).max(100.0)).show(ui,|ui|{
             ui.label("元ディスクを読み取り専用で取得し、後からイメージをスキャンできます。");
-            ui.label(format!("元ディスク: {}",self.source));
             path_row(ui,"イメージ保存フォルダー",&mut self.image_destination,Picker::Folder);
             ui.small("新規取得では空のフォルダーを指定します。物理ディスクからの取得は別の媒体へ保存します。");
             ui.checkbox(&mut self.image_resume,"このフォルダーにある取得を再開する");
@@ -169,8 +180,17 @@ impl App {
         }
     }
     fn start_imaging(&mut self) {
-        let source = PathBuf::from(&self.source);
+        let source = PathBuf::from(self.imaging_source());
         let destination = PathBuf::from(&self.image_destination);
+        self.image_original = Some((
+            source.to_string_lossy().into_owned(),
+            self.image_destination.clone(),
+            destination
+                .join("image.rescue.raw")
+                .to_string_lossy()
+                .into_owned(),
+        ));
+        self.image_pause_requested = false;
         let options = rescue_core::AcquisitionOptions {
             block_size: self.image_block_size,
             retries: self.image_retries,

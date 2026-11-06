@@ -19,6 +19,8 @@ pub struct ArchiveRecovery {
     pub sha256: Option<String>,
     pub results: Vec<RecoveryResult>,
     pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_details: Option<crate::OperationError>,
 }
 fn archive_error(e: zip::result::ZipError) -> Error {
     Error::Io(std::io::Error::other(e))
@@ -99,6 +101,7 @@ pub fn recover_zip_to(
         sha256: None,
         results: Vec::new(),
         error: None,
+        error_details: None,
     };
     let partial = format!("{}.zip.partial", Uuid::new_v4());
     let attempt = (|| -> Result<()> {
@@ -196,6 +199,7 @@ pub fn recover_zip_to(
         }
         .into();
         outcome.error = Some(format!("{}: {error}", error.code()));
+        outcome.error_details = Some(error.report("archive"));
         outcome.staging = Some(staging.keep());
     }
     Ok(outcome)

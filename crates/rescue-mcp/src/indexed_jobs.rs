@@ -7,6 +7,7 @@ pub(super) enum Task {
         settings: SearchSettings,
     },
     Resume(PathBuf),
+    Import(PathBuf),
 }
 impl Server {
     pub(super) fn prepare_results(&mut self, args: &Value) -> ToolResult {
@@ -22,7 +23,7 @@ impl Server {
         let query: rescue_core::IndexQuery =
             serde_json::from_value(args.get("query").cloned().ok_or("missing query")?)
                 .map_err(err)?;
-        let (id, cancel) = self.create_job()?;
+        let (id, cancel) = self.create_job(JobKind::ResultOrder)?;
         let job_id = id.clone();
         let shared = self.state.clone();
         let grants = self.source_grants();
@@ -38,7 +39,7 @@ impl Server {
                 }
                 Err(error) => {
                     job.state = if matches!(error, Error::Cancelled) { "cancelled" } else { "failed" }.into();
-                    job.result = json!({"error":{"code":error.code(),"message":error.to_string(),"retryable":true,"affected_scope":"result_order"}});
+                    job.result = json!({"error":error.report("result_order")});
                 }
             }
         }));
@@ -56,7 +57,12 @@ impl Server {
                 "128 open indexes; restart server and open_session to select saved indexes".into(),
             );
         }
-        let (id, cancel) = self.create_job()?;
+        let kind = if matches!(task, Task::Import(_)) {
+            JobKind::SessionMigration
+        } else {
+            JobKind::Scan
+        };
+        let (id, cancel) = self.create_job(kind)?;
         let job_id = id.clone();
         let shared = self.state.clone();
         let work = self.config.work_dir.clone();
@@ -73,6 +79,7 @@ impl Server {
             let operation=match task {
                 Task::Scan{source,options,settings}=>rescue_core::scan_indexed(&source,&work,options,&settings,&cancel,progress),
                 Task::Resume(path)=>rescue_core::resume_indexed_scan(&path,&cancel,progress),
+                Task::Import(path)=>rescue_core::IndexWriter::import_session_with_cancel(&path,&work,&cancel),
             }.and_then(|path|{
                 let index=rescue_core::CandidateIndex::open(&path)?;
                 Ok((path,index.session()?,index.status()?))
@@ -87,7 +94,7 @@ impl Server {
                 }
                 Err(error)=>{
                     let job=state.jobs.get_mut(&job_id).unwrap();job.state=if matches!(error,Error::Cancelled){"cancelled"}else{"failed"}.into();
-                    job.result=json!({"error":{"code":error.code(),"message":error.to_string(),"retryable":matches!(error,Error::Io(_)|Error::Index(_)),"affected_scope":"scan_index"}});
+                    job.result=json!({"error":error.report(kind.as_str())});
                 }
             }
         }));

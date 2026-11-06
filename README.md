@@ -9,7 +9,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 有料製品との性能比較は未測定です。
 
 **alpha.16開発ブランチ:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-Linuxの22統合群を通過し、Windows・macOSのネイティブ検証を進めています。
+Linuxの23統合群を通過し、Windows・macOSのネイティブ検証を進めています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -26,6 +26,12 @@ Carvingの既定範囲を未割当領域に変更しました。NTFS/FAT32/exFAT
 GUIから2候補を復元して内容一致を確認しました。[範囲判定と実画面](docs/ALLOCATION_SCOPE.md)
 
 ![未割当／全領域を選択する詳細設定](docs/images/allocation-settings.png)
+
+イメージ取得を「一時停止して保存」から再開でき、旧セッションを元の記録を残してコピー移行できます。
+MCPのジョブには種類・工程・構造化エラーを追加し、再開時は新しいジョブIDで履歴を保持します。
+実GUIの移行後に36ファイルを復元して正解と照合しました。[共通契約と検証記録](docs/JOB_CONTRACT.md)
+
+![セッションをコピー移行する実GUI](docs/images/jobs-migration-settings.png)
 
 ![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
 

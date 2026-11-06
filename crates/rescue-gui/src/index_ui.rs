@@ -402,4 +402,36 @@ impl App {
             let _ = tx.send(message);
         });
     }
+    pub(super) fn import_session(&mut self, path: PathBuf) {
+        let work = if self.work.trim().is_empty() {
+            path.parent()
+                .unwrap_or(Path::new("."))
+                .join("rescue-session-copies")
+        } else {
+            PathBuf::from(&self.work)
+        };
+        self.index = State::default();
+        self.session = None;
+        self.selected.clear();
+        self.rows.clear();
+        self.report.clear();
+        self.filter.clear();
+        self.cancel = Arc::new(AtomicBool::new(false));
+        let cancel = self.cancel.clone();
+        let query = self.index_query();
+        let (tx, rx) = mpsc::sync_channel(8);
+        self.messages = Some(rx);
+        self.stage = Stage::Migrating;
+        self.progress = Progress::default();
+        self.status = "新しい索引へコピー移行しています。元の記録は保持します…".into();
+        thread::spawn(move || {
+            let result =
+                rescue_core::IndexWriter::import_session_with_cancel(&path, &work, &cancel)
+                    .map_err(|e| format!("{}: {e}", e.code()))
+                    .and_then(|p| load(p, query, &cancel))
+                    .map(|loaded| Message::Indexed(Box::new(loaded)))
+                    .unwrap_or_else(Message::Error);
+            let _ = tx.send(result);
+        });
+    }
 }

@@ -1,6 +1,7 @@
 mod acquisition;
 mod archive;
 mod carve;
+mod contract;
 mod destination;
 mod device;
 mod discovery;
@@ -32,6 +33,7 @@ use cap_std::{
     ambient_authority,
     fs::{Dir, OpenOptions},
 };
+pub use contract::{JobKind, OperationError};
 pub use destination::{OutputRoot, RecoveryDestination, canonical_output_path};
 pub use device::{DiskSource, canonical_source_path, guard_output_path, is_device, list_disks};
 pub use discovery::{
@@ -689,6 +691,8 @@ pub struct RecoveryResult {
     pub bytes_written: u64,
     pub sha256: Option<String>,
     pub error: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error_details: Option<OperationError>,
     pub warnings: Vec<String>,
     pub extent_evidence: ExtentEvidence,
     pub allocation_status: AllocationStatus,
@@ -917,6 +921,7 @@ pub fn recover_to(
                 bytes_written: 0,
                 sha256: None,
                 error: Some("CANCELLED: not started".into()),
+                error_details: Some(Error::Cancelled.report(format!("candidate:{}", candidate.id))),
                 warnings: Vec::new(),
                 extent_evidence: ExtentEvidence::Unknown,
                 allocation_status: AllocationStatus::Unknown,
@@ -933,6 +938,7 @@ pub fn recover_to(
             bytes_written: 0,
             sha256: None,
             error: None,
+            error_details: None,
             warnings: Vec::new(),
             extent_evidence: ExtentEvidence::Unknown,
             allocation_status: AllocationStatus::Unknown,
@@ -1030,6 +1036,7 @@ pub fn recover_to(
             }
             .into();
             result.error = Some(format!("{}: {error}", error.code()));
+            result.error_details = Some(error.report(format!("candidate:{}", result.candidate_id)));
         }
         results.push(result);
     }

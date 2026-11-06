@@ -11,8 +11,8 @@ GUI、CLI、MCPで同じ再検証と制限を使います。Windowsではディ�
 画像入力8 MiB、1,677万画素、表示512px、文字列先頭64 KiB、読取64 MiB、5秒を上限とします。
 プレビュー非対応のPDF等も復元候補として保持します。表示用の変換結果は元バイトの完全性保証ではありません。
 
-[操作できる技術説明UI](intelligence.html)には、43枚の実画面と15方式の説明を収録しました。
-プレビュー8画面と割当範囲5画面はalpha.16、以前の機能の画面はalpha.15として明記しています。
+[操作できる技術説明UI](intelligence.html)には、51枚の実画面と16方式の説明を収録しました。
+プレビュー8画面・割当範囲5画面・停止と移行8画面はalpha.16、以前の画面はalpha.15として明記しています。
 390px幅を含む全切替操作、JavaScriptエラー0件、外部通信0件を確認しました。
 
 ![隔離プレビューの制限とGUI/CLI/MCPを説明するUI](images/technical-ui-v16.png)
@@ -23,9 +23,17 @@ CarvingはNTFS/FAT32/exFATの未割当領域を既定にしました。候補の
 
 ![未割当領域と全領域を選択する詳細設定](images/allocation-settings.png)
 
-Linuxでは55 Rust項目と22統合群を通過。プレビューの独立検査は画像10件・テキスト12件、
+イメージ取得の一時停止・再開とセッションのコピー移行をGUI・MCPに追加しました。
+ジョブの種類、工程、進捗、構造化エラーを共通契約にし、JSON Schemaも同梱します。
+独立した12条件に加え、実GUIで512 MiBの停止・再開と、移行後36ファイル152,325バイトの一致を確認しました。
+
+![旧セッションを保持してコピーする実画面](images/jobs-migration-settings.png)
+
+![移行した36ファイルの復元結果](images/jobs-migration-restored.png)
+
+Linuxでは56 Rust項目と23統合群を通過。プレビューの独立検査は画像10件・テキスト12件、
 破損画像・画素上限・改変した管理情報・取消・タイムアウト・MCP許可範囲を含む11条件です。
 Windows・macOSの実VMと公開実物の検証、通常権限のGUIのUAC操作は継続中です。
 このファイルは公開完了の記録ではありません。
 
-[プレビュー](PREVIEW.md) · [検索範囲](ALLOCATION_SCOPE.md) · [Windows権限分離](READ_ACCESS.md) · [受入台帳](V1_ACCEPTANCE.md)
+[プレビュー](PREVIEW.md) · [検索範囲](ALLOCATION_SCOPE.md) · [共通ジョブ](JOB_CONTRACT.md) · [Windows権限分離](READ_ACCESS.md) · [受入台帳](V1_ACCEPTANCE.md)

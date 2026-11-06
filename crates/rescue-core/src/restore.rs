@@ -52,6 +52,7 @@ fn result_for(id: &str) -> RecoveryResult {
         bytes_written: 0,
         sha256: None,
         error: None,
+        error_details: None,
         warnings: Vec::new(),
         extent_evidence: ExtentEvidence::Unknown,
         allocation_status: AllocationStatus::Unknown,
@@ -286,6 +287,8 @@ fn read_volume(
                     result.missing_ranges = ranges.clone();
                 }
                 result.error = Some(format!("{}: {error}", error.code()));
+                result.error_details =
+                    Some(error.report(format!("candidate:{}", result.candidate_id)));
                 result.raid_reads = image.take_raid_trace();
                 batch.failures.push(result);
                 continue;
@@ -359,6 +362,7 @@ fn read_volume(
                     result.missing_ranges = ranges.clone();
                 }
                 result.error = Some(format!("{}: {e}", e.code()));
+                result.error_details = Some(e.report(format!("candidate:{}", result.candidate_id)));
                 batch.failures.push(result);
             }
         }
@@ -649,6 +653,8 @@ fn restore_impl(
             }
             .into();
             file.result.error = Some(format!("{}: {e}", e.code()));
+            file.result.error_details =
+                Some(e.report(format!("candidate:{}", file.result.candidate_id)));
             if file.result.status != "completed" {
                 file.result.sha256 = None;
             }
@@ -710,6 +716,7 @@ fn zip_impl(
             sha256: None,
             results: Vec::new(),
             error: None,
+            error_details: None,
         });
     };
     let path = destination.path.join(name);
@@ -721,6 +728,7 @@ fn zip_impl(
         sha256: None,
         results: batch.failures,
         error: None,
+        error_details: None,
     };
     let attempt = (|| -> Result<()> {
         let mut zip = zip::ZipWriter::new(output);
@@ -794,6 +802,7 @@ fn zip_impl(
     })();
     if let Err(e) = attempt {
         result.error = Some(format!("{}: {e}", e.code()));
+        result.error_details = Some(e.report("archive"));
         if matches!(e, Error::Cancelled) {
             result.status = "cancelled".into();
         }

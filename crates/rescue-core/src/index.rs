@@ -855,14 +855,36 @@ CREATE VIRTUAL TABLE candidate_search USING fts5(search_text,content='candidate'
     }
     /// JSON and earlier SQLite schemas are copied; the original is never edited.
     pub fn import_session(path: &Path, work: &Path) -> Result<PathBuf> {
+        Self::import_session_with_cancel(path, work, &AtomicBool::new(false))
+    }
+    pub fn import_session_with_cancel(
+        path: &Path,
+        work: &Path,
+        cancel: &AtomicBool,
+    ) -> Result<PathBuf> {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Error::Cancelled);
+        }
         if CandidateIndex::is_index(path)? {
-            return Self::import_index(path, work);
+            return Self::import_index(path, work, cancel);
         }
         let mut header = Session::load(path)?;
+        crate::source_scope::check(&header.source)?;
+        header.warnings.push(format!(
+            "Copied from session {}; original record retained",
+            header.id
+        ));
+        header.id = uuid::Uuid::new_v4().to_string();
         let candidates = std::mem::take(&mut header.candidates);
         let mut writer = Self::create(work, &header, "imported_json", &serde_json::Value::Null)?;
         for batch in candidates.chunks(256) {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
             writer.commit(&header, batch, "running", false, &serde_json::Value::Null)?;
+        }
+        if cancel.load(Ordering::Relaxed) {
+            return Err(Error::Cancelled);
         }
         writer.commit(
             &header,

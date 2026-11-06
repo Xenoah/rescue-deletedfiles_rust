@@ -1,8 +1,11 @@
+mod errors;
+mod image_jobs;
 mod indexed_jobs;
 mod preview_jobs;
+use errors::ToolError;
 use rescue_core::{
-    CollisionPolicy, Error, OutputRoot, Progress, RestoreOptions, RestoreTarget, ScanMethod,
-    ScanOptions, SearchSettings, Session, VolumeRoot, restore_files_with_roots,
+    CollisionPolicy, Error, JobKind, OutputRoot, Progress, RestoreOptions, RestoreTarget,
+    ScanMethod, ScanOptions, SearchSettings, Session, VolumeRoot, restore_files_with_roots,
     restore_zip_with_roots, save_restore_report_with_roots, scan_with_settings,
 };
 use serde_json::{Value, json};
@@ -25,6 +28,7 @@ pub struct Config {
     pub output_roots: Vec<PathBuf>,
 }
 struct Job {
+    kind: JobKind,
     state: String,
     pause_requested: bool,
     progress: Progress,
@@ -37,6 +41,7 @@ struct State {
     jobs: BTreeMap<String, Job>,
     sessions: BTreeMap<String, Session>,
     indexes: BTreeMap<String, PathBuf>,
+    acquisitions: BTreeMap<String, image_jobs::Task>,
     acquired_images: std::collections::BTreeSet<PathBuf>,
 }
 struct Server {
@@ -48,15 +53,15 @@ struct Server {
     output_roots: Arc<Vec<OutputRoot>>,
     persist_sessions: bool,
 }
-type ToolResult = std::result::Result<Value, String>;
+type ToolResult = std::result::Result<Value, ToolError>;
 fn field<'a>(v: &'a Value, key: &str) -> std::result::Result<&'a str, String> {
     v.get(key)
         .and_then(Value::as_str)
         .filter(|s| !s.is_empty())
         .ok_or_else(|| format!("missing or invalid {key}"))
 }
-fn err(e: impl std::fmt::Display) -> String {
-    e.to_string()
+fn err(e: impl Into<ToolError>) -> ToolError {
+    e.into()
 }
 fn tool(
     name: &str,
@@ -92,6 +97,13 @@ fn tools() -> Value {
             false
         ),
         tool(
+            "import_session",
+            "Copy a saved JSON session or earlier SQLite index to the current schema in a new private directory. Input must be inside the work directory and its source explicitly allowed. Preserves the original, creates a new session ID, supports cancellation; no pause/resume of an unfinished migration. Poll get_job.",
+            json!({"path":string,"request_id":string}),
+            &["path", "request_id"],
+            false
+        ),
+        tool(
             "open_session",
             "Open a saved candidate index inside the configured work directory; its source must remain explicitly allowed.",
             json!({"path":string}),
@@ -100,7 +112,7 @@ fn tools() -> Value {
         ),
         tool(
             "resume_job",
-            "Resume a saved indexed scan with a new job ID after source and checkpoint validation. Keeps the previous job history.",
+            "Resume an indexed scan or image acquisition with a new job ID after source and checkpoint validation. Keeps previous job history. Use the session_id from scan or imaging progress/result. After a server restart use open_session for indexes, or start_image with resume:true and the original source/destination for acquisitions.",
             json!({"session_id":string,"request_id":string}),
             &["session_id", "request_id"],
             false
@@ -258,7 +270,10 @@ impl Server {
             .chain(self.state.lock().unwrap().acquired_images.iter().cloned())
             .collect()
     }
-    fn create_job(&mut self) -> std::result::Result<(String, Arc<AtomicBool>), String> {
+    fn create_job(
+        &mut self,
+        kind: JobKind,
+    ) -> std::result::Result<(String, Arc<AtomicBool>), ToolError> {
         let mut state = self.state.lock().unwrap();
         if state.jobs.len() >= 32 {
             return Err("alpha limit: restart server after 32 jobs".into());
@@ -275,12 +290,13 @@ impl Server {
         state.jobs.insert(
             id.clone(),
             Job {
+                kind,
                 state: "running".into(),
                 pause_requested: false,
                 progress: Progress::default(),
                 result: Value::Null,
                 cancel: cancel.clone(),
-                details: Value::Null,
+                details: json!({"pause_supported":false,"pause_reason":"this phase has no durable pause checkpoint"}),
             },
         );
         Ok((id, cancel))
@@ -308,6 +324,7 @@ impl Server {
                 | "create_raid"
                 | "search_raid"
                 | "resume_job"
+                | "import_session"
                 | "prepare_results"
                 | "preview_candidate"
         ) {
@@ -325,16 +342,32 @@ impl Server {
             "preview_candidate" => self.preview_job(args),
             "prepare_results" => self.prepare_results(args),
             "open_session" => self.open_index(Path::new(field(args, "path")?)),
+            "import_session" => {
+                let path = Path::new(field(args, "path")?)
+                    .canonicalize()
+                    .map_err(err)?;
+                if !path.starts_with(&self.config.work_dir) {
+                    return Err("session is outside the work directory".into());
+                }
+                self.start_index_job(indexed_jobs::Task::Import(path))
+            }
             "resume_job" => {
-                let path = self
-                    .state
-                    .lock()
-                    .unwrap()
-                    .indexes
-                    .get(field(args, "session_id")?)
-                    .cloned()
-                    .ok_or("unknown indexed session")?;
-                self.start_index_job(indexed_jobs::Task::Resume(path))
+                let session_id = field(args, "session_id")?;
+                let (index, image) = {
+                    let state = self.state.lock().unwrap();
+                    (
+                        state.indexes.get(session_id).cloned(),
+                        state.acquisitions.get(session_id).cloned(),
+                    )
+                };
+                if let Some(path) = index {
+                    self.start_index_job(indexed_jobs::Task::Resume(path))
+                } else if let Some(mut task) = image {
+                    task.options.resume = true;
+                    self.start_image_job(task)
+                } else {
+                    Err("unknown indexed or acquisition session".into())
+                }
             }
             "list_sources" => Ok(
                 json!({"sources":self.config.sources,"output_roots":self.config.output_roots,
@@ -380,7 +413,7 @@ impl Server {
                     serde_json::from_value(args.get("options").cloned().unwrap_or(json!({})))
                         .map_err(err)?;
                 let relative = self.config.work_dir.clone();
-                let (id, cancel) = self.create_job()?;
+                let (id, cancel) = self.create_job(JobKind::RaidSearch)?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
                 let grants = self.source_grants();
@@ -417,7 +450,7 @@ impl Server {
                                 "failed"
                             }
                             .into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            job.result = json!({"error":e.report(job.kind.as_str())});
                         }
                     }
                 }));
@@ -432,7 +465,7 @@ impl Server {
                         .map_err(err)?;
                 let roots = self.output_roots.clone();
                 let relative = self.config.work_dir.clone();
-                let (id, cancel) = self.create_job()?;
+                let (id, cancel) = self.create_job(JobKind::RaidConfiguration)?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
                 let grants = self.source_grants();
@@ -461,84 +494,13 @@ impl Server {
                                 "failed"
                             }
                             .into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            job.result = json!({"error":e.report(job.kind.as_str())});
                         }
                     }
                 }));
                 Ok(json!({"job_id":id,"state":"running"}))
             }
-            "start_image" => {
-                let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
-                    .map_err(err)?;
-                if !self.config.sources.contains(&path) {
-                    return Err("source is outside the allowlist".into());
-                }
-                let destination = PathBuf::from(field(args, "destination")?);
-                let block_size = args
-                    .get("block_size")
-                    .map(|v| {
-                        v.as_u64()
-                            .filter(|n| *n >= 512 && *n <= 16 * 1024 * 1024)
-                            .ok_or("invalid block_size")
-                    })
-                    .transpose()?
-                    .unwrap_or(4 * 1024 * 1024) as u32;
-                let retries = args
-                    .get("retries")
-                    .map(|v| v.as_u64().filter(|n| *n <= 3).ok_or("invalid retries"))
-                    .transpose()?
-                    .unwrap_or(2) as u8;
-                let resume = args
-                    .get("resume")
-                    .map(|v| v.as_bool().ok_or("invalid resume"))
-                    .transpose()?
-                    .unwrap_or(false);
-                let roots = self.output_roots.clone();
-                let (id, cancel) = self.create_job()?;
-                let shared = self.state.clone();
-                let job_id = id.clone();
-                let source_grants = self.source_grants();
-                self.threads.push(thread::spawn(move || {
-                    let _scope = rescue_core::SourceScope::enter(source_grants);
-                    let result = rescue_core::acquire_image_with_roots(
-                        &path,
-                        &destination,
-                        rescue_core::AcquisitionOptions {
-                            block_size,
-                            retries,
-                            resume,
-                        },
-                        Some(&roots),
-                        &cancel,
-                        |progress| {
-                            let mut state = shared.lock().unwrap();
-                            let job = state.jobs.get_mut(&job_id).unwrap();
-                            job.progress = Progress {
-                                scanned_records: progress.completed_bytes,
-                                total_records: progress.total_bytes,
-                                candidates: 0,
-                                unit: rescue_core::ProgressUnit::Bytes,
-                            };
-                            job.details = serde_json::to_value(progress).unwrap();
-                        },
-                    );
-                    let mut state = shared.lock().unwrap();
-                    match result {
-                        Ok(result) => {
-                            state.acquired_images.insert(result.image.clone());
-                            let job = state.jobs.get_mut(&job_id).unwrap();
-                            job.state = result.state.clone();
-                            job.result = serde_json::to_value(result).unwrap();
-                        }
-                        Err(e) => {
-                            let job = state.jobs.get_mut(&job_id).unwrap();
-                            job.state = "failed".into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
-                        }
-                    }
-                }));
-                Ok(json!({"job_id":id,"state":"running"}))
-            }
+            "start_image" => self.image_job(args),
             "discover_volumes" => {
                 let path = rescue_core::canonical_source_path(Path::new(field(args, "source")?))
                     .map_err(err)?;
@@ -556,7 +518,7 @@ impl Server {
                     range_start: number("range_start")?.unwrap_or(0),
                     range_end: number("range_end")?,
                 };
-                let (id, cancel) = self.create_job()?;
+                let (id, cancel) = self.create_job(JobKind::Discovery)?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
                 let source_grants = self.source_grants();
@@ -585,8 +547,13 @@ impl Server {
                             job.result = serde_json::to_value(result).unwrap();
                         }
                         Err(e) => {
-                            job.state = "failed".into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            job.state = if matches!(e, Error::Cancelled) {
+                                "cancelled"
+                            } else {
+                                "failed"
+                            }
+                            .into();
+                            job.result = json!({"error":e.report(job.kind.as_str())});
                         }
                     }
                 }));
@@ -691,7 +658,7 @@ impl Server {
                     if self.state.lock().unwrap().sessions.len() >= 4 {
                         return Err("alpha limit: 4 sessions; restart server".into());
                     }
-                    let (id, cancel) = self.create_job()?;
+                    let (id, cancel) = self.create_job(JobKind::Scan)?;
                     let shared = self.state.clone();
                     let job_id = id.clone();
                     let work = self.config.work_dir.clone();
@@ -718,7 +685,7 @@ impl Server {
                         Err(e) => {
                             let job = state.jobs.get_mut(&job_id).unwrap();
                             job.state = if matches!(e, Error::Cancelled) { "cancelled" } else { "failed" }.into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            job.result = json!({"error":e.report(job.kind.as_str())});
                         }
                     }
                 }));
@@ -742,8 +709,27 @@ impl Server {
                     job.cancel.store(true, Ordering::Relaxed);
                     job.state = "cancelling".into();
                 }
+                let mut details = job.details.clone();
+                if !details.is_object() {
+                    details = json!({});
+                }
+                let fields = details.as_object_mut().unwrap();
+                fields.entry("pause_supported").or_insert(json!(false));
+                if fields.get("pause_supported") == Some(&json!(false)) {
+                    fields
+                        .entry("pause_reason")
+                        .or_insert(json!("this phase has no durable pause checkpoint"));
+                }
+                let phase = if matches!(job.state.as_str(), "running" | "pausing" | "cancelling") {
+                    details
+                        .get("phase")
+                        .and_then(Value::as_str)
+                        .unwrap_or(job.kind.as_str())
+                } else {
+                    job.state.as_str()
+                };
                 Ok(
-                    json!({"job_id":id,"state":job.state,"progress":job.progress,"details":job.details,"result":job.result}),
+                    json!({"schema_version":1,"job_id":id,"kind":job.kind,"state":job.state,"phase":phase,"progress":job.progress,"details":details,"result":job.result,"error":job.result.get("error")}),
                 )
             }
             "list_candidates" | "get_report" => {
@@ -888,7 +874,7 @@ impl Server {
                         .cloned()
                         .ok_or("unknown session")?
                 };
-                let (id, cancel) = self.create_job()?;
+                let (id, cancel) = self.create_job(JobKind::Recovery)?;
                 let shared = self.state.clone();
                 let job_id = id.clone();
                 let source_grants = self.source_grants();
@@ -922,8 +908,7 @@ impl Server {
                                     "failed"
                                 }
                                 .into();
-                                job.result =
-                                    json!({"error":{"code":e.code(),"message":e.to_string()}});
+                                job.result = json!({"error":e.report(job.kind.as_str())});
                             }
                         }
                         return;
@@ -967,7 +952,7 @@ impl Server {
                                 "failed"
                             }
                             .into();
-                            job.result = json!({"error":{"code":e.code(),"message":e.to_string()}});
+                            job.result = json!({"error":e.report(job.kind.as_str())});
                         }
                     }
                 }));
@@ -984,6 +969,7 @@ impl Server {
                 | "create_raid"
                 | "search_raid"
                 | "resume_job"
+                | "import_session"
                 | "prepare_results"
                 | "preview_candidate"
         ) && let Ok(ref value) = result
@@ -1039,8 +1025,9 @@ impl Server {
                         json!({"result":{"content":[{"type":"text","text":value.to_string()}],
                         "structuredContent":value,"isError":false}})
                     }
-                    Err(error) => {
-                        json!({"result":{"content":[{"type":"text","text":error}],"isError":true}})
+                    Err(mut error) => {
+                        error.0.affected_scope = format!("tool:{name}");
+                        json!({"result":{"content":[{"type":"text","text":error.0.message}],"structuredContent":{"error":error.0},"isError":true}})
                     }
                 }
             }

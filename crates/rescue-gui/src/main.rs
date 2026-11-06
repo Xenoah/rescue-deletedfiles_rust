@@ -6,6 +6,7 @@ mod preview_ui;
 mod raid_ui;
 #[cfg(windows)]
 mod read_access_ui;
+mod session_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -32,6 +33,7 @@ enum Stage {
     Settings,
     Scanning,
     Imaging,
+    Migrating,
     Selecting,
     Recovering,
     Finished,
@@ -68,6 +70,8 @@ enum Message {
     Error(String),
 }
 struct App {
+    session_dialog: Option<session_ui::Action>,
+    session_path: String,
     #[cfg(windows)]
     read_access: read_access_ui::State,
     preview: preview_ui::State,
@@ -87,6 +91,8 @@ struct App {
     image_dialog: bool,
     image_destination: String,
     image_resume: bool,
+    image_original: Option<(String, String, String)>,
+    image_pause_requested: bool,
     image_retries: u8,
     image_block_size: u32,
     image_progress: Option<rescue_core::AcquisitionProgress>,
@@ -202,6 +208,8 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            session_dialog: None,
+            session_path: String::new(),
             #[cfg(windows)]
             read_access: read_access_ui::State::default(),
             index: index_ui::State::default(),
@@ -220,6 +228,8 @@ impl App {
             image_dialog: false,
             image_destination: String::new(),
             image_resume: false,
+            image_original: None,
+            image_pause_requested: false,
             image_retries: 2,
             image_block_size: 4 * 1024 * 1024,
             image_progress: None,
@@ -267,7 +277,7 @@ impl App {
     fn busy(&self) -> bool {
         matches!(
             self.stage,
-            Stage::Scanning | Stage::Recovering | Stage::Imaging
+            Stage::Scanning | Stage::Recovering | Stage::Imaging | Stage::Migrating
         )
     }
     fn settings(&self) -> Result<SearchSettings, String> {
@@ -657,6 +667,9 @@ impl App {
                     self.image_progress = Some(p);
                 }
                 Message::Imaged(result) => {
+                    if let Some(origin) = &mut self.image_original {
+                        origin.2 = result.image.to_string_lossy().into_owned();
+                    }
                     self.source = result.image.to_string_lossy().into_owned();
                     self.source_mode = SourceMode::Image;
                     self.stage = Stage::Settings;
@@ -676,6 +689,11 @@ impl App {
                         view::size_text(Some(result.summary.failed_bytes)),
                         view::size_text(Some(result.summary.unattempted_bytes))
                     );
+                    if result.state == "cancelled" && self.image_pause_requested {
+                        self.image_resume = true;
+                        self.image_dialog = true;
+                        self.status="イメージ取得を一時停止しました。保存済みブロックを照合して再開できます。".into();
+                    }
                 }
                 Message::Indexed(loaded) => self.install_index(*loaded),
                 Message::IndexResumed(loaded) => self.accept_resumed_index(*loaded),
@@ -905,12 +923,17 @@ impl App {
         ui.separator();
         if self.stage == Stage::Settings {
             ui.horizontal_wrapped(|ui| {
-                if ui.button("保存したセッションを開く").clicked()
-                    && let Some(p) = rfd::FileDialog::new()
-                        .add_filter("Rescue session / index", &["json", "sqlite", "db"])
-                        .pick_file()
+                if ui.button("保存したセッションを開く").clicked() {
+                    self.session_dialog = Some(session_ui::Action::Open);
+                }
+                if ui
+                    .button("セッションをコピー移行")
+                    .on_hover_text(
+                        "旧JSON・SQLiteを新しい索引へコピーします。元の記録は変更しません。",
+                    )
+                    .clicked()
                 {
-                    self.open_session(p);
+                    self.session_dialog = Some(session_ui::Action::Copy);
                 }
                 if self.session.is_some() && ui.button("結果へ戻る").clicked() {
                     self.stage = Stage::Selecting;
@@ -1539,6 +1562,7 @@ fn allocation_label(c: &Candidate, fs: FileSystem) -> &'static str {
 #[derive(Clone, Copy)]
 enum Picker {
     Open,
+    Session,
     Folder,
     Zip,
 }
@@ -1568,6 +1592,9 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
             let dialog = rfd::FileDialog::new();
             let path = match picker {
                 Picker::Open => dialog.pick_file(),
+                Picker::Session => dialog
+                    .add_filter("Rescue session / index", &["json", "sqlite", "db"])
+                    .pick_file(),
                 Picker::Folder => dialog.pick_folder(),
                 Picker::Zip => dialog
                     .add_filter("ZIP", &["zip"])
@@ -1656,7 +1683,10 @@ impl App {
                         (
                             1,
                             "設定",
-                            matches!(self.stage, Stage::Settings | Stage::Imaging),
+                            matches!(
+                                self.stage,
+                                Stage::Settings | Stage::Imaging | Stage::Migrating
+                            ),
                         ),
                     ] {
                         ui.colored_label(
@@ -1690,6 +1720,8 @@ impl App {
                             .desired_width(ui.available_width().min(360.0))
                             .text(if self.stage == Stage::Recovering {
                                 "ファイルを保存中…".into()
+                            } else if self.stage == Stage::Migrating {
+                                "索引へコピー中…".into()
                             } else {
                                 format!(
                                     "{} / {} {:?}",
@@ -1707,7 +1739,17 @@ impl App {
                         self.status =
                             "中断を要求しました。再開位置の保存完了を待っています。".into();
                     }
+                    if self.stage == Stage::Imaging
+                        && self.image_progress.is_some()
+                        && ui.button("一時停止して保存").clicked()
+                    {
+                        self.image_pause_requested = true;
+                        self.cancel.store(true, Ordering::Relaxed);
+                        self.status =
+                            "一時停止を要求しました。読取マップの保存完了を待っています。".into();
+                    }
                     if ui.button("取消").clicked() {
+                        self.image_pause_requested = false;
                         self.cancel.store(true, Ordering::Relaxed);
                         self.status = "取消を要求しました。処理の終了を待っています。".into();
                     }
@@ -1749,6 +1791,11 @@ impl App {
                             ui.label("完了後、復元するファイルを選択できます。");
                         }
                         Stage::Imaging => self.imaging_status(ui),
+                        Stage::Migrating => {
+                            ui.heading("セッションをコピー移行しています");
+                            ui.label(&self.session_path);
+                            ui.label("元の記録を保持し、新しい索引を作成しています。取消は画面下から操作できます。");
+                        }
                         _ => self.results_ui(ui),
                     }
                 },
@@ -1757,6 +1804,9 @@ impl App {
         });
         if self.image_dialog && !self.busy() {
             self.imaging_dialog(ctx);
+        }
+        if self.session_dialog.is_some() && !self.busy() {
+            self.session_dialog_ui(ctx);
         }
         if self.map_dialog && !self.busy() {
             self.read_map_dialog(ctx);

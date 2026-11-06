@@ -1,2 +1,4 @@
 # Independent PNG/JPEG preview decoder and expected-image generator.
 Pillow==12.0.0
+# Validate real CLI/MCP reports against the published JSON contract.
+jsonschema==4.26.0

@@ -1,0 +1,261 @@
+{
+  "status": "passed",
+  "schema_version": 1,
+  "version": "0.2.0-alpha.16",
+  "time_utc": "2026-11-06T00:28:25.967411+00:00",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "gui_binary_sha256": "9e34db5bc301092fe660d7d64da8bebc5ccd70e9c30f5bf9c7afaa7d79a7705e",
+  "cli_binary_sha256": "3c385376f339a583971d6635030c57499f811a38a30bd6fd3afacc7ffb0a6bf7",
+  "acquisition": {
+    "source_unchanged": true,
+    "source_and_image_sha256": "088c86ce0b762eb1a83d62eaf5037dd5ccf846b97d1566ad656bf07fcb920814",
+    "image_bytes": 536870912,
+    "pause_copied_bytes": 8388608,
+    "pause_unattempted_bytes": 528482304,
+    "resume_same_image_id": "c95a5af7-a1d4-4916-9165-2f2ff968a967",
+    "saved_blocks_unchanged": true,
+    "completed_map_records": 128
+  },
+  "migration": {
+    "status": "passed",
+    "original_id": "f528be76-0e96-4eb7-83e3-f58170902c15",
+    "copy_id": "ed4d7e22-1d86-414e-ae21-8b1579c0ed5c",
+    "candidate_records_exact": 36,
+    "original_json_sha256_before_and_after": "46565caf4c59f05e8debd56db6032e99c1ad7f2671a9776715a64d957857db58",
+    "files_byte_exact": 36,
+    "bytes_exact": 152325,
+    "files": [
+      {
+        "candidate_id": "mft-20-7",
+        "bytes": 767,
+        "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+      },
+      {
+        "candidate_id": "mft-21-7",
+        "bytes": 102,
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+      },
+      {
+        "candidate_id": "mft-22-7",
+        "bytes": 1731,
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+      },
+      {
+        "candidate_id": "mft-23-7",
+        "bytes": 3126,
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+      },
+      {
+        "candidate_id": "mft-24-7",
+        "bytes": 3212,
+        "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+      },
+      {
+        "candidate_id": "mft-25-7",
+        "bytes": 184,
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+      },
+      {
+        "candidate_id": "mft-26-7",
+        "bytes": 124,
+        "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+      },
+      {
+        "candidate_id": "mft-27-7",
+        "bytes": 310,
+        "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+      },
+      {
+        "candidate_id": "mft-28-7",
+        "bytes": 1367,
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+      },
+      {
+        "candidate_id": "mft-29-7",
+        "bytes": 36642,
+        "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+      },
+      {
+        "candidate_id": "mft-30-7",
+        "bytes": 4880,
+        "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+      },
+      {
+        "candidate_id": "mft-31-7",
+        "bytes": 28268,
+        "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+      },
+      {
+        "candidate_id": "mft-32-7",
+        "bytes": 61,
+        "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+      },
+      {
+        "candidate_id": "mft-33-7",
+        "bytes": 33,
+        "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+      },
+      {
+        "candidate_id": "mft-34-7",
+        "bytes": 78,
+        "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+      },
+      {
+        "candidate_id": "mft-35-7",
+        "bytes": 80,
+        "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+      },
+      {
+        "candidate_id": "mft-36-7",
+        "bytes": 70,
+        "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+      },
+      {
+        "candidate_id": "mft-37-7",
+        "bytes": 55,
+        "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+      },
+      {
+        "candidate_id": "mft-38-7",
+        "bytes": 2162,
+        "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+      },
+      {
+        "candidate_id": "mft-39-7",
+        "bytes": 2109,
+        "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+      },
+      {
+        "candidate_id": "mft-40-7",
+        "bytes": 7356,
+        "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+      },
+      {
+        "candidate_id": "mft-41-7",
+        "bytes": 1915,
+        "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+      },
+      {
+        "candidate_id": "mft-42-7",
+        "bytes": 1175,
+        "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+      },
+      {
+        "candidate_id": "mft-43-7",
+        "bytes": 1088,
+        "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+      },
+      {
+        "candidate_id": "mft-44-7",
+        "bytes": 6478,
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      },
+      {
+        "candidate_id": "mft-45-7",
+        "bytes": 9478,
+        "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+      },
+      {
+        "candidate_id": "mft-46-7",
+        "bytes": 3717,
+        "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+      },
+      {
+        "candidate_id": "mft-47-7",
+        "bytes": 1812,
+        "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+      },
+      {
+        "candidate_id": "mft-48-7",
+        "bytes": 2603,
+        "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+      },
+      {
+        "candidate_id": "mft-49-7",
+        "bytes": 179,
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      {
+        "candidate_id": "mft-50-7",
+        "bytes": 10240,
+        "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+      },
+      {
+        "candidate_id": "mft-51-7",
+        "bytes": 81,
+        "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+      },
+      {
+        "candidate_id": "mft-52-7",
+        "bytes": 120,
+        "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+      },
+      {
+        "candidate_id": "mft-53-7",
+        "bytes": 110,
+        "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+      },
+      {
+        "candidate_id": "mft-54-7",
+        "bytes": 8192,
+        "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+      },
+      {
+        "candidate_id": "mft-55-7",
+        "bytes": 12420,
+        "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+      }
+    ]
+  },
+  "screenshots": [
+    {
+      "file": "images/jobs-image-progress.png",
+      "sha256": "89cbd2d1e48e3fa50ecb794efa3fa53f7e69a93d16c8fb3010568a0c769e5b31",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-image-paused.png",
+      "sha256": "1c8fc4620a7ddfce7304bd25837745efa22f8d20e19b205d9b3ac42a0d078609",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-image-resuming.png",
+      "sha256": "2b5f76559a36c5287d8c53442f272b6a7bd949f71342aa9bf459167441a799be",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-image-resumed.png",
+      "sha256": "9804c636cc19b01285f9c5f5dddd617924adf4572a3f9a4be38f22f61346d78e",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-migration-settings.png",
+      "sha256": "d165d6fb811fd3a2de68b7042a10b9703ebd13b23bd0e6132654879c35bdc629",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-migration-narrow.png",
+      "sha256": "7b92672e8e4f4096408690a31dc46911f014ff45c4b81f079ff42a68c2e0bd63",
+      "width": 720,
+      "height": 520
+    },
+    {
+      "file": "images/jobs-migrated.png",
+      "sha256": "5616470ba8873248164481fd13300d1e998401afae75b62e080376d90b187707",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/jobs-migration-restored.png",
+      "sha256": "1ce03ad5044c4d9428c748141ca919cc05e51ae215679643b911f5bc2628cce1",
+      "width": 1260,
+      "height": 820
+    }
+  ],
+  "scope": "Actual Linux Xvfb GUI input, pause/resume and JSON copy migration followed by 36-file GUI restoration. Independent corpus bytes. Not a Windows or macOS desktop UI claim."
+}

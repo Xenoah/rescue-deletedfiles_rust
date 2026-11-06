@@ -566,7 +566,8 @@ fn run() -> Result<i32, Error> {
             work_dir,
             json: compact,
         } => {
-            let path = rescue_core::IndexWriter::import_session(&session, &work_dir)?;
+            let path =
+                rescue_core::IndexWriter::import_session_with_cancel(&session, &work_dir, &cancel)?;
             print(
                 json!({"session":path,"index":rescue_core::CandidateIndex::open(&path)?.status()?}),
                 compact,
@@ -990,7 +991,7 @@ fn main() {
         Err(error) => {
             eprintln!(
                 "{}",
-                json!({"error":{"code":error.code(),"message":error.to_string()}})
+                json!({"schema_version":1,"error":error.report("command")})
             );
             match error {
                 Error::Request(_) | Error::Json(_) => 2,
