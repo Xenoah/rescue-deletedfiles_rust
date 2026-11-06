@@ -11,6 +11,7 @@ mod preview_ui;
 mod raid_ui;
 #[cfg(windows)]
 mod read_access_ui;
+mod scrolling;
 mod session_ui;
 mod text_input;
 mod view;
@@ -23,6 +24,7 @@ use rescue_core::{
     guard_output_path, list_disks, restore_files, restore_zip, save_restore_report,
     scan_with_settings,
 };
+use scrolling::AccessibleScrollArea;
 use std::{
     collections::BTreeSet,
     path::{Path, PathBuf},
@@ -141,8 +143,22 @@ struct App {
     progress: Progress,
     status: Text,
     report: Text,
+    show_report: bool,
+    focus_report: bool,
     results: Vec<RecoveryResult>,
     primary_rect: Option<egui::Rect>,
+}
+fn configure_style(ctx: &egui::Context) {
+    ctx.set_visuals(egui::Visuals::dark());
+    ctx.style_mut(|s| {
+        s.spacing.item_spacing = egui::vec2(8.0, 8.0);
+        s.spacing.interact_size.y = 28.0;
+        s.spacing.button_padding = egui::vec2(8.0, 4.0);
+        s.visuals.panel_fill = egui::Color32::from_rgb(25, 25, 25);
+        s.visuals.extreme_bg_color = egui::Color32::from_rgb(20, 20, 20);
+        s.visuals.override_text_color = Some(egui::Color32::from_gray(224));
+        s.visuals.selection.bg_fill = egui::Color32::from_rgb(38, 80, 110);
+    });
 }
 impl App {
     fn new(cc: &eframe::CreationContext<'_>, session: Option<PathBuf>, language: Language) -> Self {
@@ -158,16 +174,7 @@ impl App {
         if cc.gl.is_some() {
             eprintln!("Rescue renderer: OpenGL");
         }
-        cc.egui_ctx.set_visuals(egui::Visuals::dark());
-        cc.egui_ctx.style_mut(|s| {
-            s.spacing.item_spacing = egui::vec2(8.0, 8.0);
-            s.spacing.interact_size.y = 28.0;
-            s.spacing.button_padding = egui::vec2(8.0, 4.0);
-            s.visuals.panel_fill = egui::Color32::from_rgb(25, 25, 25);
-            s.visuals.extreme_bg_color = egui::Color32::from_rgb(20, 20, 20);
-            s.visuals.override_text_color = Some(egui::Color32::from_gray(224));
-            s.visuals.selection.bg_fill = egui::Color32::from_rgb(38, 80, 110);
-        });
+        configure_style(&cc.egui_ctx);
         let mut paths = if cfg!(windows) {
             let win = std::env::var_os("WINDIR")
                 .map(PathBuf::from)
@@ -285,6 +292,8 @@ impl App {
                 "Choose a disk and save options."
             ),
             report: Text::default(),
+            show_report: false,
+            focus_report: false,
             results: Vec::new(),
             primary_rect: None,
         }
@@ -817,6 +826,7 @@ impl App {
                     self.status = status;
                     self.report = detail;
                     self.stage = Stage::Finished;
+                    self.focus_report = true;
                 }
                 Message::Error(e) => {
                     self.raid.running = false;
@@ -882,7 +892,7 @@ impl App {
             egui::ScrollArea::vertical()
                 .id_salt("disks")
                 .max_height(145.0)
-                .show(ui, |ui| {
+                .show_accessible(ui, tr!("ディスク一覧", "Disk list"), |ui| {
                     for disk in &self.disks {
                         let path = disk.path.to_string_lossy();
                         let kind = if disk.kind == "disk" {
@@ -941,7 +951,7 @@ impl App {
         }
     }
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
-        egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show(ui, |ui| {
+        egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show_accessible(ui, tr!("設定", "Settings"), |ui| {
             ui.set_max_width(ui.available_width().min(960.0));
             ui.add_space(8.0);
             ui.heading(tr!("保存方法と検索条件", "Save options and search settings"));
@@ -1085,6 +1095,30 @@ impl App {
                 "Progress and cancellation controls are at the bottom of the window."
             ));
         }
+        if !self.report.is_empty() {
+            // Keep the report after the main actions in both visual and Tab
+            // order. Use the reserved height for this frame; resize next frame.
+            let was_open = self.show_report;
+            let report = ui.toggle_value(
+                &mut self.show_report,
+                tr!("保存場所・レポート", "Saved locations and reports"),
+            );
+            if self.focus_report && !self.busy() {
+                report.request_focus();
+                self.focus_report = false;
+            }
+            if report.changed() {
+                ui.ctx().request_repaint();
+            }
+            if was_open {
+                egui::ScrollArea::vertical()
+                    .id_salt("saved-report-body")
+                    .max_height(96.0)
+                    .show_accessible(ui, tr!("保存レポート", "Saved reports"), |ui| {
+                        ui.add(egui::Label::new(&self.report).wrap());
+                    });
+            }
+        }
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
         if self.session.as_ref().is_some_and(|s| {
@@ -1203,185 +1237,202 @@ impl App {
         let Some(session) = &self.session else {
             return;
         };
-        egui::ScrollArea::horizontal().show(ui, |ui| {
-            ui.set_min_width((self.column_widths.iter().sum::<f32>() + 173.0).max(1030.0));
-            let top = ui.cursor().top();
-            let spacing = ui.spacing().item_spacing.x;
-            let mut edges = [0.0; 5];
-            TableBuilder::new(ui)
-                .id_salt("files-table")
-                .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
-                .column(Column::exact(27.0))
-                .column(Column::exact(self.column_widths[0]))
-                .column(Column::exact(self.column_widths[1]))
-                .column(Column::exact(self.column_widths[2]))
-                .column(Column::exact(self.column_widths[3]))
-                .column(Column::exact(self.column_widths[4]))
-                .column(Column::remainder().at_least(90.0))
-                .header(32.0, |mut row| {
-                    row.col(|_| {});
-                    for (index, (col, label)) in [
-                        (SortColumn::Name, tr!("名前", "Name")),
-                        (SortColumn::Created, tr!("作成日時", "Date created")),
-                        (SortColumn::Modified, tr!("更新日時", "Date modified")),
-                        (SortColumn::Type, tr!("種類", "Type")),
-                        (SortColumn::Size, tr!("サイズ", "Size")),
-                        (SortColumn::State, tr!("状態", "Status")),
-                    ]
-                    .into_iter()
-                    .enumerate()
-                    {
-                        let (rect, _) = row.col(|ui| {
-                            let text = format!(
-                                "{label}{}",
-                                if self.sort == col {
-                                    if self.descending { "  ↓" } else { "  ↑" }
-                                } else {
-                                    ""
-                                }
-                            );
-                            let response = ui.selectable_label(self.sort == col, text);
-                            if let Some(width) = self.column_widths.get_mut(index) {
-                                columns::keyboard_width(ui, &response, width, index);
-                            }
-                            if response.clicked() {
-                                sort_clicked = Some(col);
-                            }
-                        });
-                        if let Some(edge) = edges.get_mut(index) {
-                            *edge = rect.right() + spacing * 0.5;
-                        }
-                    }
-                })
-                .body(|body| {
-                    body.rows(32.0, self.rows.len(), |mut row| {
-                        match &self.rows[row.index()] {
-                            Row::Group(name, count) => {
-                                row.col(|ui| {
-                                    if ui
-                                        .small_button(if self.closed.contains(name) {
-                                            "+"
-                                        } else {
-                                            "−"
-                                        })
-                                        .clicked()
-                                    {
-                                        toggle = Some(name.clone());
+        egui::ScrollArea::horizontal().show_accessible(
+            ui,
+            tr!("ファイル一覧", "Files"),
+            |ui| {
+                ui.set_min_width((self.column_widths.iter().sum::<f32>() + 173.0).max(1030.0));
+                let top = ui.cursor().top();
+                let spacing = ui.spacing().item_spacing.x;
+                // TableRow::col returns the contents' used rectangle, which can
+                // be smaller than the column. Boundaries follow actual widths.
+                let mut left = ui.cursor().left() + 27.0 + spacing;
+                let edges = self.column_widths.map(|width| {
+                    let edge = left + width + spacing * 0.5;
+                    left += width + spacing;
+                    edge
+                });
+                let mut table_scroll = TableBuilder::new(ui)
+                    .id_salt("files-table")
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                    .column(Column::exact(27.0))
+                    .column(Column::exact(self.column_widths[0]))
+                    .column(Column::exact(self.column_widths[1]))
+                    .column(Column::exact(self.column_widths[2]))
+                    .column(Column::exact(self.column_widths[3]))
+                    .column(Column::exact(self.column_widths[4]))
+                    .column(Column::remainder().at_least(90.0))
+                    .header(32.0, |mut row| {
+                        row.col(|_| {});
+                        for (index, (col, label)) in [
+                            (SortColumn::Name, tr!("名前", "Name")),
+                            (SortColumn::Created, tr!("作成日時", "Date created")),
+                            (SortColumn::Modified, tr!("更新日時", "Date modified")),
+                            (SortColumn::Type, tr!("種類", "Type")),
+                            (SortColumn::Size, tr!("サイズ", "Size")),
+                            (SortColumn::State, tr!("状態", "Status")),
+                        ]
+                        .into_iter()
+                        .enumerate()
+                        {
+                            row.col(|ui| {
+                                let text = format!(
+                                    "{label}{}",
+                                    if self.sort == col {
+                                        if self.descending { "  ↓" } else { "  ↑" }
+                                    } else {
+                                        ""
                                     }
-                                });
-                                row.col(|ui| {
-                                    ui.horizontal(|ui| {
-                                        folder_icon(ui, 17.0);
+                                );
+                                let response = ui.selectable_label(self.sort == col, text);
+                                if let Some(width) = self.column_widths.get_mut(index) {
+                                    columns::keyboard_width(ui, &response, width, index);
+                                }
+                                if response.clicked() {
+                                    sort_clicked = Some(col);
+                                }
+                            });
+                        }
+                    })
+                    .body(|body| {
+                        body.rows(32.0, self.rows.len(), |mut row| {
+                            match &self.rows[row.index()] {
+                                Row::Group(name, count) => {
+                                    row.col(|ui| {
                                         if ui
-                                            .selectable_label(false, format!("{name}  ({count})"))
+                                            .small_button(if self.closed.contains(name) {
+                                                "+"
+                                            } else {
+                                                "−"
+                                            })
                                             .clicked()
                                         {
                                             toggle = Some(name.clone());
                                         }
                                     });
-                                });
-                                for _ in 0..5 {
-                                    row.col(|_| {});
-                                }
-                            }
-                            Row::File(i) => {
-                                let c = &session.candidates[*i];
-                                let mut checked = self.selected.contains(&c.id);
-                                row.set_selected(checked);
-                                row.col(|ui| {
-                                    let response = ui.add_enabled(
-                                        c.supported && !busy,
-                                        egui::Checkbox::without_text(&mut checked),
-                                    );
-                                    response.widget_info(|| {
-                                        egui::WidgetInfo::selected(
-                                            egui::WidgetType::Checkbox,
-                                            c.supported && !busy,
-                                            checked,
-                                            tr_format!(
-                                                "{}を復元対象に選択",
-                                                "Select {} for recovery",
-                                                c.name
-                                            ),
-                                        )
+                                    row.col(|ui| {
+                                        ui.horizontal(|ui| {
+                                            folder_icon(ui, 17.0);
+                                            if ui
+                                                .selectable_label(
+                                                    false,
+                                                    format!("{name}  ({count})"),
+                                                )
+                                                .clicked()
+                                            {
+                                                toggle = Some(name.clone());
+                                            }
+                                        });
                                     });
-                                    if response.changed() {
-                                        set_selected(&mut self.selected, &c.id, checked);
+                                    for _ in 0..5 {
+                                        row.col(|_| {});
                                     }
-                                    if response.changed() || response.has_focus() {
-                                        self.focused = Some(c.id.clone());
-                                    }
-                                });
-                                row.col(|ui| {
-                                    ui.horizontal(|ui| {
-                                        file_icon(ui, 16.0);
-                                        let label = ui
-                                            .add(
-                                                egui::Label::new(&c.name)
-                                                    .truncate()
-                                                    .sense(egui::Sense::click()),
+                                }
+                                Row::File(i) => {
+                                    let c = &session.candidates[*i];
+                                    let mut checked = self.selected.contains(&c.id);
+                                    row.set_selected(checked);
+                                    row.col(|ui| {
+                                        let response = ui.add_enabled(
+                                            c.supported && !busy,
+                                            egui::Checkbox::without_text(&mut checked),
+                                        );
+                                        response.widget_info(|| {
+                                            egui::WidgetInfo::selected(
+                                                egui::WidgetType::Checkbox,
+                                                c.supported && !busy,
+                                                checked,
+                                                tr_format!(
+                                                    "{}を復元対象に選択",
+                                                    "Select {} for recovery",
+                                                    c.name
+                                                ),
                                             )
-                                            .on_hover_text(format!(
-                                                "{}\n{}",
-                                                c.original_path, c.id
-                                            ));
-                                        if label.has_focus() || label.clicked() {
+                                        });
+                                        if response.changed() {
+                                            set_selected(&mut self.selected, &c.id, checked);
+                                        }
+                                        if response.changed() || response.has_focus() {
                                             self.focused = Some(c.id.clone());
                                         }
-                                        if label.clicked() && c.supported && !busy {
-                                            set_selected(&mut self.selected, &c.id, !checked);
-                                        }
                                     });
-                                });
-                                row.col(|ui| {
-                                    ui.add(
-                                        egui::Label::new(view::date_text(&c.created)).truncate(),
-                                    )
-                                    .on_hover_text(view::date_hint(&c.created));
-                                });
-                                row.col(|ui| {
-                                    ui.add(
-                                        egui::Label::new(view::date_text(&c.modified)).truncate(),
-                                    )
-                                    .on_hover_text(view::date_hint(&c.modified));
-                                });
-                                row.col(|ui| {
-                                    ui.add(egui::Label::new(view::file_type(c)).truncate());
-                                });
-                                row.col(|ui| {
-                                    ui.with_layout(
-                                        egui::Layout::right_to_left(egui::Align::Center),
-                                        |ui| {
-                                            ui.label(view::size_text(c.size)).on_hover_text(
-                                                c.size
-                                                    .map(|n| format!("{n} bytes"))
-                                                    .unwrap_or_default(),
-                                            );
-                                        },
-                                    );
-                                });
-                                row.col(|ui| {
-                                    let saved =
-                                        self.results.iter().rev().find(|r| r.candidate_id == c.id);
-                                    ui.label(
-                                        saved
-                                            .map(|r| status_label(&r.status))
-                                            .unwrap_or_else(|| view::state(c)),
-                                    )
-                                    .on_hover_text(c.warnings.join("\n"));
-                                });
+                                    row.col(|ui| {
+                                        ui.horizontal(|ui| {
+                                            file_icon(ui, 16.0);
+                                            let label = ui
+                                                .add(
+                                                    egui::Label::new(&c.name)
+                                                        .truncate()
+                                                        .sense(egui::Sense::click()),
+                                                )
+                                                .on_hover_text(format!(
+                                                    "{}\n{}",
+                                                    c.original_path, c.id
+                                                ));
+                                            if label.has_focus() || label.clicked() {
+                                                self.focused = Some(c.id.clone());
+                                            }
+                                            if label.clicked() && c.supported && !busy {
+                                                set_selected(&mut self.selected, &c.id, !checked);
+                                            }
+                                        });
+                                    });
+                                    row.col(|ui| {
+                                        ui.add(
+                                            egui::Label::new(view::date_text(&c.created))
+                                                .truncate(),
+                                        )
+                                        .on_hover_text(view::date_hint(&c.created));
+                                    });
+                                    row.col(|ui| {
+                                        ui.add(
+                                            egui::Label::new(view::date_text(&c.modified))
+                                                .truncate(),
+                                        )
+                                        .on_hover_text(view::date_hint(&c.modified));
+                                    });
+                                    row.col(|ui| {
+                                        ui.add(egui::Label::new(view::file_type(c)).truncate());
+                                    });
+                                    row.col(|ui| {
+                                        ui.with_layout(
+                                            egui::Layout::right_to_left(egui::Align::Center),
+                                            |ui| {
+                                                ui.label(view::size_text(c.size)).on_hover_text(
+                                                    c.size
+                                                        .map(|n| format!("{n} bytes"))
+                                                        .unwrap_or_default(),
+                                                );
+                                            },
+                                        );
+                                    });
+                                    row.col(|ui| {
+                                        let saved = self
+                                            .results
+                                            .iter()
+                                            .rev()
+                                            .find(|r| r.candidate_id == c.id);
+                                        ui.label(
+                                            saved
+                                                .map(|r| status_label(&r.status))
+                                                .unwrap_or_else(|| view::state(c)),
+                                        )
+                                        .on_hover_text(c.warnings.join("\n"));
+                                    });
+                                }
                             }
-                        }
-                    })
-                });
-            columns::boundaries(
-                ui,
-                &edges,
-                top,
-                ui.min_rect().bottom(),
-                &mut self.column_widths,
-            );
-        });
+                        })
+                    });
+                scrolling::finish(ui, &mut table_scroll, tr!("詳細一覧", "Details list"));
+                columns::boundaries(
+                    ui,
+                    &edges,
+                    top,
+                    ui.min_rect().bottom(),
+                    &mut self.column_widths,
+                );
+            },
+        );
         if let Some(col) = sort_clicked {
             if self.sort == col {
                 self.descending = !self.descending;
@@ -1435,7 +1486,7 @@ impl App {
                 }
             })
             .collect::<Vec<_>>();
-        TableBuilder::new(ui)
+        let mut table_scroll = TableBuilder::new(ui)
             .id_salt("icon-table")
             .column(Column::remainder())
             .body(|body| {
@@ -1485,30 +1536,45 @@ impl App {
                                                                     .sense(egui::Sense::click()),
                                                             )
                                                             .on_hover_text(&c.original_path);
-                                                        if label.clicked() {
+                                                        if label.has_focus() || label.clicked() {
                                                             self.focused = Some(c.id.clone());
-                                                            if c.supported && !busy {
-                                                                let selected =
-                                                                    !self.selected.contains(&c.id);
-                                                                set_selected(
-                                                                    &mut self.selected,
-                                                                    &c.id,
-                                                                    selected,
-                                                                );
-                                                            }
+                                                        }
+                                                        if label.clicked() && c.supported && !busy {
+                                                            let selected =
+                                                                !self.selected.contains(&c.id);
+                                                            set_selected(
+                                                                &mut self.selected,
+                                                                &c.id,
+                                                                selected,
+                                                            );
                                                         }
                                                         ui.small(view::size_text(c.size));
                                                         let mut selected =
                                                             self.selected.contains(&c.id);
-                                                        if ui
-                                                            .add_enabled(
+                                                        let checkbox = ui.add_enabled(
+                                                            c.supported && !busy,
+                                                            egui::Checkbox::without_text(
+                                                                &mut selected,
+                                                            ),
+                                                        );
+                                                        checkbox.widget_info(|| {
+                                                            egui::WidgetInfo::selected(
+                                                                egui::WidgetType::Checkbox,
                                                                 c.supported && !busy,
-                                                                egui::Checkbox::without_text(
-                                                                    &mut selected,
+                                                                selected,
+                                                                tr_format!(
+                                                                    "{}を復元対象に選択",
+                                                                    "Select {} for recovery",
+                                                                    c.name
                                                                 ),
                                                             )
-                                                            .changed()
+                                                        });
+                                                        if checkbox.changed()
+                                                            || checkbox.has_focus()
                                                         {
+                                                            self.focused = Some(c.id.clone());
+                                                        }
+                                                        if checkbox.changed() {
                                                             set_selected(
                                                                 &mut self.selected,
                                                                 &c.id,
@@ -1525,6 +1591,7 @@ impl App {
                     });
                 });
             });
+        scrolling::finish(ui, &mut table_scroll, tr!("アイコン一覧", "Icons list"));
         if let Some(key) = toggle {
             if !self.closed.remove(&key) {
                 self.closed.insert(key);
@@ -2109,25 +2176,24 @@ impl App {
                     }
                 });
             }
-            if !self.report.is_empty() {
-                ui.collapsing(
-                    tr!("保存場所・レポート", "Saved locations and reports"),
-                    |ui| {
-                        ui.add(egui::Label::new(&self.report).wrap());
-                    },
-                );
-            }
         });
         let wide = ctx.content_rect().width() >= 1008.0;
         if self.show_evidence && wide && self.session.is_some() && self.stage != Stage::Settings {
             egui::SidePanel::right("evidence")
                 .default_width(280.0)
                 .show(ctx, |ui| {
-                    egui::ScrollArea::vertical().show(ui, |ui| self.intelligence(ui));
+                    egui::ScrollArea::vertical().show_accessible(
+                        ui,
+                        tr!("復元の根拠", "Recovery evidence"),
+                        |ui| self.intelligence(ui),
+                    );
                 });
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            let height = (ui.available_height() - 100.0).max(32.0);
+            let report_height = if self.report.is_empty() { 0.0 } else {
+                36.0 + if self.show_report {104.0} else {0.0}
+            };
+            let height = (ui.available_height() - 100.0 - report_height).max(32.0);
             ui.allocate_ui_with_layout(
                 egui::vec2(ui.available_width(), height),
                 egui::Layout::top_down(egui::Align::Min),
@@ -2180,7 +2246,9 @@ impl App {
                 ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 560.0));
                 egui::ScrollArea::vertical()
                     .max_height((ctx.content_rect().height() - 160.0).max(100.0))
-                    .show(ui, |ui| self.intelligence(ui));
+                    .show_accessible(ui, tr!("復元の根拠", "Recovery evidence"), |ui| {
+                        self.intelligence(ui)
+                    });
                 ui.separator();
                 close = ui.button(tr!("閉じる", "Close")).clicked();
             });
@@ -2289,6 +2357,7 @@ mod tests {
     #[test]
     fn primary_action_stays_inside_resized_viewports_and_scroll_content() {
         let ctx = egui::Context::default();
+        configure_style(&ctx);
         let mut app = App::blank();
         app.source_mode = SourceMode::Image;
         for language in [Language::Japanese, Language::English] {

@@ -8,7 +8,8 @@ fn frame(ctx: &egui::Context, app: &mut App, events: Vec<egui::Event>) -> TreeUp
         egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
-                egui::vec2(1260.0, 820.0),
+                ctx.data(|data| data.get_temp::<egui::Vec2>(egui::Id::new("test-viewport")))
+                    .unwrap_or(egui::vec2(1260.0, 820.0)),
             )),
             events,
             ..Default::default()
@@ -73,6 +74,7 @@ fn name(tree: &TreeUpdate, id: NodeId) -> String {
 fn app() -> (egui::Context, App) {
     let ctx = egui::Context::default();
     ctx.enable_accesskit();
+    configure_style(&ctx);
     let mut app = App::blank();
     app.language = Language::English;
     app.stage = Stage::Selecting;
@@ -230,4 +232,210 @@ fn accessible_edit_preserves_unicode_and_cannot_edit_a_busy_form() {
     app.stage = Stage::Recovering;
     frame(&ctx, &mut app, vec![set_value("should not change")]);
     assert_eq!(app.filter, "日本語");
+}
+
+#[test]
+fn report_follows_recovery_in_tab_order_including_a_narrow_window() {
+    for size in [egui::vec2(1260.0, 820.0), egui::vec2(720.0, 520.0)] {
+        let (ctx, mut app) = app();
+        ctx.data_mut(|data| data.insert_temp(egui::Id::new("test-viewport"), size));
+        app.report = "Saved session: 資料/session.sqlite".into();
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        ctx.memory_mut(|m| m.request_focus(egui::Id::new("result-search")));
+        frame(&ctx, &mut app, vec![]);
+        let mut stops = vec![];
+        for _ in 0..40 {
+            let tree = key(&ctx, &mut app, egui::Key::Tab, egui::Modifiers::NONE);
+            let label = name(&tree, tree.focus);
+            assert!(
+                !label.trim().is_empty(),
+                "unnamed stop at {size:?}: {:?}",
+                node(&tree, tree.focus)
+            );
+            stops.push(label.clone());
+            if label == "Recover selected files" {
+                let tree = key(&ctx, &mut app, egui::Key::Tab, egui::Modifiers::NONE);
+                assert_eq!(name(&tree, tree.focus), "Saved locations and reports");
+                break;
+            }
+        }
+        assert_eq!(
+            stops.last().map(String::as_str),
+            Some("Recover selected files"),
+            "{size:?}: {stops:?}"
+        );
+    }
+}
+
+#[test]
+fn scroll_bars_support_keyboard_and_accessible_range_actions_without_changing_selection() {
+    let (ctx, mut app) = app();
+    ctx.data_mut(|d| d.insert_temp(egui::Id::new("test-viewport"), egui::vec2(720.0, 520.0)));
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![]);
+    }
+    let tree = frame(&ctx, &mut app, vec![]);
+    let id = tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label() == Some("Files: horizontal scroll"))
+        .unwrap()
+        .0;
+    let request = |action, data| {
+        egui::Event::AccessKitActionRequest(egui::accesskit::ActionRequest {
+            action,
+            target: id,
+            data,
+        })
+    };
+    frame(
+        &ctx,
+        &mut app,
+        vec![request(egui::accesskit::Action::Focus, None)],
+    );
+    frame(&ctx, &mut app, vec![]);
+    let before = app.selected.clone();
+    let tree = key(&ctx, &mut app, egui::Key::ArrowRight, egui::Modifiers::NONE);
+    assert_eq!(node(&tree, id).numeric_value(), Some(32.0));
+    let tree = frame(
+        &ctx,
+        &mut app,
+        vec![request(
+            egui::accesskit::Action::SetValue,
+            Some(egui::accesskit::ActionData::NumericValue(80.0)),
+        )],
+    );
+    assert_eq!(node(&tree, id).numeric_value(), Some(80.0));
+    let tree = key(&ctx, &mut app, egui::Key::End, egui::Modifiers::NONE);
+    assert_eq!(
+        node(&tree, id).numeric_value(),
+        node(&tree, id).max_numeric_value()
+    );
+    assert_eq!(app.selected, before);
+}
+
+#[test]
+fn icon_checkboxes_expose_names_and_update_preview_target() {
+    let (ctx, mut app) = app();
+    app.view = ViewStyle::Icons;
+    let tree = frame(&ctx, &mut app, vec![]);
+    let id = tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label() == Some("Select 日本語.txt for recovery"))
+        .unwrap()
+        .0;
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::AccessKitActionRequest(
+            egui::accesskit::ActionRequest {
+                action: egui::accesskit::Action::Focus,
+                target: id,
+                data: None,
+            },
+        )],
+    );
+    key(&ctx, &mut app, egui::Key::Space, egui::Modifiers::NONE);
+    assert!(app.selected.contains("日本語.txt"));
+    assert_eq!(app.focused.as_deref(), Some("日本語.txt"));
+}
+
+#[test]
+fn pointer_resizes_the_column_boundary_instead_of_the_used_label_width() {
+    let (ctx, mut app) = app();
+    let tree = frame(&ctx, &mut app, vec![]);
+    let next = tree
+        .nodes
+        .iter()
+        .find(|(_, n)| n.label() == Some("Date created"))
+        .unwrap()
+        .1
+        .bounds()
+        .unwrap();
+    let start = egui::pos2(next.x0 as f32 - 4.0, ((next.y0 + next.y1) * 0.5) as f32);
+    let finish = start + egui::vec2(48.0, 0.0);
+    let selection = app.selected.clone();
+    frame(&ctx, &mut app, vec![egui::Event::PointerMoved(start)]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerButton {
+            pos: start,
+            button: egui::PointerButton::Primary,
+            pressed: true,
+            modifiers: egui::Modifiers::NONE,
+        }],
+    );
+    frame(&ctx, &mut app, vec![egui::Event::PointerMoved(finish)]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![egui::Event::PointerButton {
+            pos: finish,
+            button: egui::PointerButton::Primary,
+            pressed: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+    );
+    assert_eq!(app.column_widths[0], columns::DEFAULT[0] + 48.0);
+    assert_eq!(app.selected, selection);
+}
+
+#[test]
+fn settings_have_named_keyboard_targets_and_reach_start_scan() {
+    for size in [egui::vec2(1260.0, 820.0), egui::vec2(720.0, 520.0)] {
+        let (ctx, mut app) = app();
+        ctx.data_mut(|d| d.insert_temp(egui::Id::new("test-viewport"), size));
+        app.stage = Stage::Settings;
+        app.source_mode = SourceMode::Image;
+        app.source = "owned/source.raw".into();
+        app.destination = "owned/output".into();
+        app.session = None;
+        app.report = Text::default();
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        let mut stops = vec![];
+        for _ in 0..40 {
+            let tree = key(&ctx, &mut app, egui::Key::Tab, egui::Modifiers::NONE);
+            let label = name(&tree, tree.focus);
+            assert!(
+                !label.trim().is_empty(),
+                "{size:?}: {:?}",
+                node(&tree, tree.focus)
+            );
+            stops.push(label.clone());
+            if label == "Start scan" {
+                break;
+            }
+        }
+        assert_eq!(
+            stops.last().map(String::as_str),
+            Some("Start scan"),
+            "{stops:?}"
+        );
+    }
+}
+
+#[test]
+fn recovery_completion_moves_keyboard_focus_to_the_saved_report() {
+    let (ctx, mut app) = app();
+    let (sender, receiver) = mpsc::channel();
+    app.messages = Some(receiver);
+    app.stage = Stage::Recovering;
+    sender
+        .send(Message::Finished {
+            results: vec![],
+            status: "Saved: 1".into(),
+            detail: "Saved report: owned/report.json".into(),
+        })
+        .unwrap();
+    app.receive();
+    let tree = frame(&ctx, &mut app, vec![]);
+    assert_eq!(name(&tree, tree.focus), "Saved locations and reports");
+    key(&ctx, &mut app, egui::Key::Space, egui::Modifiers::NONE);
+    assert!(app.show_report);
 }

@@ -22,7 +22,7 @@ impl App {
             });
             egui::ScrollArea::vertical()
                 .max_height((ctx.content_rect().height() - 160.0).max(100.0))
-                .show(ui, |ui| {
+                .show_accessible(ui, tr!("セッション", "Session"), |ui| {
                     path_row(ui, tr!("セッションファイル（JSON / SQLite）", "Session file (JSON / SQLite)"), &mut self.session_path, Picker::Session);
                     if action == Action::Copy {
                         path_row(ui, tr!("新しい索引の作業フォルダー（任意）", "Working folder for the new index (optional)"), &mut self.work, Picker::Folder);

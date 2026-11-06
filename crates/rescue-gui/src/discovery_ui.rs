@@ -87,7 +87,7 @@ impl App {
             ui.set_width((ctx.content_rect().width()-48.0).clamp(240.0,1000.0));
             ui.heading(tr!("検出した領域を選択", "Select a discovered volume"));
             ui.label(tr!("範囲と管理情報を確認し、解析する領域を1つ選びます。元のパーティション表は変更しません。", "Check the bounds and metadata, then select one volume to scan. The original partition table stays unchanged."));
-            egui::ScrollArea::both().max_height((ctx.content_rect().height()-280.0).max(100.0)).show(ui,|ui| {
+            egui::ScrollArea::both().max_height((ctx.content_rect().height()-280.0).max(100.0)).show_accessible(ui, tr!("探索した領域", "Discovered regions"), |ui| {
                 if let Some(result)=&self.discovery {
                     for warning in &result.warnings {ui.colored_label(egui::Color32::YELLOW,warning);}
                     if result.volumes.is_empty() {ui.label(tr!("整合性を確認できる領域は見つかりませんでした。写真・文書・動画のCarvingも利用できます。", "No volume with sufficient structural evidence was found. You can also try carving photos, documents and videos."));}

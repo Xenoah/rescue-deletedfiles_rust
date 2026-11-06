@@ -1,0 +1,55 @@
+{
+  "source_sha256": "518d8b18a0558bcf90017b2c5df46409ec8fbbea75715d5e55cc1246c51c0eb3",
+  "source_unchanged": true,
+  "gui_binary_sha256": "79a391f81837d7cdeed08785dd67eb5dc316bbf084bb0dffe4fbd75634f6756a",
+  "files_byte_exact": 1,
+  "bytes_exact": 1367,
+  "output_sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+  "status": "passed",
+  "application_version": "0.2.0-alpha.16",
+  "scope": "Actual Linux X11 GUI and own independent NTFS image. Mouse/keyboard settings and scan; Ctrl+F, Tab, Space selected recovery; arrow and pointer column resizing; focus after async completion and 720x520 scroll. Native Windows UIA/IME and a screen-reader product are separate checks.",
+  "screenshots": [
+    {
+      "file": "images/keyboard-header.png",
+      "sha256": "a8c58c71ce7f2f6a7091ab6ace9e01731cb87919a5639837211df46d902cc3ad",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/keyboard-recover.png",
+      "sha256": "36d361d2e9b8c97a52b51ea6b29eeb57913683f2f9bc3785e5fde046a5e99c2d",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/keyboard-finished.png",
+      "sha256": "e0035b2d1adbb64a27e5998e74f37d15408a179851545df9a766e115368e0256",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/keyboard-report.png",
+      "sha256": "942f14bc35dab823c5077c21ec6b6b734717f8a5f9ab87afe43f3f908bd01ba0",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/keyboard-narrow.png",
+      "sha256": "b46153fe976fb8ff21a3996221348432376b33fe998abd12761e00df8ae11ea9",
+      "width": 720,
+      "height": 520
+    },
+    {
+      "file": "images/keyboard-scroll.png",
+      "sha256": "f3d3493b9b0f8925e0c80c8a9fb1f7a7639cfd199722f4290def535fe553a7cd",
+      "width": 720,
+      "height": 520
+    },
+    {
+      "file": "images/keyboard-drag.png",
+      "sha256": "f8f4ec96aa4a770fd611563887d5ea7cb2d0fc86331c2d7bffcc99539310b203",
+      "width": 720,
+      "height": 520
+    }
+  ]
+}

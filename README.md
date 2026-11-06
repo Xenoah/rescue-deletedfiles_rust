@@ -28,6 +28,11 @@ PNG/JPEGは入力8 MiB・1,677万画素、テキストは先頭64 KiB、1回の�
 
 ![日本語の名前を保持した英語の復元結果](docs/images/i18n-restored-en.png)
 
+Tab・Spaceによる選択と復元、列見出しの左右キーによる幅変更、狭い画面のキーボードスクロールを改善しました。
+復元完了後は保存レポートへフォーカスを移します。[操作基準と実GUIの検証](docs/UI_GUIDELINES.md)
+
+![キーボードでPDFを復元し、保存レポートへ移動した実GUI](docs/images/keyboard-finished.png)
+
 Windowsでは、通常権限の画面から選択ディスクの読取だけを許可する機能を追加中です。
 [権限分離の設計と未完了の検証](docs/READ_ACCESS.md)。以下のダウンロード案内はalpha.15のものです。
 

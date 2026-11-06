@@ -43,6 +43,9 @@ pub fn boundaries(ui: &egui::Ui, edges: &[f32; 5], top: f32, bottom: f32, widths
             ui.id().with(("column-boundary", index)),
             egui::Sense::click_and_drag() - egui::Sense::FOCUSABLE,
         );
+        // The labelled header exposes the equivalent keyboard operation.
+        ui.ctx()
+            .accesskit_node_builder(response.id, |node| node.set_hidden());
         if response.dragged() {
             widths[index] = (widths[index] + response.drag_delta().x).clamp(MINIMUM[index], 1200.0);
         }

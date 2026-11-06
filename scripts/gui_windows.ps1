@@ -10,7 +10,7 @@ $script:steps = [System.Collections.Generic.List[string]]::new()
 function Nodes {
     $script:root = [System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
     $items = $script:root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
-    for ($index=0; $index -lt $items.Count; $index++) { Write-Output -NoEnumerate $items.Item($index) }
+    for ($index=0; $index -lt $items.Count; $index++) { Write-Output -NoEnumerate ($items.Item($index)) }
 }
 function Find-Control([string]$Name, [string]$Type = '') {
     foreach ($node in (Nodes)) {
@@ -108,8 +108,16 @@ try {
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
     @{status='passed';process_id=$script:owned.Id;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;scope='Native Windows UIA Invoke/Value patterns, owned regular image and Unicode query; real IME and keyboard input are separate checks.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
-    @{status='failed';error=$_.Exception.ToString();steps=@($script:steps);window_title=$script:owned.MainWindowTitle;root_name=$script:root.Current.Name;root_class=$script:root.Current.ClassName;provider=$script:root.GetCurrentPropertyValue([System.Windows.Automation.AutomationElement]::ProviderDescriptionProperty);tree=@(Snapshot)} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
-    throw
+    $failure = $_
+    $evidence = @{status='failed';error=$failure.Exception.ToString();steps=@($script:steps)}
+    try {
+        $evidence.window_title=$script:owned.MainWindowTitle
+        $evidence.root_name=$script:root.Current.Name
+        $evidence.root_class=$script:root.Current.ClassName
+        $evidence.tree=@(Snapshot)
+    } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
+    $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    throw $failure
 } finally {
     if ($null -ne $script:owned) {
         $script:owned.Refresh()

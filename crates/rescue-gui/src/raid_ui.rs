@@ -312,7 +312,7 @@ impl App {
             ui.label(tr!("順序・欠損位置・使用範囲を指定します。元メンバーは読み取り専用です。", "Specify member order, missing positions and usable ranges. Source members are read-only."));
             egui::ScrollArea::vertical()
                 .max_height((ctx.content_rect().height() - 230.0).max(100.0))
-                .show(ui, |ui| {
+                .show_accessible(ui, tr!("RAID設定", "RAID settings"), |ui| {
                     self.raid.geometry_ui(ui);
                     self.raid.members_ui(ui);
                     text_row(ui, tr!("構成の保存先", "Configuration destination"), &mut self.raid.destination, "/path/array.rescue-raid.json");
@@ -462,11 +462,23 @@ impl State {
                 }
                 ui.horizontal_wrapped(|ui| {
                     let label = ui.label(tr!("開始バイト", "Start byte")).id;
-                    ui.add(egui::TextEdit::singleline(&mut member.offset).desired_width(130.0))
-                        .labelled_by(label);
+                    text_input::singleline(
+                        ui,
+                        &mut member.offset,
+                        ui.make_persistent_id("offset"),
+                        label,
+                        130.0,
+                        "",
+                    );
                     let label = ui.label(tr!("使用長", "Usable length")).id;
-                    ui.add(egui::TextEdit::singleline(&mut member.length).desired_width(160.0))
-                        .labelled_by(label);
+                    text_input::singleline(
+                        ui,
+                        &mut member.length,
+                        ui.make_persistent_id("length"),
+                        label,
+                        160.0,
+                        "",
+                    );
                 });
             });
         }

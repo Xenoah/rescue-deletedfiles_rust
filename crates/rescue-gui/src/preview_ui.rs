@@ -1,3 +1,4 @@
+use crate::scrolling::AccessibleScrollArea;
 use eframe::egui;
 use std::{
     sync::{
@@ -71,7 +72,7 @@ impl State {
             ui.set_width((ctx.content_rect().width()-48.0).clamp(240.0,640.0));
             ui.heading(tr!("ファイルのプレビュー", "File preview"));
             ui.add(egui::Label::new(&self.name).truncate());
-            egui::ScrollArea::both().max_height((ctx.content_rect().height()-230.0).max(100.0)).show(ui,|ui| {
+            egui::ScrollArea::both().max_height((ctx.content_rect().height()-230.0).max(100.0)).show_accessible(ui, tr!("プレビュー", "Preview"), |ui| {
                 if self.receiver.is_some() {ui.spinner();ui.label(tr!("元データを確認して表示を作成しています…", "Checking the source and preparing a preview…"));}
                 if !self.error.is_empty() {ui.label(tr!("このファイルはプレビューできません。復元できるかは候補の状態で確認してください。", "This file cannot be previewed. Check the candidate status to see whether it can be recovered."));ui.label(&self.error);}
                 if let Some(preview)=&self.preview {

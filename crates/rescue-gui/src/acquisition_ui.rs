@@ -40,7 +40,7 @@ impl App {
                 ));
                 egui::ScrollArea::both()
                     .max_height((ctx.content_rect().height() - 280.0).max(100.0))
-                    .show(ui, |ui| {
+                    .show_accessible(ui, tr!("イメージ取得", "Disk imaging"), |ui| {
                         egui::Grid::new("read-map-ranges")
                             .striped(true)
                             .min_row_height(32.0)
@@ -175,7 +175,7 @@ impl App {
             ui.set_width((ctx.content_rect().width()-48.0).clamp(240.0,520.0));
             ui.heading(tr!("イメージの作成・再開", "Create or resume an image"));
             ui.label(tr_format!("取得元: {}", "Source: {}",self.imaging_source()));
-            egui::ScrollArea::vertical().max_height((ctx.content_rect().height()-160.0).max(100.0)).show(ui,|ui|{
+            egui::ScrollArea::vertical().max_height((ctx.content_rect().height()-160.0).max(100.0)).show_accessible(ui, tr!("読取マップ", "Read map"), |ui|{
             ui.label(tr!("元ディスクを読み取り専用で取得し、後からイメージをスキャンできます。", "Read the source disk without writing to it, then scan the acquired image."));
             path_row(ui,tr!("イメージ保存フォルダー", "Image destination folder"),&mut self.image_destination,Picker::Folder);
             ui.small(tr!("新規取得では空のフォルダーを指定します。物理ディスクからの取得は別の媒体へ保存します。", "Use an empty folder for a new acquisition. Save an image of a physical disk to a separate medium."));

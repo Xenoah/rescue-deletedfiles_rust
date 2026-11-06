@@ -37,7 +37,8 @@ def main(binary,output,limited=False):
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}
     output.write_text(json.dumps({'status':'failed','uia':tree,'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-    check(completed.returncode==0 and tree['status']=='passed',json.dumps(tree,ensure_ascii=False)[-7000:]+'\n'+completed.stdout+completed.stderr)
+    gui_log=(root/'stderr.txt').read_text(encoding='utf-8',errors='replace') if (root/'stderr.txt').exists() else '(no GUI log)'
+    check(completed.returncode==0 and tree['status']=='passed',json.dumps(tree,ensure_ascii=False)[-7000:]+'\n'+completed.stdout+completed.stderr+'\nGUI: '+gui_log[-3000:])
     expected={'全形式/'+item['path'].name:item['data'] for item in truth.values() if item['path'].name in ['削除した報告書.pdf','原文.txt']}
     # The independent NTFS builder uses the fixed folder name 全形式.
     check(len(expected)==2,'missing GUI truth files')
