@@ -56,6 +56,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         ok=proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['source_unchanged'] and proof['checks']>0
         if platform=='linux':ok=ok and proof['checks']>=checks and (files is None or proof['files_byte_exact']==files)
         if not ok:contract_failures.append(f"{prefix}/{platform}/{arch}: observed {{'version':{proof.get('version')!r},'status':{proof.get('status')!r},'checks':{proof.get('checks')!r},'files':{proof.get('files_byte_exact')!r}}}")
+    fuzz=json.loads((dist/f'fuzz-results-{platform}-{arch}.json').read_text())
+    if not (fuzz['version']==f'rescue {VERSION}' and fuzz['status']=='passed' and fuzz['checks']>=400 and fuzz['panics']==0 and fuzz['source_unchanged']):contract_failures.append(f"fuzz/{platform}/{arch}: observed checks {fuzz.get('checks')!r}")
     if platform=='windows':
         for kind in ['native','limited']:
             proof=json.loads((dist/f'read-access-{kind}-windows-x64.json').read_text())

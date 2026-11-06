@@ -126,6 +126,9 @@ jobs:
       - name: Native capacity failure, permission denial and acquisition resume
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_imaging_native.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output imaging-native-results.json
+      - name: Deterministic mutation fuzzing of every CLI-reachable parser
+        timeout-minutes: 20
+        run: python scripts/ci_command.py python scripts/e2e_fuzz.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --cases 400 --output fuzz-results.json
       - name: Release all-format byte verification
         run: python scripts/ci_command.py python scripts/e2e_formats.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --output format-results/release
       - name: Independent deletion and all formats on Linux
@@ -182,6 +185,8 @@ jobs:
       - name: Collect Windows read-access evidence
         if: runner.os == 'Windows'
         run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json');shutil.copyfile('read-access-limited-results.json','dist/read-access-limited-windows-x64.json');shutil.copyfile('gui-native-results.json','dist/gui-native-windows-x64.json')"
+      - name: Collect fuzzing evidence
+        run: python -c "import shutil;shutil.copyfile('fuzz-results.json','dist/fuzz-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect acquisition evidence
         run: python -c "import shutil;shutil.copyfile('imaging-results.json','dist/imaging-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('imaging-native-results.json','dist/imaging-native-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - uses: actions/upload-artifact@v4
@@ -214,6 +219,7 @@ jobs:
             dist/source-contract-*.json
             dist/read-access-*.json
             dist/gui-native-*.json
+            dist/fuzz-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures
