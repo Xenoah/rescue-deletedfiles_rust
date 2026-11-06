@@ -51,6 +51,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
     # primary token; no alternate credentials or token elevation are involved.
     # https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createprocesswithtokenw
     create=api(security,'CreateProcessWithTokenW',[w.HANDLE,w.DWORD,w.LPCWSTR,w.LPWSTR,w.DWORD,c.c_void_p,w.LPCWSTR,c.POINTER(Startup),c.POINTER(Process)])
+    create_as_user=api(security,'CreateProcessAsUserW',[w.HANDLE,w.LPCWSTR,w.LPWSTR,c.c_void_p,c.c_void_p,w.BOOL,w.DWORD,c.c_void_p,w.LPCWSTR,c.POINTER(Startup),c.POINTER(Process)])
     wait=api(kernel,'WaitForSingleObject',[w.HANDLE,w.DWORD],w.DWORD)
     exit_code=api(kernel,'GetExitCodeProcess',[w.HANDLE,c.POINTER(w.DWORD)])
     terminate=api(kernel,'TerminateProcess',[w.HANDLE,w.UINT])
@@ -97,7 +98,14 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
                 start.lpDesktop='winsta0\\default'
                 start.hStdInput,start.hStdOutput,start.hStdError=handles
                 args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
-                checked(create(limited,0,args[0],text,0x08000000|(4 if kill_tree else 0),None,None,c.byref(start),c.byref(process)))
+                flags=0x08000000|(4 if kill_tree else 0)
+                if restricted:
+                    # Preserve the shell logon's session for a filtered copy.
+                    # Secondary Logon refuses this restricted primary token;
+                    # CreateProcessAsUser explicitly supports restricted tokens.
+                    checked(create_as_user(limited,args[0],text,None,None,True,flags,None,None,c.byref(start),c.byref(process)))
+                else:
+                    checked(create(limited,0,args[0],text,flags,None,None,c.byref(start),c.byref(process)))
                 if kill_tree:
                     from windows_job import owned_process_job
                     job=owned_process_job(process.hProcess)
@@ -110,7 +118,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'restricted_desktop_token' if restricted else 'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':bool(elevation.value),'administrator_sid_enabled':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
+                result.token_profile={'method':'restricted_desktop_token' if restricted else 'owned_interactive_uac_linked','launcher':'CreateProcessAsUserW' if restricted else 'CreateProcessWithTokenW','elevated':bool(elevation.value),'administrator_sid_enabled':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
                 return result
     finally:
         if kill_tree and process.hProcess and not job:

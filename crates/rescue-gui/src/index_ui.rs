@@ -40,6 +40,7 @@ pub(super) struct Loaded {
     pub status: IndexStatus,
     pub page: IndexPage,
     pub query: IndexQuery,
+    pub deferred_page: bool,
 }
 pub(super) fn load(
     path: PathBuf,
@@ -62,6 +63,32 @@ pub(super) fn load(
         status,
         page,
         query,
+        deferred_page: false,
+    })
+}
+
+/// A finished or paused scan has already committed its checkpoint. Present
+/// that state immediately, then query the saved candidates as a separate,
+/// cancellable UI operation. The scan's cancellation flag must not cancel
+/// its own result display or turn a saved pause into an error.
+pub(super) fn load_scan_result(path: PathBuf, query: IndexQuery) -> Result<Loaded, String> {
+    let index = CandidateIndex::open(&path).map_err(|e| e.to_string())?;
+    let header = index.session().map_err(|e| e.to_string())?;
+    let status = index.status().map_err(|e| e.to_string())?;
+    let page = IndexPage {
+        session_id: header.id.clone(),
+        index_id: status.index_id.clone(),
+        watermark: status.candidates,
+        candidates: Vec::new(),
+        next_cursor: None,
+    };
+    Ok(Loaded {
+        path,
+        header,
+        status,
+        page,
+        query,
+        deferred_page: true,
     })
 }
 #[derive(Default)]
@@ -103,6 +130,7 @@ impl App {
         }
     }
     pub(super) fn install_index(&mut self, mut loaded: Loaded) {
+        let deferred_page = loaded.deferred_page;
         loaded.header.candidates = std::mem::take(&mut loaded.page.candidates);
         self.install_session(loaded.header, &loaded.path);
         self.filter = loaded.query.text.clone();
@@ -139,6 +167,9 @@ impl App {
             next: loaded.page.next_cursor,
             ..Default::default()
         };
+        if deferred_page {
+            self.request_page(Navigation::Reset);
+        }
     }
     pub(super) fn remember_selection_sizes(&mut self) {
         self.index.sizes.retain(|id, _| self.selected.contains(id));
@@ -375,7 +406,7 @@ impl App {
                 let _ = tx.try_send(Message::IndexProgress(p));
             })
             .map_err(|e| e.to_string())
-            .and_then(|p| load(p, query, &cancel));
+            .and_then(|p| load_scan_result(p, query));
             let _ = tx.send(match result {
                 Ok(loaded) => Message::IndexResumed(Box::new(loaded)),
                 Err(e) => Message::Error(e.into()),
@@ -460,5 +491,84 @@ impl App {
                     .unwrap_or_else(|e| Message::Error(e.into()));
             let _ = tx.send(result);
         });
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+
+    #[test]
+    fn paused_scan_displays_committed_results_with_a_fresh_query_and_keeps_selection() {
+        let root = std::env::temp_dir().join(format!(
+            "rescue-paused-ui-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir(&root).unwrap();
+        let mut header = crate::tests::session(FileSystem::Ntfs);
+        header.id = "963596c3-c364-4bbb-906c-e66c4e557bfd".into();
+        header.source = root.join("source.img");
+        std::fs::write(&header.source, [0u8; 8192]).unwrap();
+        header.fingerprint = rescue_core::inspect_image(&header.source).unwrap();
+        let mut writer =
+            rescue_core::IndexWriter::create(&root.join("work"), &header, "ntfs", &0).unwrap();
+        let candidate = Candidate {
+            id: "saved".into(),
+            record: 1,
+            fragment_offset: None,
+            sequence: 1,
+            stream_name: None,
+            name: "saved.txt".into(),
+            original_path: "saved.txt".into(),
+            path_verified: true,
+            alternate_names: vec![],
+            size: Some(46),
+            supported: true,
+            warnings: vec![],
+            record_sha256: String::new(),
+            extent_evidence: Default::default(),
+            allocation_status: Default::default(),
+            created: None,
+            modified: None,
+        };
+        header.cancelled = true;
+        header.scanned_records = 1;
+        header.total_records = 2;
+        writer
+            .commit(&header, &[candidate], "cancelled", true, &1)
+            .unwrap();
+        let path = writer.index().path().to_owned();
+        drop(writer);
+        let mut app = App::blank();
+        app.cancel.store(true, Ordering::Relaxed);
+        let query = app.index_query();
+        // This was the post-scan path: it incorrectly rejected a saved pause.
+        assert!(load(path.clone(), query.clone(), &app.cancel).is_err());
+        let loaded = load_scan_result(path, query).unwrap();
+        assert!(loaded.deferred_page && loaded.status.resumable);
+        app.selected.insert("saved".into());
+        app.index.sizes.insert("saved".into(), Some(46));
+        app.accept_resumed_index(loaded);
+        assert_eq!(app.stage, Stage::Selecting);
+        assert!(app.cancel.load(Ordering::Relaxed));
+        assert!(!app.index.cancel.0.load(Ordering::Relaxed));
+        let until = Instant::now() + Duration::from_secs(5);
+        while app.index.loading() {
+            app.receive_index();
+            assert!(Instant::now() < until, "paused result query did not finish");
+            thread::sleep(Duration::from_millis(5));
+        }
+        assert_eq!(app.session.as_ref().unwrap().candidates[0].id, "saved");
+        assert!(app.index.status.as_ref().unwrap().resumable);
+        assert!(app.selected.contains("saved"));
+        assert_eq!(app.selected_bytes(), 46);
+        assert!(app.status.get(Language::English).contains("Can resume"));
+        drop(app);
+        std::fs::remove_dir_all(root).unwrap();
     }
 }

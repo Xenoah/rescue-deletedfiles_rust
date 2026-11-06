@@ -541,7 +541,7 @@ impl App {
                     },
                 )
                 .map_err(|e| e.to_string())
-                .and_then(|path| index_ui::load(path, query, &cancel))
+                .and_then(|path| index_ui::load_scan_result(path, query))
                 .map(|loaded| Message::Indexed(Box::new(loaded)))
             } else {
                 scan_with_settings(&source, ScanOptions::default(), &settings, &cancel, |p| {
