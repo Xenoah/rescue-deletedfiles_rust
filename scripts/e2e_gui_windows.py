@@ -38,7 +38,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
                 # A different-logon UIA client cannot access even an owned WPF
                 # provider on this hosted desktop; that is a driver limitation.
                 launcher=root/'launch.ps1';pid_file=root/'owned-pid.txt'
-                launcher.write_text("param([string]$Config)\n$ErrorActionPreference='Stop'\n$c=Get-Content -LiteralPath $Config -Raw -Encoding UTF8|ConvertFrom-Json\n$p=Start-Process -FilePath $c.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $c.root 'stdout.txt') -RedirectStandardError (Join-Path $c.root 'stderr.txt')\n$p.Id|Set-Content -LiteralPath (Join-Path $c.root 'owned-pid.txt')\n$p.WaitForExit()\nexit $p.ExitCode\n",encoding='utf-8-sig')
+                launcher.write_text("param([string]$Config)\n$ErrorActionPreference='Stop'\n$c=Get-Content -LiteralPath $Config -Raw -Encoding UTF8|ConvertFrom-Json\n$p=Start-Process -FilePath $c.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $c.root 'stdout.txt') -RedirectStandardError (Join-Path $c.root 'stderr.txt')\n$p.Id|Set-Content -LiteralPath (Join-Path $c.root 'owned-pid.txt') -Encoding UTF8\n$p.WaitForExit()\nexit $p.ExitCode\n",encoding='utf-8-sig')
                 outcomes=[];errors=[]
                 def launch():
                     try:outcomes.append(run_limited([str(powershell),'-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(launcher),'-Config',str(config)],token=identity['token'],timeout=180,kill_tree=True))
@@ -49,7 +49,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
                     while not pid_file.exists():
                         if not thread.is_alive() or time.monotonic()>deadline:raise RuntimeError('limited GUI launcher failed: '+str(errors or outcomes))
                         time.sleep(.1)
-                    cfg=json.loads(config.read_text(encoding='utf-8'));cfg['owned_pid']=int(pid_file.read_text(encoding='utf-16').strip());config.write_text(json.dumps(cfg,ensure_ascii=False),encoding='utf-8')
+                    cfg=json.loads(config.read_text(encoding='utf-8'));cfg['owned_pid']=int(pid_file.read_text(encoding='utf-8-sig').strip());config.write_text(json.dumps(cfg,ensure_ascii=False),encoding='utf-8')
                     completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=120)
                 finally:thread.join(timeout=185)
                 check(not thread.is_alive() and not errors and len(outcomes)==1,'limited GUI launcher did not exit: '+str(errors))
