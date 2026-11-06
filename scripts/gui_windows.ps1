@@ -195,7 +195,7 @@ try {
         $script:owned=Get-Process -Id $cfg.owned_pid
         if ($script:owned.Path -ine $cfg.binary) {throw 'Supplied process is not the owned GUI binary'}
         $script:guiToken=@{elevated=[RescueOwnedWindow]::TokenValue($script:owned.Handle,20);elevation_type=[RescueOwnedWindow]::TokenValue($script:owned.Handle,18)}
-        if ($script:guiToken.elevated -ne 0 -or $script:guiToken.elevation_type -ne 3) {throw 'Actual GUI process is not UAC-limited'}
+        if ($script:guiToken.elevated -ne 0 -or $script:guiToken.elevation_type -ne 3) {throw "Actual GUI process is not UAC-limited: $($script:guiToken|ConvertTo-Json -Compress)"}
     } else {
     $script:owned = Start-Process -FilePath $cfg.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $cfg.root 'stdout.txt') -RedirectStandardError (Join-Path $cfg.root 'stderr.txt')
     }

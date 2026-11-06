@@ -69,6 +69,20 @@ def desktop_test_user():
         else:raise RuntimeError(f'unexpected desktop elevation type: {kind.value}')
         data=c.create_string_buffer(256);checked(info(selected,1,data,len(data),c.byref(needed)))
         checked(sid_text(c.c_void_p.from_buffer(data),c.byref(sid)))
+        if restricted:
+            # A service token's default ACL may grant only Administrators and
+            # SYSTEM. Once Administrators is deny-only, a child cannot access
+            # objects created from that ACL and user32 initialization can fail.
+            # Change only the owned token copy, never the runner's token/ACL.
+            descriptor=c.c_void_p();acl=c.c_void_p();present=w.BOOL();defaulted=w.BOOL()
+            parse=api(security,'ConvertStringSecurityDescriptorToSecurityDescriptorW',[w.LPCWSTR,w.DWORD,c.POINTER(c.c_void_p),c.c_void_p])
+            get_acl=api(security,'GetSecurityDescriptorDacl',[c.c_void_p,c.POINTER(w.BOOL),c.POINTER(c.c_void_p),c.POINTER(w.BOOL)])
+            try:
+                checked(parse('D:(A;;GA;;;SY)(A;;GA;;;'+sid.value+')',1,c.byref(descriptor),None))
+                checked(get_acl(descriptor,c.byref(present),c.byref(acl),c.byref(defaulted)))
+                checked(set_info(selected,6,c.byref(acl),c.sizeof(acl)))
+            finally:
+                if descriptor:free(descriptor)
         yield {'token':selected,'sid':sid.value,'restricted':restricted,'proof':{'account':'existing runner identity','shell_pid':pid.value,'method':'restricted caller token' if restricted else 'existing limited caller token','account_modified':False,'profile_loaded':False,'uac_consent_test':False}}
     finally:
         if sid:free(c.cast(sid,c.c_void_p))

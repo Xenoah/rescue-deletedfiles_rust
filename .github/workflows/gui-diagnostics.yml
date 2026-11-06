@@ -56,6 +56,14 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-limited-keyboard.json --limited-gui --keyboard
+      - name: Scheduler least-privilege GUI with native UIA
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-scheduled.json --scheduled-gui
+      - name: Scheduler least-privilege GUI with native keyboard
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-scheduled-keyboard.json --scheduled-gui --keyboard
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -67,6 +75,7 @@ jobs:
             gui-native-keyboard.json
             gui-limited-product.json
             gui-limited-keyboard.json
+            gui-scheduled*.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/std*.txt
           if-no-files-found: ignore
