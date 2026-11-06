@@ -68,9 +68,11 @@ public static class RescueOwnedWindow {
         finally {Marshal.ReleaseComObject(manager);}
         // TSF profile activation alone need not change an inactive window's
         // thread HKL. Request the saved layout on this owned HWND as well.
-        UIntPtr result;
-        if(SendMessageTimeout(hwnd,0x50,UIntPtr.Zero,previousImeLayout,2,5000,out result)==IntPtr.Zero)
-            throw new Exception("Owned GUI did not process input-layout restoration");
+        SetForegroundWindow(hwnd);
+        // Windows posts WM_INPUTLANGCHANGEREQUEST; a synchronous SendMessage
+        // can deadlock TSF cross-thread callbacks while this driver is waiting.
+        if(!PostMessage(hwnd,0x50,UIntPtr.Zero,previousImeLayout))
+            throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
         for(int i=0;i<30;i++) {
             System.Threading.Thread.Sleep(100);
             if(GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero))==previousImeLayout) {ImeRestored=true;return;}
@@ -110,6 +112,8 @@ public static class RescueOwnedWindow {
     public static extern bool SetForegroundWindow(IntPtr hwnd);
     [DllImport("user32.dll")]
     public static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll", SetLastError=true)]
+    static extern bool PostMessage(IntPtr hwnd,uint message,UIntPtr wparam,IntPtr lparam);
     public static void Key(ushort key, bool up, bool unicode) {
         var input=new Input {type=1, keyboard=new KeyboardInput {key=unicode?(ushort)0:key, scan=unicode?key:(ushort)0, flags=(up?2u:0u)|(unicode?4u:0u)}};
         if(SendInput(1,new[]{input},Marshal.SizeOf(typeof(Input)))!=1) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
