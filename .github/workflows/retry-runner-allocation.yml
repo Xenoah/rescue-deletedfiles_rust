@@ -1,5 +1,8 @@
 name: Retry hosted runner and artifact delivery failures
 on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/retry-runner-allocation.yml]
   workflow_run:
     workflows: [Verify and release, Verify actual published packages]
     types: [completed]
@@ -9,10 +12,11 @@ permissions:
 jobs:
   retry:
     if: >-
-      github.event.workflow_run.conclusion == 'failure' &&
+      github.event_name == 'push' ||
+      (github.event.workflow_run.conclusion == 'failure' &&
       (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch') &&
       github.event.workflow_run.head_repository.full_name == github.repository &&
-      github.event.workflow_run.run_attempt < 3
+      github.event.workflow_run.run_attempt < 3)
     runs-on: ubuntu-22.04
     timeout-minutes: 2
     steps:
@@ -24,14 +28,29 @@ jobs:
           FAILED_BRANCH: ${{ github.event.workflow_run.head_branch }}
           FAILED_SHA: ${{ github.event.workflow_run.head_sha }}
           FAILED_WORKFLOW: ${{ github.event.workflow_run.name }}
+          RETRY_EVENT: ${{ github.event_name }}
         run: |
           python3 - <<'PYCODE'
-          import json, os, subprocess
+          import json, os, re, subprocess
           repo=os.environ['GH_REPO']
-          run_id=str(int(os.environ['FAILED_RUN_ID']))
-          branch=os.environ['FAILED_BRANCH']
           def api(path):
               return json.loads(subprocess.check_output(['gh','api',path],text=True,timeout=30))
+          if os.environ['RETRY_EVENT']=='push':
+              # Updating this policy also reevaluates the latest failed release
+              # tag. It does not rebuild successful releases or feature branches.
+              runs=api('repos/'+repo+'/actions/workflows/ci.yml/runs?event=push&per_page=30')['workflow_runs']
+              releases=[run for run in runs if re.fullmatch(r'v[0-9]+\..+',run.get('head_branch',''))]
+              if not releases or releases[0]['conclusion']!='failure':
+                  print('No latest failed release tag requires recovery.')
+                  raise SystemExit(0)
+              chosen=releases[0]
+              if chosen['head_repository']['full_name']!=repo:
+                  raise SystemExit('Foreign repository is never retried')
+              run_id=str(int(chosen['id']))
+              branch=chosen['head_branch']
+          else:
+              run_id=str(int(os.environ['FAILED_RUN_ID']))
+              branch=os.environ['FAILED_BRANCH']
           if branch in ('main','work'):
               if branch=='work' and os.environ['FAILED_WORKFLOW']!='Verify actual published packages':
                   print('Only published-package QA is retried on work.')
