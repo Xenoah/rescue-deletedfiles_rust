@@ -75,6 +75,10 @@ def main(binary, output, limited=False, identity=None):
         with disk.open('r+b') as f:f.truncate(max(disk.stat().st_size,64*1024*1024))
         before=file_hash(disk)
         truth={'p1:'+key:value for key,value in original.items()}
+        if limited:
+            ordinary=invoke(['scan','--indexed','--source',disk,'--work-dir',root/'ordinary-work','--json'])
+            check(ordinary.returncode==0,'owned account cannot read/write its regular fixture before device access: '+ordinary.stdout+ordinary.stderr)
+            cases.append('limited_account_can_scan_and_write_only_its_owned_fixture')
         with native_source(disk,root) as (_,source,backing):
             backing_before=file_hash(backing)
             # Mount completion and DevicePath publication can precede storage

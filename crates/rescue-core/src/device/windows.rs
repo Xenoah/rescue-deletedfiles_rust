@@ -67,6 +67,20 @@ fn device_file(path: &Path) -> std::io::Result<File> {
         .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
         .open(path)
 }
+// Topology IOCTLs are FILE_ANY_ACCESS. Asking for GENERIC_READ here would
+// require elevation for the destination volume, even after the user granted
+// read access to only the selected source. A zero-access handle cannot read or
+// write raw sectors; it is used exclusively for disk numbers and volume extents.
+fn topology_file(path: &Path) -> std::io::Result<File> {
+    if let Some(file) = crate::read_access::granted(path)? {
+        return Ok(file);
+    }
+    OpenOptions::new()
+        .read(true)
+        .access_mode(0)
+        .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+        .open(path)
+}
 pub fn open(path: &Path) -> Result<(File, Option<DeviceInfo>)> {
     if is_device(path) {
         let file = device_file(path)?;
@@ -170,7 +184,7 @@ pub fn info(file: &File, _path: &Path) -> Result<DeviceInfo> {
 }
 pub fn source_disks(path: &Path) -> Result<BTreeSet<String>> {
     let path = canonical(path)?;
-    let file = device_file(&path)?;
+    let file = topology_file(&path)?;
     if path.to_string_lossy().starts_with(r"\\.\PhysicalDrive") {
         let value = control(&file, IOCTL_STORAGE_GET_DEVICE_NUMBER, &[], 12)?;
         return Ok(BTreeSet::from([format!(
@@ -224,7 +238,7 @@ pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result
         },
     };
     let source = canonical(path)?;
-    let source_file = device_file(&source)?;
+    let source_file = topology_file(&source)?;
     let disk = if region.is_some() {
         Some(u32_at(
             &control(&source_file, IOCTL_STORAGE_GET_DEVICE_NUMBER, &[], 12)?,
@@ -264,7 +278,7 @@ pub fn mounted_root(path: &Path, region: Option<&crate::SourceRegion>) -> Result
             .ok_or_else(|| Error::Invalid("volume name".into()))?;
         let text = String::from_utf16_lossy(&name[..end]);
         let matches = (|| -> Result<bool> {
-            let file = device_file(Path::new(text.trim_end_matches('\\')))?;
+            let file = topology_file(Path::new(text.trim_end_matches('\\')))?;
             let value = control(&file, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, &[], 65536)?;
             if let Some(region) = region {
                 if value.len() < 32 || u32_at(&value, 0)? != 1 || Some(u32_at(&value, 8)?) != disk {
