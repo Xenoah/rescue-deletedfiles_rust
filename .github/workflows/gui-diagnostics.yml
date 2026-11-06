@@ -40,10 +40,22 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-results.json --limited
-      - name: Native UIA under the desktop owner's existing limited token
+      - name: Native UIA under a medium-integrity token with administrator access removed
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-desktop.json --desktop-token
+      - name: Native keyboard input under the same restricted token
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-keyboard.json --desktop-token --keyboard
+      - name: Real limited GUI with the UIA driver in the runner logon
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-limited-product.json --limited-gui
+      - name: Real limited GUI with native keyboard input
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-limited-keyboard.json --limited-gui --keyboard
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -52,6 +64,9 @@ jobs:
             gui-native-results.json
             gui-native-unlimited.json
             gui-native-desktop.json
+            gui-native-keyboard.json
+            gui-limited-product.json
+            gui-limited-keyboard.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/std*.txt
           if-no-files-found: ignore

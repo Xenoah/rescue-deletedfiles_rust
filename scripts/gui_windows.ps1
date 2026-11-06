@@ -8,6 +8,34 @@ Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
 public static class RescueOwnedWindow {
+    [DllImport("advapi32.dll", SetLastError=true)]
+    static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
+    [DllImport("advapi32.dll", SetLastError=true)]
+    static extern bool GetTokenInformation(IntPtr token, int kind, out uint value, uint size, out uint needed);
+    [DllImport("kernel32.dll")]
+    static extern bool CloseHandle(IntPtr handle);
+    public static uint TokenValue(IntPtr process, int kind) {
+        IntPtr token;
+        if(!OpenProcessToken(process,8,out token)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        try {uint value,needed; if(!GetTokenInformation(token,kind,out value,4,out needed)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());return value;}
+        finally {CloseHandle(token);}
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct KeyboardInput { public ushort key, scan; public uint flags, time; public UIntPtr extra; }
+    [StructLayout(LayoutKind.Explicit, Size=40)]
+    public struct Input { [FieldOffset(0)] public uint type; [FieldOffset(8)] public KeyboardInput keyboard; }
+    [DllImport("user32.dll", SetLastError=true)]
+    static extern uint SendInput(uint count, Input[] input, int size);
+    [DllImport("user32.dll")]
+    public static extern bool SetForegroundWindow(IntPtr hwnd);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
+    public static void Key(ushort key, bool up, bool unicode) {
+        var input=new Input {type=1, keyboard=new KeyboardInput {key=unicode?(ushort)0:key, scan=unicode?key:(ushort)0, flags=(up?2u:0u)|(unicode?4u:0u)}};
+        if(SendInput(1,new[]{input},Marshal.SizeOf(typeof(Input)))!=1) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+    }
+    public static void Tap(ushort key) {Key(key,false,false);Key(key,true,false);}
+    public static void Text(string value) {foreach(char c in value) {Key(c,false,true);Key(c,true,true);}}
     [DllImport("UIAutomationCore.dll")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool UiaHasServerSideProvider(IntPtr hwnd);
@@ -87,6 +115,13 @@ function Await-Control([string]$Name, [string]$Type = '') {
 }
 function Invoke-Control([string]$Name) {
     $node = Await-Control $Name
+    if ($cfg.keyboard) {
+        Focus-Owned $node
+        [RescueOwnedWindow]::Tap(0x20)
+        Start-Sleep -Milliseconds 200
+        $script:steps.Add("keyboard-space: $Name")
+        return
+    }
     $pattern = $null
     if ($node.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { $pattern.Invoke() }
     elseif ($node.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$pattern)) { $pattern.Select() }
@@ -99,15 +134,38 @@ function Set-Field([string]$Name, [string]$Value) {
     $node = Await-Control $Name 'Edit'
     $pattern = $node.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
     if ($pattern.Current.IsReadOnly) { throw "Read-only edit: $Name" }
-    $pattern.SetValue($Value)
+    if ($cfg.keyboard) {
+        Focus-Owned $node
+        [RescueOwnedWindow]::Key(0x11,$false,$false)
+        [RescueOwnedWindow]::Tap(0x41)
+        [RescueOwnedWindow]::Key(0x11,$true,$false)
+        [RescueOwnedWindow]::Text($Value)
+    } else { $pattern.SetValue($Value) }
     $until = [DateTime]::UtcNow.AddSeconds(10)
     do {
         Start-Sleep -Milliseconds 100
         $node = Await-Control $Name 'Edit'
         $pattern = $node.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern)
-        if ($pattern.Current.Value -ceq $Value) { $script:steps.Add("set-value: $Name"); return }
+        if ($pattern.Current.Value -ceq $Value) { $script:steps.Add("$(if ($cfg.keyboard) {'keyboard-unicode'} else {'set-value'}): $Name"); return }
     } while ([DateTime]::UtcNow -lt $until)
     throw "Edit did not preserve supplied Unicode value: $Name"
+}
+function Focus-Owned($Node) {
+    $null = [RescueOwnedWindow]::SetForegroundWindow($script:owned.MainWindowHandle)
+    $Node.SetFocus()
+    Start-Sleep -Milliseconds 150
+    if ([RescueOwnedWindow]::GetForegroundWindow() -ne $script:owned.MainWindowHandle) {throw 'Owned GUI did not acquire keyboard foreground'}
+    if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.ProcessId -ne $script:owned.Id) {throw 'Keyboard focus belongs to another process'}
+}
+function Check-TabNavigation {
+    $node=Await-Control 'Search results' 'Edit'; Focus-Owned $node
+    [RescueOwnedWindow]::Tap(9); Start-Sleep -Milliseconds 150
+    $forward=[System.Windows.Automation.AutomationElement]::FocusedElement.Current
+    if ($forward.ProcessId -ne $script:owned.Id -or $forward.Name -eq 'Search results' -or !$forward.Name) {throw 'Tab did not reach a named owned control'}
+    [RescueOwnedWindow]::Key(0x10,$false,$false); [RescueOwnedWindow]::Tap(9); [RescueOwnedWindow]::Key(0x10,$true,$false)
+    Start-Sleep -Milliseconds 150
+    if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name -ne 'Search results') {throw 'Shift+Tab did not return to search'}
+    $script:steps.Add("keyboard-tab-and-shift-tab: Search results / $($forward.Name)")
 }
 function Snapshot {
     $result = @()
@@ -133,7 +191,14 @@ try {
         $script:baseline.name=$probe.Current.Name
         $script:baseline.pid=$probe.Current.ProcessId
     } finally { [RescueWpfProbe]::Stop() }
+    if ($cfg.owned_pid) {
+        $script:owned=Get-Process -Id $cfg.owned_pid
+        if ($script:owned.Path -ine $cfg.binary) {throw 'Supplied process is not the owned GUI binary'}
+        $script:guiToken=@{elevated=[RescueOwnedWindow]::TokenValue($script:owned.Handle,20);elevation_type=[RescueOwnedWindow]::TokenValue($script:owned.Handle,18)}
+        if ($script:guiToken.elevated -ne 0 -or $script:guiToken.elevation_type -ne 3) {throw 'Actual GUI process is not UAC-limited'}
+    } else {
     $script:owned = Start-Process -FilePath $cfg.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $cfg.root 'stdout.txt') -RedirectStandardError (Join-Path $cfg.root 'stderr.txt')
+    }
     $until = [DateTime]::UtcNow.AddSeconds(30)
     do {
         Start-Sleep -Milliseconds 100
@@ -183,6 +248,7 @@ try {
     Set-Field 'Destination' $cfg.destination
     Invoke-Control 'Start scan'
     $null = Await-Control 'Search results' 'Edit'
+    if ($cfg.keyboard) { Check-TabNavigation }
     Set-Field 'Search results' '.pdf'
     $null = Await-Control $cfg.pdf
     Invoke-Control 'Select visible candidates'
@@ -198,7 +264,7 @@ try {
     } while ($null -eq $saved -and [DateTime]::UtcNow -lt $until)
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
-    @{status='passed';process_id=$script:owned.Id;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;scope='Native Windows UIA Invoke/Value patterns, owned regular image and Unicode query; real IME and keyboard input are separate checks.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA inspection and Invoke/Value or SendInput keyboard actions; owned image and exact Unicode query. Unicode SendInput does not test a Japanese IME product.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
     $evidence = @{status='failed';error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
