@@ -34,7 +34,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     image=json.loads((dist/f'imaging-results-{platform}-{arch}.json').read_text());assert image['version']==f'rescue {VERSION}' and image['status']=='passed' and image['checks']>=15
     image_native=json.loads((dist/f'imaging-native-{platform}-{arch}.json').read_text());assert image_native['version']==f'rescue {VERSION}' and image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
-    for prefix,minimum,files in [('index',10 if platform=='windows' else 12,38),('index-carve',65,60),('index-fat',11 if platform=='windows' else 15,51),('index-remnants',8,13),('index-late',7,6),('index-discovery',6,76)]:
+    # Windows adds three RtlCompressBuffer-generated LZNT1 streams to the
+    # remnant fixture; require their exact recovery as well as the shared 13.
+    for prefix,minimum,files in [('index',10 if platform=='windows' else 12,38),('index-carve',65,60),('index-fat',11 if platform=='windows' else 15,51),('index-remnants',8,16 if platform=='windows' else 13),('index-late',7,6),('index-discovery',6,76)]:
         proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
         observed={key:proof.get(key) for key in ['version','status','checks','files_byte_exact','source_unchanged','source_bytes_unchanged']}
         if not (proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files and proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))):
