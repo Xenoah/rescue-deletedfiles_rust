@@ -8,7 +8,9 @@ $script:owned = $null
 $script:root = $null
 $script:steps = [System.Collections.Generic.List[string]]::new()
 function Nodes {
-    $script:root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    $script:root = [System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
+    $items = $script:root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    for ($index=0; $index -lt $items.Count; $index++) { Write-Output -NoEnumerate $items.Item($index) }
 }
 function Find-Control([string]$Name, [string]$Type = '') {
     foreach ($node in (Nodes)) {
@@ -72,6 +74,15 @@ try {
         if ($script:owned.HasExited) { throw 'GUI exited before creating its window' }
     } while (!$script:owned.MainWindowHandle -and [DateTime]::UtcNow -lt $until)
     if (!$script:owned.MainWindowHandle) { throw 'No window from owned GUI' }
+    # Window creation precedes renderer and AccessKit initialization. Do not
+    # cache the default HWND provider while the actual provider is still loading.
+    $until = [DateTime]::UtcNow.AddSeconds(30)
+    do {
+        Start-Sleep -Milliseconds 100
+        $diagnostic = Get-Content -LiteralPath (Join-Path $cfg.root 'stderr.txt') -Raw -ErrorAction SilentlyContinue
+    } while ($diagnostic -notmatch 'Rescue renderer:' -and [DateTime]::UtcNow -lt $until)
+    if ($diagnostic -notmatch 'Rescue renderer:') {throw 'Renderer did not initialize before UIA inspection'}
+    Start-Sleep -Milliseconds 500
     $script:root = [System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
     if ($script:root.Current.ProcessId -ne $script:owned.Id) { throw 'Automation root belongs to another process' }
     Invoke-Control 'Saved image'
@@ -97,7 +108,7 @@ try {
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
     @{status='passed';process_id=$script:owned.Id;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;scope='Native Windows UIA Invoke/Value patterns, owned regular image and Unicode query; real IME and keyboard input are separate checks.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
-    @{status='failed';error=$_.Exception.ToString();steps=@($script:steps);tree=(Snapshot)} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='failed';error=$_.Exception.ToString();steps=@($script:steps);window_title=$script:owned.MainWindowTitle;root_name=$script:root.Current.Name;root_class=$script:root.Current.ClassName;provider=$script:root.GetCurrentPropertyValue([System.Windows.Automation.AutomationElement]::ProviderDescriptionProperty);tree=@(Snapshot)} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw
 } finally {
     if ($null -ne $script:owned) {
