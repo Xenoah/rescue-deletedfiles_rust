@@ -61,7 +61,7 @@ def desktop_test_user():
         elif kind.value==1:
             checked(text_sid('S-1-5-32-544',c.byref(admin)))
             disabled=SidAttributes(admin,0)
-            checked(restrict(token,1,1,c.byref(disabled),0,None,0,None,c.byref(linked)))
+            checked(restrict(token,5,1,c.byref(disabled),0,None,0,None,c.byref(linked)))
             checked(text_sid('S-1-16-8192',c.byref(medium)))
             label=SidAttributes(medium,0x20)
             checked(set_info(linked,25,c.byref(label),c.sizeof(label)+sid_length(medium)))

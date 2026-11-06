@@ -3,8 +3,14 @@ on:
   push:
     branches: ['v1-ui-*']
   workflow_dispatch:
+    inputs:
+      native_run:
+        description: Existing successful native CI run with identical product sources; 0 rebuilds
+        type: number
+        default: 42235348093
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: gui-${{ github.ref }}
   cancel-in-progress: true
@@ -17,11 +23,14 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - uses: actions/cache/restore@v4
+        if: ${{ !inputs.native_run }}
         with:
           path: |
             ~/.cargo/registry
@@ -30,8 +39,46 @@ jobs:
           key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
           restore-keys: windows-2022-x64-rust-1.99.1-
       - run: cargo fetch --locked
+        if: ${{ !inputs.native_run }}
       - run: python scripts/ci_command.py cargo test -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+        if: ${{ !inputs.native_run }}
       - run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+        if: ${{ !inputs.native_run }}
+      - name: Require identical product sources for artifact diagnostics
+        if: ${{ inputs.native_run }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN: ${{ inputs.native_run }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$NATIVE_RUN" > native-run.json
+          python -c "import json; d=json.load(open('native-run.json')); assert d['conclusion']=='success'; print(d['head_sha'])" > native-head.txt
+          git diff --exit-code "$(cat native-head.txt)" -- Cargo.toml Cargo.lock crates
+      - uses: actions/download-artifact@v4
+        if: ${{ inputs.native_run }}
+        with:
+          name: native-windows-x64
+          path: diagnostic-native
+          run-id: ${{ inputs.native_run }}
+          github-token: ${{ github.token }}
+      - name: Extract only the verified native executables
+        if: ${{ inputs.native_run }}
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          root=Path('diagnostic-native'); proof=json.loads((root/'verification-windows-x64.json').read_text()); assert proof['status']=='passed'
+          destination=Path('target/x86_64-pc-windows-msvc/release'); destination.mkdir(parents=True,exist_ok=True)
+          with zipfile.ZipFile(next(root.glob('*-portable.zip'))) as archive:
+              for name,kind in [('rescue.exe','cli'),('rescue-gui.exe','gui')]:
+                  data=archive.read(name); assert hashlib.sha256(data).hexdigest()==proof['portable_'+kind+'_sha256']; (destination/name).write_bytes(data)
+          PYTHON
+      - name: Record native language and token environment
+        run: |
+          Get-WinUserLanguageList | ConvertTo-Json -Depth 4
+          whoami /user
+          Get-ChildItem "$env:windir\System32\IME" -ErrorAction SilentlyContinue | Select-Object Name
       - name: Diagnose UIA under the runner's own token (isolates the limited-token effect)
         continue-on-error: true
         timeout-minutes: 5

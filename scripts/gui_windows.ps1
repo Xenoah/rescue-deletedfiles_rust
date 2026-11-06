@@ -20,6 +20,33 @@ public static class RescueOwnedWindow {
         try {uint value,needed; if(!GetTokenInformation(token,kind,out value,4,out needed)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());return value;}
         finally {CloseHandle(token);}
     }
+    [DllImport("advapi32.dll", SetLastError=true)]
+    static extern bool DuplicateToken(IntPtr token, int level, out IntPtr copy);
+    [DllImport("advapi32.dll", SetLastError=true)]
+    static extern bool CheckTokenMembership(IntPtr token, IntPtr sid, out bool member);
+    [DllImport("advapi32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    static extern bool ConvertStringSidToSid(string text, out IntPtr sid);
+    [DllImport("advapi32.dll", EntryPoint="GetTokenInformation", SetLastError=true)]
+    static extern bool GetTokenBuffer(IntPtr token, int kind, IntPtr buffer, uint size, out uint needed);
+    [DllImport("advapi32.dll")] static extern IntPtr GetSidSubAuthorityCount(IntPtr sid);
+    [DllImport("advapi32.dll")] static extern IntPtr GetSidSubAuthority(IntPtr sid,uint index);
+    [DllImport("kernel32.dll")] static extern IntPtr LocalFree(IntPtr memory);
+    public static bool AdministratorEnabled(IntPtr process) {
+        IntPtr token=IntPtr.Zero,copy=IntPtr.Zero,sid=IntPtr.Zero;
+        try {
+            if(!OpenProcessToken(process,10,out token) || !DuplicateToken(token,2,out copy) || !ConvertStringSidToSid("S-1-5-32-544",out sid)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            bool member; if(!CheckTokenMembership(copy,sid,out member)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error()); return member;
+        } finally {if(copy!=IntPtr.Zero)CloseHandle(copy);if(token!=IntPtr.Zero)CloseHandle(token);if(sid!=IntPtr.Zero)LocalFree(sid);}
+    }
+    public static uint Integrity(IntPtr process) {
+        IntPtr token=IntPtr.Zero,buffer=Marshal.AllocHGlobal(256);
+        try {
+            uint needed;
+            if(!OpenProcessToken(process,8,out token) || !GetTokenBuffer(token,25,buffer,256,out needed)) throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+            IntPtr sid=Marshal.ReadIntPtr(buffer);byte count=Marshal.ReadByte(GetSidSubAuthorityCount(sid));
+            return (uint)Marshal.ReadInt32(GetSidSubAuthority(sid,(uint)count-1));
+        } finally {if(token!=IntPtr.Zero)CloseHandle(token);Marshal.FreeHGlobal(buffer);}
+    }
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyboardInput { public ushort key, scan; public uint flags, time; public UIntPtr extra; }
     [StructLayout(LayoutKind.Explicit, Size=40)]
@@ -153,15 +180,24 @@ function Set-Field([string]$Name, [string]$Value) {
 function Focus-Owned($Node) {
     $null = [RescueOwnedWindow]::SetForegroundWindow($script:owned.MainWindowHandle)
     $Node.SetFocus()
-    Start-Sleep -Milliseconds 150
+    $until=[DateTime]::UtcNow.AddSeconds(3)
+    do {
+        Start-Sleep -Milliseconds 50
+        $focused=[System.Windows.Automation.AutomationElement]::FocusedElement
+    } while (![System.Windows.Automation.Automation]::Compare($focused,$Node) -and [DateTime]::UtcNow -lt $until)
+    if (![System.Windows.Automation.Automation]::Compare($focused,$Node)) {throw "Focus did not reach requested control: $($Node.Current.Name), observed $($focused.Current.Name)"}
     if ([RescueOwnedWindow]::GetForegroundWindow() -ne $script:owned.MainWindowHandle) {throw 'Owned GUI did not acquire keyboard foreground'}
     if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.ProcessId -ne $script:owned.Id) {throw 'Keyboard focus belongs to another process'}
 }
 function Check-TabNavigation {
     $node=Await-Control 'Search results' 'Edit'; Focus-Owned $node
-    [RescueOwnedWindow]::Tap(9); Start-Sleep -Milliseconds 150
-    $forward=[System.Windows.Automation.AutomationElement]::FocusedElement.Current
-    if ($forward.ProcessId -ne $script:owned.Id -or $forward.Name -eq 'Search results' -or !$forward.Name) {throw 'Tab did not reach a named owned control'}
+    [RescueOwnedWindow]::Tap(9)
+    $until=[DateTime]::UtcNow.AddSeconds(3)
+    do {
+        Start-Sleep -Milliseconds 50
+        $forward=[System.Windows.Automation.AutomationElement]::FocusedElement.Current
+    } while ($forward.Name -eq 'Search results' -and [DateTime]::UtcNow -lt $until)
+    if ($forward.ProcessId -ne $script:owned.Id -or $forward.Name -eq 'Search results' -or !$forward.Name) {throw "Tab did not reach a named owned control: name=$($forward.Name), type=$($forward.ControlType.ProgrammaticName), process=$($forward.ProcessId)"}
     [RescueOwnedWindow]::Key(0x10,$false,$false); [RescueOwnedWindow]::Tap(9); [RescueOwnedWindow]::Key(0x10,$true,$false)
     Start-Sleep -Milliseconds 150
     if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name -ne 'Search results') {throw 'Shift+Tab did not return to search'}
@@ -194,11 +230,12 @@ try {
     if ($cfg.owned_pid) {
         $script:owned=Get-Process -Id $cfg.owned_pid
         if ($script:owned.Path -ine $cfg.binary) {throw 'Supplied process is not the owned GUI binary'}
-        $script:guiToken=@{elevated=[RescueOwnedWindow]::TokenValue($script:owned.Handle,20);elevation_type=[RescueOwnedWindow]::TokenValue($script:owned.Handle,18)}
-        if ($script:guiToken.elevated -ne 0 -or $script:guiToken.elevation_type -ne 3) {throw "Actual GUI process is not UAC-limited: $($script:guiToken|ConvertTo-Json -Compress)"}
     } else {
     $script:owned = Start-Process -FilePath $cfg.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $cfg.root 'stdout.txt') -RedirectStandardError (Join-Path $cfg.root 'stderr.txt')
     }
+    $script:guiToken=@{elevated=[RescueOwnedWindow]::TokenValue($script:owned.Handle,20);elevation_type=[RescueOwnedWindow]::TokenValue($script:owned.Handle,18);administrator_enabled=[RescueOwnedWindow]::AdministratorEnabled($script:owned.Handle);integrity=[RescueOwnedWindow]::Integrity($script:owned.Handle)}
+    if ($cfg.require_nonadmin -and ($script:guiToken.elevated -ne 0 -or $script:guiToken.administrator_enabled -or $script:guiToken.integrity -ne 8192)) {throw "Actual GUI is not non-elevated/medium/non-admin: $($script:guiToken|ConvertTo-Json -Compress)"}
+    if ($cfg.require_uac -and $script:guiToken.elevation_type -ne 3) {throw "Actual GUI is not UAC-linked: $($script:guiToken|ConvertTo-Json -Compress)"}
     $until = [DateTime]::UtcNow.AddSeconds(30)
     do {
         Start-Sleep -Milliseconds 100
@@ -267,7 +304,7 @@ try {
     @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA inspection and Invoke/Value or SendInput keyboard actions; owned image and exact Unicode query. Unicode SendInput does not test a Japanese IME product.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
-    $evidence = @{status='failed';error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
+    $evidence = @{status='failed';gui_token=$script:guiToken;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
     try {
         $evidence.window_title=$script:owned.MainWindowTitle
         $evidence.root_name=$script:root.Current.Name
