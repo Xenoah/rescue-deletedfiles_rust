@@ -35,7 +35,7 @@ def native_query_diagnostics(source):
     return result
 
 
-def main(binary, output, limited=False):
+def main(binary, output, limited=False, identity=None):
     check(platform.system()=='Windows','Windows broker native test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
     grants=[];cases=[];token_profiles=[]
@@ -43,7 +43,7 @@ def main(binary, output, limited=False):
         command=[str(binary),*map(str,arguments)]
         if limited:
             from windows_restricted import run_limited
-            result=run_limited(command,timeout=60)
+            result=run_limited(command,token=identity['token'],timeout=60)
             token_profiles.append(result.token_profile)
             return result
         return subprocess.run(command,capture_output=True,text=True,encoding='utf-8',timeout=60)
@@ -63,6 +63,10 @@ def main(binary, output, limited=False):
               f'limited parent startup failed: exit=0x{started.returncode:08x} stdout={started.stdout!r} stderr={started.stderr!r} token={started.token_profile}')
     with tempfile.TemporaryDirectory(prefix='rescue-owned-broker-',dir=output.parent) as temporary:
         root=Path(temporary).resolve();volume=root/'ntfs.raw';disk=root/'disk.raw'
+        if limited:
+            # Only the newly created fixture directory; no repository or host
+            # disk ACL is relaxed. It is removed with the fixture after use.
+            subprocess.run(['icacls',str(root),'/grant','*'+identity['sid']+':(OI)(CI)M'],check=True,capture_output=True)
         corpus=list(corpus_load(Path(__file__).resolve().parent.parent/'tests/corpus'))
         original,_=ntfs_image(volume,corpus,'fragmented')
         disk_image(disk,[volume],512,'mbr')
@@ -132,8 +136,10 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');a=p.parse_args()
     if a.limited:
         from windows_restricted import silent_admin_consent
-        with silent_admin_consent() as policy:
-            result=main(a.binary.resolve(),a.output.resolve(),limited=True)
+        from windows_test_user import interactive_test_user
+        with silent_admin_consent() as policy, interactive_test_user() as identity:
+            result=main(a.binary.resolve(),a.output.resolve(),limited=True,identity=identity)
+        result['test_account']=identity['proof']
         result['uac_policy']=policy
         a.output.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     else:main(a.binary.resolve(),a.output.resolve())

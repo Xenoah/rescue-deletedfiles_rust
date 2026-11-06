@@ -27,7 +27,7 @@ def silent_admin_consent():
             if not proof['restored']:raise RuntimeError('UAC consent policy was not restored')
 
 
-def run_limited(command, timeout=60):
+def run_limited(command, *, token, timeout=60):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -42,14 +42,8 @@ def run_limited(command, timeout=60):
     class Process(c.Structure):_fields_=[('hProcess',w.HANDLE),('hThread',w.HANDLE),('pid',w.DWORD),('tid',w.DWORD)]
     def api(lib,name,args,result=w.BOOL):
         f=getattr(lib,name);f.argtypes=args;f.restype=result;return f
-    close=api(kernel,'CloseHandle',[w.HANDLE]);free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
-    current=api(kernel,'GetCurrentProcess',[],w.HANDLE)
-    open_token=api(security,'OpenProcessToken',[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)])
+    close=api(kernel,'CloseHandle',[w.HANDLE])
     get_info=api(security,'GetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)])
-    sid_from_text=api(security,'ConvertStringSidToSidW',[w.LPCWSTR,c.POINTER(c.c_void_p)])
-    restrict=api(security,'CreateRestrictedToken',[w.HANDLE,w.DWORD,w.DWORD,c.POINTER(SidAttributes),w.DWORD,c.c_void_p,w.DWORD,c.c_void_p,c.POINTER(w.HANDLE)])
-    set_info=api(security,'SetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD])
-    sid_length=api(security,'GetLengthSid',[c.c_void_p],w.DWORD)
     sub_count=api(security,'GetSidSubAuthorityCount',[c.c_void_p],c.POINTER(w.BYTE))
     sub_value=api(security,'GetSidSubAuthority',[c.c_void_p,w.DWORD],c.POINTER(w.DWORD))
     # The hosted runner is a service logon. Ask the Secondary Logon service to
@@ -62,32 +56,14 @@ def run_limited(command, timeout=60):
     terminate=api(kernel,'TerminateProcess',[w.HANDLE,w.UINT])
     def checked(value):
         if not value:raise c.WinError(c.get_last_error())
-    token=w.HANDLE();limited=w.HANDLE();process=Process();admin=c.c_void_p();medium=c.c_void_p()
+    limited=token;process=Process()
     try:
-        checked(open_token(current(),0x0002|0x0008|0x0001|0x0080, c.byref(token)))
         elevation=w.DWORD();returned=w.DWORD()
-        # Use Windows' actual UAC-linked limited token. A manually restricted
-        # token has different desktop/elevation behavior and is not the token
-        # used by a normal unelevated application of the same administrator.
-        linked=bool(get_info(token,19,c.byref(limited),c.sizeof(limited),c.byref(returned)))
-        if not linked:
-            if c.get_last_error()!=1312:raise c.WinError(c.get_last_error())
-            # Service-logon hosted runners have no UAC-linked interactive token.
-            # Exercise an actual restricted medium token on the interactive
-            # desktop, and record this distinction instead of claiming a normal
-            # interactive user's consent. The denial/grant checks remain exact.
-            checked(sid_from_text('S-1-5-32-544',c.byref(admin)));deny=SidAttributes(admin,0)
-            checked(restrict(token,0x1|0x4,1,c.byref(deny),0,None,0,None,c.byref(limited)))
-            checked(sid_from_text('S-1-16-8192',c.byref(medium)));length=sid_length(medium)
-            label_buffer=c.create_string_buffer(c.sizeof(SidAttributes)+length)
-            address=c.addressof(label_buffer)+c.sizeof(SidAttributes);c.memmove(address,medium,length)
-            label=SidAttributes.from_buffer(label_buffer);label.Sid=address;label.Attributes=0x20
-            checked(set_info(limited,25,label_buffer,len(label_buffer)))
         checked(get_info(limited,20,c.byref(elevation),c.sizeof(elevation),c.byref(returned)))
         if elevation.value:raise AssertionError('test parent token is still elevated')
         kind=w.DWORD()
         checked(get_info(limited,18,c.byref(kind),c.sizeof(kind),c.byref(returned)))
-        if linked and kind.value!=3:raise AssertionError('test parent does not have TokenElevationTypeLimited')
+        if kind.value!=3:raise AssertionError('test parent does not have TokenElevationTypeLimited')
         buffer=c.create_string_buffer(256)
         checked(get_info(limited,25,buffer,len(buffer),c.byref(returned)))
         label=SidAttributes.from_buffer(buffer);count=sub_count(label.Sid)[0]
@@ -109,10 +85,8 @@ def run_limited(command, timeout=60):
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'uac_linked' if linked else 'restricted_service_logon','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
+                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
                 return result
     finally:
-        for handle in [process.hThread,process.hProcess,limited,token]:
+        for handle in [process.hThread,process.hProcess]:
             if handle:close(handle)
-        for pointer in [admin,medium]:
-            if pointer:free(pointer)
