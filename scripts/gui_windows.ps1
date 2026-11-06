@@ -15,6 +15,20 @@ public static class RescueOwnedWindow {
     public static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, UIntPtr wparam, IntPtr lparam, uint flags, uint timeout, out UIntPtr result);
     [DllImport("user32.dll", CharSet=CharSet.Unicode)]
     public static extern IntPtr GetProp(IntPtr hwnd, string name);
+    [DllImport("kernel32.dll")]
+    public static extern uint WTSGetActiveConsoleSessionId();
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetProcessWindowStation();
+    [DllImport("kernel32.dll")]
+    public static extern uint GetCurrentThreadId();
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetThreadDesktop(uint thread);
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    public static extern bool GetUserObjectInformation(IntPtr handle, int index, System.Text.StringBuilder value, uint bytes, out uint needed);
+    public static string ObjectName(IntPtr handle) {
+        var text=new System.Text.StringBuilder(256);uint needed;
+        return GetUserObjectInformation(handle,2,text,512,out needed)?text.ToString():"error:"+Marshal.GetLastWin32Error();
+    }
 }
 '@
 Add-Type -ReferencedAssemblies PresentationFramework,PresentationCore,WindowsBase,System.Xaml -TypeDefinition @'
@@ -109,12 +123,15 @@ function Snapshot {
 }
 try {
     [RescueWpfProbe]::Start()
+    Start-Sleep -Milliseconds 1000
     $script:baseline = @{error=[RescueWpfProbe]::Error}
     try {
         $probe = [System.Windows.Automation.AutomationElement]::FromHandle([RescueWpfProbe]::Handle)
         $script:baseline.framework=$probe.Current.FrameworkId
         $script:baseline.children=$probe.FindAll([System.Windows.Automation.TreeScope]::Descendants,[System.Windows.Automation.Condition]::TrueCondition).Count
         $script:baseline.server_side=[RescueOwnedWindow]::UiaHasServerSideProvider([RescueWpfProbe]::Handle)
+        $script:baseline.name=$probe.Current.Name
+        $script:baseline.pid=$probe.Current.ProcessId
     } finally { [RescueWpfProbe]::Stop() }
     $script:owned = Start-Process -FilePath $cfg.binary -ArgumentList @('--language','en') -PassThru -RedirectStandardOutput (Join-Path $cfg.root 'stdout.txt') -RedirectStandardError (Join-Path $cfg.root 'stderr.txt')
     $until = [DateTime]::UtcNow.AddSeconds(30)
@@ -144,6 +161,7 @@ try {
     $script:provider.getobject_result=$messageResult.ToUInt64()
     $script:provider.accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
     $script:provider.baseline=$script:baseline
+    $script:provider.session=@{client=(Get-Process -Id $PID).SessionId;gui=$script:owned.SessionId;console=[RescueOwnedWindow]::WTSGetActiveConsoleSessionId();station=[RescueOwnedWindow]::ObjectName([RescueOwnedWindow]::GetProcessWindowStation());desktop=[RescueOwnedWindow]::ObjectName([RescueOwnedWindow]::GetThreadDesktop([RescueOwnedWindow]::GetCurrentThreadId()))}
     $description = [System.Windows.Automation.AutomationProperty]::LookupById(30107)
     if ($null -ne $description) {$script:provider.description=$script:root.GetCurrentPropertyValue($description)}
     Invoke-Control 'Saved image'
@@ -176,6 +194,7 @@ try {
         $evidence.root_name=$script:root.Current.Name
         $evidence.root_class=$script:root.Current.ClassName
         $evidence.tree=@(Snapshot)
+        $evidence.provider.late_accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
