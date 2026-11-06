@@ -1,0 +1,51 @@
+{
+  "status": "passed",
+  "version": "1.0.0",
+  "gui_binary_sha256": "164ed3022ce022eba227e6435b4e0ff1f1d9edf820778705f85e41645ae181b1",
+  "candidates": 10000000,
+  "files_byte_exact": 3,
+  "bytes_exact": 138,
+  "files": [
+    {
+      "id": "mft-16-7",
+      "name": "file-00000000.bin",
+      "bytes": 46,
+      "sha256": "3c93c32aedfdf2e62ef31aa954b162cda5c470bc669f2577e6845d1bd74ac7d7"
+    },
+    {
+      "id": "mft-5000016-7",
+      "name": "file-05000000.bin",
+      "bytes": 46,
+      "sha256": "3c93c32aedfdf2e62ef31aa954b162cda5c470bc669f2577e6845d1bd74ac7d7"
+    },
+    {
+      "id": "mft-10000015-7",
+      "name": "file-09999999.bin",
+      "bytes": 46,
+      "sha256": "3c93c32aedfdf2e62ef31aa954b162cda5c470bc669f2577e6845d1bd74ac7d7"
+    }
+  ],
+  "scope": "Actual GUI scan, three cancellations/resumes, selection retained, filtering across first/middle/last candidates and folder recovery; independent payload bytes and names verified. This sparse-input run does not claim a full 1 TiB source hash.",
+  "screenshots": [
+    {
+      "file": "images/v1-settings-fresh.png",
+      "sha256": "4684c80164fc56be7ce04c957eb1c6cf07d486977f633e7fdc23bd88bf6613ae"
+    },
+    {
+      "file": "images/v1-gui-paused-0.png",
+      "sha256": "5e369d8f5b0a392dfd4b8f1db74d794f3067a2b91d65c0c087febb372fafca5a"
+    },
+    {
+      "file": "images/v1-gui-paused-2.png",
+      "sha256": "57f7fad60cebabf4a41744534fbafc832b2e0668a028416981d3bb6ad487bcd7"
+    },
+    {
+      "file": "images/v1-gui-10m-complete.png",
+      "sha256": "7da1557aff89fba8bd288b6f098c8e0bd3bfa7a8c917c4db3fb8690ec9737d0e"
+    },
+    {
+      "file": "images/v1-gui-restored.png",
+      "sha256": "d7e371e7f19147aadb2c3833d2f950439414c07ab5caf7d05a4a111fb3ab9e1b"
+    }
+  ]
+}

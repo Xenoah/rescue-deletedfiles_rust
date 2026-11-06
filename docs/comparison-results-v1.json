@@ -1,0 +1,5010 @@
+{
+  "schema_version": 1,
+  "status": "scored",
+  "scope": "Score actual recovered files against an immutable, independently held oracle.\n\nNo product-specific success labels are trusted. Missing files remain in the\ndenominator. Duplicate outputs never increase recovery counts. Metadata files\nand unknown outputs are reported separately; absence of unknown outputs alone\nis not a claim of zero false-positive scan candidates.",
+  "cases": [
+    {
+      "case": "independent-ntfs",
+      "source_sha256": "1048698ae2455506c426523a54896984a0f6ab9cd8869c28911ab406dbcf571d",
+      "source_unchanged": true,
+      "scope": "ntfs-3g generated; emulated deletion clears MFT in-use bit; allocation bitmap and directory index retained",
+      "products": {
+        "rescue-v1": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [
+            {
+              "path": "rescue-report-9e5b53c4-5834-401b-9473-19d7318ee873.json",
+              "size": 26792,
+              "sha256": "c6151feaa5fcb9d493867a77b92a4c980b2358aa5d1db80a26b2b6bcc25e46a6"
+            }
+          ],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "mft-64-1",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-65-1",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-66-1",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-67-1",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-68-1",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-69-1",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-70-1",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-71-1",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-72-1",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-73-1",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-74-1",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-75-1",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-76-1",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-77-1",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-78-1",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-79-1",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-80-1",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-81-1",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-82-1",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-83-1",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-84-1",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-85-1",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-86-1",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-87-1",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-88-1",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-89-1",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-90-1",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-91-1",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-92-1",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-93-1",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-94-1",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-95-1",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-96-1",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-97-1",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-98-1",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-99-1",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "ufs": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [
+            {
+              "path": "$AttrDef",
+              "size": 2560,
+              "sha256": "d7de5b1b2f79f45f235ceb1adbc46908ed64eae174eb90ed66aefe5f25165da3"
+            },
+            {
+              "path": "$BadClus",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "path": "$Bitmap",
+              "size": 2048,
+              "sha256": "72793bac7ddbbce567c1a558f56fe9c52802e861a72667e09abe26cb021650f1"
+            },
+            {
+              "path": "$Boot",
+              "size": 8192,
+              "sha256": "af1120284cc9534067d04bacabcffda1cec307c4de2ba6a6ea6799bf582e49c5"
+            },
+            {
+              "path": "$Extend/$ObjId",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "path": "$Extend/$Quota",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "path": "$Extend/$Reparse",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "path": "$MFT",
+              "size": 102400,
+              "sha256": "148b712d15fc80f08c0427e7b9fa699c74a6d1aca0a25e5dc946d52c293ca30d"
+            },
+            {
+              "path": "$MFTMirr",
+              "size": 4096,
+              "sha256": "a737d76653902371c5762c56eee8c3faccbb38d02a0c7d083ac27c1cc334f35d"
+            },
+            {
+              "path": "$Secure",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            },
+            {
+              "path": "$UpCase",
+              "size": 131072,
+              "sha256": "41c26bc7a12bdaeb26025c93118697c7e3ef81ee048b00fe5cce2a472e0e0742"
+            },
+            {
+              "path": "$Volume",
+              "size": 0,
+              "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+            }
+          ],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "mft-64-1",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-65-1",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-66-1",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-67-1",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-68-1",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-69-1",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-70-1",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-71-1",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-72-1",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-73-1",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-74-1",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-75-1",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-76-1",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-77-1",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-78-1",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-79-1",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-80-1",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-81-1",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-82-1",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-83-1",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-84-1",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-85-1",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-86-1",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-87-1",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-88-1",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-89-1",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-90-1",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-91-1",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-92-1",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-93-1",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-94-1",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-95-1",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-96-1",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-97-1",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-98-1",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-99-1",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "dmde": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "mft-64-1",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-65-1",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-66-1",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-67-1",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-68-1",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-69-1",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-70-1",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-71-1",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-72-1",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-73-1",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-74-1",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-75-1",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-76-1",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-77-1",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-78-1",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-79-1",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-80-1",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-81-1",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-82-1",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-83-1",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-84-1",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-85-1",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-86-1",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-87-1",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-88-1",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-89-1",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-90-1",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-91-1",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-92-1",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-93-1",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-94-1",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-95-1",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-96-1",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-97-1",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-98-1",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "mft-99-1",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "independent-fat32",
+      "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
+      "source_unchanged": true,
+      "scope": "dosfstools + mtools; actual mdel deletion clears multi-cluster chains; same denominator includes unrecoverable metadata cases",
+      "products": {
+        "rescue-v1": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 14,
+          "matching_bytes": 1587,
+          "names_exact": 14,
+          "relative_paths_exact": 14,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [
+            {
+              "path": "rescue-report-8c2d475f-2664-4896-909a-7aa1acf6e7ce.json",
+              "size": 11817,
+              "sha256": "f687ad6c3196c0cb41b04877d3789420e49d24d7890ceb609b3ce43f5f95e52c"
+            }
+          ],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "0",
+              "name": "fixture-000.jpg",
+              "expected_bytes": 767,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "1",
+              "name": "fixture-001.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-001.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "2",
+              "name": "fixture-002.gif",
+              "expected_bytes": 1731,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "3",
+              "name": "fixture-003.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "4",
+              "name": "fixture-004.tif",
+              "expected_bytes": 3212,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "5",
+              "name": "fixture-005.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-005.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "6",
+              "name": "fixture-006.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-006.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "7",
+              "name": "fixture-007.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-007.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "8",
+              "name": "fixture-008.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "9",
+              "name": "fixture-009.docx",
+              "expected_bytes": 36642,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "10",
+              "name": "fixture-010.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "11",
+              "name": "fixture-011.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "12",
+              "name": "fixture-012.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-012.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "13",
+              "name": "fixture-013.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-013.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "14",
+              "name": "fixture-014.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-014.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "15",
+              "name": "fixture-015.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-015.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "16",
+              "name": "fixture-016.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-016.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "17",
+              "name": "fixture-017.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-017.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "18",
+              "name": "fixture-018.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "19",
+              "name": "fixture-019.mov",
+              "expected_bytes": 2109,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "20",
+              "name": "fixture-020.avi",
+              "expected_bytes": 7356,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "21",
+              "name": "fixture-021.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "22",
+              "name": "fixture-022.webm",
+              "expected_bytes": 1175,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "23",
+              "name": "fixture-023.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "24",
+              "name": "fixture-024.wav",
+              "expected_bytes": 6478,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "25",
+              "name": "fixture-025.flac",
+              "expected_bytes": 9478,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "26",
+              "name": "fixture-026.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "27",
+              "name": "fixture-027.aac",
+              "expected_bytes": 1812,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "28",
+              "name": "fixture-028.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "29",
+              "name": "fixture-029.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-029.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "30",
+              "name": "fixture-030.tar",
+              "expected_bytes": 10240,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "31",
+              "name": "fixture-031.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-031.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "32",
+              "name": "fixture-032.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-032.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "33",
+              "name": "fixture-033.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-033.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "34",
+              "name": "fixture-034.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "35",
+              "name": "fixture-035.png",
+              "expected_bytes": 12420,
+              "byte_exact": false,
+              "matching_bytes": 0,
+              "name_exact": false,
+              "relative_path_exact": false,
+              "output": null,
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "ufs": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [
+            {
+              "path": "$Boot",
+              "size": 16384,
+              "sha256": "74364a7b2a2e0381672573ae9a2eb1fc8b483802322bf2dd3d2aa478a7144c76"
+            },
+            {
+              "path": "$Folders",
+              "size": 3584,
+              "sha256": "b2ff50a3b8d1e7ae109a35cd4292f2f83cfe78571bcb94806b72e91c3f38cb0d"
+            }
+          ],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "0",
+              "name": "fixture-000.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-000.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "1",
+              "name": "fixture-001.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-001.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "2",
+              "name": "fixture-002.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-002.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "3",
+              "name": "fixture-003.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-003.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "4",
+              "name": "fixture-004.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-004.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "5",
+              "name": "fixture-005.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-005.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "6",
+              "name": "fixture-006.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-006.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "7",
+              "name": "fixture-007.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-007.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "8",
+              "name": "fixture-008.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-008.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "9",
+              "name": "fixture-009.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-009.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "10",
+              "name": "fixture-010.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-010.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "11",
+              "name": "fixture-011.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-011.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "12",
+              "name": "fixture-012.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-012.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "13",
+              "name": "fixture-013.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-013.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "14",
+              "name": "fixture-014.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-014.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "15",
+              "name": "fixture-015.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-015.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "16",
+              "name": "fixture-016.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-016.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "17",
+              "name": "fixture-017.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-017.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "18",
+              "name": "fixture-018.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-018.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "19",
+              "name": "fixture-019.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-019.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "20",
+              "name": "fixture-020.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-020.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "21",
+              "name": "fixture-021.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-021.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "22",
+              "name": "fixture-022.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-022.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "23",
+              "name": "fixture-023.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-023.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "24",
+              "name": "fixture-024.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-024.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "25",
+              "name": "fixture-025.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-025.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "26",
+              "name": "fixture-026.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-026.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "27",
+              "name": "fixture-027.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-027.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "28",
+              "name": "fixture-028.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-028.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "29",
+              "name": "fixture-029.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-029.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "30",
+              "name": "fixture-030.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-030.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "31",
+              "name": "fixture-031.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-031.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "32",
+              "name": "fixture-032.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-032.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "33",
+              "name": "fixture-033.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-033.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "34",
+              "name": "fixture-034.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-034.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "35",
+              "name": "fixture-035.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-035.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "dmde": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "0",
+              "name": "fixture-000.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-000.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "1",
+              "name": "fixture-001.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-001.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "2",
+              "name": "fixture-002.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-002.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "3",
+              "name": "fixture-003.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-003.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "4",
+              "name": "fixture-004.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-004.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "5",
+              "name": "fixture-005.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-005.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "6",
+              "name": "fixture-006.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-006.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "7",
+              "name": "fixture-007.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-007.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "8",
+              "name": "fixture-008.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-008.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "9",
+              "name": "fixture-009.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-009.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "10",
+              "name": "fixture-010.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-010.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "11",
+              "name": "fixture-011.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-011.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "12",
+              "name": "fixture-012.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-012.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "13",
+              "name": "fixture-013.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-013.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "14",
+              "name": "fixture-014.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-014.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "15",
+              "name": "fixture-015.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-015.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "16",
+              "name": "fixture-016.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-016.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "17",
+              "name": "fixture-017.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-017.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "18",
+              "name": "fixture-018.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-018.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "19",
+              "name": "fixture-019.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-019.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "20",
+              "name": "fixture-020.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-020.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "21",
+              "name": "fixture-021.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-021.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "22",
+              "name": "fixture-022.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-022.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "23",
+              "name": "fixture-023.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-023.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "24",
+              "name": "fixture-024.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-024.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "25",
+              "name": "fixture-025.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-025.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "26",
+              "name": "fixture-026.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-026.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "27",
+              "name": "fixture-027.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-027.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "28",
+              "name": "fixture-028.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-028.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "29",
+              "name": "fixture-029.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-029.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "30",
+              "name": "fixture-030.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-030.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "31",
+              "name": "fixture-031.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-031.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "32",
+              "name": "fixture-032.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-032.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "33",
+              "name": "fixture-033.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-033.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "34",
+              "name": "fixture-034.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-034.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "35",
+              "name": "fixture-035.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "fixture-035.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "case": "independent-exfat",
+      "source_sha256": "2813e9933d7de66a16dc4e811fb1362f1e8eb019b1c2e10d6ce6b155183b6bcb",
+      "source_unchanged": true,
+      "scope": "exfatprogs formatted; emulated deleted contiguous directory entries inserted in free clusters",
+      "products": {
+        "rescue-v1": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [
+            {
+              "path": "rescue-report-32eae5ee-74e2-42d4-9058-fd8eb813de0c.json",
+              "size": 24174,
+              "sha256": "c20c2294ba62b3c501519ee61f5d6e3269a6e1d209920729676eef6a16e8d265"
+            }
+          ],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "exfat-2109568",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109664",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109760",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109856",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109952",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110048",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110144",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110240",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110336",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110432",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110528",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110624",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110720",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110816",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110912",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111008",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111104",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111200",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111296",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111392",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111488",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111584",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111680",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111776",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111872",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111968",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112064",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112160",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112256",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112352",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112448",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112544",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112640",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112736",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112832",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112928",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "ufs": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "exfat-2109568",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109664",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109760",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109856",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109952",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110048",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110144",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110240",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110336",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110432",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110528",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110624",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110720",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110816",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110912",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111008",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111104",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111200",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111296",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111392",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111488",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111584",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111680",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111776",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111872",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111968",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112064",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112160",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112256",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112352",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112448",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112544",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112640",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112736",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112832",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112928",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        },
+        "dmde": {
+          "files_expected": 36,
+          "bytes_expected": 152325,
+          "files_byte_exact": 36,
+          "matching_bytes": 152325,
+          "names_exact": 36,
+          "relative_paths_exact": 36,
+          "duplicate_exact_outputs": 0,
+          "known_metadata_outputs": [],
+          "unclassified_outputs": [],
+          "files": [
+            {
+              "id": "exfat-2109568",
+              "name": "sample.jpg",
+              "expected_bytes": 767,
+              "byte_exact": true,
+              "matching_bytes": 767,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.jpg",
+                "size": 767,
+                "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109664",
+              "name": "sample.png",
+              "expected_bytes": 102,
+              "byte_exact": true,
+              "matching_bytes": 102,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.png",
+                "size": 102,
+                "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109760",
+              "name": "sample.gif",
+              "expected_bytes": 1731,
+              "byte_exact": true,
+              "matching_bytes": 1731,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gif",
+                "size": 1731,
+                "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109856",
+              "name": "sample.bmp",
+              "expected_bytes": 3126,
+              "byte_exact": true,
+              "matching_bytes": 3126,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bmp",
+                "size": 3126,
+                "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2109952",
+              "name": "sample.tif",
+              "expected_bytes": 3212,
+              "byte_exact": true,
+              "matching_bytes": 3212,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tif",
+                "size": 3212,
+                "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110048",
+              "name": "sample.webp",
+              "expected_bytes": 184,
+              "byte_exact": true,
+              "matching_bytes": 184,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webp",
+                "size": 184,
+                "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110144",
+              "name": "sample.ico",
+              "expected_bytes": 124,
+              "byte_exact": true,
+              "matching_bytes": 124,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ico",
+                "size": 124,
+                "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110240",
+              "name": "sample.apng",
+              "expected_bytes": 310,
+              "byte_exact": true,
+              "matching_bytes": 310,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.apng",
+                "size": 310,
+                "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110336",
+              "name": "sample.pdf",
+              "expected_bytes": 1367,
+              "byte_exact": true,
+              "matching_bytes": 1367,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pdf",
+                "size": 1367,
+                "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110432",
+              "name": "sample.docx",
+              "expected_bytes": 36642,
+              "byte_exact": true,
+              "matching_bytes": 36642,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.docx",
+                "size": 36642,
+                "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110528",
+              "name": "sample.xlsx",
+              "expected_bytes": 4880,
+              "byte_exact": true,
+              "matching_bytes": 4880,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xlsx",
+                "size": 4880,
+                "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110624",
+              "name": "sample.pptx",
+              "expected_bytes": 28268,
+              "byte_exact": true,
+              "matching_bytes": 28268,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.pptx",
+                "size": 28268,
+                "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110720",
+              "name": "sample.txt",
+              "expected_bytes": 61,
+              "byte_exact": true,
+              "matching_bytes": 61,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.txt",
+                "size": 61,
+                "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110816",
+              "name": "sample.csv",
+              "expected_bytes": 33,
+              "byte_exact": true,
+              "matching_bytes": 33,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.csv",
+                "size": 33,
+                "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2110912",
+              "name": "sample.json",
+              "expected_bytes": 78,
+              "byte_exact": true,
+              "matching_bytes": 78,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.json",
+                "size": 78,
+                "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111008",
+              "name": "sample.html",
+              "expected_bytes": 80,
+              "byte_exact": true,
+              "matching_bytes": 80,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.html",
+                "size": 80,
+                "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111104",
+              "name": "sample.xml",
+              "expected_bytes": 70,
+              "byte_exact": true,
+              "matching_bytes": 70,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xml",
+                "size": 70,
+                "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111200",
+              "name": "sample.rtf",
+              "expected_bytes": 55,
+              "byte_exact": true,
+              "matching_bytes": 55,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.rtf",
+                "size": 55,
+                "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111296",
+              "name": "sample.mp4",
+              "expected_bytes": 2162,
+              "byte_exact": true,
+              "matching_bytes": 2162,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp4",
+                "size": 2162,
+                "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111392",
+              "name": "sample.mov",
+              "expected_bytes": 2109,
+              "byte_exact": true,
+              "matching_bytes": 2109,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mov",
+                "size": 2109,
+                "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111488",
+              "name": "sample.avi",
+              "expected_bytes": 7356,
+              "byte_exact": true,
+              "matching_bytes": 7356,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.avi",
+                "size": 7356,
+                "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111584",
+              "name": "sample.mkv",
+              "expected_bytes": 1915,
+              "byte_exact": true,
+              "matching_bytes": 1915,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mkv",
+                "size": 1915,
+                "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111680",
+              "name": "sample.webm",
+              "expected_bytes": 1175,
+              "byte_exact": true,
+              "matching_bytes": 1175,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.webm",
+                "size": 1175,
+                "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111776",
+              "name": "sample.mp3",
+              "expected_bytes": 1088,
+              "byte_exact": true,
+              "matching_bytes": 1088,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.mp3",
+                "size": 1088,
+                "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111872",
+              "name": "sample.wav",
+              "expected_bytes": 6478,
+              "byte_exact": true,
+              "matching_bytes": 6478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.wav",
+                "size": 6478,
+                "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2111968",
+              "name": "sample.flac",
+              "expected_bytes": 9478,
+              "byte_exact": true,
+              "matching_bytes": 9478,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.flac",
+                "size": 9478,
+                "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112064",
+              "name": "sample.ogg",
+              "expected_bytes": 3717,
+              "byte_exact": true,
+              "matching_bytes": 3717,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.ogg",
+                "size": 3717,
+                "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112160",
+              "name": "sample.aac",
+              "expected_bytes": 1812,
+              "byte_exact": true,
+              "matching_bytes": 1812,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.aac",
+                "size": 1812,
+                "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112256",
+              "name": "sample.m4a",
+              "expected_bytes": 2603,
+              "byte_exact": true,
+              "matching_bytes": 2603,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.m4a",
+                "size": 2603,
+                "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112352",
+              "name": "sample.zip",
+              "expected_bytes": 179,
+              "byte_exact": true,
+              "matching_bytes": 179,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.zip",
+                "size": 179,
+                "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112448",
+              "name": "sample.tar",
+              "expected_bytes": 10240,
+              "byte_exact": true,
+              "matching_bytes": 10240,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.tar",
+                "size": 10240,
+                "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112544",
+              "name": "sample.gz",
+              "expected_bytes": 81,
+              "byte_exact": true,
+              "matching_bytes": 81,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.gz",
+                "size": 81,
+                "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112640",
+              "name": "sample.xz",
+              "expected_bytes": 120,
+              "byte_exact": true,
+              "matching_bytes": 120,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.xz",
+                "size": 120,
+                "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112736",
+              "name": "sample.bz2",
+              "expected_bytes": 110,
+              "byte_exact": true,
+              "matching_bytes": 110,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.bz2",
+                "size": 110,
+                "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112832",
+              "name": "sample.sqlite",
+              "expected_bytes": 8192,
+              "byte_exact": true,
+              "matching_bytes": 8192,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "sample.sqlite",
+                "size": 8192,
+                "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+              },
+              "duplicate_exact_outputs": 0
+            },
+            {
+              "id": "exfat-2112928",
+              "name": "noise.png",
+              "expected_bytes": 12420,
+              "byte_exact": true,
+              "matching_bytes": 12420,
+              "name_exact": true,
+              "relative_path_exact": true,
+              "output": {
+                "path": "noise.png",
+                "size": 12420,
+                "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+              },
+              "duplicate_exact_outputs": 0
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

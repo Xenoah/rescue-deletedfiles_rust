@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "version": "1.0.0",
+  "binary_sha256": "164ed3022ce022eba227e6435b4e0ff1f1d9edf820778705f85e41645ae181b1",
+  "pid": 21829,
+  "cancel_runs": [
+    {
+      "seconds": 0.10518443200089678,
+      "watermark": 27505,
+      "checkpoint_unchanged_after_500_ms": true
+    },
+    {
+      "seconds": 0.10881730499932019,
+      "watermark": 54129,
+      "checkpoint_unchanged_after_500_ms": true
+    },
+    {
+      "seconds": 0.1074114439998084,
+      "watermark": 80370,
+      "checkpoint_unchanged_after_500_ms": true
+    }
+  ],
+  "index": "/workspace/work/v1-benchmark/index/24ffaf5d-248a-4fa0-80ae-9acf26a68cdc.rescue-index/session.sqlite",
+  "final_checkpoint": [
+    "completed",
+    0,
+    10000000
+  ],
+  "elapsed_seconds_including_three_cancellations": 630.1310119940008,
+  "index_bytes": 12132921344,
+  "aggregate_peak_rss_bytes": 140394496,
+  "scope": "Actual X11 GUI scan of 1 TiB sparse synthetic NTFS with 10 million resident files. Product process-tree RSS every 5 ms. Three pointer cancellations and resumes; durable checkpoint timing includes xdotool overhead. No physical 1 TiB throughput or failing-device timing claim."
+}

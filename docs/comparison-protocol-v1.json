@@ -1,0 +1,49 @@
+{
+  "host": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "scope": "Quality comparison on three identical immutable 64 MiB images; no commercial speed comparison. All source images rehashed after all product runs.",
+  "rescue": {
+    "version": "1.0.0",
+    "binary_sha256": "91b8562e64e61671819479dae2af7abe369fe351e821e82985a87244613ab01c",
+    "mode": "quick filesystem metadata scan; all supported candidates; defaults; three warm-cache runs"
+  },
+  "ufs": {
+    "version": "UFS Explorer Standard Recovery 10.23 64 bit",
+    "license": "Free evaluation, copied files <=256 KiB; largest corpus file 36,642 bytes",
+    "download_url": "https://www.sysdevlabs.com/download/deb/deb-curr/pool/main/ufsxsci_curr_amd64.deb",
+    "download_sha256": "b0124586f137a68e1a73a45c2ff056f292602ed0d583e445c0c4b862b9c0475d",
+    "settings": {
+      "ntfs": "Entire image, NTFS only, raw/signature recovery disabled; first recognized NTFS result; select all root files",
+      "fat32": "Entire image, FAT only, raw/signature recovery disabled; recognized FAT result; select all root files",
+      "exfat": "Recognized ExFAT partition, index filesystem then scan unused space, default filesystem detectors, raw/signature recovery disabled; recovered root files. Initial disk-level exFAT-only scan found no result."
+    }
+  },
+  "dmde": {
+    "version": "DMDE 4.4.4 (2026) Free Edition x64",
+    "license": "Free Edition, up to 4000 files from active panel per operation; this corpus has 36 files in one directory",
+    "download_url": "https://dmde.com/download/dmde-4-4-4-842-lin64-gui.zip",
+    "download_sha256": "e7a33986a641ca5d8930a7f113fd4c6ff1a312b2ee38056fec795649b63b14a2",
+    "settings": {
+      "all": "readonly=1, documented notadmin=1 for regular image access; no raw/signature recovery; recover deleted files from active root directory",
+      "ntfs": "Whole-image NTFS scan; NTFS additional result 0; root files",
+      "fat32": "Whole-image FAT scan found no result; opened recognized FAT32 partition and recovered immediately visible deleted root files",
+      "exfat": "Opened recognized ExFAT partition; accepted Auto detect FS parameters, whole-image exFAT scan, raw disabled; ExFAT main result 0; active root directory"
+    }
+  },
+  "r_studio": {
+    "version": "5.5 build 191803, official download page",
+    "tested": false,
+    "reason": "Linux executable required administrator authentication before image access; not scored. No password or license bypass attempted."
+  },
+  "not_measured": [
+    "commercial scan/recovery time and memory",
+    "live devices",
+    "physical HDD/SSD and 4 KiB sectors",
+    "commercial RAID, read-error and quick-format comparison",
+    "large commercial files beyond evaluation limits"
+  ],
+  "original_deletion_methods": {
+    "independent-ntfs": "ntfs-3g generated; emulated deletion clears MFT in-use bit; allocation bitmap and directory index retained",
+    "independent-fat32": "dosfstools + mtools; actual mdel deletion clears multi-cluster chains; same denominator includes unrecoverable metadata cases",
+    "independent-exfat": "exfatprogs formatted; emulated deleted contiguous directory entries inserted in free clusters"
+  }
+}

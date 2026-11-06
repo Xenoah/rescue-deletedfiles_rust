@@ -1,0 +1,12 @@
+{
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "architecture": "x86_64",
+  "logical_cpu_count": 5,
+  "affinity_cpu_count": 5,
+  "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+  "cgroup": {
+    "cpu.max": "400000 100000",
+    "memory.max": "17179869184"
+  },
+  "display": "Xvfb 1440x1000, Openbox; Rescue client 1260x820; X11 native input; OpenGL renderer; hardware acceleration not measured"
+}

@@ -1,0 +1,197 @@
+{
+  "status": "passed",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "gui_binary_sha256": "164ed3022ce022eba227e6435b4e0ff1f1d9edf820778705f85e41645ae181b1",
+  "pid": 21395,
+  "window": "8388611",
+  "display": ":92",
+  "actions": {
+    "selection_counter_painted": {
+      "samples_ms": [
+        109.1401270005008,
+        108.88659699958225,
+        110.41186500006006,
+        117.03882599977078,
+        107.59483900073974,
+        110.19033299999137,
+        107.51730299944029,
+        110.17988700041315,
+        107.58927100050641,
+        107.59319699991465,
+        110.11971700008871,
+        112.81170500024018,
+        109.43383899939363,
+        107.30674200021895,
+        107.88811499969597,
+        108.55588100002933,
+        107.35500999999203,
+        107.24017799930152,
+        107.46646600000531,
+        120.07431900019583,
+        113.39012799999182,
+        115.79303199960123,
+        121.27435000002151,
+        108.23689199969522,
+        110.98232000040298,
+        108.92323200005194,
+        107.5769319995743,
+        107.85411799952271,
+        110.35041300056037,
+        107.72807000012108,
+        107.92573600065225,
+        109.86026799946558,
+        106.53134399944975,
+        107.8548489995228,
+        107.29526999966765,
+        107.43892600021354,
+        108.71252600009029,
+        106.92485500021576,
+        107.56306599978416,
+        109.1156160000537
+      ],
+      "p95_ms": 117.03882599977078,
+      "median_ms": 108.39638649986227,
+      "min_ms": 106.53134399944975,
+      "max_ms": 121.27435000002151,
+      "rendered_states_sha256": [
+        "0c63b29b1eb8ce3961e3350aca960a5fe90322db0f36e237b853f600435f6e1b",
+        "d1f8294cf7889f498ba6d8142f92536021b7ceca792985af94b7cb8e71c06a4a"
+      ]
+    },
+    "rare_substring_result_painted": {
+      "samples_ms": [
+        179.59874999996828,
+        94.99423800025397,
+        109.69591100001708,
+        80.07292999991478,
+        125.81494599999132,
+        97.16488300000492,
+        150.9858780000286,
+        94.97674599970196,
+        126.03190000027098,
+        91.24978999989253,
+        124.643928000296,
+        79.11886200054141,
+        126.10235099964484,
+        84.44033500018122,
+        122.10851999952865,
+        83.75105100003566,
+        124.60047900003701,
+        89.31128800031729,
+        111.98527899978217,
+        82.66600800016022,
+        126.36495999959152,
+        87.76973000021826,
+        135.56355300079304,
+        81.12934899963875,
+        155.8224029995472,
+        93.23477799989632,
+        113.06492400035495,
+        105.40782899988699,
+        143.48603199960053,
+        97.65299099944968,
+        108.46445800052607,
+        92.40873399994598,
+        124.35583099977521,
+        84.26097600022331,
+        139.54599699991377,
+        81.71703099924343,
+        121.1582139994789,
+        75.95324899921252,
+        112.69818399978249,
+        74.44979499996407
+      ],
+      "p95_ms": 150.9858780000286,
+      "median_ms": 106.93614350020653,
+      "min_ms": 74.44979499996407,
+      "max_ms": 179.59874999996828,
+      "rendered_states_sha256": [
+        "b7c2d08c943fda85f22f5c1432fe91088c2cb11081b901cafafbdb7bf83ec23c",
+        "df355cbbe52c508ca92138fad3e2a10e4b1b0318df9031ceb8782fe44822da0a"
+      ]
+    }
+  },
+  "config": {
+    "window_size": [
+      1260,
+      820
+    ],
+    "candidates": 10000000,
+    "actions": [
+      {
+        "name": "selection_counter_painted",
+        "region": [
+          98,
+          780,
+          290,
+          800
+        ],
+        "initial_command": [
+          "mousemove",
+          699,
+          247,
+          "click",
+          1
+        ],
+        "states": [
+          {
+            "template": "selected.png",
+            "command": [
+              "mousemove",
+              112,
+              370,
+              "click",
+              1
+            ]
+          },
+          {
+            "template": "unselected.png",
+            "command": [
+              "mousemove",
+              112,
+              370,
+              "click",
+              1
+            ]
+          }
+        ]
+      },
+      {
+        "name": "rare_substring_result_painted",
+        "region": [
+          150,
+          355,
+          340,
+          385
+        ],
+        "states": [
+          {
+            "template": "rare-first-row.png",
+            "command": [
+              "key",
+              "ctrl+f",
+              "ctrl+a",
+              "type",
+              "--clearmodifiers",
+              "--delay",
+              0,
+              "09999999"
+            ]
+          },
+          {
+            "template": "all-first-row.png",
+            "command": [
+              "key",
+              "ctrl+f",
+              "ctrl+a",
+              "BackSpace"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "scope": "Measure real X11 input-to-painted-result latency on an owned Rescue window.\n\nThe caller supplies reviewed screen coordinates and two independently captured\nreference regions per action. The measured completion is a matching rendered\nresult, not merely input delivery or the return of an automation API. Templates\nmust differ. Screenshot polling and xdotool startup are included in latency.\nRequires Pillow and xdotool; never selects host storage or starts a scan.",
+  "aggregate_peak_rss_bytes": 139149312,
+  "rss_scope": "Rescue GUI and recursive descendants, all threads, sampled every 5 ms; no display-server/test-driver memory"
+}
