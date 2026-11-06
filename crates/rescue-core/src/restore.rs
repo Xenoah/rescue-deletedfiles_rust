@@ -953,9 +953,9 @@ pub fn export_unrecovered(
     destination: &Path,
     cancel: &AtomicBool,
 ) -> Result<Vec<RawExport>> {
-    std::fs::create_dir_all(destination)?;
     session.guard_output(destination)?;
     let batch = prepare_with(session, ids, cancel, true)?;
+    std::fs::create_dir_all(destination)?;
     let mut exports = Vec::new();
     for file in batch.files {
         let id = file.result.candidate_id.clone();

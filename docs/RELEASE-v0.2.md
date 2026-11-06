@@ -71,7 +71,7 @@ FAT32の片方のFATコピーが破損・読取不能でも、有効なチェー
 通常の復元で不完全になった候補は、GUIの「復元できなかった N 件をバイナリで書き出す」、
 CLIの `export-raw`、MCPの `export_unrecovered` から取り出せます。
 読めない範囲は0で埋めてJSONに位置を記録し、常に未検証のデータとして扱います。
-既存ファイルの上書きと元媒体への書き出しを拒否します。[手順と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/DAMAGED_MEDIA.md)
+既存ファイルの上書きと元媒体への書き出しを拒否します。保存先と元媒体の検証をフォルダー作成より先に行い、拒否時の不要な書込みも防ぎます。[手順と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v0.2.0-alpha.16/docs/DAMAGED_MEDIA.md)
 
 ![復元できなかったデータをバイナリで書き出した実GUI](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v0.2.0-alpha.16/docs/images/raw-export-done.png)
 

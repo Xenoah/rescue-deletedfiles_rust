@@ -31,7 +31,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
     for suite_name,minimum,files in [('preview',9 if platform=='windows' else 11,None),('allocation_scope',19,24),
                                ('job_contract',12,6),('naming',14,13),('source_contract',10,10),
-                               ('export_raw',6,2),('damaged_fat',5,20)]:
+                               ('export_raw',7,2),('damaged_fat',5,20)]:
         proof=run[suite_name+'_verification']
         assert proof['status']=='passed' and proof['checks']>=minimum and proof['source_unchanged']
         assert proof['version']=='rescue '+a.tag.removeprefix('v') and proof['binary_sha256']==run['binary_sha256']

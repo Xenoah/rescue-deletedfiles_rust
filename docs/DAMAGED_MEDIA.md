@@ -46,9 +46,10 @@ rescue export-raw --session work/SESSION.rescue-session.json --id mft-21-7 --des
 
 ![読めない部分を0で埋めて書き出した結果](images/raw-export-done.png)
 
-検証：`scripts/e2e_export_raw.py` の6条件。取得イメージで断片化ファイルの1セクターを読取不能にし、通常の復元が
+検証：`scripts/e2e_export_raw.py` の7条件。取得イメージで断片化ファイルの1セクターを読取不能にし、通常の復元が
 データを作らないこと、書き出しでそのセクターだけが0・他の全バイトが正解と一致し、範囲が正確に記録されることを確認。
 読める候補は全バイト一致、既存ファイルの上書き拒否、未知の候補の拒否、元イメージの無変更。
+元デバイスが通常ファイルへ置き換わったセッションを拒否し、出力フォルダーも作らないことを確認します。
 実GUI（Linux/Xvfb）でも同じ条件で書き出しを操作し、[記録](gui-raw-export-results.json)を残しました。
 
 ## 制限

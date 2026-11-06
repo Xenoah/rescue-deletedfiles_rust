@@ -67,7 +67,19 @@ def main(binary, output=None):
         cases.append('existing export never overwritten')
         unknown = subprocess.run([str(binary), 'export-raw', '--session', session, '--id', 'mft-999-7', '--destination', root / 'unknown', '--json'], capture_output=True, text=True, encoding='utf-8')
         check(unknown.returncode == 2, unknown.stderr)
+        check(not (root / 'unknown').exists(), 'unknown candidate created an output directory')
         cases.append('unknown candidate rejected')
+        # A device session whose source was replaced by an ordinary file must
+        # be rejected before even creating the requested output directory.
+        changed = json.loads(Path(session).read_text(encoding='utf-8'))
+        changed['fingerprint']['modified_ns'] = 'device:replaced-source'
+        changed_session = root / 'changed-source.rescue-session.json'
+        changed_session.write_text(json.dumps(changed), encoding='utf-8')
+        rejected_output = root / 'must-not-create' / 'nested'
+        rejected = subprocess.run([str(binary), 'export-raw', '--session', str(changed_session), '--id', 'mft-20-7', '--destination', str(rejected_output), '--json'], capture_output=True, text=True, encoding='utf-8', timeout=30)
+        check(rejected.returncode != 0, 'replaced device source accepted')
+        check(not rejected_output.parent.exists(), 'rejected raw export created an output directory')
+        cases.append('rejected source leaves output directories untouched')
         check(sha(image) == before, 'source image changed')
         cases.append('source unchanged')
     result = {'status': 'passed', 'version': subprocess.check_output([str(binary), '--version'], text=True).strip(),

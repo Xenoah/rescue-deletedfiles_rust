@@ -50,7 +50,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if not (proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files and proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))):
             index_failures.append(f'{prefix}/{platform}/{arch}: expected checks >= {minimum}, files == {files}, version rescue {VERSION}; observed {observed}')
     # alpha.16 suites: preview, allocation scope, job contract, naming and source identity.
-    linux_minimum={'export-raw':(6,2),'damaged-fat':(5,20),'preview':(11,None),'allocation-scope':(19,24),'job-contract':(12,6),'naming':(14,13),'source-contract':(10,10)}
+    linux_minimum={'export-raw':(7,2),'damaged-fat':(5,20),'preview':(11,None),'allocation-scope':(19,24),'job-contract':(12,6),'naming':(14,13),'source-contract':(10,10)}
     for prefix,(checks,files) in linux_minimum.items():
         proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
         ok=proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['source_unchanged'] and proof['checks']>0
