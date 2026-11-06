@@ -94,7 +94,9 @@ def native_source(raw,root):
         nodes=plistlib.loads(result.stdout)['system-entities']
         device=next(n['dev-entry'] for n in nodes if n.get('dev-entry','').startswith('/dev/disk') and n['dev-entry'][9:].isdigit())
         try:yield ['sudo'],Path('/dev/r'+device[5:]),raw
-        finally:call('/usr/bin/hdiutil','detach',device)
+        finally:
+            from macos_fixture import detach_owned_image
+            detach_owned_image(raw,device)
     elif system=='Windows':
         vhd=root/'native-fixture.vhd';fixed_vhd(raw,vhd)
         # Environment values keep the fixture path out of PowerShell source code.

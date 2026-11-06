@@ -74,7 +74,8 @@ def mounted_fixture(root):
             call('sudo','chmod','a+rwx',mount)
             yield Path('/dev/r'+partition), mount, 'exfat'
         finally:
-            call('sudo','/usr/bin/hdiutil', 'detach', whole)
+            from macos_fixture import detach_owned_image
+            detach_owned_image(image, whole, sudo=True)
     elif system == 'Windows':
         image = root/'owned-volume.vhd'
         check(not image.exists() and image.is_absolute(), 'fixture must be new and absolute')
