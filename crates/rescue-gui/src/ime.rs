@@ -20,14 +20,13 @@ impl Composition {
                 Event::Ime(ImeEvent::Preedit(text)) => {
                     self.owner = (!text.is_empty()).then_some(focused).flatten();
                 }
-                Event::Ime(ImeEvent::Disabled) => {
+                Event::Ime(ImeEvent::Disabled)
                     if self
                         .owner
                         .take()
-                        .is_some_and(|owner| Some(owner) == focused)
-                    {
-                        normalized.push(Event::Ime(ImeEvent::Preedit(String::new())));
-                    }
+                        .is_some_and(|owner| Some(owner) == focused) =>
+                {
+                    normalized.push(Event::Ime(ImeEvent::Preedit(String::new())));
                 }
                 _ => {}
             }
