@@ -61,6 +61,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             proof=json.loads((dist/f'read-access-{kind}-windows-x64.json').read_text())
             if not (proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['source_unchanged'] and proof['files_byte_exact']>0):contract_failures.append(f'read-access-{kind}: observed status {proof.get("status")!r}')
             if kind=='limited' and not proof['unelevated_parent_tested']:contract_failures.append('read-access-limited: parent was elevated')
+        uia=json.loads((dist/'gui-native-windows-x64.json').read_text())
+        if not (uia['status']=='passed' and uia['files_byte_exact']==2 and uia['source_unchanged'] and len(uia['uia']['steps'])>=10):contract_failures.append(f"native Windows UIA: observed status {uia.get('status')!r}")
     checksum_file=dist/f'SHA256SUMS-{platform}-{arch}.txt'
     for line in checksum_file.read_text().splitlines():
         expected,name=line.split('  ',1)
