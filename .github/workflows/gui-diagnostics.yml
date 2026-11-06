@@ -78,6 +78,14 @@ jobs:
               for name,kind in [('rescue.exe','cli'),('rescue-gui.exe','gui')]:
                   data=archive.read(name); assert hashlib.sha256(data).hexdigest()==proof['portable_'+kind+'_sha256']; (destination/name).write_bytes(data)
           PYTHON
+      - name: Install Japanese input support for the native IME test
+        continue-on-error: true
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          $capability | Select-Object Name,State | ConvertTo-Json
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
       - name: Record native language and token environment
         shell: powershell
         continue-on-error: true

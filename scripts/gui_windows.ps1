@@ -354,8 +354,9 @@ try {
     } while ($null -eq $saved -and [DateTime]::UtcNow -lt $until)
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
-    Add-Type -AssemblyName System.Drawing
-    $bounds=$script:root.Current.BoundingRectangle
+    Add-Type -AssemblyName System.Drawing,System.Windows.Forms
+    $windowBounds=$script:root.Current.BoundingRectangle
+    $bounds=[System.Drawing.Rectangle]::Intersect([System.Drawing.Rectangle]::new([int]$windowBounds.X,[int]$windowBounds.Y,[int]$windowBounds.Width,[int]$windowBounds.Height),[System.Windows.Forms.Screen]::FromHandle($script:owned.MainWindowHandle).Bounds)
     $bitmap=[System.Drawing.Bitmap]::new([int]$bounds.Width,[int]$bounds.Height)
     $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
     try {

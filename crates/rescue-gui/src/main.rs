@@ -2434,6 +2434,11 @@ fn main() -> eframe::Result {
     eframe::run_native(
         "Rescue — File Recovery",
         eframe::NativeOptions {
+            // Windows' monitor-size clamp includes the taskbar and excludes
+            // window decorations. A normal 1260x820 window can hide the footer
+            // on a 1024x768 desktop. Let Windows fit its actual work area.
+            #[cfg(windows)]
+            window_builder: Some(Box::new(|viewport| viewport.with_maximized(true))),
             #[cfg(windows)]
             renderer: eframe::Renderer::Wgpu,
             #[cfg(not(windows))]
