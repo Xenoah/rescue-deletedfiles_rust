@@ -33,6 +33,9 @@ pub struct RestoreOptions {
 }
 struct PreparedFile {
     bytes: Vec<u8>,
+    /// Logical (offset, length) ranges zero-filled by a raw export.
+    unread: Vec<(u64, u64)>,
+    name: String,
     relative: PathBuf,
     partition: Option<u32>,
     region: Option<SourceRegion>,
@@ -40,6 +43,8 @@ struct PreparedFile {
     result: RecoveryResult,
 }
 struct Batch {
+    /// Raw export: zero-fill unreadable media instead of failing the file.
+    lossy: bool,
     files: Vec<PreparedFile>,
     failures: Vec<RecoveryResult>,
 }
@@ -132,6 +137,14 @@ fn relative_path(path: &str, name: &str, verified: bool) -> Result<PathBuf> {
     Ok(relative)
 }
 fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Batch> {
+    prepare_with(session, ids, cancel, false)
+}
+fn prepare_with(
+    session: &Session,
+    ids: &[String],
+    cancel: &AtomicBool,
+    lossy: bool,
+) -> Result<Batch> {
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
@@ -149,6 +162,7 @@ fn prepare(session: &Session, ids: &[String], cancel: &AtomicBool) -> Result<Bat
     let mut metadata_bytes = 0u64;
     let mut selected = BTreeMap::new();
     let mut batch = Batch {
+        lossy,
         files: Vec::new(),
         failures: Vec::new(),
     };
@@ -262,6 +276,7 @@ fn read_volume(
             )
         }
     };
+    let lossy = batch.lossy;
     let mut parents = indexed_scan::Parents::default();
     for mut candidate in candidates {
         if cancel.load(Ordering::Relaxed) {
@@ -321,13 +336,19 @@ fn read_volume(
             })?;
             let mut offset = 0;
             let mut hash = Sha256::new();
+            let mut unread = Vec::new();
             while offset < size {
                 if cancel.load(Ordering::Relaxed) {
                     return Err(Error::Cancelled);
                 }
-                let chunk =
-                    data.data
-                        .read(&mut image, offset, (size - offset).min(256 * 1024) as usize)?;
+                let count = (size - offset).min(256 * 1024) as usize;
+                let chunk = if lossy {
+                    let (chunk, gaps) = data.data.read_lossy(&mut image, offset, count)?;
+                    unread.extend(gaps);
+                    chunk
+                } else {
+                    data.data.read(&mut image, offset, count)?
+                };
                 if chunk.is_empty() {
                     return Err(Error::Invalid("short recovery payload".into()));
                 }
@@ -377,6 +398,8 @@ fn read_volume(
             *used += size;
             Ok(PreparedFile {
                 bytes,
+                unread,
+                name: data.name.clone(),
                 relative,
                 partition,
                 region: session.region.clone(),
@@ -893,4 +916,105 @@ fn zip_impl(
         }
     }
     Ok(result)
+}
+
+/// One raw export of data that could not be recovered as a verified file.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RawExport {
+    pub candidate_id: String,
+    /// `exported` (all bytes read), `exported_with_gaps` or `not_exportable`.
+    pub status: String,
+    pub name: Option<String>,
+    pub original_path: Option<String>,
+    pub size: u64,
+    pub bin_path: Option<PathBuf>,
+    pub map_path: Option<PathBuf>,
+    pub sha256: Option<String>,
+    /// Logical ranges filled with zero bytes because the media could not be read.
+    pub zero_filled: Vec<ZeroFilled>,
+    pub error: Option<String>,
+}
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ZeroFilled {
+    pub logical_offset: u64,
+    pub length: u64,
+}
+const RAW_NOTICE: &str = "Raw bytes located by the scan's metadata. Not a verified recovery: zero-filled ranges were unreadable, and content was not format-validated. Do not treat this file as the original.";
+
+/// Write the bytes of candidates that could not be recovered normally — read
+/// errors on damaged media in particular — as `.rescue-raw.bin` files with a JSON
+/// map. Unreadable 512-byte pieces are zero-filled and listed. Metadata is
+/// revalidated exactly as for a restore; candidates whose data cannot be located
+/// are returned as `not_exportable` with the reason. Files are created new and
+/// never overwrite; the destination must not be on the source media.
+pub fn export_unrecovered(
+    session: &Session,
+    ids: &[String],
+    destination: &Path,
+    cancel: &AtomicBool,
+) -> Result<Vec<RawExport>> {
+    std::fs::create_dir_all(destination)?;
+    session.guard_output(destination)?;
+    let batch = prepare_with(session, ids, cancel, true)?;
+    let mut exports = Vec::new();
+    for file in batch.files {
+        let id = file.result.candidate_id.clone();
+        let stem = component(&format!("{}.{}", id.replace(':', "_"), file.name));
+        let bin = destination.join(format!("{stem}.rescue-raw.bin"));
+        let map = destination.join(format!("{stem}.rescue-raw.json"));
+        let export = RawExport {
+            candidate_id: id,
+            status: if file.unread.is_empty() {
+                "exported"
+            } else {
+                "exported_with_gaps"
+            }
+            .into(),
+            name: Some(file.name.clone()),
+            original_path: Some(file.relative.to_string_lossy().replace('\\', "/")),
+            size: file.bytes.len() as u64,
+            bin_path: Some(bin.clone()),
+            map_path: Some(map.clone()),
+            sha256: Some(format!("{:x}", Sha256::digest(&file.bytes))),
+            zero_filled: file
+                .unread
+                .iter()
+                .map(|&(logical_offset, length)| ZeroFilled {
+                    logical_offset,
+                    length,
+                })
+                .collect(),
+            error: None,
+        };
+        let write = |path: &Path, bytes: &[u8]| -> Result<()> {
+            let mut out = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(path)?;
+            out.write_all(bytes)?;
+            out.sync_all()?;
+            Ok(())
+        };
+        write(&bin, &file.bytes)?;
+        let record = serde_json::json!({"schema_version":1,"notice":RAW_NOTICE,"export":&export,
+            "warnings":file.result.warnings,"extent_evidence":file.result.extent_evidence,
+            "allocation_status":file.result.allocation_status,"partition":file.partition});
+        write(&map, &serde_json::to_vec_pretty(&record)?)?;
+        exports.push(export);
+    }
+    for failure in batch.failures {
+        exports.push(RawExport {
+            candidate_id: failure.candidate_id,
+            status: "not_exportable".into(),
+            name: None,
+            original_path: None,
+            size: 0,
+            bin_path: None,
+            map_path: None,
+            sha256: None,
+            zero_filled: Vec::new(),
+            error: failure.error,
+        });
+    }
+    Ok(exports)
 }

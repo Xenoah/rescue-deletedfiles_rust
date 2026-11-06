@@ -16,6 +16,7 @@ use std::{
 };
 
 const MAX_CLUSTER_VISITS: u64 = 2_000_000;
+const DISAGREE: &str = "mirrored FAT copies disagree on a referenced cluster";
 const MAX_CHAIN: u64 = 1_048_576;
 const MAX_DIRECTORIES: usize = 16384;
 const MAX_DIRECTORY_BYTES: u64 = 64 * 1024 * 1024;
@@ -30,16 +31,26 @@ pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
     let geometry = Geometry::open(image)?;
     let mut copies = Vec::new();
     for offset in &geometry.fat_offsets {
-        let bytes = image.read(*offset, 8)?;
+        // A damaged USB/SD card often has one unreadable or overwritten FAT copy.
+        let Ok(bytes) = image.read(*offset, 8) else {
+            continue;
+        };
         let first = u32_at(&bytes, 0)?;
         let second = u32_at(&bytes, 4)?;
-        if first & 0x0fff_fff8 != 0x0fff_fff8 || second & 0x0fff_fff8 != 0x0fff_fff8 {
-            return Err(invalid("reserved FAT entries"));
+        if first & 0x0fff_fff8 == 0x0fff_fff8 && second & 0x0fff_fff8 == 0x0fff_fff8 {
+            copies.push(bytes);
         }
-        copies.push(bytes);
     }
-    if copies.windows(2).any(|p| p[0] != p[1]) {
-        return Err(invalid("reserved FAT copies disagree"));
+    if copies.is_empty() {
+        return Err(invalid("no FAT copy has valid reserved entries"));
+    }
+    let mut evidence = Vec::new();
+    if copies.len() < geometry.fat_offsets.len() || copies.windows(2).any(|p| p[0] != p[1]) {
+        evidence.push(format!(
+            "FAT copies are damaged or disagree: {} of {} copies have valid reserved entries; each chain is accepted only when exactly one copy gives it",
+            copies.len(),
+            geometry.fat_offsets.len()
+        ));
     }
     let root = image.read(
         geometry.address(geometry.root)?,
@@ -63,10 +74,14 @@ pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
             }
         }
     }
-    Ok(vec![
-        "Validated boot geometry and configured backup".into(),
-        "Checked reserved FAT entries, mirrored copies and root directory bounds".into(),
-    ])
+    evidence.splice(
+        0..0,
+        [
+            "Validated boot geometry and configured backup".to_string(),
+            "Checked reserved FAT entries, mirrored copies and root directory bounds".to_string(),
+        ],
+    );
+    Ok(evidence)
 }
 
 fn invalid(message: &str) -> Error {
@@ -112,6 +127,10 @@ struct Volume {
     upcase: Vec<u16>,
     system_clusters: Vec<u32>,
     visits: u64,
+    /// Use only this FAT copy (set while resolving a mirrored-copy disagreement).
+    copy: Option<usize>,
+    /// Chains resolved from a single FAT copy because the mirrors disagreed.
+    copy_choices: Vec<String>,
 }
 
 /// Allocation-only view for signature search. It does not infer deletion from
@@ -127,6 +146,8 @@ impl AllocationReader {
             upcase: Vec::new(),
             system_clusters: Vec::new(),
             visits: 0,
+            copy: None,
+            copy_choices: Vec::new(),
         };
         if volume.geometry.filesystem == FileSystem::Exfat {
             volume.prepare_exfat(image, 1_048_576, cancel)?;
@@ -224,14 +245,27 @@ impl Volume {
         let sector = self.geometry.sector;
         let within = u64::from(cluster) * 4;
         let mut values = Vec::new();
-        for base in &self.geometry.fat_offsets {
+        let mut unreadable = None;
+        for (index, base) in self.geometry.fat_offsets.iter().enumerate() {
+            if self.copy.is_some_and(|only| only != index) {
+                continue;
+            }
             let offset = base + within / sector * sector;
             if !self.fat_cache.contains_key(&offset) {
                 if self.fat_cache.len() >= 128 {
                     self.fat_cache.pop_first();
                 }
-                self.fat_cache
-                    .insert(offset, image.read(offset, sector as usize)?);
+                match image.read(offset, sector as usize) {
+                    Ok(bytes) => {
+                        self.fat_cache.insert(offset, bytes);
+                    }
+                    // An unreadable sector of one mirror: use the remaining copies.
+                    Err(e @ (Error::MissingRanges(_) | Error::Io(_))) => {
+                        unreadable = Some(e);
+                        continue;
+                    }
+                    Err(e) => return Err(e),
+                }
             }
             let mut value = u32_at(&self.fat_cache[&offset], (within % sector) as usize)?;
             if self.geometry.filesystem == FileSystem::Fat32 {
@@ -239,10 +273,11 @@ impl Volume {
             }
             values.push(value);
         }
+        if values.is_empty() {
+            return Err(unreadable.unwrap_or_else(|| invalid("no FAT copy")));
+        }
         if values.iter().any(|v| *v != values[0]) {
-            return Err(invalid(
-                "mirrored FAT copies disagree on a referenced cluster",
-            ));
+            return Err(invalid(DISAGREE));
         }
         Ok(values[0])
     }
@@ -273,6 +308,59 @@ impl Volume {
         self.file_clusters_observed(image, entry, deleted, cancel, &mut |_| {})
     }
     fn chain_observed(
+        &mut self,
+        image: &mut Image,
+        first: u32,
+        expected: Option<u64>,
+        freed_first: bool,
+        cancel: &AtomicBool,
+        observe: &mut impl FnMut(u32),
+    ) -> Result<Vec<u32>> {
+        match self.chain_once(image, first, expected, freed_first, cancel, observe) {
+            Err(Error::Invalid(message))
+                if message.ends_with(DISAGREE)
+                    && self.copy.is_none()
+                    && self.geometry.fat_offsets.len() > 1 =>
+            {
+                let mut accepted = Vec::new();
+                for index in 0..self.geometry.fat_offsets.len() {
+                    self.copy = Some(index);
+                    let attempt =
+                        self.chain_once(image, first, expected, freed_first, cancel, &mut |_| {});
+                    self.copy = None;
+                    match attempt {
+                        Ok(clusters) => accepted.push((index, clusters)),
+                        Err(e @ (Error::Cancelled | Error::Limit(_))) => return Err(e),
+                        Err(_) => {}
+                    }
+                }
+                if accepted.len() != 1 {
+                    return Err(invalid(&format!(
+                        "{DISAGREE}; {} copies give a valid chain{}, so none is chosen",
+                        accepted.len(),
+                        if expected.is_some() {
+                            " of the recorded length"
+                        } else {
+                            ""
+                        }
+                    )));
+                }
+                let (index, clusters) = accepted.pop().unwrap();
+                for cluster in &clusters {
+                    observe(*cluster);
+                }
+                if self.copy_choices.len() < 1000 {
+                    self.copy_choices.push(format!(
+                        "cluster {first}: mirrored FAT copies disagree; only FAT copy {index} gives a loop-free chain{}",
+                        if expected.is_some() { " of the recorded file length" } else { "" }
+                    ));
+                }
+                Ok(clusters)
+            }
+            other => other,
+        }
+    }
+    fn chain_once(
         &mut self,
         image: &mut Image,
         first: u32,
@@ -706,6 +794,8 @@ pub(crate) fn scan_selected(
         upcase: Vec::new(),
         system_clusters: Vec::new(),
         visits: 0,
+        copy: None,
+        copy_choices: Vec::new(),
     };
     if scan.filesystem == FileSystem::Exfat {
         match volume.prepare_exfat(image, options.max_records, cancel) {
@@ -1144,6 +1234,13 @@ pub(crate) fn scan_selected(
         candidates: scan.entries.len(),
         unit: crate::ProgressUnit::Records,
     });
+    if !volume.copy_choices.is_empty() {
+        scan.warnings.push(format!(
+            "Damaged FAT mirror: {} chain(s) were taken from the single FAT copy that is consistent; see first: {}",
+            volume.copy_choices.len(),
+            volume.copy_choices[0]
+        ));
+    }
     Ok(scan)
 }
 

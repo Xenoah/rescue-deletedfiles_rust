@@ -569,6 +569,8 @@ pub(crate) fn run_volume(
         upcase: vec![],
         system_clusters: vec![],
         visits: 0,
+        copy: None,
+        copy_choices: Vec::new(),
     };
     if volume.geometry.filesystem == FileSystem::Exfat {
         volume.prepare_exfat(volume_image, checkpoint.options.max_records, cancel)?;

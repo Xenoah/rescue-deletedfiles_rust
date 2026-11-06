@@ -220,6 +220,8 @@ jobs:
             dist/read-access-*.json
             dist/gui-native-*.json
             dist/fuzz-*.json
+            dist/export-raw-*.json
+            dist/damaged-fat-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures

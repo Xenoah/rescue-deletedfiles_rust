@@ -63,8 +63,9 @@ pub use raid::{RaidReadRange, RaidReadTrace};
 pub use read_access::{ReadAccess, read_broker_entry, request_read_access};
 pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
 pub use restore::{
-    CollisionPolicy, MAX_RESTORE_MEMORY, RestoreOptions, RestoreTarget, VolumeRoot, restore_files,
-    restore_files_with_roots, restore_zip, restore_zip_with_roots,
+    CollisionPolicy, MAX_RESTORE_MEMORY, RawExport, RestoreOptions, RestoreTarget, VolumeRoot,
+    ZeroFilled, export_unrecovered, restore_files, restore_files_with_roots, restore_zip,
+    restore_zip_with_roots,
 };
 pub use search::{CarveScope, ScanMethod, SearchSettings, scan_with_settings};
 use serde::{Deserialize, Serialize};

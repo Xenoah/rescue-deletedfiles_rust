@@ -50,7 +50,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if not (proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=minimum and proof['files_byte_exact']==files and proof.get('source_unchanged',proof.get('source_bytes_unchanged',False))):
             index_failures.append(f'{prefix}/{platform}/{arch}: expected checks >= {minimum}, files == {files}, version rescue {VERSION}; observed {observed}')
     # alpha.16 suites: preview, allocation scope, job contract, naming and source identity.
-    linux_minimum={'preview':(11,None),'allocation-scope':(19,24),'job-contract':(12,6),'naming':(14,13),'source-contract':(10,10)}
+    linux_minimum={'export-raw':(6,2),'damaged-fat':(5,20),'preview':(11,None),'allocation-scope':(19,24),'job-contract':(12,6),'naming':(14,13),'source-contract':(10,10)}
     for prefix,(checks,files) in linux_minimum.items():
         proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
         ok=proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['source_unchanged'] and proof['checks']>0
@@ -132,7 +132,7 @@ assert current('index-benchmark-results.json',benchmark['version']) and benchmar
 assert benchmark['final_queries']['status']=='passed' and benchmark['final_queries']['candidates']==10000000
 assert all(not query['failures'] for query in benchmark['final_queries']['queries'].values())
 shutil.copy2(ROOT/'docs/index-benchmark-results.json',dist/'index-benchmark-results.json')
-for name in ['gui-preview-results.json','gui-allocation-results.json','gui-i18n-results.json','gui-job-results.json','gui-keyboard-results.json','gui-naming-results.json','gui-source-results.json']:
+for name in ['gui-raw-export-results.json','gui-preview-results.json','gui-allocation-results.json','gui-i18n-results.json','gui-job-results.json','gui-keyboard-results.json','gui-naming-results.json','gui-source-results.json']:
     proof=json.loads((ROOT/'docs'/name).read_text(encoding='utf-8'))
     if proof.get('application_version',proof.get('version'))!=VERSION or proof['status']!='passed':raise SystemExit('alpha.16 GUI proof mismatch: '+name)
     unchanged=proof.get('source_unchanged',proof.get('acquisition',{}).get('source_unchanged'))

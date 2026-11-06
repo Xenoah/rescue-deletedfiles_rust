@@ -52,12 +52,45 @@ impl Record {
         self.attributes.iter().any(|a| a.kind == 0x20)
     }
 }
+/// Bytes plus logical (offset, length) ranges that were zero-filled.
+pub type LossyRead = (Vec<u8>, Vec<(u64, u64)>);
 impl Data {
     pub fn size(&self) -> u64 {
         match self {
             Self::Resident(v) => v.len() as u64,
             Self::NonResident { size, .. } | Self::Compressed { size, .. } => *size,
         }
+    }
+    /// Read for raw export of unrecoverable data: unreadable 512-byte pieces are
+    /// zero-filled and returned as logical (offset, length) gaps. Structural errors
+    /// (invalid runs, decoding failures) still fail; only unreadable media is filled.
+    pub fn read_lossy(&self, image: &mut Image, offset: u64, length: usize) -> Result<LossyRead> {
+        let unreadable = |e: &Error| matches!(e, Error::MissingRanges(_) | Error::Io(_));
+        match self.read(image, offset, length) {
+            Ok(bytes) => return Ok((bytes, Vec::new())),
+            Err(e) if !unreadable(&e) => return Err(e),
+            Err(_) => {}
+        }
+        let mut out = Vec::with_capacity(length);
+        let mut gaps: Vec<(u64, u64)> = Vec::new();
+        let mut at = 0;
+        while at < length {
+            let count = (length - at).min(512);
+            let piece = offset + at as u64;
+            match self.read(image, piece, count) {
+                Ok(bytes) => out.extend_from_slice(&bytes),
+                Err(e) if unreadable(&e) => {
+                    out.resize(out.len() + count, 0);
+                    match gaps.last_mut() {
+                        Some((start, len)) if *start + *len == piece => *len += count as u64,
+                        _ => gaps.push((piece, count as u64)),
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+            at += count;
+        }
+        Ok((out, gaps))
     }
     pub fn read(&self, image: &mut Image, offset: u64, length: usize) -> Result<Vec<u8>> {
         let end = offset

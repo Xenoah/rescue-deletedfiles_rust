@@ -254,6 +254,18 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Write unrecoverable candidates' raw bytes (unreadable media zero-filled) with a JSON map.
+    /// Output is unverified raw data, never presented as the original file.
+    ExportRaw {
+        #[arg(long)]
+        session: PathBuf,
+        #[arg(long, required = true)]
+        id: Vec<String>,
+        #[arg(long)]
+        destination: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     Report {
         #[arg(long)]
         session: PathBuf,
@@ -345,7 +357,7 @@ fn run() -> Result<i32, Error> {
     if cli.request_read_access {
         let source=match &cli.command {
             Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
-            Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}=> {
+            Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw{session,..}=> {
                 if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
                 else {Session::load(session)?.source}
             },
@@ -355,6 +367,29 @@ fn run() -> Result<i32, Error> {
         eprintln!("{}", json!({"read_access":access}));
     }
     match cli.command {
+        Command::ExportRaw {
+            session,
+            id,
+            destination,
+            json: compact,
+        } => {
+            let session = if rescue_core::CandidateIndex::is_index(&session)? {
+                rescue_core::CandidateIndex::open(&session)?.selected_session(&id)?
+            } else {
+                Session::load(&session)?
+            };
+            let exports = rescue_core::export_unrecovered(&session, &id, &destination, &cancel)?;
+            let exported = exports
+                .iter()
+                .filter(|e| e.status != "not_exportable")
+                .count();
+            print(
+                json!({"schema_version":1,"exported":exported,"not_exportable":exports.len()-exported,
+                "verified_recovery":false,"exports":exports}),
+                compact,
+            );
+            Ok(if exported == exports.len() { 0 } else { 5 })
+        }
         Command::Preview {
             session,
             id,

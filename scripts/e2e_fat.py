@@ -133,13 +133,28 @@ def main(binary):
         check(Path(result["path"]).read_bytes()==truth[inner["id"]],"known first directory cluster not recoverable")
         cases+=1
 
+        # Damaged mirror: copy 2 points 105 at the free cluster 104, so only copy 1 gives a
+        # complete chain of the recorded length. That copy is used and the choice reported.
         source=root/"mirror.raw"
-        _,_,meta=fat32(source)
+        mirror_truth,_,meta=fat32(source)
         write_at(source,meta["fat"]+meta["fat_sectors"]*512+105*4,struct.pack("<I",104))
         summary=scan(binary,source,root/"mirror-work")
         by_id=candidates(binary,summary["session"])
-        fragment=by_id[f"fat32-{meta['positions']['FRAGMENTBIN']}"]
-        check(not fragment["supported"] and any("copies disagree" in w for w in fragment["warnings"]),"FAT copy disagreement hidden")
+        key=f"fat32-{meta['positions']['FRAGMENTBIN']}"
+        check(by_id[key]["supported"],"single consistent FAT copy not used")
+        report=run(binary,"report","--session",summary["session"],"--json")
+        check(any("Damaged FAT mirror" in w and "FAT copy 0" in w for w in report["warnings"]),"FAT copy choice hidden")
+        result=run(binary,"recover","--session",summary["session"],"--id",key,"--destination",root/"mirror-out","--json")["results"][0]
+        check(Path(result["path"]).read_bytes()==mirror_truth[key],"damaged-mirror chain not byte-exact")
+        # Both copies valid but different chains: never guessed.
+        source=root/"mirror-ambiguous.raw"
+        _,_,meta=fat32(source)
+        write_at(source,meta["fat"]+meta["fat_sectors"]*512+105*4,struct.pack("<I",0x0FFFFFFF))
+        write_at(source,meta["fat"]+meta["fat_sectors"]*512+100*4,struct.pack("<I",101))
+        write_at(source,meta["fat"]+meta["fat_sectors"]*512+101*4,struct.pack("<I",105))
+        summary=scan(binary,source,root/"mirror-ambiguous-work")
+        fragment=candidates(binary,summary["session"])[key]
+        check(not fragment["supported"] and any("none is chosen" in w for w in fragment["warnings"]),"ambiguous FAT copies guessed")
         cases+=1
         source=root/"active-fat.raw"
         _,_,meta=fat32(source)

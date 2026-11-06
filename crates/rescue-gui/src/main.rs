@@ -76,6 +76,10 @@ enum Message {
         status: Text,
         detail: Text,
     },
+    RawExported {
+        status: Text,
+        detail: Text,
+    },
     Error(Text),
 }
 struct App {
@@ -549,6 +553,90 @@ impl App {
             let _ = tx.send(result.unwrap_or_else(|e| Message::Error(e.into())));
         });
     }
+    /// Candidates of the last recovery that did not complete (read errors on damaged
+    /// media, validation failures). Their raw bytes can be exported unverified.
+    fn unrecovered_ids(&self) -> Vec<String> {
+        self.results
+            .iter()
+            .filter(|r| r.status != "completed" && r.status != "skipped")
+            .map(|r| r.candidate_id.clone())
+            .collect()
+    }
+    fn start_raw_export(&mut self) {
+        let ids = self.unrecovered_ids();
+        let Some(session) = self.session.clone() else {
+            return;
+        };
+        if ids.is_empty() {
+            return;
+        }
+        let out = PathBuf::from(&self.destination);
+        let base = match self.save_mode {
+            SaveMode::Directory => out,
+            SaveMode::Zip => out.parent().map(Path::to_path_buf).unwrap_or_default(),
+            SaveMode::Original => self.work_path(),
+        };
+        if base.as_os_str().is_empty() {
+            self.status = message!(
+                "書き出し先のフォルダーを設定画面で指定してください。",
+                "Choose a destination folder in Settings."
+            );
+            return;
+        }
+        let stamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or_default();
+        let dest = base.join(format!("rescue-raw-{stamp}"));
+        let index_path = self.index.path.clone();
+        self.cancel = Arc::new(AtomicBool::new(false));
+        let cancel = self.cancel.clone();
+        let (tx, rx) = mpsc::sync_channel(2);
+        self.messages = Some(rx);
+        self.stage = Stage::Recovering;
+        self.status = message!(
+            "復元できなかったデータを書き出し中…",
+            "Exporting unrecovered data…"
+        );
+        thread::spawn(move || {
+            let result = (|| -> rescue_core::Result<Message> {
+                let session = match index_path {
+                    Some(path) => {
+                        rescue_core::CandidateIndex::open(&path)?.selected_session(&ids)?
+                    }
+                    None => session,
+                };
+                let exports = rescue_core::export_unrecovered(&session, &ids, &dest, &cancel)?;
+                let gaps = exports
+                    .iter()
+                    .filter(|e| e.status == "exported_with_gaps")
+                    .count();
+                let done = exports
+                    .iter()
+                    .filter(|e| e.status != "not_exportable")
+                    .count();
+                let failed = exports.len() - done;
+                let folder = dest.display().to_string();
+                Ok(Message::RawExported {
+                    status: message!(
+                        "未検証のバイナリを書き出し: {} 件（読めない部分を0で埋めたもの {} 件）/ 書き出せなかったもの: {} 件",
+                        "Unverified raw data exported: {} ({} with unreadable parts zero-filled) / not exportable: {}",
+                        done,
+                        gaps,
+                        failed
+                    ),
+                    detail: message!(
+                        "書き出し先: {}\n各 .rescue-raw.bin の横の .rescue-raw.json に、0で埋めた範囲と理由を記録しました。元のファイルとして扱わないでください。",
+                        "Folder: {}\nEach .rescue-raw.bin has a .rescue-raw.json listing zero-filled ranges and reasons. Do not treat these as the original files.",
+                        folder
+                    ),
+                })
+            })();
+            let _ = tx.send(
+                result.unwrap_or_else(|e| Message::Error(message!("{}", "{}", e.to_string()))),
+            );
+        });
+    }
     fn start_recovery(&mut self) {
         self.invalidate_changed_source();
         if self.save_mode != SaveMode::Original && self.destination.trim().is_empty() {
@@ -828,6 +916,12 @@ impl App {
                     self.stage = Stage::Finished;
                     self.focus_report = true;
                 }
+                Message::RawExported { status, detail } => {
+                    self.status = status;
+                    self.report = detail;
+                    self.stage = Stage::Finished;
+                    self.focus_report = true;
+                }
                 Message::Error(e) => {
                     self.raid.running = false;
                     self.discovery_running = false;
@@ -1076,6 +1170,23 @@ impl App {
             ui.horizontal(|ui| {
                 if ui.button(tr!("設定に戻る", "Back to settings")).clicked() {
                     self.stage = Stage::Settings;
+                }
+                let unrecovered = self.unrecovered_ids().len();
+                if self.stage == Stage::Finished
+                    && unrecovered > 0
+                    && ui
+                        .button(tr_format!(
+                            "復元できなかった {} 件をバイナリで書き出す",
+                            "Export {} unrecovered as raw binary",
+                            unrecovered
+                        ))
+                        .on_hover_text(tr!(
+                            "読めた部分をそのまま書き出し、読めない部分は0で埋めて範囲を記録します。内容は検証されていません。",
+                            "Writes the readable bytes as-is, fills unreadable parts with zeros and records the ranges. Content is not verified."
+                        ))
+                        .clicked()
+                {
+                    self.start_raw_export();
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let response = ui.add_enabled(

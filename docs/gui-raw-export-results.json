@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "application_version": "0.2.0-alpha.16",
+  "time_utc": "2026-11-06T11:50:19.956756+00:00",
+  "platform": "Linux-6.18.44-fc-v242-x86_64-with-glibc2.39",
+  "scope": "Actual Linux Xvfb debug GUI operated with XTest. Acquired synthetic NTFS image with one sector marked permanently unreadable in its read map.",
+  "gui_binary_sha256": "bff1dc10f5700d14bc163e82ede524e76692a27c81960bdf89ae6ed568367389",
+  "source_unchanged": true,
+  "recovered_file_byte_exact": true,
+  "incomplete_file_not_saved_as_original": true,
+  "raw_export": {
+    "candidate_id": "mft-21-7",
+    "bytes": 1300,
+    "zero_filled": [
+      {
+        "length": 512,
+        "logical_offset": 0
+      }
+    ],
+    "other_bytes_exact": true,
+    "sha256": "0c7edf8e0c2035d56810f2f3cc26a5b775df6f34aae184f24d0e90d0f3bc471b",
+    "verified_recovery": false
+  },
+  "screenshots": [
+    {
+      "file": "images/raw-export-offer.png",
+      "sha256": "a19cc7ca47ccaf8a9ec4231dfdc472a22aa0927f12a5f052ab8f48f74e2c4e74"
+    },
+    {
+      "file": "images/raw-export-done.png",
+      "sha256": "5ebae19805cc3ff1ac6941fcaf7d4ae8a70dd92eadb9da65057d5e23ede5ba9b"
+    }
+  ],
+  "windows_manual_gui_test": false,
+  "macos_manual_gui_test": false
+}

@@ -92,6 +92,14 @@ OS対応とファイルシステムの解析対応は別です。APFS/ext4の直
 Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/150%/200%の配置を検査しています。
 配置の判断根拠は [Microsoft/W3Cの公式資料と採用ルール](docs/UI_GUIDELINES.md) を参照。
 
+## 破損したUSB・SDからの復元
+
+FAT32の2つのFATコピーが食い違ったり片方が読めなかったりしても、条件を満たすコピーが1つだけならそのチェーンで復元します（推測はしません）。
+通常の復元で不完全になったファイルは「復元できなかった N 件をバイナリで書き出す」で、読めた部分を取り出せます。
+読めない部分は0で埋めて範囲をJSONに記録し、未検証のデータとして扱います。[手順と制限](docs/DAMAGED_MEDIA.md)
+
+![復元できなかったデータをバイナリで書き出した実GUI](docs/images/raw-export-done.png)
+
 ## 大量の候補とスキャンの再開
 
 NTFS・FAT32・exFAT・署名探索・残存MFTをSQLiteの索引へ保存し、GUIは1ページ500件ずつ表示します。
@@ -227,6 +235,7 @@ GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシ�
 ## CLI / MCP
 
 ```sh
+rescue export-raw --session work/SESSION.rescue-session.json --id ID --destination raw-out --json
 rescue sources --json
 rescue image --source disk.raw --destination acquired --progress --json
 rescue read-map --image acquired/image.rescue.raw --limit 100 --json

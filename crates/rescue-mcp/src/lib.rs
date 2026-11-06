@@ -2,6 +2,7 @@ mod errors;
 mod image_jobs;
 mod indexed_jobs;
 mod preview_jobs;
+mod raw_jobs;
 use errors::ToolError;
 use rescue_core::{
     CollisionPolicy, Error, JobKind, OutputRoot, Progress, RestoreOptions, RestoreTarget,
@@ -87,6 +88,13 @@ fn tools() -> Value {
             "Create a bounded PNG/JPEG or UTF-8/BOM-UTF-16 text preview in an isolated worker. Explicit destination must be inside an allowed output root. Returns a job and derived file metadata/path, never file contents. No viewer, scripts or external links. Unsupported preview does not mean unsupported recovery.",
             json!({"session_id":string,"candidate_id":string,"destination":string,"request_id":string}),
             &["session_id", "candidate_id", "destination", "request_id"],
+            false
+        ),
+        tool(
+            "export_unrecovered",
+            "Write raw bytes of candidates that could not be recovered as verified files (for example unreadable sectors on a damaged USB/SD card). Metadata is revalidated; unreadable 512-byte pieces are zero-filled and listed in a JSON map next to each .rescue-raw.bin. Output is unverified raw data, never presented as the original. Destination must be inside an allowed output root; existing files are never overwritten. Poll get_job.",
+            json!({"session_id":string,"candidate_ids":{"type":"array","items":string,"minItems":1,"maxItems":1000},"destination":string,"request_id":string}),
+            &["session_id", "candidate_ids", "destination", "request_id"],
             false
         ),
         tool(
@@ -327,6 +335,7 @@ impl Server {
                 | "import_session"
                 | "prepare_results"
                 | "preview_candidate"
+                | "export_unrecovered"
         ) {
             let request = field(args, "request_id")?;
             let signature = json!({"tool":name,"arguments":args});
@@ -340,6 +349,7 @@ impl Server {
         }
         let result = match name {
             "preview_candidate" => self.preview_job(args),
+            "export_unrecovered" => self.export_unrecovered_job(args),
             "prepare_results" => self.prepare_results(args),
             "open_session" => self.open_index(Path::new(field(args, "path")?)),
             "import_session" => {
