@@ -88,23 +88,25 @@ def run_limited(command, timeout=60):
         checked(get_info(limited,25,buffer,len(buffer),c.byref(returned)))
         label=SidAttributes.from_buffer(buffer);count=sub_count(label.Sid)[0]
         if not count or sub_value(label.Sid,count-1)[0]!=8192:raise AssertionError('test parent integrity is not medium')
-        with open(os.devnull,'rb') as stdin,tempfile.TemporaryFile() as stdout,tempfile.TemporaryFile() as stderr:
-            handles=[msvcrt.get_osfhandle(f.fileno()) for f in [stdin,stdout,stderr]]
-            for handle in handles:os.set_handle_inheritable(handle,True)
-            start=Startup();start.cb=c.sizeof(start);start.dwFlags=0x100
-            start.lpDesktop='winsta0\\default'
-            start.hStdInput,start.hStdOutput,start.hStdError=handles
-            args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
-            checked(create(limited,args[0],text,None,None,True,0x08000000,None,None,c.byref(start),c.byref(process)))
-            outcome=wait(process.hProcess,int(timeout*1000))
-            if outcome!=0:
-                terminate(process.hProcess,124);wait(process.hProcess,5000)
-                raise subprocess.TimeoutExpired(args,timeout)
-            code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
-            stdout.seek(0);stderr.seek(0)
-            result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-            result.token_profile={'method':'uac_linked' if linked else 'restricted_service_logon','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default'}
-            return result
+        from windows_desktop import temporary_desktop_access
+        with temporary_desktop_access(limited) as desktop_proof:
+            with open(os.devnull,'rb') as stdin,tempfile.TemporaryFile() as stdout,tempfile.TemporaryFile() as stderr:
+                handles=[msvcrt.get_osfhandle(f.fileno()) for f in [stdin,stdout,stderr]]
+                for handle in handles:os.set_handle_inheritable(handle,True)
+                start=Startup();start.cb=c.sizeof(start);start.dwFlags=0x100
+                start.lpDesktop='winsta0\\default'
+                start.hStdInput,start.hStdOutput,start.hStdError=handles
+                args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
+                checked(create(limited,args[0],text,None,None,True,0x08000000,None,None,c.byref(start),c.byref(process)))
+                outcome=wait(process.hProcess,int(timeout*1000))
+                if outcome!=0:
+                    terminate(process.hProcess,124);wait(process.hProcess,5000)
+                    raise subprocess.TimeoutExpired(args,timeout)
+                code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
+                stdout.seek(0);stderr.seek(0)
+                result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
+                result.token_profile={'method':'uac_linked' if linked else 'restricted_service_logon','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
+                return result
     finally:
         for handle in [process.hThread,process.hProcess,limited,token]:
             if handle:close(handle)
