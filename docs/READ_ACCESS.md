@@ -1,6 +1,6 @@
 # Windowsの読取権限分離
 
-alpha.16開発版。GUIは「ディスクの読取を許可」、CLIは
+v1.0。GUIは「ディスクの読取を許可」、CLIは
 `--request-read-access` を明示したときだけWindowsの許可画面を起動する。
 CLIの例は `rescue --request-read-access scan --source \\.\PhysicalDrive1 --work-dir D:\Rescue --indexed --json`。
 復元、プレビュー、イメージ取得、探索にも同じ指定を使える。
@@ -41,7 +41,7 @@ MCPのソース許可リストも子に引き継ぎ、再帰的なメンバー�
 
 ## 検証状況
 
-[Windows実行](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42143341945)は、管理者の親プロセスの6条件と、
+[Windows実行](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42235348093)は、管理者の親プロセスの6条件と、
 実UAC分離トークンを持つ通常権限の親プロセスの8条件を通過した。
 新規作成した読取専用64 MiB VHDで、許可前のアクセス拒否、実補助プロセスの終了、
 全36ファイルの復元、プレビュー3形式、全ディスク取得、元媒体の不変を検証した。
@@ -64,5 +64,18 @@ CIのサービスログオンには通常のUAC-linked tokenがないため、�
 Windows向けの型検査・Clippyも実施済み。一時受取方式の追加試験は、テスト専用プロセスを実際に強制終了し、
 未通知ハンドルでロックされたテストファイルが受取側の終了後に削除可能になることを調べる。
 親の強制終了によるJobの終了、PID・作成時刻の相違、不正フレーム・途中切断・待機中の取消も対象にした。
-これらのネイティブ実行結果は追記予定。上記の既存VHD合格記録と新方式の合格記録を混同しない。
-通常権限のGUI、対話的UACの許可・拒否の追加検証も残っており、v1.0受入完了ではない。
+一時受取方式を含む現行1.0コードのWindows Rust試験と上記VHD試験は、リンク先の4環境CIで通過した。
+通常権限GUIの追加検証は下記の専用試験で通過した。人が操作するUAC許可・拒否画面は未評価であり、
+自動試験の一時的な同意ポリシー設定と手動評価を混同しない。
+
+## 通常権限GUIの専用試験
+
+[Windows実GUIの記録](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42253981379)では、
+WindowsのLUA制限トークンで起動し、GUI自身のTokenElevation=0、整合性8192、Administrators無効を確認しました。
+UIA Invoke/Value、SendInputキーボード、実Microsoft日本語IMEの3経路で、日本語名2ファイル1,428バイトをZIP復元しています。
+実IMEはローマ字変換・取消と元の入力設定への復元も確認しています。
+テスト専用コピーの既定ACLを本人とSYSTEMに設定し、一時的なデスクトップACLは元のバイトへ復元します。
+ホストの既存トークン、アカウント、UACポリシーをこのGUI試験では変更しません。
+このトークンのElevationTypeはDefault(1)です。前節の読取補助プロセス試験は、別の実UAC分離トークンLimited(3)を使います。
+別ログオンの使い捨てアカウントでは標準WPFでもUIAがHWNDプロキシだけになるため、
+GUIの試験はデスクトップと同じログオンで権限を落として実行しています。

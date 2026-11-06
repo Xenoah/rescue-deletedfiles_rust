@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "browser": "system Chromium via Playwright",
+  "screens_clicked": 72,
+  "modes_clicked": 20,
+  "visible_figures_per_screen": 1,
+  "all_images_decoded": true,
+  "javascript_errors": [],
+  "html_sha256": "c627da351f9c2e13bae2b6e8f94e3e93931fe6bf505a5d19a4092d55078f68f1",
+  "scope": "Real headless browser; all screen and mode controls clicked, images decoded, pressed/visible states and generated content asserted."
+}

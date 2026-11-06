@@ -1,33 +1,34 @@
 {
   "status": "passed",
   "version": "1.0.0",
-  "binary_sha256": "164ed3022ce022eba227e6435b4e0ff1f1d9edf820778705f85e41645ae181b1",
-  "pid": 21829,
+  "binary_sha256": "9deba3f3529d3d3c012c0cce06d7c787da5453031094df51bf43d8e4b28bb6ce",
+  "pid": 34380,
   "cancel_runs": [
     {
-      "seconds": 0.10518443200089678,
-      "watermark": 27505,
+      "seconds": 0.1052716859994689,
+      "watermark": 26864,
       "checkpoint_unchanged_after_500_ms": true
     },
     {
-      "seconds": 0.10881730499932019,
-      "watermark": 54129,
+      "seconds": 0.10439125899938517,
+      "watermark": 53617,
       "checkpoint_unchanged_after_500_ms": true
     },
     {
-      "seconds": 0.1074114439998084,
-      "watermark": 80370,
+      "seconds": 0.10694315799992182,
+      "watermark": 79602,
       "checkpoint_unchanged_after_500_ms": true
     }
   ],
-  "index": "/workspace/work/v1-benchmark/index/24ffaf5d-248a-4fa0-80ae-9acf26a68cdc.rescue-index/session.sqlite",
+  "index": "/workspace/work/v1-benchmark/index/d8f5c778-2874-418a-902a-09ed56692043.rescue-index/session.sqlite",
   "final_checkpoint": [
     "completed",
     0,
     10000000
   ],
-  "elapsed_seconds_including_three_cancellations": 630.1310119940008,
-  "index_bytes": 12132921344,
-  "aggregate_peak_rss_bytes": 140394496,
+  "elapsed_seconds_including_three_cancellations": 623.0069419329993,
+  "index_bytes": 12132941824,
+  "source_size_and_mtime_unchanged": true,
+  "aggregate_peak_rss_bytes": 148070400,
   "scope": "Actual X11 GUI scan of 1 TiB sparse synthetic NTFS with 10 million resident files. Product process-tree RSS every 5 ms. Three pointer cancellations and resumes; durable checkpoint timing includes xdotool overhead. No physical 1 TiB throughput or failing-device timing claim."
 }

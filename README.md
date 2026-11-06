@@ -3,13 +3,20 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v0.2.0-alpha.16: 隔離プレビュー、Windowsの読取権限分離、未割当領域を既定にしたcarving、日英切替を追加。**
-現在は開発版です。v1.0の全必須機能・レビュー・3 OS試験は [受入台帳](docs/V1_ACCEPTANCE.md) で追跡します。
-大規模性能の評価、PDF等のプレビュー、WindowsのUAC実操作・UIAの評価などを進めています。
-有料製品との性能比較は未測定です。
+**v1.0.0: NTFS・FAT32・exFAT、消失領域、イメージ取得、RAID、再開可能な索引を備えた初回安定版。**
+GUI・CLI・MCPの共通エンジン、8配布パッケージ、対応範囲と制限を公開しています。
+[リリースノート](docs/RELEASE-v1.0.md) · [受入台帳](docs/V1_ACCEPTANCE.md) ·
+[1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md)
 
-**alpha.16:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-27統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで検証してから公開します。
+商用比較ではNTFS/exFATが各36/36件一致、FATチェーン消失は14/36件でした。
+同じ入力でUFS ExplorerとDMDEは各36/36件です。「有料製品を超えた」とは主張していません。
+取消後にエラーへ戻っていたGUIを修正し、保存済み候補・選択・再開操作を保持します。
+Windowsの日本語IMEで、取消後に未確定文字が残る問題も修正しました。
+
+![v1.0で1,000万候補から選んだ3件を復元](docs/images/v1-gui-restored.png)
+
+GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
+27統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで検証することを公開条件にしています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -62,14 +69,14 @@ MCPのジョブには種類・工程・構造化エラーを追加し、再開�
 
 ## ダウンロード
 
-[v0.2.0-alpha.16のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v0.2.0-alpha.16)
+[v1.0.0のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.0.0)
 
 | OS / CPU | インストール版 | ポータブル版 |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/rescue-0.2.0-alpha.16-macos-x64-portable.zip) |
+| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-windows-x64-portable.zip) |
+| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-arm64-portable.zip) |
+| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-x64-portable.zip) |
 
 Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
 OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
@@ -193,16 +200,16 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 
 [文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
 
-[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v0.2.0-alpha.16/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
+[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
 
 ![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v15.png)
 
-## alpha.16で持ち越した画面記録
+## 画面記録の版
 
-alpha.16で変更した画面（プレビュー・検索範囲・停止と移行・名前の履歴・ソース識別・日英切替・キーボード）はalpha.16で記録しました。
-変更していない既存の流れ（36ファイル復元、JPEG/文書、イメージ取得、NTFS、消失領域、RAID、索引、1,000万候補の測定）の
-実GUI記録はalpha.15のビルドのもので、画面の版表示もalpha.15です。[持ち越し台帳](docs/gui-evidence-carryover.json)に版を明記し、
-CLI/MCPの全試験はalpha.16で4ネイティブVMとも再実行しています。
+v1.0の新規記録は大容量スキャン・取消と再開・操作応答・設定と復元の画面です。
+以前の専門機能の画面はalpha.15/alpha.16の記録で、実際の版表示とハッシュを保持しています。
+[持ち越し台帳](docs/gui-evidence-carryover.json)で区別し、v1.0で撮り直したようには表示しません。
+各CLI/MCP回帰試験と配布物検証はv1.0の実行ファイルでも実施します。
 
 ## 検証
 
@@ -229,8 +236,7 @@ alpha.13のローカル試験では、消失領域20条件・64出力、残存MF
 GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
 人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
 
-今回の開発版は[索引GUIの実操作と4ファイルのバイト照合](docs/gui-index-results.json)も記録しています。
-1 TiB・1,000万候補の測定と新しい4環境のCI・公開実物の記録は完了後に追記します。
+[従来の索引GUIの実操作](docs/gui-index-results.json)と、[v1.0の大容量測定](docs/PERFORMANCE-v1.md)は版を分けて記録しています。
 
 ## CLI / MCP
 

@@ -9,7 +9,7 @@ from package import ROOT, VERSION
 
 dist=ROOT/'dist'
 index_failures=[]
-# GUI recordings of flows that alpha.16 did not change may be carried from the build
+# GUI recordings of unchanged flows may be carried from the build
 # that recorded them. Each must be listed with that exact version, and README and the
 # release notes state which screens are carried. New evidence must match VERSION.
 carry=json.loads((ROOT/'docs/gui-evidence-carryover.json').read_text(encoding='utf-8'))
@@ -134,7 +134,7 @@ assert all(not query['failures'] for query in benchmark['final_queries']['querie
 shutil.copy2(ROOT/'docs/index-benchmark-results.json',dist/'index-benchmark-results.json')
 for name in ['gui-raw-export-results.json','gui-preview-results.json','gui-allocation-results.json','gui-i18n-results.json','gui-job-results.json','gui-keyboard-results.json','gui-naming-results.json','gui-source-results.json']:
     proof=json.loads((ROOT/'docs'/name).read_text(encoding='utf-8'))
-    if proof.get('application_version',proof.get('version'))!=VERSION or proof['status']!='passed':raise SystemExit('alpha.16 GUI proof mismatch: '+name)
+    if not current(name,proof.get('application_version',proof.get('version'))) or proof['status']!='passed':raise SystemExit('GUI proof mismatch: '+name)
     unchanged=proof.get('source_unchanged',proof.get('acquisition',{}).get('source_unchanged'))
     if not unchanged:raise SystemExit('alpha.16 GUI proof without unchanged source: '+name)
     for shot in proof['screenshots']:
@@ -142,6 +142,37 @@ for name in ['gui-raw-export-results.json','gui-preview-results.json','gui-alloc
         shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
     shutil.copy2(ROOT/'docs'/name,dist/name)
 shutil.copy2(ROOT/'docs/gui-evidence-carryover.json',dist/'gui-evidence-carryover.json')
+if VERSION=='1.0.0':
+    readiness=json.loads((ROOT/'docs/v1-readiness.json').read_text(encoding='utf-8'))
+    if readiness.get('version')!=VERSION or readiness.get('status')!='ready':raise SystemExit('v1.0 readiness review is incomplete')
+    for item in readiness['evidence']:
+        path=ROOT/'docs'/item['file']
+        if not path.resolve().is_relative_to((ROOT/'docs').resolve()):raise SystemExit('Invalid readiness evidence path')
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=item['sha256']:raise SystemExit('v1.0 evidence changed: '+item['file'])
+        shutil.copy2(path,dist/path.name)
+    performance=json.loads((ROOT/'docs/v1-gui-full-scan.json').read_text())
+    if performance['status']!='passed' or performance['version']!=VERSION or performance['final_checkpoint']!=['completed',0,10_000_000] or len(performance['cancel_runs'])<3:raise SystemExit('v1.0 large GUI scan proof mismatch')
+    if not 0<performance['aggregate_peak_rss_bytes']<=1024**3 or not all(0<c['seconds']<=2 and c['checkpoint_unchanged_after_500_ms'] for c in performance['cancel_runs']):raise SystemExit('v1.0 measured resource/cancellation target mismatch')
+    latency=json.loads((ROOT/'docs/v1-gui-latency.json').read_text())
+    recovery=json.loads((ROOT/'docs/v1-gui-recovery.json').read_text())
+    if latency['status']!='passed' or recovery['status']!='passed' or not (latency['gui_binary_sha256']==recovery['gui_binary_sha256']==performance['binary_sha256']):raise SystemExit('v1.0 GUI measurements refer to different builds')
+    if len(latency['actions'])!=2 or any(len(a['samples_ms'])!=40 or not 0<a['p95_ms']<=200 for a in latency['actions'].values()):raise SystemExit('v1.0 painted GUI response proof mismatch')
+    if recovery['candidates']!=10_000_000 or recovery['files_byte_exact']!=3 or recovery['bytes_exact']!=138:raise SystemExit('v1.0 large GUI recovery proof mismatch')
+    queries=json.loads((ROOT/'docs/v1-index-queries.json').read_text())
+    if queries['status']!='passed' or queries['candidates']!=10_000_000 or queries['selected_files_byte_exact']!=3 or not queries['source_size_and_mtime_unchanged'] or not 0<queries['aggregate_peak_rss_bytes']<=1024**3:raise SystemExit('v1.0 large index query proof mismatch')
+    if len(queries['queries'])!=11 or any(q['failures'] or len(q['samples_ms'])!=20 for q in queries['queries'].values()):raise SystemExit('v1.0 query correctness evidence is incomplete')
+    comparison=json.loads((ROOT/'docs/comparison-results-v1.json').read_text())
+    if comparison['status']!='scored' or len(comparison['cases'])<3 or any(not c['source_unchanged'] or set(c['products'])!={'rescue-v1','ufs','dmde'} for c in comparison['cases']):raise SystemExit('v1.0 commercial comparison proof mismatch')
+    for kind in ['limited','keyboard','ime']:
+        proof=json.loads((dist/f'gui-{kind}-windows-x64.json').read_text())
+        if proof['status']!='passed' or proof['files_byte_exact']!=2 or not proof['source_unchanged'] or not (proof['uia']['gui_token']['elevated']==0 and not proof['uia']['gui_token']['administrator_enabled'] and proof['uia']['gui_token']['integrity']==8192):raise SystemExit('v1.0 limited GUI proof mismatch: '+kind)
+        if proof['gui_binary_sha256']!=json.loads((dist/'verification-windows-x64.json').read_text())['portable_gui_sha256']:raise SystemExit('v1.0 GUI proof belongs to different executable bytes')
+        if proof['limited_token']['elevated'] or not proof['limited_token']['desktop_permissions']['restored']:raise SystemExit('v1.0 GUI test did not restore its restricted desktop fixture')
+        if kind=='keyboard' and not proof['uia']['native_keyboard_input_tested']:raise SystemExit('v1.0 native keyboard proof missing')
+        if kind=='ime':
+            ime=proof['uia']
+            if not ime['native_input_method_tested'] or not ime['input_layout_restored'] or ime['native_ime']['unicode_injection_used'] or ime['native_ime']['committed_value']!='原文' or ime['native_ime']['cancel_trace'][-1]['value']!='' or ime['native_ime']['cancel_escape_presses']!=2:raise SystemExit('v1.0 native Japanese IME proof mismatch')
+    shutil.copy2(ROOT/'docs/v1-readiness.json',dist/'v1-readiness.json')
 html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
 def embedded(match):
     path=ROOT/'docs'/match.group(1)

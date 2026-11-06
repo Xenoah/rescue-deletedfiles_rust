@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "release": "0.2.0-alpha.16",
-  "policy": "These GUI recordings and the index benchmark were made with the listed earlier build and are not re-recorded for alpha.16. alpha.16 changed the GUI (language switch, keyboard access, preview, allocation scope); those changes have their own alpha.16 recordings (gui-preview, gui-allocation, gui-i18n, gui-job, gui-keyboard, gui-naming, gui-source). Every CLI/MCP suite was re-run on all four native VMs for alpha.16. The carried screens show the alpha.15 version label.",
+  "release": "1.0.0",
+  "policy": "Historical GUI recordings keep their actual alpha.15/alpha.16 version labels and hashes. They document unchanged specialized flows, not a recording of the v1.0 binary. v1.0 separately records the 10-million-candidate GUI scan, cancellation/resume, painted response, current settings and selected recovery. All CLI/MCP suites and native package checks are required again for v1.0; Windows additionally requires the actual non-elevated GUI (medium integrity, administrator membership disabled) and native keyboard recovery, including actual Microsoft Japanese IME conversion/cancellation in a separate native input flow.",
   "files": {
     "ui-flow-results.json": {
       "recorded_version": "0.2.0-alpha.15"
@@ -35,6 +35,30 @@
     },
     "index-benchmark-results.json": {
       "recorded_version": "0.2.0-alpha.15"
+    },
+    "gui-raw-export-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-preview-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-allocation-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-i18n-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-job-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-keyboard-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-naming-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
+    },
+    "gui-source-results.json": {
+      "recorded_version": "0.2.0-alpha.16"
     }
   }
 }

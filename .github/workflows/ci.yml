@@ -119,6 +119,25 @@ jobs:
         if: runner.os == 'Windows'
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-native-results.json
+      - name: Non-elevated Windows GUI recovery
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-limited-results.json --desktop-token
+      - name: Non-elevated Windows GUI keyboard recovery
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-keyboard-results.json --desktop-token --keyboard
+      - name: Install Japanese input support
+        if: runner.os == 'Windows'
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Non-elevated Windows GUI with native Japanese IME
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-ime-results.json --desktop-token --ime
       - name: Unelevated Windows parent and read-only helper with restored UAC test policy
         if: runner.os == 'Windows'
         timeout-minutes: 5
@@ -184,7 +203,7 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('ntfs-native-results.json','dist/ntfs-native-windows-x64.json')"
       - name: Collect Windows read-access evidence
         if: runner.os == 'Windows'
-        run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json');shutil.copyfile('read-access-limited-results.json','dist/read-access-limited-windows-x64.json');shutil.copyfile('gui-native-results.json','dist/gui-native-windows-x64.json')"
+        run: python -c "import shutil;shutil.copyfile('read-access-native-results.json','dist/read-access-native-windows-x64.json');shutil.copyfile('read-access-limited-results.json','dist/read-access-limited-windows-x64.json');shutil.copyfile('gui-native-results.json','dist/gui-native-windows-x64.json');shutil.copyfile('gui-limited-results.json','dist/gui-limited-windows-x64.json');shutil.copyfile('gui-keyboard-results.json','dist/gui-keyboard-windows-x64.json');shutil.copyfile('gui-ime-results.json','dist/gui-ime-windows-x64.json')"
       - name: Collect fuzzing evidence
         run: python -c "import shutil;shutil.copyfile('fuzz-results.json','dist/fuzz-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect acquisition evidence
@@ -218,7 +237,7 @@ jobs:
             dist/naming-*.json
             dist/source-contract-*.json
             dist/read-access-*.json
-            dist/gui-native-*.json
+            dist/gui-*.json
             dist/fuzz-*.json
             dist/export-raw-*.json
             dist/damaged-fat-*.json
@@ -234,7 +253,7 @@ jobs:
             target
           key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
   release:
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/work'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/work' || startsWith(github.ref, 'refs/heads/v1-')
     needs: verify
     runs-on: ubuntu-latest
     permissions:
@@ -273,7 +292,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md
+        run: |
+          if [[ "$RELEASE_TAG" == *-* ]]; then
+            gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md
+          else
+            gh release create "$RELEASE_TAG" dist/* --verify-tag --latest --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.0.md
+          fi
       - name: Verify exact public packages after publishing
         if: startsWith(github.ref, 'refs/tags/v')
         env:

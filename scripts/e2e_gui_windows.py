@@ -1,8 +1,10 @@
 """Actual Windows UI Automation from fresh settings to selected ZIP recovery.
 
-This initial suite verifies UIA actions and names, not a physical keyboard, a
-screen-reader product, or an installed Japanese IME. Only its own process and
-regular fixture files are touched. Failed-tree evidence is kept for diagnosis.
+The default suite verifies UIA actions and names. --keyboard uses SendInput;
+--ime additionally activates the installed Microsoft Japanese IME and tests
+Roman-key conversion and cancellation. This does not test a screen-reader
+product. Only owned processes and fixture files are touched; temporary input
+settings and desktop permissions are restored. Failed-tree evidence is kept.
 """
 import argparse,json,os,platform,subprocess,tempfile,zipfile,time,threading
 from contextlib import nullcontext

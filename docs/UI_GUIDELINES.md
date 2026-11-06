@@ -54,3 +54,25 @@ Ctrl+F、Tab、SpaceでPDFを選択・復元して1,367バイトの一致と元�
 スクロール領域とバーは名前、向き、現在値、範囲を公開する。
 矢印・Page Up/Down・Home/Endに加え、バーのAccessKit RangeValue操作を検証した。
 詳細表示とアイコン表示の両方で、チェックボックスの名前とプレビュー対象を照合した。
+
+## v1.0のWindows実ウィンドウ
+
+[通常権限GUIの記録](gui-limited-windows-v1.json)と[ネイティブキー入力の記録](gui-keyboard-windows-v1.json)では、
+GUI自身の非昇格・中整合性・Administrators無効を検査し、設定から日本語検索、選択、2件のZIP保存まで実行しました。
+キー入力試験はページ読込完了後のTab/Shift+Tab、Space、Ctrl+A、Unicode入力を含み、
+出力1,428バイトと元イメージのSHA-256不変を照合しています。
+Windowsでは最大化して起動し、1024×768でも最下部の操作と完了表示を作業領域内に収めます。
+
+![Windows通常権限でキーボード操作し、2件を保存した実画面](images/v1-windows-keyboard.png)
+
+Unicodeキー注入の試験とは別に、[実Microsoft日本語IMEの記録](gui-ime-windows-v1.json)を残します。
+WindowsにインストールされたTSFプロファイルを有効にし、実ローマ字キーで`torikeshi`を入力して
+予測候補と未確定文字をEscapeで取り消し、続けて`genbun`を「原文」に変換・確定します。
+前の未確定文字が残らないこと、日本語の2件のZIP復元、元媒体の不変、入力設定の復元を照合します。
+
+この試験で、egui-winit 0.33がWindowsの空PreeditをDisabledへ変換し、TextEditに未確定文字が残る問題を修正しました。
+未確定文字を所有する入力欄だけに取消を補い、別の欄の選択や既存の確定文字を消しません。
+Windows実IME試験と、取消後の次の変換・確定や入力欄変更を含む回帰試験を必須化しています。
+スクリーンリーダー製品の手動評価やOS全体のDPI変更試験とは区別します。
+
+![実Microsoft日本語IMEで検索し、2件を復元した画面](images/v1-windows-ime.png)

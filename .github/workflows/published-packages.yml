@@ -6,13 +6,13 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v0.2.0-alpha.16
+        default: v1.0.0
         required: true
 permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
-  RELEASE_TAG: ${{ inputs.release_tag || 'v0.2.0-alpha.16' }}
+  RELEASE_TAG: ${{ inputs.release_tag || 'v1.0.0' }}
 jobs:
   test:
     strategy:
@@ -61,7 +61,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm
-      - name: Test public CLI after packaging and signing
+      - name: Install Japanese input support for public GUI verification
+        if: runner.os == 'Windows'
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Test public CLI and Windows GUI after packaging and signing
         if: runner.os != 'Linux'
         shell: bash
         run: python scripts/ci_command.py python scripts/test_published_packages.py --tag "$RELEASE_TAG" --platform ${{ matrix.platform }} --arch ${{ matrix.arch }} --output public-results

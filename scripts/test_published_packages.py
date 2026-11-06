@@ -86,6 +86,7 @@ def main():
         with zipfile.ZipFile(io.BytesIO(archive)) as z:
             if z.testzip() is not None:raise RuntimeError('portable ZIP CRC mismatch')
             data=z.read('rescue.exe' if a.platform=='windows' else 'Rescue.app/Contents/MacOS/rescue')
+            gui_data=z.read('rescue-gui.exe') if a.platform=='windows' else None
     digest=hashlib.sha256(data).hexdigest()
     if digest!=proof['portable_cli_sha256']:raise RuntimeError('CLI differs from verified packaged executable')
     a.output.mkdir(parents=True,exist_ok=True);binary=(a.output/('published-rescue.exe' if a.platform=='windows' else 'published-rescue')).resolve();binary.write_bytes(data);binary.chmod(0o755)
@@ -116,6 +117,17 @@ def main():
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))
+    if a.platform=='windows' and version=='1.0.0':
+        from e2e_gui_windows import main as gui_test
+        gui=(a.output/'rescue-gui.exe').resolve();gui.write_bytes(gui_data)
+        if hashlib.sha256(gui_data).hexdigest()!=proof['portable_gui_sha256']:raise RuntimeError('GUI differs from verified portable')
+        (a.output/'rescue.exe').write_bytes(data)  # exact companion for GUI helpers
+        result['gui_verification']={}
+        for kind,keyboard,ime in [('limited',False,False),('keyboard',True,False),('ime',True,True)]:
+            path=(a.output/f'gui-{kind}.json').resolve()
+            gui_test(gui,path,limited=True,desktop=True,keyboard=keyboard,ime=ime)
+            result['gui_verification'][kind]=json.loads(path.read_text(encoding='utf-8'))
+        result['public_gui_sha256']=hashlib.sha256(gui_data).hexdigest()
     result['published_release']={'tag':a.tag,'platform':a.platform,'arch':a.arch,'portable_sha256':hashlib.sha256(archive).hexdigest(),'executable_sha256':digest,'download_url':base+name,'tested_after_packaging_and_signing':True,'package_feature_suite_checks':60}
     result['ci_provenance']={'run_id':os.environ.get('GITHUB_RUN_ID'),'attempt':os.environ.get('GITHUB_RUN_ATTEMPT'),'commit':os.environ.get('GITHUB_SHA')}
     (a.output/'results.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')

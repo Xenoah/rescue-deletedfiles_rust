@@ -1,0 +1,155 @@
+{
+  "schema_version": 1,
+  "version": "1.0.0",
+  "status": "ready",
+  "review_date_utc": "2026-11-06",
+  "scope": "Engineering preflight is complete. This record does not substitute for final tag CI or verification of downloaded public packages. Publishing remains conditional on every native job and package check from the tag commit.",
+  "product_source_commit": "01db931060fc5104d3a6f7be95098d2b122d5390",
+  "preflight_runs": {
+    "four_native_platforms": 42235348093,
+    "windows_native_gui_and_ime": 42253981379
+  },
+  "required_release_gates": [
+    "same-tag fmt, clippy, Rust and integration tests on Windows x64, Linux x64, macOS x64/arm64",
+    "eight native installer/portable packages and packaged CLI/MCP/GUI checks",
+    "Windows actual non-elevated GUI: UIA, native keyboard, installed Japanese IME conversion/cancellation, exact two-file ZIP, unchanged source, restored desktop/input settings",
+    "all attached release asset hashes",
+    "download exact public packages on all four native platforms; rerun CLI suites and Windows GUI flows; append immutable package verification evidence"
+  ],
+  "known_limits": [
+    "FAT32 chain-loss commercial fixture: Rescue 14/36 versus UFS Explorer and DMDE 36/36; no superiority claim",
+    "large-GUI performance is a Linux sparse-image measurement, not physical 1 TiB disk throughput",
+    "coverage-guided fuzzing, screen-reader product evaluation and manual UAC consent UI evaluation are unmeasured",
+    "Windows publisher signature and Apple notarization are unavailable; macOS packages use ad-hoc signing"
+  ],
+  "evidence": [
+    {
+      "file": "RELEASE-v1.0.md",
+      "sha256": "f6b240ff5fb247d179a7dc224fa832cbae1fd1d0ab998fbbc5aff40e5caf1c7e"
+    },
+    {
+      "file": "V1_ACCEPTANCE.md",
+      "sha256": "a91c3b0bd9a79fee893cafeec9acf18de17cb02a8ca60e13734192435c2106ca"
+    },
+    {
+      "file": "PERFORMANCE-v1.md",
+      "sha256": "d65f8380dcc0e5a2c2eb6241da0c989c568b16990b3f377d669309fc3202be59"
+    },
+    {
+      "file": "COMPARISON-v1.md",
+      "sha256": "3dac0f598b2b4b266a9044226525820e7c6a1a0da9f84b57b0108e44b5c2e924"
+    },
+    {
+      "file": "ALPHA.md",
+      "sha256": "6b0e44d308d7cd5d0fc7fe7ce7ba4526ace8a87442c0ef382014742f1ed33326"
+    },
+    {
+      "file": "INSTALL.md",
+      "sha256": "eade49b7e2c9ff7be275e894ccf39e67de0d47a1d085965a6baa83008360962a"
+    },
+    {
+      "file": "READ_ACCESS.md",
+      "sha256": "1cdc9be65bff571112e0aa8fe035e8442bef4e5fa39b5575a6326a222250a75c"
+    },
+    {
+      "file": "UI_GUIDELINES.md",
+      "sha256": "de6136211e874db2f4ae7831568ae65fda381d054cf5b93e96031e100345f74f"
+    },
+    {
+      "file": "LANGUAGE.md",
+      "sha256": "0af104de587b92f3f1031cf00d44e45456c8de0f109d517d5ab772be5e48f0a2"
+    },
+    {
+      "file": "BACKLOG_V1_1.md",
+      "sha256": "d2d299385ee63fbbba10c2e4c13aa785324e2db94322eb2f1c14b1de7ff7c613"
+    },
+    {
+      "file": "v1-gui-full-scan.json",
+      "sha256": "ecf2c9bf01de50686898cb52dc30e0737f1a46acd5c431e2dd12bb306d04816a"
+    },
+    {
+      "file": "v1-gui-latency.json",
+      "sha256": "8edc78588d3f5921a253ce97d7126177822bc1edce71c44dc49c686c043e22d8"
+    },
+    {
+      "file": "v1-gui-recovery.json",
+      "sha256": "c5c40c46c6b59a1fa58c6df00e45cf1f6cfa375800c107b538d2784622c8f352"
+    },
+    {
+      "file": "v1-index-queries.json",
+      "sha256": "496e2dbecc9ac88100b34ad671695b141343eebad7e459d1f09063d0071659fc"
+    },
+    {
+      "file": "performance-host-v1.json",
+      "sha256": "252d45587e59e1386b52d6f29b94085f24d71a492179ea5c3853b9496b1f619d"
+    },
+    {
+      "file": "performance-evidence-v1.tar.gz",
+      "sha256": "4abc9bb48e5dcce27b7f3bea5f1a8bea4370a854ab7c4155a44af509637d88a9"
+    },
+    {
+      "file": "comparison-protocol-v1.json",
+      "sha256": "e81eb47d6a6b84e3aac9a96bee565af89be150e4ec41a5153209c3b1a6f026c6"
+    },
+    {
+      "file": "comparison-results-v1.json",
+      "sha256": "2c49416a26526c8716977a81af13bde3384fcefcaf5b754c20699035b652b589"
+    },
+    {
+      "file": "comparison-evidence-v1.tar.gz",
+      "sha256": "f6b6a4fa50b3e3d4b66530f888325e8a0607276606707aba596eb9324ef26a7f"
+    },
+    {
+      "file": "gui-limited-windows-v1.json",
+      "sha256": "ec460291591c505ca7c10ed2affe4f255a8f2eda819b56924729cec9acfbf9ec"
+    },
+    {
+      "file": "gui-keyboard-windows-v1.json",
+      "sha256": "c047f67ff0e847e154c6262a3f8acd84c35236268b3e2a159edbbd45d81ec128"
+    },
+    {
+      "file": "gui-ime-windows-v1.json",
+      "sha256": "e5c2d1c25de749904fe18e8119740e3c13cbc21cc2a0a393dd3c604a94e7ae0b"
+    },
+    {
+      "file": "intelligence-v1-check.json",
+      "sha256": "1e1641e28b981bd7a66a09c56a9f162c84cfb8fa43bc893e6995b10ebebb929f"
+    },
+    {
+      "file": "gui-evidence-carryover.json",
+      "sha256": "2b1a11573e07234755ca8a1726d21a668da0aafe9711bf5d26c7a921c41dcf4a"
+    },
+    {
+      "file": "images/v1-gui-10m-complete.png",
+      "sha256": "f9d11ce9126825df18fd54126bbe0f6c83775d5d3480b26906e44a241f75c632"
+    },
+    {
+      "file": "images/v1-gui-paused-0.png",
+      "sha256": "746365c918289dc874c98f9655cdfef890690312ab2efc6677c371e923a77ffb"
+    },
+    {
+      "file": "images/v1-gui-paused-2.png",
+      "sha256": "e6626044930d4809a53ba978d5b90d95b6fde2242ef0721da6bc3699630d2750"
+    },
+    {
+      "file": "images/v1-gui-restored.png",
+      "sha256": "afe4fe342374527b20648d5b97bf0597620a10015e334b0d195fb72902e20a32"
+    },
+    {
+      "file": "images/v1-settings-fresh.png",
+      "sha256": "28642ec496a23bced18f5db937cb3338e880cc735c9f65b35d98c96bf91e61a7"
+    },
+    {
+      "file": "images/v1-windows-ime.png",
+      "sha256": "9674a10d4d126370fea87424b045a3bcab28620f9e37e82713394928f8e0dadc"
+    },
+    {
+      "file": "images/v1-windows-keyboard.png",
+      "sha256": "3789e4166aaf35e75920c925b0a6e2bc9a59a9cd86dad29ef50505792da1e5db"
+    },
+    {
+      "file": "images/v1-windows-limited.png",
+      "sha256": "a2e3868be4aa8e257b5c8f2cf4dfa744ada887a5938f625dc59694eb9604a05f"
+    }
+  ]
+}
