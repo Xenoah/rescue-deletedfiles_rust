@@ -190,6 +190,12 @@ function Focus-Owned($Node) {
     if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.ProcessId -ne $script:owned.Id) {throw 'Keyboard focus belongs to another process'}
 }
 function Check-TabNavigation {
+    # Search appears before the first asynchronous indexed page is ready.
+    # Wait for stable enabled controls so Tab and Shift+Tab traverse the same
+    # sequence instead of racing a newly-enabled selection button.
+    $until=[DateTime]::UtcNow.AddSeconds(10)
+    do {$ready=Await-Control 'Select visible candidates';Start-Sleep -Milliseconds 50} while (!$ready.Current.IsEnabled -and [DateTime]::UtcNow -lt $until)
+    if (!$ready.Current.IsEnabled) {throw 'Result page did not become ready for keyboard navigation'}
     $node=Await-Control 'Search results' 'Edit'; Focus-Owned $node
     [RescueOwnedWindow]::Tap(9)
     $until=[DateTime]::UtcNow.AddSeconds(3)
@@ -199,8 +205,9 @@ function Check-TabNavigation {
     } while ($forward.Name -eq 'Search results' -and [DateTime]::UtcNow -lt $until)
     if ($forward.ProcessId -ne $script:owned.Id -or $forward.Name -eq 'Search results' -or !$forward.Name) {throw "Tab did not reach a named owned control: name=$($forward.Name), type=$($forward.ControlType.ProgrammaticName), process=$($forward.ProcessId)"}
     [RescueOwnedWindow]::Key(0x10,$false,$false); [RescueOwnedWindow]::Tap(9); [RescueOwnedWindow]::Key(0x10,$true,$false)
-    Start-Sleep -Milliseconds 150
-    if ([System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name -ne 'Search results') {throw 'Shift+Tab did not return to search'}
+    $until=[DateTime]::UtcNow.AddSeconds(3)
+    do {Start-Sleep -Milliseconds 50;$backward=[System.Windows.Automation.AutomationElement]::FocusedElement.Current} while ($backward.Name -ne 'Search results' -and [DateTime]::UtcNow -lt $until)
+    if ($backward.Name -ne 'Search results') {throw "Shift+Tab did not return to search: forward=$($forward.Name), backward=$($backward.Name)"}
     $script:steps.Add("keyboard-tab-and-shift-tab: Search results / $($forward.Name)")
 }
 function Snapshot {
@@ -301,6 +308,14 @@ try {
     } while ($null -eq $saved -and [DateTime]::UtcNow -lt $until)
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
+    Add-Type -AssemblyName System.Drawing
+    $bounds=$script:root.Current.BoundingRectangle
+    $bitmap=[System.Drawing.Bitmap]::new([int]$bounds.Width,[int]$bounds.Height)
+    $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size)
+        $bitmap.Save((Join-Path $cfg.root 'windows-gui-complete.png'),[System.Drawing.Imaging.ImageFormat]::Png)
+    } finally {$graphics.Dispose();$bitmap.Dispose()}
     @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA inspection and Invoke/Value or SendInput keyboard actions; owned image and exact Unicode query. Unicode SendInput does not test a Japanese IME product.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_

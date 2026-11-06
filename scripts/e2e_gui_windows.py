@@ -78,7 +78,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         check(set(archive.namelist())==set(expected)|{'rescue-report.json'},'unexpected selected files: '+str(archive.namelist()))
         for name,data in expected.items():check(archive.read(name)==data,'GUI bytes differ: '+name)
     check(file_hash(source)==before,'GUI changed its source')
-    proof={'status':'passed','gui_binary_sha256':file_hash(binary),'source_sha256':before,'source_unchanged':True,'files_byte_exact':2,'bytes_exact':sum(map(len,expected.values())),'uia':tree,'limited_token':getattr(completed,'token_profile',None),'test_account':identity['proof'] if identity else None,'scope':__doc__.strip()}
+    proof={'status':'passed','gui_binary_sha256':file_hash(binary),'source_sha256':before,'source_unchanged':True,'files_byte_exact':2,'bytes_exact':sum(map(len,expected.values())),'uia':tree,'limited_token':getattr(completed,'token_profile',None),'test_account':identity['proof'] if identity else None,'screenshot':{'file':str(root/'windows-gui-complete.png'),'sha256':file_hash(root/'windows-gui-complete.png')},'scope':__doc__.strip()}
     output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps({'status':'passed','files_byte_exact':2,'bytes_exact':proof['bytes_exact'],'uia_steps':len(tree['steps'])}))
 
 if __name__=='__main__':

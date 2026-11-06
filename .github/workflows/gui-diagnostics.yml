@@ -4,6 +4,10 @@ on:
     branches: ['v1-ui-*']
   workflow_dispatch:
     inputs:
+      legacy_cross_user:
+        description: Rerun known cross-logon transport and scheduled-token diagnostics
+        type: boolean
+        default: false
       native_run:
         description: Existing successful native CI run with identical product sources; 0 rebuilds
         type: number
@@ -86,6 +90,7 @@ jobs:
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-unlimited.json
       - name: Native UIA settings, Unicode names, selection and exact recovery (limited test account; unresolved, diagnostic only)
+        if: ${{ inputs.legacy_cross_user }}
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-results.json --limited
@@ -98,18 +103,22 @@ jobs:
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-keyboard.json --desktop-token --keyboard
       - name: Real limited GUI with the UIA driver in the runner logon
+        if: ${{ inputs.legacy_cross_user }}
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-limited-product.json --limited-gui
       - name: Real limited GUI with native keyboard input
+        if: ${{ inputs.legacy_cross_user }}
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-limited-keyboard.json --limited-gui --keyboard
       - name: Scheduler least-privilege GUI with native UIA
+        if: ${{ inputs.legacy_cross_user }}
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-scheduled.json --scheduled-gui
       - name: Scheduler least-privilege GUI with native keyboard
+        if: ${{ inputs.legacy_cross_user }}
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-scheduled-keyboard.json --scheduled-gui --keyboard
@@ -127,4 +136,5 @@ jobs:
             gui-scheduled*.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/std*.txt
+            rescue-owned-uia-*/windows-gui-complete.png
           if-no-files-found: ignore
