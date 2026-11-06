@@ -32,6 +32,10 @@ jobs:
       - run: cargo fetch --locked
       - run: python scripts/ci_command.py cargo test -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
       - run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Diagnose UIA under the runner's own token (isolates the limited-token effect)
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-unlimited.json
       - name: Native UIA settings, Unicode names, selection and exact recovery
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-results.json --limited
@@ -41,6 +45,7 @@ jobs:
           name: windows-gui-diagnostics
           path: |
             gui-native-results.json
+            gui-native-unlimited.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/std*.txt
           if-no-files-found: ignore
