@@ -52,7 +52,11 @@ def run_limited(command, timeout=60):
     sid_length=api(security,'GetLengthSid',[c.c_void_p],w.DWORD)
     sub_count=api(security,'GetSidSubAuthorityCount',[c.c_void_p],c.POINTER(w.BYTE))
     sub_value=api(security,'GetSidSubAuthority',[c.c_void_p,w.DWORD],c.POINTER(w.DWORD))
-    create=api(security,'CreateProcessAsUserW',[w.HANDLE,w.LPCWSTR,w.LPWSTR,c.c_void_p,c.c_void_p,w.BOOL,w.DWORD,c.c_void_p,w.LPCWSTR,c.POINTER(Startup),c.POINTER(Process)])
+    # The hosted runner is a service logon. Ask the Secondary Logon service to
+    # initialize the process in the caller's session with the supplied limited
+    # primary token; no alternate credentials or token elevation are involved.
+    # https://learn.microsoft.com/windows/win32/api/winbase/nf-winbase-createprocesswithtokenw
+    create=api(security,'CreateProcessWithTokenW',[w.HANDLE,w.DWORD,w.LPCWSTR,w.LPWSTR,w.DWORD,c.c_void_p,w.LPCWSTR,c.POINTER(Startup),c.POINTER(Process)])
     wait=api(kernel,'WaitForSingleObject',[w.HANDLE,w.DWORD],w.DWORD)
     exit_code=api(kernel,'GetExitCodeProcess',[w.HANDLE,c.POINTER(w.DWORD)])
     terminate=api(kernel,'TerminateProcess',[w.HANDLE,w.UINT])
@@ -97,7 +101,7 @@ def run_limited(command, timeout=60):
                 start.lpDesktop='winsta0\\default'
                 start.hStdInput,start.hStdOutput,start.hStdError=handles
                 args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
-                checked(create(limited,args[0],text,None,None,True,0x08000000,None,None,c.byref(start),c.byref(process)))
+                checked(create(limited,0,args[0],text,0x08000000,None,None,c.byref(start),c.byref(process)))
                 outcome=wait(process.hProcess,int(timeout*1000))
                 if outcome!=0:
                     terminate(process.hProcess,124);wait(process.hProcess,5000)
@@ -105,7 +109,7 @@ def run_limited(command, timeout=60):
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'uac_linked' if linked else 'restricted_service_logon','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
+                result.token_profile={'method':'uac_linked' if linked else 'restricted_service_logon','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof}
                 return result
     finally:
         for handle in [process.hThread,process.hProcess,limited,token]:
