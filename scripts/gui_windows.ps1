@@ -274,7 +274,14 @@ function Set-ImeQuery {
     $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
     $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
     Start-Sleep -Milliseconds 500
-    [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 200;[RescueOwnedWindow]::Tap(27)
+    [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 500
+    $cancelTrace=@()
+    for ($press=1;$press -le 3;$press++) {
+        [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
+        $edit=Await-Control 'Search results' 'Edit'
+        $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+    }
+    $script:imeDiagnostic.cancel_trace=$cancelTrace
     Start-Sleep -Milliseconds 300
     $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
     if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
@@ -285,7 +292,7 @@ function Set-ImeQuery {
         $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
     } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
     if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
-    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;os_version=[Environment]::OSVersion.Version.ToString()}
+    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=3;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
     $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
 }
 function Snapshot {
