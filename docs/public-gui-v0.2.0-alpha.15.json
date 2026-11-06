@@ -1,0 +1,37 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.15",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "scope": "Actual downloaded Linux portable GUI; fresh indexed scan of a synthetic NTFS regular image, selection across three pages and a name filter, ZIP restoration against independent fixture bytes. Pause/resume and 10M candidate behavior are covered separately by published native and development benchmark evidence.",
+  "gui_binary_sha256": "d1695e46903859739062ad52cfdd2b689df12482b950ba7b6977927b007b306d",
+  "matches_published_gui_sha256": true,
+  "candidates": 1256,
+  "selected_pages": 3,
+  "files_byte_exact": 4,
+  "bytes_exact": 121,
+  "session_id": "aa2f516e-4760-422f-ae0a-5c4f40d3a5d3",
+  "candidate_ids": [
+    "mft-2000-7",
+    "mft-2497-7",
+    "mft-2997-7",
+    "mft-3000-7"
+  ],
+  "zip_crc_verified": true,
+  "source_unchanged": true,
+  "source_sha256": "2989bd46ad690f25f16f5cf7232072e6951aa319053f91b4b65283e0f15ac5b5",
+  "archive_sha256": "b7b49fa6c9dcbdbc9f6a92d06710025883f8e3c1c394c2f652927eb173e553f5",
+  "screenshots": [
+    {
+      "file": "images/public-index-scanning-v15.png",
+      "sha256": "aeeafc18c93f0c67a086a5028b7add02914d2a8387bfbd4ad891308467c86596"
+    },
+    {
+      "file": "images/public-index-selected-v15.png",
+      "sha256": "8e4cc8d3408d2036c1efc59f7afa2155eca45b138ee5d035ab88d8602f959f60"
+    },
+    {
+      "file": "images/public-index-restored-v15.png",
+      "sha256": "bc4bb3191992d9c4f24560dab5aabea3f7af2d8af827f312179c11b55724a18d"
+    }
+  ]
+}

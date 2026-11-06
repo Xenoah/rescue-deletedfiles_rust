@@ -183,6 +183,10 @@ MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照�
 - Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
 - Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
 
+alpha.15の[リリースCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42140624631)と[公開実物の4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42144218890)が通過しました。8パッケージを含む153の一次資産と6の追加レポートを照合し、公開Linux GUIでも3ページと検索結果から選んだ4ファイル121バイトを正解と照合しました。[配布物の記録](docs/public-release-v0.2.0-alpha.15.json)・[実GUIの記録](docs/public-gui-v0.2.0-alpha.15.json)・[単一HTMLの30画面/12方式の操作確認](docs/public-browser-v0.2.0-alpha.15.json)。
+
+![公開GUIで選択したファイルをZIPへ復元](docs/images/public-index-restored-v15.png)
+
 alpha.14のRAID試験は22条件、44論理像と73ファイルがバイト一致しました。
 RAID6のGUIではデータメンバー2台が欠損した構成から36ファイルを復元し、読取り記録も照合しています。
 [全4ネイティブVMのCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42013561650)を通過。Linuxカーネルmdadmの5配列・12論理像・72ファイルも照合しました。公開後も[全4環境で実行検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42019897888)し、123資産を照合しました。[公開配布物](docs/public-release-v0.2.0-alpha.14.json)・[公開GUIの36ファイル復元](docs/public-gui-v0.2.0-alpha.14.json)。
