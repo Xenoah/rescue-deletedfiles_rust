@@ -32,7 +32,7 @@ def main(binary,output,limited=False):
     with interactive_test_user() if limited else nullcontext(None) as identity:
         if limited:
             subprocess.run(['icacls',str(root),'/grant','*'+identity['sid']+':(OI)(CI)M'],check=True,capture_output=True)
-            completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True,with_profile=True)
+            completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True)
         else:
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}

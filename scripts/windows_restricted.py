@@ -27,7 +27,7 @@ def silent_admin_consent():
             if not proof['restored']:raise RuntimeError('UAC consent policy was not restored')
 
 
-def run_limited(command, *, token, timeout=60, kill_tree=False, with_profile=False):
+def run_limited(command, *, token, timeout=60, kill_tree=False):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -77,9 +77,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, with_profile=Fal
                 start.lpDesktop='winsta0\\default'
                 start.hStdInput,start.hStdOutput,start.hStdError=handles
                 args=list(map(str,command));text=c.create_unicode_buffer(subprocess.list2cmdline(args))
-                # LOGON_WITH_PROFILE loads the test user's HKCU; UI Automation's COM client
-                # needs it to reach out-of-process providers instead of the HWND proxy.
-                checked(create(limited,1 if with_profile else 0,args[0],text,0x08000000|(4 if kill_tree else 0),None,None,c.byref(start),c.byref(process)))
+                checked(create(limited,0,args[0],text,0x08000000|(4 if kill_tree else 0),None,None,c.byref(start),c.byref(process)))
                 if kill_tree:
                     from windows_job import owned_process_job
                     job=owned_process_job(process.hProcess)
@@ -92,7 +90,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, with_profile=Fal
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree,'profile_loaded':with_profile}
+                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
                 return result
     finally:
         if kill_tree and process.hProcess and not job:
