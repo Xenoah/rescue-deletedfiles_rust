@@ -3,6 +3,17 @@
 param([Parameter(Mandatory=$true)][string]$Config)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class RescueOwnedWindow {
+    [DllImport("UIAutomationCore.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool UiaHasServerSideProvider(IntPtr hwnd);
+    [DllImport("user32.dll", SetLastError=true)]
+    public static extern IntPtr SendMessageTimeout(IntPtr hwnd, uint msg, UIntPtr wparam, IntPtr lparam, uint flags, uint timeout, out UIntPtr result);
+}
+'@
 $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 $script:owned = $null
 $script:root = $null
@@ -85,6 +96,15 @@ try {
     Start-Sleep -Milliseconds 500
     $script:root = [System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
     if ($script:root.Current.ProcessId -ne $script:owned.Id) { throw 'Automation root belongs to another process' }
+    # Probe only our own HWND. This records whether Windows reaches the native
+    # provider, separately from a missing or not-yet-published widget tree.
+    $script:provider = @{server_side=[RescueOwnedWindow]::UiaHasServerSideProvider($script:owned.MainWindowHandle);framework=$script:root.Current.FrameworkId;handle=$script:owned.MainWindowHandle.ToInt64()}
+    $messageResult = [UIntPtr]::Zero
+    $message = [RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0x3d,[UIntPtr]::Zero,[IntPtr](-25),2,2000,[ref]$messageResult)
+    $script:provider.getobject_completed=$message -ne [IntPtr]::Zero
+    $script:provider.getobject_result=$messageResult.ToUInt64()
+    $description = [System.Windows.Automation.AutomationProperty]::LookupById(30107)
+    if ($null -ne $description) {$script:provider.description=$script:root.GetCurrentPropertyValue($description)}
     Invoke-Control 'Saved image'
     Set-Field 'Image file' $cfg.source
     Invoke-Control 'Save as ZIP'
@@ -109,7 +129,7 @@ try {
     @{status='passed';process_id=$script:owned.Id;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;scope='Native Windows UIA Invoke/Value patterns, owned regular image and Unicode query; real IME and keyboard input are separate checks.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
-    $evidence = @{status='failed';error=$failure.Exception.ToString();steps=@($script:steps)}
+    $evidence = @{status='failed';error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
     try {
         $evidence.window_title=$script:owned.MainWindowTitle
         $evidence.root_name=$script:root.Current.Name
