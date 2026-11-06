@@ -30,6 +30,7 @@ def temporary_desktop_access(token):
     set_acl=api(security,'SetSecurityDescriptorDacl',[c.c_void_p,w.BOOL,c.c_void_p,w.BOOL])
     get_info=api(security,'GetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)])
     free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
+    sddl=api(security,'ConvertSecurityDescriptorToStringSecurityDescriptorW',[c.c_void_p,w.DWORD,w.DWORD,c.POINTER(w.LPWSTR),c.POINTER(w.ULONG)])
     class SidAttributes(c.Structure):_fields_=[('Sid',c.c_void_p),('Attributes',w.DWORD)]
     class Trustee(c.Structure):_fields_=[('multiple',c.c_void_p),('operation',w.DWORD),('form',w.DWORD),('kind',w.DWORD),('name',c.c_void_p)]
     class Entry(c.Structure):_fields_=[('permissions',w.DWORD),('mode',w.DWORD),('inheritance',w.DWORD),('trustee',Trustee)]
@@ -37,6 +38,16 @@ def temporary_desktop_access(token):
     def checked(value):
         if not value:raise c.WinError(c.get_last_error())
     information=w.DWORD(4)
+    def integrity_label(handle):
+        requested=w.DWORD(0x10);needed=w.DWORD()
+        get_sd(handle,c.byref(requested),None,0,c.byref(needed))
+        if not 20<=needed.value<=1024*1024:return {'error':c.get_last_error()}
+        data=c.create_string_buffer(needed.value)
+        if not get_sd(handle,c.byref(requested),data,len(data),c.byref(needed)):return {'error':c.get_last_error()}
+        value=w.LPWSTR()
+        if not sddl(data,1,8,c.byref(value),None):return {'error':c.get_last_error()}
+        try:return {'sddl':value.value}
+        finally:free(c.cast(value,c.c_void_p))
     def descriptor(handle):
         needed=w.DWORD();get_sd(handle,c.byref(information),None,0,c.byref(needed))
         if not 20<=needed.value<=1024*1024:raise AssertionError('invalid desktop security descriptor size')
@@ -62,7 +73,7 @@ def temporary_desktop_access(token):
         finally:checked(set_station(original_station))
         for name,handle,rights in [('window_station',station,0x37f),('desktop',desktop,0x1ff)]:
             original,acl,before=descriptor(handle)
-            item={'name':name,'permissions':rights,'original_acl_sha256':hashlib.sha256(before).hexdigest(),'changed':False,'restored':False};proof['objects'].append(item)
+            item={'name':name,'permissions':rights,'integrity':integrity_label(handle),'original_acl_sha256':hashlib.sha256(before).hexdigest(),'changed':False,'restored':False};proof['objects'].append(item)
             if acl:
                 entry=Entry(rights,1,0,Trustee(None,0,0,1,sid));merged=c.c_void_p()
                 error=merge(1,c.byref(entry),acl,c.byref(merged))

@@ -60,7 +60,7 @@ def main(binary, output, limited=False):
     if limited:
         started=invoke(['--version'])
         check(started.returncode==0 and started.stdout.startswith('rescue '),
-              f'limited parent startup failed: exit=0x{started.returncode:08x} stdout={started.stdout!r} stderr={started.stderr!r}')
+              f'limited parent startup failed: exit=0x{started.returncode:08x} stdout={started.stdout!r} stderr={started.stderr!r} token={started.token_profile}')
     with tempfile.TemporaryDirectory(prefix='rescue-owned-broker-',dir=output.parent) as temporary:
         root=Path(temporary).resolve();volume=root/'ntfs.raw';disk=root/'disk.raw'
         corpus=list(corpus_load(Path(__file__).resolve().parent.parent/'tests/corpus'))
