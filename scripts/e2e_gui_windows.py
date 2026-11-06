@@ -11,7 +11,7 @@ from e2e import check
 from e2e_formats import corpus_load,ntfs_image,file_hash
 
 
-def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=False,scheduled=False):
+def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=False,scheduled=False,ime=False):
     check(platform.system()=='Windows','native Windows GUI test requires Windows')
     output.parent.mkdir(parents=True,exist_ok=True)
     # Keep failed UIA trees and logs next to the result; all names are unique.
@@ -22,7 +22,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         if entry['path'].name=='sample.pdf':entry['path']=entry['path'].with_name('削除した報告書.pdf')
         if entry['path'].name=='sample.txt':entry['path']=entry['path'].with_name('原文.txt')
     truth,_=ntfs_image(source,corpus,'fragmented');before=file_hash(source)
-    config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
+    config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'ime':ime,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
     powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
     check(powershell.is_file(),'system PowerShell executable is missing')
     command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
@@ -82,4 +82,4 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
     output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps({'status':'passed','files_byte_exact':2,'bytes_exact':proof['bytes_exact'],'uia_steps':len(tree['steps'])}))
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');p.add_argument('--desktop-token',action='store_true');p.add_argument('--keyboard',action='store_true');p.add_argument('--limited-gui',action='store_true');p.add_argument('--scheduled-gui',action='store_true');a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited or a.desktop_token or a.limited_gui,a.desktop_token,a.keyboard,a.limited_gui,a.scheduled_gui)
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');p.add_argument('--desktop-token',action='store_true');p.add_argument('--keyboard',action='store_true');p.add_argument('--limited-gui',action='store_true');p.add_argument('--scheduled-gui',action='store_true');p.add_argument('--ime',action='store_true');a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited or a.desktop_token or a.limited_gui,a.desktop_token,a.keyboard or a.ime,a.limited_gui,a.scheduled_gui,a.ime)

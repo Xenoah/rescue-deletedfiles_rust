@@ -122,6 +122,10 @@ jobs:
         continue-on-error: true
         timeout-minutes: 5
         run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-scheduled-keyboard.json --scheduled-gui --keyboard
+      - name: Native Microsoft Japanese IME conversion and cancellation
+        continue-on-error: true
+        timeout-minutes: 5
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output gui-native-ime.json --desktop-token --ime
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -131,6 +135,7 @@ jobs:
             gui-native-unlimited.json
             gui-native-desktop.json
             gui-native-keyboard.json
+            gui-native-ime.json
             gui-limited-product.json
             gui-limited-keyboard.json
             gui-scheduled*.json

@@ -47,6 +47,28 @@ public static class RescueOwnedWindow {
             return (uint)Marshal.ReadInt32(GetSidSubAuthority(sid,(uint)count-1));
         } finally {if(token!=IntPtr.Zero)CloseHandle(token);Marshal.FreeHGlobal(buffer);}
     }
+    [DllImport("user32.dll", CharSet=CharSet.Unicode, SetLastError=true)]
+    static extern IntPtr LoadKeyboardLayout(string name,uint flags);
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd,IntPtr process);
+    [DllImport("user32.dll")] static extern IntPtr GetKeyboardLayout(uint thread);
+    [DllImport("imm32.dll")] static extern bool ImmIsIME(IntPtr layout);
+    [DllImport("imm32.dll", CharSet=CharSet.Unicode)] static extern uint ImmGetDescription(IntPtr layout,System.Text.StringBuilder text,uint size);
+    [DllImport("imm32.dll")] static extern IntPtr ImmGetDefaultIMEWnd(IntPtr hwnd);
+    public static string EnableJapaneseIme(IntPtr hwnd) {
+        IntPtr layout=LoadKeyboardLayout("E0010411",1);
+        if(layout==IntPtr.Zero)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        UIntPtr result;
+        if(SendMessageTimeout(hwnd,0x50,UIntPtr.Zero,layout,2,5000,out result)==IntPtr.Zero)throw new Exception("Owned GUI did not accept Japanese input-language request");
+        layout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
+        if(!ImmIsIME(layout) || (layout.ToInt64()&65535)!=0x411)throw new Exception("Japanese native IME is not installed/active: "+layout.ToInt64());
+        var description=new System.Text.StringBuilder(256);ImmGetDescription(layout,description,256);
+        IntPtr ime=ImmGetDefaultIMEWnd(hwnd);
+        if(ime==IntPtr.Zero)throw new Exception("Owned GUI has no native IME window");
+        SendMessageTimeout(ime,0x283,new UIntPtr(6),new IntPtr(1),2,5000,out result);
+        SendMessageTimeout(ime,0x283,new UIntPtr(2),new IntPtr(0x19),2,5000,out result);
+        return description.ToString()+" / HKL="+layout.ToInt64();
+    }
+    public static void RomanKeys(string value) {foreach(char c in value) Tap((ushort)Char.ToUpperInvariant(c));}
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyboardInput { public ushort key, scan; public uint flags, time; public UIntPtr extra; }
     [StructLayout(LayoutKind.Explicit, Size=40)]
@@ -210,6 +232,30 @@ function Check-TabNavigation {
     if ($backward.Name -ne 'Search results') {throw "Shift+Tab did not return to search: forward=$($forward.Name), backward=$($backward.Name)"}
     $script:steps.Add("keyboard-tab-and-shift-tab: Search results / $($forward.Name)")
 }
+function Set-ImeQuery {
+    # Register an already-installed Microsoft IME in this disposable user's
+    # language list. Restore the original list in finally, even on failure.
+    $script:priorLanguages=Get-WinUserLanguageList
+    $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
+    Set-WinUserLanguageList $languages -Force
+    $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
+    [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
+    $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle)
+    Start-Sleep -Milliseconds 500
+    [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(27)
+    Start-Sleep -Milliseconds 300
+    $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+    if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
+    [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
+    $until=[DateTime]::UtcNow.AddSeconds(5)
+    do {
+        Start-Sleep -Milliseconds 100
+        $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+    } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
+    if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
+    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false}
+    $script:steps.Add('native-ime: cancel composition / convert genbun / commit 原文')
+}
 function Snapshot {
     $result = @()
     if ($null -ne $script:root) {
@@ -296,7 +342,7 @@ try {
     Set-Field 'Search results' '.pdf'
     $null = Await-Control $cfg.pdf
     Invoke-Control 'Select visible candidates'
-    Set-Field 'Search results' $cfg.query
+    if ($cfg.ime) {Set-ImeQuery} else {Set-Field 'Search results' $cfg.query}
     $null = Await-Control $cfg.text
     Invoke-Control 'Select visible candidates'
     $script:selection = Snapshot
@@ -316,7 +362,7 @@ try {
         $graphics.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size)
         $bitmap.Save((Join-Path $cfg.root 'windows-gui-complete.png'),[System.Drawing.Imaging.ImageFormat]::Png)
     } finally {$graphics.Dispose();$bitmap.Dispose()}
-    @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=$false;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA inspection and Invoke/Value or SendInput keyboard actions; owned image and exact Unicode query. Unicode SendInput does not test a Japanese IME product.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='passed';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
     $evidence = @{status='failed';gui_token=$script:guiToken;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
@@ -330,6 +376,7 @@ try {
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
 } finally {
+    if ($script:priorLanguages) {Set-WinUserLanguageList $script:priorLanguages -Force}
     if ($null -ne $script:owned) {
         $script:owned.Refresh()
         if (!$script:owned.HasExited) { $null = $script:owned.CloseMainWindow(); if (!$script:owned.WaitForExit(5000)) {$script:owned.Kill();$script:owned.WaitForExit()} }
