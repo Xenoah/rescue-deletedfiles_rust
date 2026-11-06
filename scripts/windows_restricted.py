@@ -27,7 +27,7 @@ def silent_admin_consent():
             if not proof['restored']:raise RuntimeError('UAC consent policy was not restored')
 
 
-def run_limited(command, *, token, timeout=60, kill_tree=False):
+def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -60,10 +60,27 @@ def run_limited(command, *, token, timeout=60, kill_tree=False):
     try:
         elevation=w.DWORD();returned=w.DWORD()
         checked(get_info(limited,20,c.byref(elevation),c.sizeof(elevation),c.byref(returned)))
-        if elevation.value:raise AssertionError('test parent token is still elevated')
+        if elevation.value and not restricted:raise AssertionError('test parent token is still elevated')
         kind=w.DWORD()
         checked(get_info(limited,18,c.byref(kind),c.sizeof(kind),c.byref(returned)))
-        if kind.value!=3:raise AssertionError('test parent does not have TokenElevationTypeLimited')
+        if kind.value!=3 and not restricted:raise AssertionError('test parent does not have TokenElevationTypeLimited')
+        if restricted:
+            # Verify effective membership, rather than pretending a synthetic
+            # restricted token has a UAC-linked TokenElevationTypeLimited.
+            duplicate=api(security,'DuplicateToken',[w.HANDLE,c.c_int,c.POINTER(w.HANDLE)])
+            sid_from_text=api(security,'ConvertStringSidToSidW',[w.LPCWSTR,c.POINTER(c.c_void_p)])
+            membership=api(security,'CheckTokenMembership',[w.HANDLE,c.c_void_p,c.POINTER(w.BOOL)])
+            is_restricted=api(security,'IsTokenRestricted',[w.HANDLE])
+            free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
+            impersonation=w.HANDLE();admin=c.c_void_p()
+            try:
+                checked(is_restricted(limited));checked(duplicate(limited,2,c.byref(impersonation)))
+                checked(sid_from_text('S-1-5-32-544',c.byref(admin)))
+                enabled=w.BOOL();checked(membership(impersonation,admin,c.byref(enabled)))
+                if enabled.value:raise AssertionError('restricted UI test still has administrator membership')
+            finally:
+                if impersonation:close(impersonation)
+                if admin:free(admin)
         buffer=c.create_string_buffer(256)
         checked(get_info(limited,25,buffer,len(buffer),c.byref(returned)))
         label=SidAttributes.from_buffer(buffer);count=sub_count(label.Sid)[0]
@@ -90,7 +107,7 @@ def run_limited(command, *, token, timeout=60, kill_tree=False):
                 code=w.DWORD();checked(exit_code(process.hProcess,c.byref(code)))
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
-                result.token_profile={'method':'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
+                result.token_profile={'method':'restricted_desktop_token' if restricted else 'owned_interactive_uac_linked','launcher':'CreateProcessWithTokenW','elevated':bool(elevation.value),'administrator_sid_enabled':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
                 return result
     finally:
         if kill_tree and process.hProcess and not job:

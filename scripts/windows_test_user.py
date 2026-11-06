@@ -11,11 +11,14 @@ import secrets
 
 @contextmanager
 def desktop_test_user():
-    """Borrow the active desktop owner's existing unelevated token, read-only.
+    """Use the desktop owner's logon with administrator access removed.
 
     UI Automation's provider transport needs the interactive logon session,
     not merely a token with access to the same window station. No account,
     password, profile, desktop ACL, or UAC policy is changed by this fixture.
+    Hosted built-in administrators have no split token: create a restricted
+    copy with Administrators deny-only, privileges removed, and medium IL.
+    This is a restricted-token UI test, not an actual UAC consent test.
     """
     if os.environ.get('GITHUB_ACTIONS')!='true' or os.environ.get('RUNNER_ENVIRONMENT')!='github-hosted':
         raise RuntimeError('desktop token fixture requires a disposable GitHub-hosted VM')
@@ -32,27 +35,42 @@ def desktop_test_user():
     open_token=api(security,'OpenProcessToken',[w.HANDLE,w.DWORD,c.POINTER(w.HANDLE)])
     info=api(security,'GetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD,c.POINTER(w.DWORD)])
     sid_text=api(security,'ConvertSidToStringSidW',[c.c_void_p,c.POINTER(w.LPWSTR)])
+    text_sid=api(security,'ConvertStringSidToSidW',[w.LPCWSTR,c.POINTER(c.c_void_p)])
+    class SidAttributes(c.Structure):_fields_=[('sid',c.c_void_p),('attributes',w.DWORD)]
+    restrict=api(security,'CreateRestrictedToken',[w.HANDLE,w.DWORD,w.DWORD,c.POINTER(SidAttributes),w.DWORD,c.c_void_p,w.DWORD,c.c_void_p,c.POINTER(w.HANDLE)])
+    set_info=api(security,'SetTokenInformation',[w.HANDLE,c.c_int,c.c_void_p,w.DWORD])
+    sid_length=api(security,'GetLengthSid',[c.c_void_p],w.DWORD)
     close=api(kernel,'CloseHandle',[w.HANDLE]);free=api(kernel,'LocalFree',[c.c_void_p],c.c_void_p)
     def checked(ok):
         if not ok:raise c.WinError(c.get_last_error())
-    process=None;token=w.HANDLE();linked=w.HANDLE();sid=w.LPWSTR()
+    process=None;token=w.HANDLE();linked=w.HANDLE();sid=w.LPWSTR();admin=c.c_void_p();medium=c.c_void_p();restricted=False
     try:
         hwnd=shell()
         if not hwnd:raise RuntimeError('active desktop has no shell window')
         pid=w.DWORD();checked(owner(hwnd,c.byref(pid)))
         process=open_process(0x1000,False,pid.value);checked(process)
-        checked(open_token(process,0x000b,c.byref(token)))
+        checked(open_token(process,0x008b,c.byref(token)))
         kind=w.DWORD();needed=w.DWORD()
         checked(info(token,18,c.byref(kind),c.sizeof(kind),c.byref(needed)))
         if kind.value==2:
             checked(info(token,19,c.byref(linked),c.sizeof(linked),c.byref(needed)));selected=linked
         elif kind.value==3:selected=token
-        else:raise RuntimeError(f'desktop owner has no UAC split token: type={kind.value}')
+        elif kind.value==1:
+            checked(text_sid('S-1-5-32-544',c.byref(admin)))
+            disabled=SidAttributes(admin,0)
+            checked(restrict(token,1,1,c.byref(disabled),0,None,0,None,c.byref(linked)))
+            checked(text_sid('S-1-16-8192',c.byref(medium)))
+            label=SidAttributes(medium,0x20)
+            checked(set_info(linked,25,c.byref(label),c.sizeof(label)+sid_length(medium)))
+            selected=linked;restricted=True
+        else:raise RuntimeError(f'unexpected desktop elevation type: {kind.value}')
         data=c.create_string_buffer(256);checked(info(selected,1,data,len(data),c.byref(needed)))
         checked(sid_text(c.c_void_p.from_buffer(data),c.byref(sid)))
-        yield {'token':selected,'sid':sid.value,'proof':{'account':'existing desktop owner','shell_pid':pid.value,'method':'read-only shell token','account_modified':False,'profile_loaded':False}}
+        yield {'token':selected,'sid':sid.value,'restricted':restricted,'proof':{'account':'existing desktop owner','shell_pid':pid.value,'method':'restricted desktop token' if restricted else 'existing limited shell token','account_modified':False,'profile_loaded':False,'uac_consent_test':False}}
     finally:
         if sid:free(c.cast(sid,c.c_void_p))
+        if admin:free(admin)
+        if medium:free(medium)
         for handle in [linked,token,process]:
             if handle:close(handle)
 
