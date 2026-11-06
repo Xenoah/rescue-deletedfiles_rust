@@ -55,6 +55,10 @@ def main(binary, output, limited=False):
         if limited:check(not access['parent_elevated'],'the parser parent was elevated')
         grants.append(access)
         return json.loads(p.stdout)
+    if limited:
+        started=invoke(['--version'])
+        check(started.returncode==0 and started.stdout.startswith('rescue '),
+              f'limited parent startup failed: exit=0x{started.returncode:08x} stdout={started.stdout!r} stderr={started.stderr!r}')
     with tempfile.TemporaryDirectory(prefix='rescue-owned-broker-',dir=output.parent) as temporary:
         root=Path(temporary).resolve();volume=root/'ntfs.raw';disk=root/'disk.raw'
         corpus=list(corpus_load(Path(__file__).resolve().parent.parent/'tests/corpus'))
@@ -82,7 +86,7 @@ def main(binary, output, limited=False):
             cases.append('owned_vhd_readable_before_permission_handoff')
             if limited:
                 denied=invoke(['inspect','--source',source,'--json'])
-                check(denied.returncode==4 and 'IO_ERROR' in denied.stderr and 'os error 5' in denied.stderr,'limited parent unexpectedly read the device without a grant: '+denied.stdout+denied.stderr)
+                check(denied.returncode==4 and 'IO_ERROR' in denied.stderr and 'os error 5' in denied.stderr,f'limited parent baseline exit=0x{denied.returncode:08x}: '+denied.stdout+denied.stderr)
                 cases.append('unelevated_parent_cannot_open_disk_without_explicit_permission')
             inspected=permitted('inspect','--source',source,'--json')
             check(len(inspected['layout']['regions'])==1,'disk query through transferred handle')
