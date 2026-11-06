@@ -9,7 +9,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MC
 有料製品との性能比較は未測定です。
 
 **alpha.16開発ブランチ:** GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-Linuxの23統合群を通過し、Windows・macOSのネイティブ検証を進めています。
+Linuxの24統合群を通過し、Windows・macOSのネイティブ検証を進めています。
 画面の候補をクリックして「プレビュー」を選択します。
 
 ![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
@@ -32,6 +32,12 @@ MCPのジョブには種類・工程・構造化エラーを追加し、再開�
 実GUIの移行後に36ファイルを復元して正解と照合しました。[共通契約と検証記録](docs/JOB_CONTRACT.md)
 
 ![セッションをコピー移行する実GUI](docs/images/jobs-migration-settings.png)
+
+元媒体の名前と保存時の変更履歴を、GUI・CLI・MCP・ZIP内レポートへ追加しました。
+同名PDFを残して復元する実操作で、1,367バイトの内容一致と既存ファイルの保持を確認しました。
+[名前の根拠と変更理由](docs/NAMING.md)
+
+![同名PDFを両方保持した実GUIの名前変更履歴](docs/images/naming-history.png)
 
 ![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
 

@@ -109,10 +109,14 @@ def main(binary,output=None):
                     failure=run(binary,'recover','--session',indexed['session'],'--id',target['id'],
                                 '--destination',root/'changed-allocation','--json',expected=5)
                     check(failure['results'][0]['path'] is None and 'SOURCE_CHANGED' in json.dumps(failure),failure)
+                    stream_failure=run(binary,'recover','--session',indexed['session'],'--id',target['id'],
+                                       '--destination',root/'changed-stream','--stream','--json',expected=5)
+                    check(stream_failure['results'][0]['path'] is None and 'SOURCE_CHANGED' in json.dumps(stream_failure),stream_failure)
+                    check(not any(p.is_file() and p.suffix!='.json' for p in (root/'changed-stream').rglob('*')),'streaming wrote changed allocation bytes')
                     failure=run(binary,'preview','--session',indexed['session'],'--id',target['id'],
                                 '--destination',root/'changed-preview','--json',expected=4)
                     check('SOURCE_CHANGED' in failure,failure)
-                    cases.append('allocation_change_outside_fingerprint_rejected_before_restore_and_preview')
+                    cases.append('allocation_change_outside_fingerprint_rejected_before_restore_stream_and_preview')
                 finally:
                     with source.open('r+b') as f:
                         for at in entries:f.seek(at);f.write(bytes(4))

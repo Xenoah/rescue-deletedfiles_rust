@@ -11,6 +11,7 @@ mod index;
 mod indexed_scan;
 mod lznt1;
 mod mapped_source;
+mod naming;
 mod ntfs;
 mod ntfs_remnants;
 mod partitions;
@@ -46,6 +47,7 @@ pub use index::{
     IndexWriter,
 };
 pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
+pub use naming::{NameBasis, NameChange, NameChangeReason, RecoveryNaming};
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
 pub use preview::{
@@ -683,6 +685,9 @@ fn scan_volume(
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RecoveryResult {
+    /// Absent in legacy reports and when metadata revalidation failed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub naming: Option<RecoveryNaming>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub raid_reads: Option<RaidReadTrace>,
     pub candidate_id: String,
@@ -911,9 +916,11 @@ pub fn recover_to(
     let dir = &destination.dir;
     let output_path = &destination.path;
     let mut results = Vec::new();
+    let mut parents = indexed_scan::Parents::default();
     for candidate in selected {
         if cancel.load(Ordering::Relaxed) {
             results.push(RecoveryResult {
+                naming: None,
                 raid_reads: None,
                 candidate_id: candidate.id.clone(),
                 status: "cancelled".into(),
@@ -931,6 +938,7 @@ pub fn recover_to(
             continue;
         }
         let mut result = RecoveryResult {
+            naming: None,
             raid_reads: None,
             candidate_id: candidate.id.clone(),
             status: "failed".into(),
@@ -950,12 +958,22 @@ pub fn recover_to(
             // Media were checked before opening this pinned destination. Recheck
             // its file/volume identity for every file without rediscovering topology.
             destination.verify()?;
+            let candidate = restore::validation::candidate(
+                &source,
+                &mut image,
+                candidate,
+                &mut parents,
+                session,
+                cancel,
+            )?;
+            let mut naming = RecoveryNaming::from_candidate(&candidate, session.filesystem);
+            result.naming = Some(naming.clone());
             let fresh = match &source {
-                RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, candidate)?,
+                RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, &mut image, &candidate)?,
                 RecoverySource::NtfsFragments => {
-                    ntfs_remnants::recovery_data(&mut image, None, candidate)?
+                    ntfs_remnants::recovery_data(&mut image, None, &candidate)?
                 }
-                RecoverySource::Carved => carve::recovery_data(&mut image, candidate, cancel)?,
+                RecoverySource::Carved => carve::recovery_data(&mut image, &candidate, cancel)?,
                 RecoverySource::Fat(entries) => {
                     let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
                     if candidate.record != entry.candidate.record
@@ -986,7 +1004,25 @@ pub fn recover_to(
             result.allocation_status = fresh.allocation_status;
             let data = fresh.data;
             let name = fresh.name;
-            let filename = format!("{}_{}", Uuid::new_v4(), safe_name(&name));
+            naming.changed(
+                NameChangeReason::StreamingFlatOutput,
+                candidate.original_path.clone(),
+                candidate.name.clone(),
+            );
+            naming.changed(
+                NameChangeReason::AlternateStream,
+                candidate.name,
+                name.clone(),
+            );
+            let portable = safe_name(&name);
+            naming.changed(NameChangeReason::PortableName, name, portable.clone());
+            let filename = format!("{}_{}", Uuid::new_v4(), portable);
+            naming.changed(
+                NameChangeReason::UniqueOutputName,
+                portable,
+                filename.clone(),
+            );
+            result.naming = Some(naming);
             let partial = format!("{filename}.partial");
             let mut output =
                 dir.open_with(&partial, OpenOptions::new().write(true).create_new(true))?;
@@ -1024,6 +1060,19 @@ pub fn recover_to(
             result.raid_reads = image.take_raid_trace();
         }
         if let Err(error) = attempt {
+            if let Some(path) = &result.path
+                && path
+                    .extension()
+                    .is_some_and(|extension| extension == "partial")
+                && let Some(naming) = &mut result.naming
+                && let Some(leaf) = path.file_name().and_then(|name| name.to_str())
+            {
+                naming.changed(
+                    NameChangeReason::PartialOutput,
+                    leaf.trim_end_matches(".partial").into(),
+                    leaf.into(),
+                );
+            }
             if let Error::MissingRanges(ranges) = &error {
                 result.missing_ranges = ranges.clone();
             }

@@ -2,9 +2,9 @@
   "status": "passed",
   "version": "0.2.0-alpha.16",
   "source": "repository HTML",
-  "sha256": "282145adf39fec8c5559e15e2c41463dff8750415d42e1fbb2c4f4441b3944a1",
-  "screen_toggles": 51,
-  "method_toggles": 16,
+  "sha256": "e208faa8c0fb7eeaefaddfdf4620370c82d6c7210733bd4fd88e4156bb9f26f6",
+  "screen_toggles": 53,
+  "method_toggles": 17,
   "mobile_width": 390,
   "javascript_errors": [],
   "external_requests": []

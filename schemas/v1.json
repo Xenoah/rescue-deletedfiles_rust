@@ -927,6 +927,16 @@
               "type": "null"
             }
           ]
+        },
+        "naming": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecoveryNaming"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -941,6 +951,97 @@
         "allocation_status"
       ],
       "additionalProperties": false
+    },
+    "NameChange": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "enum": [
+            "alternate_stream",
+            "portable_name",
+            "unverified_hierarchy",
+            "hierarchy_limit",
+            "directory_collision",
+            "file_collision",
+            "archive_collision",
+            "partition_namespace",
+            "streaming_flat_output",
+            "unique_output_name",
+            "partial_output"
+          ]
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason",
+        "from",
+        "to"
+      ]
+    },
+    "RecoveryNaming": {
+      "type": "object",
+      "properties": {
+        "original_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "original_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "displayed_name": {
+          "type": "string"
+        },
+        "basis": {
+          "enum": [
+            "metadata_verified_path",
+            "metadata_unverified_path",
+            "generated"
+          ]
+        },
+        "stream_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/NameChange"
+          }
+        }
+      },
+      "required": [
+        "original_name",
+        "original_path",
+        "displayed_name",
+        "basis",
+        "stream_name",
+        "changes"
+      ],
+      "description": "Fresh metadata only. Original values are null for generated carving names. Metadata with an unverified path can be incomplete; use warnings. Legacy reports and pre-validation failures omit naming."
     }
   }
 }

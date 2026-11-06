@@ -1489,6 +1489,76 @@ impl App {
             ui.strong("保存結果");
             if let Some(r) = self.results.iter().rev().find(|r| r.candidate_id == c.id) {
                 ui.label(format!("{} / {} bytes", r.status, r.bytes_written));
+                if let Some(path) = &r.path {
+                    ui.small("保存した場所");
+                    ui.add(egui::Label::new(path.display().to_string()).wrap());
+                }
+                if let Some(entry) = &r.archive_entry {
+                    ui.small("ZIP内の名前");
+                    ui.add(egui::Label::new(entry).wrap());
+                }
+                if let Some(naming) = &r.naming {
+                    ui.collapsing("元の名前と変更履歴", |ui| {
+                        ui.label(match naming.basis {
+                            rescue_core::NameBasis::MetadataVerifiedPath => {
+                                "元媒体から名前と親参照を照合"
+                            }
+                            rescue_core::NameBasis::MetadataUnverifiedPath => {
+                                "名前は管理情報から取得・階層は未確認"
+                            }
+                            rescue_core::NameBasis::Generated => {
+                                "元の名前は不明・探索時に名前を生成"
+                            }
+                        });
+                        if let Some(original) = &naming.original_path {
+                            ui.small("元媒体の名前");
+                            ui.add(egui::Label::new(original).wrap());
+                        }
+                        if naming.changes.is_empty() {
+                            ui.label("名前の変更なし");
+                        }
+                        for change in &naming.changes {
+                            ui.separator();
+                            ui.strong(match change.reason {
+                                rescue_core::NameChangeReason::AlternateStream => {
+                                    "代替ストリームを通常ファイルとして保存"
+                                }
+                                rescue_core::NameChangeReason::PortableName => {
+                                    "保存に使えない文字や長さを調整"
+                                }
+                                rescue_core::NameChangeReason::UnverifiedHierarchy => {
+                                    "未確認の階層を省略"
+                                }
+                                rescue_core::NameChangeReason::HierarchyLimit => "階層の長さを調整",
+                                rescue_core::NameChangeReason::DirectoryCollision => {
+                                    "同名フォルダーとの衝突を解決"
+                                }
+                                rescue_core::NameChangeReason::FileCollision => {
+                                    "同名ファイルを両方保持"
+                                }
+                                rescue_core::NameChangeReason::ArchiveCollision => {
+                                    "ZIP内の同名を両方保持"
+                                }
+                                rescue_core::NameChangeReason::PartitionNamespace => {
+                                    "パーティション別のフォルダーへ保存"
+                                }
+                                rescue_core::NameChangeReason::StreamingFlatOutput => {
+                                    "大容量保存で階層を省略"
+                                }
+                                rescue_core::NameChangeReason::UniqueOutputName => {
+                                    "重複しない識別名を付加"
+                                }
+                                rescue_core::NameChangeReason::PartialOutput => {
+                                    "未完了のファイル名へ変更"
+                                }
+                            });
+                            ui.add(
+                                egui::Label::new(format!("{}\n↓\n{}", change.from, change.to))
+                                    .wrap(),
+                            );
+                        }
+                    });
+                }
                 if let Some(h) = &r.sha256 {
                     ui.small("出力SHA-256");
                     ui.add(egui::Label::new(h).wrap());
@@ -1818,13 +1888,16 @@ impl App {
             self.discovery_dialog_ui(ctx);
         }
         if self.show_evidence && !wide && self.session.is_some() && self.stage != Stage::Settings {
-            let mut open = true;
-            egui::Window::new("復元の根拠")
-                .open(&mut open)
-                .default_width(320.0)
-                .vscroll(true)
-                .show(ctx, |ui| self.intelligence(ui));
-            if !open {
+            let mut close = false;
+            let response = responsive_modal(ctx, "recovery-evidence", 560.0).show(ctx, |ui| {
+                ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 560.0));
+                egui::ScrollArea::vertical()
+                    .max_height((ctx.content_rect().height() - 160.0).max(100.0))
+                    .show(ui, |ui| self.intelligence(ui));
+                ui.separator();
+                close = ui.button("閉じる").clicked();
+            });
+            if response.should_close() || close {
                 self.show_evidence = false;
             }
         }

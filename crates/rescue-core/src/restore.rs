@@ -45,6 +45,7 @@ struct Batch {
 }
 fn result_for(id: &str) -> RecoveryResult {
     RecoveryResult {
+        naming: None,
         raid_reads: None,
         candidate_id: id.into(),
         status: "failed".into(),
@@ -295,6 +296,10 @@ fn read_volume(
             }
         };
         let mut memory_limit = false;
+        result.naming = Some(RecoveryNaming::from_candidate(
+            &candidate,
+            session.filesystem,
+        ));
         let attempt = (|| -> Result<PreparedFile> {
             let data = candidate_data(&source, &mut image, &candidate, cancel)?;
             result.warnings = data.warnings;
@@ -339,6 +344,30 @@ fn read_volume(
                     Ok(path) => (path, candidate.path_verified),
                     Err(_) => (PathBuf::from(component(&data.name)), false),
                 };
+            let naming = result.naming.as_mut().unwrap();
+            naming.changed(
+                NameChangeReason::AlternateStream,
+                candidate.original_path.clone(),
+                path.clone(),
+            );
+            if original_verified {
+                naming.changed(
+                    NameChangeReason::PortableName,
+                    path,
+                    relative.to_string_lossy().replace('\\', "/"),
+                );
+            } else {
+                naming.changed(
+                    NameChangeReason::UnverifiedHierarchy,
+                    path,
+                    data.name.clone(),
+                );
+                naming.changed(
+                    NameChangeReason::PortableName,
+                    data.name.clone(),
+                    relative.to_string_lossy().replace('\\', "/"),
+                );
+            }
             result.sha256 = Some(format!("{:x}", hash.finalize()));
             result.raid_reads = image.take_raid_trace();
             *used += size;
@@ -447,6 +476,7 @@ fn folder(
     relative: &Path,
     collision: CollisionPolicy,
     directories: &mut BTreeMap<PathBuf, String>,
+    naming: &mut RecoveryNaming,
 ) -> Result<Option<RecoveryDestination>> {
     let mut current = root.try_clone()?;
     let mut requested = root.path.clone();
@@ -456,6 +486,11 @@ fn folder(
             .ok_or_else(|| Error::Request("invalid directory name".into()))?;
         requested.push(part);
         if let Some(actual) = directories.get(&requested) {
+            naming.changed(
+                NameChangeReason::DirectoryCollision,
+                current.path.join(name).display().to_string(),
+                current.path.join(actual).display().to_string(),
+            );
             current = current.child(actual)?;
             continue;
         }
@@ -487,6 +522,11 @@ fn folder(
             }
         }
         let chosen = chosen.ok_or_else(|| Error::Limit("directory collisions".into()))?;
+        naming.changed(
+            NameChangeReason::DirectoryCollision,
+            current.path.join(name).display().to_string(),
+            current.path.join(&chosen).display().to_string(),
+        );
         current = current.child(&chosen)?;
         directories.insert(requested.clone(), chosen);
     }
@@ -538,6 +578,15 @@ fn restore_impl(
             let base = match &options.target {
                 RestoreTarget::Directory(path) => {
                     if session.filesystem == FileSystem::Disk {
+                        file.result.naming.as_mut().unwrap().changed(
+                            NameChangeReason::PartitionNamespace,
+                            file.relative.to_string_lossy().replace('\\', "/"),
+                            format!(
+                                "P{}/{}",
+                                file.partition.unwrap(),
+                                file.relative.to_string_lossy().replace('\\', "/")
+                            ),
+                        );
                         path.join(format!("P{}", file.partition.unwrap()))
                     } else {
                         path.clone()
@@ -565,11 +614,17 @@ fn restore_impl(
                         "original path is too long/deep; choose a destination folder".into(),
                     ));
                 }
-                file.relative = PathBuf::from(
+                let flattened = PathBuf::from(
                     file.relative
                         .file_name()
                         .ok_or_else(|| Error::Request("missing filename".into()))?,
                 );
+                file.result.naming.as_mut().unwrap().changed(
+                    NameChangeReason::HierarchyLimit,
+                    file.relative.to_string_lossy().replace('\\', "/"),
+                    flattened.to_string_lossy().into_owned(),
+                );
+                file.relative = flattened;
                 file.result.warnings.push("Original hierarchy exceeds the portable path limit; saved directly in the destination folder.".into());
             }
             let parent = file.relative.parent().unwrap_or(Path::new(""));
@@ -606,7 +661,13 @@ fn restore_impl(
             } else {
                 (open_output(&base, None)?, parent.to_owned())
             };
-            let Some(destination) = folder(&root, &relative, options.collision, &mut directories)?
+            let Some(destination) = folder(
+                &root,
+                &relative,
+                options.collision,
+                &mut directories,
+                file.result.naming.as_mut().unwrap(),
+            )?
             else {
                 file.result.status = "skipped".into();
                 file.result.sha256 = None;
@@ -621,7 +682,8 @@ fn restore_impl(
                 .file_name()
                 .and_then(|n| n.to_str())
                 .ok_or_else(|| Error::Request("missing filename".into()))?;
-            let Some((name, mut output)) = reserve(&destination.dir, name, options.collision)?
+            let Some((chosen_name, mut output)) =
+                reserve(&destination.dir, name, options.collision)?
             else {
                 file.result.status = "skipped".into();
                 file.result.sha256 = None;
@@ -630,7 +692,12 @@ fn restore_impl(
                     .push("An existing filename was kept.".into());
                 return Ok(());
             };
-            file.result.path = Some(destination.path.join(name));
+            file.result.naming.as_mut().unwrap().changed(
+                NameChangeReason::FileCollision,
+                destination.path.join(name).display().to_string(),
+                destination.path.join(&chosen_name).display().to_string(),
+            );
+            file.result.path = Some(destination.path.join(chosen_name));
             for chunk in file.bytes.chunks(256 * 1024) {
                 if cancel.load(Ordering::Relaxed) {
                     return Err(Error::Cancelled);
@@ -738,17 +805,23 @@ fn zip_impl(
         let mut names = BTreeSet::from(["rescue-report.json".to_owned()]);
         for mut file in batch.files {
             if session.filesystem == FileSystem::Disk {
+                let before = file.relative.to_string_lossy().replace('\\', "/");
                 file.relative =
                     PathBuf::from(format!("P{}", file.partition.ok_or(Error::SourceChanged)?))
                         .join(&file.relative);
+                file.result.naming.as_mut().unwrap().changed(
+                    NameChangeReason::PartitionNamespace,
+                    before,
+                    file.relative.to_string_lossy().replace('\\', "/"),
+                );
             }
             if cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
             }
             let base = file.relative.to_string_lossy().replace('\\', "/");
             let mut name = base.clone();
-            for n in 1..100_000 {
-                if names.insert(name.to_lowercase()) {
+            for n in 1..=100_000 {
+                if !names.contains(&name.to_lowercase()) {
                     break;
                 }
                 let leaf = file.relative.file_name().unwrap().to_string_lossy();
@@ -758,6 +831,14 @@ fn zip_impl(
                     .to_string_lossy()
                     .replace('\\', "/");
             }
+            if !names.insert(name.to_lowercase()) {
+                return Err(Error::Limit("too many archive filename collisions".into()));
+            }
+            file.result.naming.as_mut().unwrap().changed(
+                NameChangeReason::ArchiveCollision,
+                base,
+                name.clone(),
+            );
             zip.start_file(&name, options)
                 .map_err(|e| Error::Io(std::io::Error::other(e)))?;
             zip.write_all(&file.bytes)?;

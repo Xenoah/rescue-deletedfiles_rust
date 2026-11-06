@@ -1,0 +1,54 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.16",
+  "gui_binary_sha256": "d6e796167eab9022d271929321a6a89359697c4ad64f300bd77a8d6c7dc92ff1",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "files_byte_exact": 1,
+  "bytes_byte_exact": 1367,
+  "source_unchanged": true,
+  "existing_file_preserved": true,
+  "collision_history_verified": true,
+  "narrow_viewport": [
+    720,
+    520
+  ],
+  "escape_closes_evidence": true,
+  "scope": "Actual Linux GUI scan/select/recovery into a folder with an existing PDF. Independently encoded NTFS image; not physical deletion.",
+  "result": {
+    "allocation_status": "unknown",
+    "bytes_written": 1367,
+    "candidate_id": "mft-28-7",
+    "error": null,
+    "extent_evidence": "metadata",
+    "naming": {
+      "basis": "metadata_verified_path",
+      "changes": [
+        {
+          "from": "/tmp/rescue-ui-naming/out/01_書類/sample.pdf",
+          "reason": "file_collision",
+          "to": "/tmp/rescue-ui-naming/out/01_書類/sample (復元 2).pdf"
+        }
+      ],
+      "displayed_name": "sample.pdf",
+      "original_name": "sample.pdf",
+      "original_path": "01_書類/sample.pdf",
+      "stream_name": null
+    },
+    "path": "/tmp/rescue-ui-naming/out/01_書類/sample (復元 2).pdf",
+    "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "status": "completed",
+    "warnings": [
+      "Allocation unknown: invalid image: $Bitmap record absent"
+    ]
+  },
+  "screenshots": [
+    {
+      "file": "images/naming-history.png",
+      "sha256": "dc58c83c337d46b9304c5e2f7990a5e70710fef1c3b77ccaf332e69d519732f7"
+    },
+    {
+      "file": "images/naming-narrow.png",
+      "sha256": "d623ad9cb7c343064f14dfee9ce032a5049d635a8a1454ddc8b21fc3a092a0e7"
+    }
+  ]
+}
