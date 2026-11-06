@@ -44,6 +44,16 @@ from e2e_damaged_fat import main as damaged_fat
 from verify_package import architecture
 
 
+def recorded_suite(binary, suite, report):
+    # Some suites write their proof to disk and deliberately return None.
+    # The JSON record is the shared contract used by native release CI too.
+    suite(binary, report)
+    proof = json.loads(report.read_text(encoding='utf-8'))
+    if not isinstance(proof, dict) or proof.get('status') != 'passed':
+        raise RuntimeError('suite did not record a successful proof: ' + report.name)
+    return proof
+
+
 def main():
     p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');a=p.parse_args()
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-alpha\.\d+)?',a.tag):raise ValueError('invalid release tag')
@@ -98,11 +108,11 @@ def main():
     result['document_verification']=documents(binary,(a.output/'document-results.json').resolve())
     result['imaging_verification']=imaging(binary,(a.output/'imaging-results.json').resolve())
     result['imaging_native_verification']=imaging_native(binary,(a.output/'imaging-native-results.json').resolve())
-    for name,suite in [('index',index),('index_carve',index_carve),('index_fat',index_fat),
+    for suite_name,suite in [('index',index),('index_carve',index_carve),('index_fat',index_fat),
                        ('index_remnants',index_remnants),('index_late',index_late),('index_discovery',index_discovery),
                        ('preview',preview),('allocation_scope',allocation_scope),('job_contract',job_contract),
                        ('naming',naming),('source_contract',source_contract),('export_raw',export_raw),('damaged_fat',damaged_fat)]:
-        result[name+'_verification']=suite(binary,(a.output/(name+'-results.json')).resolve())
+        result[suite_name+'_verification']=recorded_suite(binary,suite,(a.output/(suite_name+'-results.json')).resolve())
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))

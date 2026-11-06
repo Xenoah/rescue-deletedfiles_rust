@@ -51,9 +51,11 @@ jobs:
           python-version: '3.12'
       - name: Install independent preview and contract validators
         run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
-      - name: Match test driver and corpus to release
+      - name: Match test suites, schemas and corpus to release
         shell: bash
-        run: git diff --exit-code "$RELEASE_TAG" -- scripts schemas tests
+        # Reporting/orchestration fixes may verify an existing immutable release;
+        # every actual test suite, fixture and schema must still match its tag.
+        run: git diff --exit-code "$RELEASE_TAG" -- scripts schemas tests ':(exclude)scripts/test_published_packages.py' ':(exclude)scripts/published_package_report.py'
       - name: Independent filesystem tools
         if: runner.os == 'Linux'
         run: |
