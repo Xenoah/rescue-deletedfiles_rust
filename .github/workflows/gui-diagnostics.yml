@@ -75,6 +75,8 @@ jobs:
                   data=archive.read(name); assert hashlib.sha256(data).hexdigest()==proof['portable_'+kind+'_sha256']; (destination/name).write_bytes(data)
           PYTHON
       - name: Record native language and token environment
+        shell: powershell
+        continue-on-error: true
         run: |
           Get-WinUserLanguageList | ConvertTo-Json -Depth 4
           whoami /user
