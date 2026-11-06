@@ -149,7 +149,19 @@ try {
         $diagnostic = Get-Content -LiteralPath (Join-Path $cfg.root 'stderr.txt') -Raw -ErrorAction SilentlyContinue
     } while ($diagnostic -notmatch 'Rescue renderer:' -and [DateTime]::UtcNow -lt $until)
     if ($diagnostic -notmatch 'Rescue renderer:') {throw 'Renderer did not initialize before UIA inspection'}
-    Start-Sleep -Milliseconds 500
+    # AccessKit subclasses the window after the renderer starts. A UIA query
+    # before that binds this client to the plain HWND proxy, whose tree stays
+    # empty. Wait for the adapter's window property before the first UIA call.
+    $adapterWait = [System.Diagnostics.Stopwatch]::StartNew()
+    do {
+        Start-Sleep -Milliseconds 100
+        $script:owned.Refresh()
+        if ($script:owned.HasExited) { throw "Owned GUI exited: $($script:owned.ExitCode)" }
+        $adapter = [RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
+    } while ($adapter -eq 0 -and $adapterWait.Elapsed.TotalSeconds -lt 30)
+    if ($adapter -eq 0) { throw 'AccessKit adapter was not attached to the owned window' }
+    $adapterMs = [int]$adapterWait.Elapsed.TotalMilliseconds
+    Start-Sleep -Milliseconds 300
     $script:root = [System.Windows.Automation.AutomationElement]::FromHandle($script:owned.MainWindowHandle)
     if ($script:root.Current.ProcessId -ne $script:owned.Id) { throw 'Automation root belongs to another process' }
     # Probe only our own HWND. This records whether Windows reaches the native
@@ -161,6 +173,7 @@ try {
     $script:provider.getobject_result=$messageResult.ToUInt64()
     $script:provider.accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
     $script:provider.baseline=$script:baseline
+    $script:provider.adapter_wait_ms=$adapterMs
     $script:provider.session=@{client=(Get-Process -Id $PID).SessionId;gui=$script:owned.SessionId;console=[RescueOwnedWindow]::WTSGetActiveConsoleSessionId();station=[RescueOwnedWindow]::ObjectName([RescueOwnedWindow]::GetProcessWindowStation());desktop=[RescueOwnedWindow]::ObjectName([RescueOwnedWindow]::GetThreadDesktop([RescueOwnedWindow]::GetCurrentThreadId()))}
     $description = [System.Windows.Automation.AutomationProperty]::LookupById(30107)
     if ($null -ne $description) {$script:provider.description=$script:root.GetCurrentPropertyValue($description)}
