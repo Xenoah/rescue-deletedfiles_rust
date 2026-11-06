@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "application_version": "0.2.0-alpha.16",
+  "scope": "Actual Linux X11 GUI, independent NTFS 36-format image; English scan, Ctrl+F and Tab/Space selection, language switches, keyboard-triggered recovery; not a complete keyboard/Windows UIA/IME certification. Invisible table-resizer focus stops found during this test remain tracked for correction.",
+  "gui_binary_sha256": "81be9c0397a69cf94e7aff0b0e76f68496b8cb31a72a7fd1787cc08bfb3922d3",
+  "source_sha256": "518d8b18a0558bcf90017b2c5df46409ec8fbbea75715d5e55cc1246c51c0eb3",
+  "source_unchanged": true,
+  "files_byte_exact": 2,
+  "bytes_exact": 1428,
+  "files": [
+    {
+      "name": "削除した報告書.pdf",
+      "bytes": 1367,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+    },
+    {
+      "name": "原文.txt",
+      "bytes": 61,
+      "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+    }
+  ],
+  "selection_and_filter_preserved_across_language_switch": true,
+  "screenshots": [
+    {
+      "file": "images/i18n-settings.png",
+      "sha256": "5c78515948a84478da018ac95f53eca9d5993a1b9afaf258fccdc82822449a7f",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/i18n-selected-en.png",
+      "sha256": "b6973e524b35224de23dc5621ce411cf218152adece9af201d8acef9702b6cef",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/i18n-selected-ja.png",
+      "sha256": "c7e23925cf99121bec98225bbf1e43c35a813d182cb214a0c4dcd74a53d9cdf2",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/i18n-restored-en.png",
+      "sha256": "f6a0ee2a2a39b0c81b374d093cd8321fd944904043eefdf46f8c59461aef2683",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/i18n-narrow-en.png",
+      "sha256": "ec83897b105602171d87b24a162407e2aad557b1f6203d92b08df40d1fb01142",
+      "width": 720,
+      "height": 520
+    }
+  ]
+}

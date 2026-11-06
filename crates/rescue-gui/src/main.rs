@@ -1,4 +1,6 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
+#[macro_use]
+mod language;
 mod acquisition_ui;
 mod discovery_ui;
 mod index_ui;
@@ -10,6 +12,7 @@ mod session_ui;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
+use language::{Language, Text};
 use rescue_core::{
     AllocationStatus, Candidate, CollisionPolicy, DiskSource, FileSystem, Progress, RecoveryResult,
     RestoreOptions, RestoreTarget, ScanMethod, ScanOptions, SearchSettings, Session, VolumeRoot,
@@ -64,12 +67,13 @@ enum Message {
     Scanned(Box<Session>, PathBuf),
     Finished {
         results: Vec<RecoveryResult>,
-        status: String,
-        detail: String,
+        status: Text,
+        detail: Text,
     },
-    Error(String),
+    Error(Text),
 }
 struct App {
+    language: Language,
     session_dialog: Option<session_ui::Action>,
     session_path: String,
     #[cfg(windows)]
@@ -100,7 +104,7 @@ struct App {
     source_mode: SourceMode,
     disks: Vec<DiskSource>,
     disk_messages: Option<mpsc::Receiver<Result<Vec<DiskSource>, String>>>,
-    disk_status: String,
+    disk_status: Text,
     work: String,
     destination: String,
     save_mode: SaveMode,
@@ -130,13 +134,13 @@ struct App {
     messages: Option<mpsc::Receiver<Message>>,
     cancel: Arc<AtomicBool>,
     progress: Progress,
-    status: String,
-    report: String,
+    status: Text,
+    report: Text,
     results: Vec<RecoveryResult>,
     primary_rect: Option<egui::Rect>,
 }
 impl App {
-    fn new(cc: &eframe::CreationContext<'_>, session: Option<PathBuf>) -> Self {
+    fn new(cc: &eframe::CreationContext<'_>, session: Option<PathBuf>, language: Language) -> Self {
         #[cfg(windows)]
         if let Some(state) = &cc.wgpu_render_state {
             let info = state.adapter.get_info();
@@ -200,6 +204,7 @@ impl App {
             }
         }
         let mut app = Self::blank();
+        app.language = language;
         app.refresh_disks();
         if let Some(path) = session {
             app.open_session(path);
@@ -208,6 +213,7 @@ impl App {
     }
     fn blank() -> Self {
         Self {
+            language: Language::Japanese,
             session_dialog: None,
             session_path: String::new(),
             #[cfg(windows)]
@@ -237,7 +243,7 @@ impl App {
             source_mode: SourceMode::Disk,
             disks: Vec::new(),
             disk_messages: None,
-            disk_status: String::new(),
+            disk_status: Text::default(),
             work: String::new(),
             destination: String::new(),
             save_mode: SaveMode::Directory,
@@ -268,8 +274,11 @@ impl App {
             messages: None,
             cancel: Arc::new(AtomicBool::new(false)),
             progress: Progress::default(),
-            status: "ディスクと保存方法を設定してください。".into(),
-            report: String::new(),
+            status: message!(
+                "ディスクと保存方法を設定してください。",
+                "Choose a disk and save options."
+            ),
+            report: Text::default(),
             results: Vec::new(),
             primary_rect: None,
         }
@@ -280,15 +289,17 @@ impl App {
             Stage::Scanning | Stage::Recovering | Stage::Imaging | Stage::Migrating
         )
     }
-    fn settings(&self) -> Result<SearchSettings, String> {
+    fn settings(&self) -> Result<SearchSettings, Text> {
         let number = |s: &str| {
             if s.trim().is_empty() {
                 Ok(None)
             } else {
-                s.trim()
-                    .parse::<u64>()
-                    .map(Some)
-                    .map_err(|_| "範囲・深度には整数を入力してください。".to_owned())
+                s.trim().parse::<u64>().map(Some).map_err(|_| {
+                    message!(
+                        "範囲・深度には整数を入力してください。",
+                        "Enter whole numbers for the byte range and depth."
+                    )
+                })
             }
         };
         let s = SearchSettings {
@@ -325,7 +336,12 @@ impl App {
                 number(&self.depth)?
                     .map(u16::try_from)
                     .transpose()
-                    .map_err(|_| "深度は0～256で指定してください。".to_owned())?
+                    .map_err(|_| {
+                        message!(
+                            "深度は0～256で指定してください。",
+                            "Enter a depth between 0 and 256."
+                        )
+                    })?
             },
             range_start: if self.carve {
                 number(&self.range_start)?.unwrap_or(0)
@@ -404,9 +420,12 @@ impl App {
         self.view_dirty = true;
         self.stage = Stage::Selecting;
         self.report = if path.as_os_str().is_empty() {
-            "スキャン結果をメモリーに保持しています。".into()
+            message!(
+                "スキャン結果をメモリーに保持しています。",
+                "Scan results are held in memory."
+            )
         } else {
-            format!("セッション: {}", path.display())
+            message!("セッション: {}", "Session: {}", path.display())
         };
     }
     fn invalidate_changed_source(&mut self) {
@@ -431,14 +450,20 @@ impl App {
             self.rows.clear();
             self.report.clear();
             self.view_dirty = true;
-            self.status = "入力または検索条件が変更されました。スキャンを実行してください。".into();
+            self.status = message!(
+                "入力または検索条件が変更されました。スキャンを実行してください。",
+                "The source or search settings changed. Run a new scan."
+            );
         }
     }
     fn start_scan(&mut self) {
         if self.source.trim().is_empty()
             || (self.save_mode != SaveMode::Original && self.destination.trim().is_empty())
         {
-            self.status = "ディスクと保存先を指定してください。".into();
+            self.status = message!(
+                "ディスクと保存先を指定してください。",
+                "Choose a disk and destination."
+            );
             return;
         }
         let settings = match self.settings() {
@@ -454,7 +479,10 @@ impl App {
         if !self.work.trim().is_empty()
             && let Err(error) = &guarded
         {
-            self.status = format!("再開用の作業フォルダーを使用できません: {error}");
+            self.status = message!(
+                "再開用の作業フォルダーを使用できません: {error}",
+                "Cannot use the working folder for resume: {error}"
+            );
             return;
         }
         let persist = guarded.is_ok()
@@ -476,7 +504,7 @@ impl App {
         self.report.clear();
         self.view_dirty = true;
         self.progress = Progress::default();
-        self.status = "スキャン中…".into();
+        self.status = message!("スキャン中…", "Scanning…");
         thread::spawn(move || {
             let result = if persist {
                 rescue_core::scan_indexed(
@@ -503,13 +531,16 @@ impl App {
                 .map(|session| Message::Scanned(Box::new(session), PathBuf::new()))
                 .map_err(|e| e.to_string())
             };
-            let _ = tx.send(result.unwrap_or_else(Message::Error));
+            let _ = tx.send(result.unwrap_or_else(|e| Message::Error(e.into())));
         });
     }
     fn start_recovery(&mut self) {
         self.invalidate_changed_source();
         if self.save_mode != SaveMode::Original && self.destination.trim().is_empty() {
-            self.status = "設定画面で保存先を指定してください。".into();
+            self.status = message!(
+                "設定画面で保存先を指定してください。",
+                "Choose a destination in Settings."
+            );
             return;
         }
         let Some(session) = self.session.clone() else {
@@ -536,7 +567,7 @@ impl App {
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
         self.stage = Stage::Recovering;
-        self.status = "選択したファイルを復元中…".into();
+        self.status = message!("選択したファイルを復元中…", "Recovering selected files…");
         thread::spawn(move || {
             let session = if let Some(path) = index_path {
                 match rescue_core::CandidateIndex::open(&path)
@@ -544,7 +575,7 @@ impl App {
                 {
                     Ok(session) => session,
                     Err(error) => {
-                        let _ = tx.send(Message::Error(error.to_string()));
+                        let _ = tx.send(Message::Error(error.to_string().into()));
                         return;
                     }
                 }
@@ -553,12 +584,14 @@ impl App {
             };
             let r = if mode == SaveMode::Zip {
                 restore_zip(&session, &ids, &dest, collision, &cancel).map(|r| Message::Finished {
-                    status: format!(
+                    status: message!(
                         "ZIP保存: {} / {} ファイル",
-                        status_label(&r.status),
+                        "ZIP: {} / {} files",
+                        status_text(&r.status),
                         r.results.iter().filter(|v| v.status == "completed").count()
                     ),
-                    detail: format!(
+                    detail: message!(
+                        "ZIP: {}\nSHA-256: {}\n{}{}{}",
                         "ZIP: {}\nSHA-256: {}\n{}{}{}",
                         r.archive
                             .map(|p| p.display().to_string())
@@ -566,10 +599,18 @@ impl App {
                         r.sha256.unwrap_or_default(),
                         r.error.unwrap_or_default(),
                         r.staging
-                            .map(|p| format!("\n一時保存: {}", p.display()))
+                            .map(|p| message!(
+                                "\n一時保存: {}",
+                                "\nStaging folder: {}",
+                                p.display()
+                            ))
                             .unwrap_or_default(),
                         r.partial_archive
-                            .map(|p| format!("\n未完了ZIP: {}", p.display()))
+                            .map(|p| message!(
+                                "\n未完了ZIP: {}",
+                                "\nUnfinished ZIP: {}",
+                                p.display()
+                            ))
                             .unwrap_or_default()
                     ),
                     results: r.results,
@@ -585,28 +626,26 @@ impl App {
                 };
                 restore_files(&session, &ids, &options, &cancel).and_then(|results| {
                     let detail = if mode == SaveMode::Original {
-                        "元の場所への復元結果を下に表示しています。".into()
+                        message!("元の場所への復元結果を下に表示しています。", "Results of restoring to original locations are shown below.")
                     } else {
-                        format!(
-                            "レポート: {}",
+                        message!("レポート: {}", "Report: {}",
                             save_restore_report(&dest, &session, &results)?.display()
                         )
                     };
                     let n = results.iter().filter(|r| r.status == "completed").count();
                     let skipped = results.iter().filter(|r| r.status == "skipped").count();
                     let skipped_label = if skipped == 0 {
-                        String::new()
+                        Text::default()
                     } else {
-                        format!(" / スキップ: {skipped}")
+                        message!(" / スキップ: {skipped}", " / Skipped: {skipped}")
                     };
                     Ok(Message::Finished {
-                        status: format!(
-                            "保存完了: {n}{skipped_label} / 不完全・失敗: {} / 取消: {}",
+                        status: message!("保存完了: {n}{skipped_label} / 不完全・失敗: {} / 取消: {}", "Saved: {n}{skipped_label} / Incomplete or failed: {} / Cancellation: {}",
                             results.len() - n - skipped,
                             if cancel.load(Ordering::Relaxed) {
-                                "要求あり"
+                                message!("要求あり", "Requested")
                             } else {
-                                "なし"
+                                message!("なし", "None")
                             }
                         ),
                         detail,
@@ -614,7 +653,7 @@ impl App {
                     })
                 })
             };
-            let _ = tx.send(r.unwrap_or_else(|e| Message::Error(e.to_string())));
+            let _ = tx.send(r.unwrap_or_else(|e| Message::Error(e.to_string().into())));
         });
     }
     fn receive(&mut self) {
@@ -638,14 +677,25 @@ impl App {
             match result {
                 Ok(disks) => {
                     self.disk_status = if disks.is_empty() {
-                        "ディスクを検出できませんでした。接続・アクセス権を確認してください。"
-                            .into()
+                        message!(
+                            "ディスクを検出できませんでした。接続・アクセス権を確認してください。",
+                            "No disks found. Check the connection and access permissions."
+                        )
                     } else {
-                        format!("{} 個のディスク／ボリューム", disks.len())
+                        message!(
+                            "{} 個のディスク／ボリューム",
+                            "{} disks / volumes",
+                            disks.len()
+                        )
                     };
                     self.disks = disks;
                 }
-                Err(e) => self.disk_status = format!("ディスク一覧を取得できません: {e}"),
+                Err(e) => {
+                    self.disk_status = message!(
+                        "ディスク一覧を取得できません: {e}",
+                        "Cannot list disks: {e}"
+                    )
+                }
             }
         }
         let messages = self
@@ -673,17 +723,19 @@ impl App {
                     self.source = result.image.to_string_lossy().into_owned();
                     self.source_mode = SourceMode::Image;
                     self.stage = Stage::Settings;
-                    self.report = format!(
+                    self.report = message!(
                         "イメージ: {}\n読取マップ: {}",
+                        "Image: {}\nRead map: {}",
                         result.image.display(),
                         result.read_map.display()
                     );
-                    self.status = format!(
+                    self.status = message!(
                         "イメージ取得{} · 読取済み {} · 読取失敗 {} · 未読 {}",
+                        "Image acquisition {} · Read {} · Failed {} · Unread {}",
                         match result.state.as_str() {
-                            "completed" => "完了",
-                            "cancelled" => "を中断",
-                            _ => "（一部取得）",
+                            "completed" => message!("完了", "complete"),
+                            "cancelled" => message!("を中断", "paused"),
+                            _ => message!("（一部取得）", "(partial)"),
                         },
                         view::size_text(Some(result.summary.copied_bytes)),
                         view::size_text(Some(result.summary.failed_bytes)),
@@ -692,13 +744,16 @@ impl App {
                     if result.state == "cancelled" && self.image_pause_requested {
                         self.image_resume = true;
                         self.image_dialog = true;
-                        self.status="イメージ取得を一時停止しました。保存済みブロックを照合して再開できます。".into();
+                        self.status = message!(
+                            "イメージ取得を一時停止しました。保存済みブロックを照合して再開できます。",
+                            "Image acquisition paused. Saved blocks will be verified before resuming."
+                        );
                     }
                 }
                 Message::Indexed(loaded) => self.install_index(*loaded),
                 Message::IndexResumed(loaded) => self.accept_resumed_index(*loaded),
                 Message::IndexProgress(p) => {
-                    self.report = format!("索引: {}", p.index.display());
+                    self.report = message!("索引: {}", "Index: {}", p.index.display());
                     self.index.path = Some(p.index);
                     self.progress = p.progress;
                 }
@@ -706,18 +761,19 @@ impl App {
                 Message::Discovered(result) => {
                     self.discovery_running = false;
                     self.stage = Stage::Settings;
-                    self.status = format!(
+                    self.status = message!(
                         "領域探索{}: {} 候補{}",
+                        "Volume search {}: {} candidates{}",
                         if result.cancelled {
-                            "を中断"
+                            message!("を中断", "paused")
                         } else {
-                            "完了"
+                            message!("完了", "complete")
                         },
                         result.volumes.len(),
                         if result.truncated {
-                            " / 未探索の範囲あり"
+                            message!(" / 未探索の範囲あり", " / Some ranges remain unscanned")
                         } else {
-                            ""
+                            Text::default()
                         }
                     );
                     self.discovery = Some(*result);
@@ -725,16 +781,23 @@ impl App {
                     self.discovery_dialog = true;
                 }
                 Message::Scanned(s, p) => {
-                    self.status = format!(
+                    self.status = message!(
                         "スキャン完了: {} 候補 / 解析不良: {} 件{}",
+                        "Scan complete: {} candidates / {} invalid records{}",
                         s.candidates.len(),
                         s.invalid_records,
                         if s.cancelled {
-                            " / 取消：未探索領域があります"
+                            message!(
+                                " / 取消：未探索領域があります",
+                                " / Cancelled: some ranges remain unscanned"
+                            )
                         } else if s.truncated {
-                            " / 一部未探索：警告を確認してください"
+                            message!(
+                                " / 一部未探索：警告を確認してください",
+                                " / Partly scanned: check warnings"
+                            )
                         } else {
-                            ""
+                            Text::default()
                         }
                     );
                     self.install_session(*s, &p);
@@ -752,7 +815,7 @@ impl App {
                 Message::Error(e) => {
                     self.raid.running = false;
                     self.discovery_running = false;
-                    self.status = format!("エラー: {e}");
+                    self.status = message!("エラー: {e}", "Error: {e}");
                     self.stage = if self.session.is_some() {
                         Stage::Selecting
                     } else {
@@ -768,22 +831,26 @@ impl App {
         }
         let (tx, rx) = mpsc::channel();
         self.disk_messages = Some(rx);
-        self.disk_status = "ディスクを確認中…".into();
+        self.disk_status = message!("ディスクを確認中…", "Checking disks…");
         thread::spawn(move || {
             let _ = tx.send(list_disks().map_err(|e| e.to_string()));
         });
     }
     fn source_ui(&mut self, ui: &mut egui::Ui) {
-        ui.strong("1  スキャンするディスク");
+        ui.strong(tr!("1  スキャンするディスク", "1  Disk to scan"));
         ui.horizontal_wrapped(|ui| {
             let previous = self.source_mode;
             ui.selectable_value(
                 &mut self.source_mode,
                 SourceMode::Disk,
-                "ディスク／ボリューム",
+                tr!("ディスク／ボリューム", "Disk / Volume"),
             );
-            ui.selectable_value(&mut self.source_mode, SourceMode::Image, "保存したイメージ");
-            if ui.button("RAIDを構成").clicked() {
+            ui.selectable_value(
+                &mut self.source_mode,
+                SourceMode::Image,
+                tr!("保存したイメージ", "Saved image"),
+            );
+            if ui.button(tr!("RAIDを構成", "Configure RAID")).clicked() {
                 if rescue_core::is_raid_path(Path::new(&self.source)) {
                     self.raid.load_source(Path::new(&self.source));
                 }
@@ -798,7 +865,7 @@ impl App {
                 if ui
                     .add_enabled(
                         self.disk_messages.is_none(),
-                        egui::Button::new("ディスク一覧を更新"),
+                        egui::Button::new(tr!("ディスク一覧を更新", "Refresh disk list")),
                     )
                     .clicked()
                 {
@@ -813,9 +880,9 @@ impl App {
                     for disk in &self.disks {
                         let path = disk.path.to_string_lossy();
                         let kind = if disk.kind == "disk" {
-                            "ディスク全体"
+                            tr!("ディスク全体", "Whole disk")
                         } else {
-                            "ボリューム"
+                            tr!("ボリューム", "Volume")
                         };
                         let label = format!(
                             "{kind}   {}   {}   {}",
@@ -830,91 +897,108 @@ impl App {
                 });
             text_row(
                 ui,
-                "選択したディスク",
+                tr!("選択したディスク", "Selected disk"),
                 &mut self.source,
                 if cfg!(windows) {
-                    r"例: \\.\PhysicalDrive1 または \\.\D:"
+                    tr!(
+                        r"例: \\.\PhysicalDrive1 または \\.\D:",
+                        "Example: \\\\.\\PhysicalDrive1 or \\\\.\\D:"
+                    )
                 } else if cfg!(target_os = "macos") {
-                    "/dev/rdisk2 または /dev/rdisk2s1"
+                    tr!(
+                        "/dev/rdisk2 または /dev/rdisk2s1",
+                        "/dev/rdisk2 or /dev/rdisk2s1"
+                    )
                 } else {
-                    "/dev/sdb または /dev/sdb1"
+                    tr!("/dev/sdb または /dev/sdb1", "/dev/sdb or /dev/sdb1")
                 },
             );
-            ui.small("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。");
+            ui.small(tr!("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。", "A whole-disk scan finds MBR / GPT partitions. The source is opened read-only."));
             #[cfg(windows)]
             self.read_access.show(ui, &self.source);
             #[cfg(not(windows))]
-            ui.small("ディスクを読み取れる権限が必要です。");
+            ui.small(tr!(
+                "ディスクを読み取れる権限が必要です。",
+                "Permission to read the disk is required."
+            ));
         } else {
-            path_row(ui, "イメージファイル", &mut self.source, Picker::Open);
-            ui.small("RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。");
+            path_row(
+                ui,
+                tr!("イメージファイル", "Image file"),
+                &mut self.source,
+                Picker::Open,
+            );
+            ui.small(tr!(
+                "RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。",
+                "Read a RAW volume or an MBR / GPT disk image."
+            ));
         }
     }
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
         egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show(ui, |ui| {
             ui.set_max_width(ui.available_width().min(960.0));
             ui.add_space(8.0);
-            ui.heading("保存方法と検索条件");
-            ui.label("ディスクをスキャンしてから、復元するファイルを選択します。");
+            ui.heading(tr!("保存方法と検索条件", "Save options and search settings"));
+            ui.label(tr!("ディスクをスキャンしてから、復元するファイルを選択します。", "Scan the disk, then select files to recover."));
             ui.add_space(16.0);
             self.source_ui(ui);
-            if ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("ディスクのイメージを作成・再開")).clicked(){self.image_dialog=true;}
-            if self.source_mode==SourceMode::Image && ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new("読取マップを確認")).clicked(){self.map_source=PathBuf::from(&self.source);self.map_page=None;self.map_dialog=true;self.load_map_page(0,None);}
+            if ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new(tr!("ディスクのイメージを作成・再開", "Create or resume a disk image"))).clicked(){self.image_dialog=true;}
+            if self.source_mode==SourceMode::Image && ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new(tr!("読取マップを確認", "View read map"))).clicked(){self.map_source=PathBuf::from(&self.source);self.map_page=None;self.map_dialog=true;self.load_map_page(0,None);}
             self.discovery_controls(ui);
             ui.add_space(16.0);
-            ui.strong("2  保存方法");
+            ui.strong(tr!("2  保存方法", "2  Save options"));
             ui.horizontal_wrapped(|ui| {
-                ui.selectable_value(&mut self.save_mode, SaveMode::Original, "元の場所へ戻す");
-                ui.selectable_value(&mut self.save_mode, SaveMode::Directory, "フォルダーに保存");
-                if ui.selectable_value(&mut self.save_mode, SaveMode::Zip, "ZIPファイルに保存").changed()
+                ui.selectable_value(&mut self.save_mode, SaveMode::Original, tr!("元の場所へ戻す", "Original locations"));
+                ui.selectable_value(&mut self.save_mode, SaveMode::Directory, tr!("フォルダーに保存", "Save to folder"));
+                if ui.selectable_value(&mut self.save_mode, SaveMode::Zip, tr!("ZIPファイルに保存", "Save as ZIP")).changed()
                     && !self.destination.to_lowercase().ends_with(".zip") { self.destination.clear(); }
             });
             if self.save_mode != SaveMode::Original {
                 let picker = if self.save_mode == SaveMode::Zip { Picker::Zip } else { Picker::Folder };
-                path_row(ui, "保存先", &mut self.destination, picker);
+                path_row(ui, tr!("保存先", "Destination"), &mut self.destination, picker);
             } else {
-                ui.label("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補はフォルダー保存を選んでください。");
+                ui.label(tr!("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補はフォルダー保存を選んでください。", "Restore verified original folders and filenames. Choose a destination folder for files whose original locations are unknown."));
             }
             ui.horizontal_wrapped(|ui| {
-                ui.label("同じ名前がある場合");
-                ui.selectable_value(&mut self.collision, CollisionPolicy::KeepBoth, "両方を残す（復元 1）");
-                ui.selectable_value(&mut self.collision, CollisionPolicy::Skip, "スキップ");
+                ui.label(tr!("同じ名前がある場合", "When a name already exists"));
+                ui.selectable_value(&mut self.collision, CollisionPolicy::KeepBoth, tr!("両方を残す（復元 1）", "Keep both (numbered copy)"));
+                ui.selectable_value(&mut self.collision, CollisionPolicy::Skip, tr!("スキップ", "Skip"));
             });
-            ui.small("既存ファイルは上書きしません。同名フォルダーは統合します。");
+            ui.small(tr!("既存ファイルは上書きしません。同名フォルダーは統合します。", "Existing files are kept. Folders with the same name are merged."));
             ui.add_space(16.0);
-            ui.collapsing("詳細設定 · 検索方式・範囲・深度・拡張子", |ui| {
+            ui.collapsing(tr!("詳細設定 · 検索方式・範囲・深度・拡張子", "Advanced · Method, range, depth and extensions"), |ui| {
                 ui.horizontal_wrapped(|ui| {
-                    ui.label("検索方式");
-                    ui.selectable_value(&mut self.carve, false, "管理情報 / Quick");
-                    ui.selectable_value(&mut self.carve, true, "写真・文書・動画 / Carving");
+                    ui.label(tr!("検索方式", "Search method"));
+                    ui.selectable_value(&mut self.carve, false, tr!("管理情報 / Quick", "Metadata / Quick"));
+                    ui.selectable_value(&mut self.carve, true, tr!("写真・文書・動画 / Carving", "Photos, documents and videos / Carving"));
                 });
-                text_row(ui, "探す拡張子", &mut self.extensions, "空欄: すべて / 例: jpg, pdf, docx, zip");
+                text_row(ui, tr!("探す拡張子", "File extensions to find"), &mut self.extensions, tr!("空欄: すべて / 例: jpg, pdf, docx, zip", "Blank: all / Example: jpg, pdf, docx, zip"));
                 if self.carve {
                     ui.horizontal_wrapped(|ui| {
-                        ui.label("割当範囲");
-                        ui.selectable_value(&mut self.carve_all,false,"未割当領域（推奨）");
-                        ui.selectable_value(&mut self.carve_all,true,"全領域");
+                        ui.label(tr!("割当範囲", "Allocation scope"));
+                        ui.selectable_value(&mut self.carve_all,false,tr!("未割当領域（推奨）", "Unallocated regions (recommended)"));
+                        ui.selectable_value(&mut self.carve_all,true,tr!("全領域", "All regions"));
                     });
-                    ui.small("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。");
-                    ui.label("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。");
-                    text_row(ui, "開始バイト", &mut self.range_start, "空欄: 0（ディスク/イメージの先頭）");
-                    text_row(ui, "終了バイト", &mut self.range_end, "空欄: 末尾 / この位置は含みません");
+                    ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
+                    ui.label(tr!("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。", "Find PNG/JPEG, PDF, ZIP/Office and MP4/MOV. Validate structure, CRC or references as appropriate. Original names and deletion status are unknown."));
+                    text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"));
+                    text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"));
                 } else {
-                    ui.checkbox(&mut self.fragments,"残存するMFTレコードも探索（クイックフォーマット後など）");
-                    text_row(ui, "検索フォルダー", &mut self.path_prefix, "空欄: 全体 / 例: 写真/旅行");
-                    text_row(ui, "検索深度", &mut self.depth, "空欄: 上限なし / 0: 直下 / 最大256");
-                    ui.small("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。");
+                    ui.checkbox(&mut self.fragments,tr!("残存するMFTレコードも探索（クイックフォーマット後など）", "Also search for remnant MFT records (for example, after a quick format)"));
+                    text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"));
+                    text_row(ui, tr!("検索深度", "Search depth"), &mut self.depth, tr!("空欄: 上限なし / 0: 直下 / 最大256", "Blank: unlimited / 0: direct children / Maximum: 256"));
+                    ui.small(tr!("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。", "Range, depth and extensions filter the results. Allocation conflicts are checked across the full volume."));
                 }
-                path_row(ui, "再開用の作業フォルダー（任意）", &mut self.work, Picker::Folder);
-                ui.small("空欄では保存先の近くに索引を作ります。元の場所への復元・同じ物理ディスクの場合はメモリーに保持します。再開には安全な作業フォルダーを指定してください。");
+                path_row(ui, tr!("再開用の作業フォルダー（任意）", "Working folder for resume (optional)"), &mut self.work, Picker::Folder);
+                ui.small(tr!("空欄では保存先の近くに索引を作ります。元の場所への復元・同じ物理ディスクの場合はメモリーに保持します。再開には安全な作業フォルダーを指定してください。", "If blank, an index is created near the destination. Original-location or same-physical-disk recovery holds results in memory. Set a suitable working folder to enable resume."));
                 if self.save_mode == SaveMode::Original {
-                    path_row(ui, "元ボリュームのルート（任意）", &mut self.original_root, Picker::Folder);
-                    ui.small("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。");
+                    path_row(ui, tr!("元ボリュームのルート（任意）", "Original volume root (optional)"), &mut self.original_root, Picker::Folder);
+                    ui.small(tr!("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。", "Usually detected automatically. Specify the original volume root for images or when detection fails. Use the CLI to map multiple partitions individually."));
                 }
             });
             self.invalidate_changed_source();
             ui.add_space(16.0);
-            ui.small("同じディスクにも保存できます。選択したファイルをすべて先に読み出します（合計512 MiBまで）。同じディスクへの保存は、未選択の削除データを上書きする可能性があります。");
+            ui.small(tr!("同じディスクにも保存できます。選択したファイルをすべて先に読み出します（合計512 MiBまで）。同じディスクへの保存は、未選択の削除データを上書きする可能性があります。", "You can save to the same disk. All selected files are read first (up to 512 MiB total). Saving to the same disk may overwrite deleted data you have not selected."));
         });
     }
     /// Drawn after content so Tab order follows the form, then the stable action row.
@@ -923,45 +1007,50 @@ impl App {
         ui.separator();
         if self.stage == Stage::Settings {
             ui.horizontal_wrapped(|ui| {
-                if ui.button("保存したセッションを開く").clicked() {
+                if ui.button(tr!("保存したセッションを開く", "Open saved session")).clicked() {
                     self.session_dialog = Some(session_ui::Action::Open);
                 }
                 if ui
-                    .button("セッションをコピー移行")
+                    .button(tr!("セッションをコピー移行", "Migrate a session copy"))
                     .on_hover_text(
-                        "旧JSON・SQLiteを新しい索引へコピーします。元の記録は変更しません。",
+                        tr!("旧JSON・SQLiteを新しい索引へコピーします。元の記録は変更しません。", "Copy an old JSON or SQLite session into a new index. Keep the original unchanged."),
                     )
                     .clicked()
                 {
                     self.session_dialog = Some(session_ui::Action::Copy);
                 }
-                if self.session.is_some() && ui.button("結果へ戻る").clicked() {
+                if self.session.is_some() && ui.button(tr!("結果へ戻る", "Return to results")).clicked() {
                     self.stage = Stage::Selecting;
                 }
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let response = ui.add_enabled(
                     !self.source.trim().is_empty(),
-                    egui::Button::new("スキャン開始").min_size(egui::vec2(176.0, 36.0)),
+                    egui::Button::new(tr!("スキャン開始", "Start scan"))
+                        .min_size(egui::vec2(176.0, 36.0)),
                 );
                 self.primary_rect = Some(response.rect);
                 if response.clicked() {
                     self.start_scan();
                 }
-                ui.weak("ファイルの選択はスキャン後");
+                ui.weak(tr!(
+                    "ファイルの選択はスキャン後",
+                    "Select files after scanning"
+                ));
             });
         } else if !self.busy() {
             let bytes = self.selected_bytes();
             ui.horizontal_wrapped(|ui| {
-                ui.label(format!(
+                ui.label(tr_format!(
                     "{} 件選択 · {}",
+                    "{} selected · {}",
                     self.selected.len(),
                     view::size_text(Some(bytes))
                 ));
                 ui.label(match self.save_mode {
-                    SaveMode::Original => "元の場所へ戻す",
-                    SaveMode::Directory => "フォルダーに保存",
-                    SaveMode::Zip => "ZIPに保存",
+                    SaveMode::Original => tr!("元の場所へ戻す", "Original locations"),
+                    SaveMode::Directory => tr!("フォルダーに保存", "Save to folder"),
+                    SaveMode::Zip => tr!("ZIPに保存", "Save as ZIP"),
                 });
                 if self.save_mode != SaveMode::Original {
                     ui.add(egui::Label::new(&self.destination).truncate())
@@ -969,13 +1058,13 @@ impl App {
                 }
             });
             ui.horizontal(|ui| {
-                if ui.button("設定に戻る").clicked() {
+                if ui.button(tr!("設定に戻る", "Back to settings")).clicked() {
                     self.stage = Stage::Settings;
                 }
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let response = ui.add_enabled(
                         !self.selected.is_empty() && !self.index.loading(),
-                        egui::Button::new("選択したファイルを復元")
+                        egui::Button::new(tr!("選択したファイルを復元", "Recover selected files"))
                             .min_size(egui::vec2(224.0, 36.0)),
                     );
                     self.primary_rect = Some(response.rect);
@@ -985,7 +1074,10 @@ impl App {
                 });
             });
         } else {
-            ui.label("進行状況と取消は画面下に表示しています。");
+            ui.label(tr!(
+                "進行状況と取消は画面下に表示しています。",
+                "Progress and cancellation controls are at the bottom of the window."
+            ));
         }
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
@@ -994,16 +1086,16 @@ impl App {
                 .iter()
                 .any(|w| w.starts_with("ALLOCATION_FALLBACK:"))
         }) {
-            ui.colored_label(egui::Color32::YELLOW, "一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。");
+            ui.colored_label(egui::Color32::YELLOW, tr!("一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。", "Some regions have no verifiable allocation data and are being searched in full. See the evidence for details."));
         }
         let busy = self.busy();
         ui.add_enabled_ui(!busy, |ui| {
             ui.horizontal_wrapped(|ui| {
-                ui.label("表示");
-                ui.selectable_value(&mut self.view, ViewStyle::Details, "詳細");
-                ui.selectable_value(&mut self.view, ViewStyle::Icons, "アイコン");
+                ui.label(tr!("表示", "View"));
+                ui.selectable_value(&mut self.view, ViewStyle::Details, tr!("詳細", "Details"));
+                ui.selectable_value(&mut self.view, ViewStyle::Icons, tr!("アイコン", "Icons"));
                 ui.separator();
-                ui.label("グループ");
+                ui.label(tr!("グループ", "Group"));
                 egui::ComboBox::from_id_salt("group")
                     .selected_text(self.group.label())
                     .show_ui(ui, |ui| {
@@ -1014,11 +1106,14 @@ impl App {
                             }
                         }
                     });
-                ui.checkbox(&mut self.show_evidence, "復元の根拠");
+                ui.checkbox(
+                    &mut self.show_evidence,
+                    tr!("復元の根拠", "Recovery evidence"),
+                );
                 if ui
                     .add_enabled(
                         !self.index.loading() && self.focused.is_some(),
-                        egui::Button::new("プレビュー"),
+                        egui::Button::new(tr!("プレビュー", "Preview")),
                     )
                     .clicked()
                     && let (Some(session), Some(id)) = (&self.session, &self.focused)
@@ -1027,13 +1122,13 @@ impl App {
                 }
             });
             ui.horizontal_wrapped(|ui| {
-                ui.label("結果を検索");
+                ui.label(tr!("結果を検索", "Search results"));
                 if ui
                     .add(
                         egui::TextEdit::singleline(&mut self.filter)
                             .id(egui::Id::new("result-search"))
                             .desired_width(280.0)
-                            .hint_text("名前・元のパス"),
+                            .hint_text(tr!("名前・元のパス", "Name or original path")),
                     )
                     .changed()
                 {
@@ -1044,7 +1139,7 @@ impl App {
                         !self.index.loading()
                             && (self.index.path.is_none()
                                 || self.index.query == self.index_query()),
-                        egui::Button::new("表示中の候補を選択"),
+                        egui::Button::new(tr!("表示中の候補を選択", "Select visible candidates")),
                     )
                     .clicked()
                     && let Some(s) = &self.session
@@ -1056,7 +1151,7 @@ impl App {
                         }
                     }
                 }
-                if ui.button("選択解除").clicked() {
+                if ui.button(tr!("選択解除", "Clear selection")).clicked() {
                     self.selected.clear();
                 }
             });
@@ -1115,12 +1210,12 @@ impl App {
                 .header(32.0, |mut row| {
                     row.col(|_| {});
                     for (col, label) in [
-                        (SortColumn::Name, "名前"),
-                        (SortColumn::Created, "作成日時"),
-                        (SortColumn::Modified, "更新日時"),
-                        (SortColumn::Type, "種類"),
-                        (SortColumn::Size, "サイズ"),
-                        (SortColumn::State, "状態"),
+                        (SortColumn::Name, tr!("名前", "Name")),
+                        (SortColumn::Created, tr!("作成日時", "Date created")),
+                        (SortColumn::Modified, tr!("更新日時", "Date modified")),
+                        (SortColumn::Type, tr!("種類", "Type")),
+                        (SortColumn::Size, tr!("サイズ", "Size")),
+                        (SortColumn::State, tr!("状態", "Status")),
                     ] {
                         row.col(|ui| {
                             let text = format!(
@@ -1182,7 +1277,11 @@ impl App {
                                             egui::WidgetType::Checkbox,
                                             c.supported && !busy,
                                             checked,
-                                            format!("{}を復元対象に選択", c.name),
+                                            tr_format!(
+                                                "{}を復元対象に選択",
+                                                "Select {} for recovery",
+                                                c.name
+                                            ),
                                         )
                                     });
                                     if response.changed() {
@@ -1404,62 +1503,66 @@ impl App {
     }
     fn intelligence(&self, ui: &mut egui::Ui) {
         ui.add_space(10.0);
-        ui.heading("復元の根拠");
+        ui.heading(tr!("復元の根拠", "Recovery evidence"));
         let Some(s) = &self.session else {
             return;
         };
-        ui.label(format!(
+        ui.label(tr_format!(
             "{}{} 候補 / {} 対応",
+            "{}{} candidates / {} supported",
             if self.index.path.is_some() {
-                "表示中 "
+                tr!("表示中 ", "Showing ")
             } else {
                 ""
             },
             s.candidates.len(),
             s.candidates.iter().filter(|c| c.supported).count()
         ));
-        ui.collapsing("ソースの識別と範囲", |ui| {
+        ui.collapsing(tr!("ソースの識別と範囲", "Source identity and range"), |ui| {
             ui.add(egui::Label::new(s.source.display().to_string()).wrap());
             if let Some(info) = &s.source_info {
                 ui.label(match info.kind {
-                    rescue_core::SourceKind::Device => "ディスク／ボリューム",
-                    rescue_core::SourceKind::Image => "ディスクイメージ",
-                    rescue_core::SourceKind::Acquisition => "読取マップ付きイメージ",
-                    rescue_core::SourceKind::Raid => "仮想RAID",
+                    rescue_core::SourceKind::Device => tr!("ディスク／ボリューム", "Disk / Volume"),
+                    rescue_core::SourceKind::Image => tr!("ディスクイメージ", "Disk image"),
+                    rescue_core::SourceKind::Acquisition => tr!("読取マップ付きイメージ", "Image with read map"),
+                    rescue_core::SourceKind::Raid => tr!("仮想RAID", "Virtual RAID"),
                 });
-                ui.label(format!(
-                    "容量 {} / セクター {} bytes",
+                ui.label(tr_format!("容量 {} / セクター {} bytes", "Capacity {} / Sector {} bytes",
                     view::size_text(Some(info.bytes)),
                     info.sector_size
                 ));
-                ui.label(format!(
-                    "読取窓：{} から {} bytes",
+                ui.label(tr_format!("読取窓：{} から {} bytes", "Read window: {} + {} bytes",
                     info.offset, info.length
                 ));
-                ui.small("ソース参照ID");
+                ui.small(tr!("ソース参照ID", "Source reference ID"));
                 ui.add(egui::Label::new(&info.id).wrap());
                 if let Some(map) = &info.read_map {
-                    ui.label(format!(
-                        "取得済み {} / 未読 {} / 読取失敗 {}",
+                    ui.label(tr_format!("取得済み {} / 未読 {} / 読取失敗 {}", "Acquired {} / Unread {} / Failed {}",
                         view::size_text(Some(map.summary.copied_bytes)),
                         view::size_text(Some(map.summary.unattempted_bytes)),
                         view::size_text(Some(map.summary.failed_bytes))
                     ));
                 }
-                ui.small("IDは媒体の識別用です。復元時には指紋と管理情報も再照合します。");
+                ui.small(tr!("IDは媒体の識別用です。復元時には指紋と管理情報も再照合します。", "The ID identifies the source. Fingerprints and metadata are also rechecked before recovery."));
             } else {
-                ui.small("旧版の記録です。復元時には保存した指紋と管理情報を再照合します。");
+                ui.small(tr!("旧版の記録です。復元時には保存した指紋と管理情報を再照合します。", "This is a legacy session. Saved fingerprints and metadata are rechecked before recovery."));
             }
         });
         if let Some(raid) = &s.raid {
-            ui.collapsing("仮想RAIDの構成",|ui|{
-                ui.label(format!("{:?} / {:?} / ストライプ {}",raid.config.level,raid.config.layout,view::size_text(Some(u64::from(raid.config.stripe_bytes)))));
-                ui.label(format!("{}メンバー / 欠損 {}",raid.config.members.len(),raid.config.members.iter().filter(|m|m.path.is_none()).count()));
-                ui.small("この構成で読めた内容です。パリティの一致は元データとの一致保証ではありません。使用メンバーと範囲は復元レポートに記録します。");
+            ui.collapsing(tr!("仮想RAIDの構成", "Virtual RAID configuration"),|ui|{
+                ui.label(tr_format!("{:?} / {:?} / ストライプ {}", "{:?} / {:?} / Stripe {}",raid.config.level,raid.config.layout,view::size_text(Some(u64::from(raid.config.stripe_bytes)))));
+                ui.label(tr_format!("{}メンバー / 欠損 {}", "{} members / {} missing",raid.config.members.len(),raid.config.members.iter().filter(|m|m.path.is_none()).count()));
+                ui.small(tr!("この構成で読めた内容です。パリティの一致は元データとの一致保証ではありません。使用メンバーと範囲は復元レポートに記録します。", "These bytes were read using this configuration. Matching parity does not prove equality with the original. Members and ranges used are recorded in the recovery report."));
             });
         }
         if s.cancelled || s.truncated {
-            ui.colored_label(egui::Color32::YELLOW, "未探索の領域が残っています。");
+            ui.colored_label(
+                egui::Color32::YELLOW,
+                tr!(
+                    "未探索の領域が残っています。",
+                    "Some regions remain unscanned."
+                ),
+            );
         }
         ui.separator();
         if let Some(c) = s
@@ -1471,175 +1574,250 @@ impl App {
             ui.small(&c.original_path);
             if !c.alternate_names.is_empty() {
                 ui.collapsing(
-                    format!("同じデータの別名（{}）", c.alternate_names.len()),
+                    tr_format!(
+                        "同じデータの別名（{}）",
+                        "Other names for the same data ({})",
+                        c.alternate_names.len()
+                    ),
                     |ui| {
-                        ui.label("名前が複数あっても、復元するデータは1件です。");
+                        ui.label(tr!(
+                            "名前が複数あっても、復元するデータは1件です。",
+                            "Multiple names refer to one item of data to recover."
+                        ));
                         for alias in &c.alternate_names {
                             ui.label(&alias.original_path);
                             ui.small(if alias.path_verified {
-                                "親参照を照合済み"
+                                tr!("親参照を照合済み", "Parent references verified")
                             } else {
-                                "階層は未確認"
+                                tr!("階層は未確認", "Folder hierarchy unverified")
                             });
                         }
                     },
                 );
             }
             ui.add_space(10.0);
-            ui.strong("配置の根拠");
+            ui.strong(tr!("配置の根拠", "Extent evidence"));
             ui.label(format!("{:?}", c.extent_evidence));
             ui.label(
                 match c.extent_evidence {
-                    rescue_core::ExtentEvidence::MetadataRemnant => "現行MFT外の残存レコード。選択したブートのクラスタサイズで位置を解釈しています。元の形式や削除状態は未確認です。",
-                    rescue_core::ExtentEvidence::PngValidated => "PNGのCRC・圧縮データ・画素を検証済み。",
-                    rescue_core::ExtentEvidence::JpegValidated => "JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。",
-                    rescue_core::ExtentEvidence::PdfStructure => "PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。",
-                    rescue_core::ExtentEvidence::ZipCrcValidated => "ZIPの管理情報・展開長・全エントリーCRCを検証。Officeの表示内容は未確認です。",
-                    rescue_core::ExtentEvidence::MediaStructure => "動画のコンテナー・サンプル位置を検証。映像・音声の全フレーム復号は未実施です。",
-                    rescue_core::ExtentEvidence::Unknown => "配置と形式の検証は未完了です。候補の警告を確認してください。",
-                    _ => "管理情報から配置を取得。形式の内容検証は未実施。",
+                    rescue_core::ExtentEvidence::MetadataRemnant => tr!("現行MFT外の残存レコード。選択したブートのクラスタサイズで位置を解釈しています。元の形式や削除状態は未確認です。", "A remnant record outside the current MFT. Locations use the cluster size of the selected boot region. Original format and deletion status remain unverified."),
+                    rescue_core::ExtentEvidence::PngValidated => tr!("PNGのCRC・圧縮データ・画素を検証済み。", "PNG CRC, compressed data and pixels verified."),
+                    rescue_core::ExtentEvidence::JpegValidated => tr!("JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。", "JPEG structure, compressed-data completeness and pixels verified. Equality with the original content is unknown."),
+                    rescue_core::ExtentEvidence::PdfStructure => tr!("PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。", "PDF reference tables, page tree and stream bounds verified. Rendering and whitespace after the terminator are unverified."),
+                    rescue_core::ExtentEvidence::ZipCrcValidated => tr!("ZIPの管理情報・展開長・全エントリーCRCを検証。Officeの表示内容は未確認です。", "ZIP metadata, expanded lengths and every entry CRC verified. Office rendering is unverified."),
+                    rescue_core::ExtentEvidence::MediaStructure => tr!("動画のコンテナー・サンプル位置を検証。映像・音声の全フレーム復号は未実施です。", "Media container and sample locations verified. Full video and audio decoding has not been performed."),
+                    rescue_core::ExtentEvidence::Unknown => tr!("配置と形式の検証は未完了です。候補の警告を確認してください。", "Extent and format verification is incomplete. Check the candidate warnings."),
+                    _ => tr!("管理情報から配置を取得。形式の内容検証は未実施。", "Extents come from metadata. File-format content has not been validated."),
                 },
             );
             ui.separator();
-            ui.strong("割当状態");
+            ui.strong(tr!("割当状態", "Allocation status"));
             ui.label(match c.allocation_status {
-                AllocationStatus::Unknown => "不明",
+                AllocationStatus::Unknown => tr!("不明", "Unknown"),
                 AllocationStatus::Unallocated => allocation_label(c, s.candidate_filesystem(c)),
-                AllocationStatus::Unreferenced => "探索した使用中エントリーからの参照なし",
+                AllocationStatus::Unreferenced => tr!(
+                    "探索した使用中エントリーからの参照なし",
+                    "No reference from the live entries scanned"
+                ),
                 AllocationStatus::Conflict if s.candidate_filesystem(c) == FileSystem::Ntfs => {
-                    "現在は割当済みの領域を含む：削除前の内容か要確認"
+                    tr!(
+                        "現在は割当済みの領域を含む：削除前の内容か要確認",
+                        "Includes currently allocated regions: original content needs verification"
+                    )
                 }
-                AllocationStatus::Conflict => "使用中領域と競合：復元不可",
+                AllocationStatus::Conflict => tr!(
+                    "使用中領域と競合：復元不可",
+                    "Conflicts with live data: recovery unavailable"
+                ),
             });
             ui.label(if s.filesystem == FileSystem::Raw {
-                "元の名前・階層・削除状態は不明です。"
+                tr!(
+                    "元の名前・階層・削除状態は不明です。",
+                    "Original name, hierarchy and deletion status are unknown."
+                )
             } else if c.path_verified {
-                "親参照を照合したパス"
+                tr!(
+                    "親参照を照合したパス",
+                    "Path with verified parent references"
+                )
             } else {
-                "元のパスは未確認または推定を含みます。"
+                tr!(
+                    "元のパスは未確認または推定を含みます。",
+                    "The original path is unverified or partly inferred."
+                )
             });
             ui.separator();
-            ui.strong("保存結果");
+            ui.strong(tr!("保存結果", "Save result"));
             if let Some(r) = self.results.iter().rev().find(|r| r.candidate_id == c.id) {
                 ui.label(format!("{} / {} bytes", r.status, r.bytes_written));
                 if let Some(path) = &r.path {
-                    ui.small("保存した場所");
+                    ui.small(tr!("保存した場所", "Saved location"));
                     ui.add(egui::Label::new(path.display().to_string()).wrap());
                 }
                 if let Some(entry) = &r.archive_entry {
-                    ui.small("ZIP内の名前");
+                    ui.small(tr!("ZIP内の名前", "Name inside ZIP"));
                     ui.add(egui::Label::new(entry).wrap());
                 }
                 if let Some(naming) = &r.naming {
-                    ui.collapsing("元の名前と変更履歴", |ui| {
-                        ui.label(match naming.basis {
-                            rescue_core::NameBasis::MetadataVerifiedPath => {
-                                "元媒体から名前と親参照を照合"
-                            }
-                            rescue_core::NameBasis::MetadataUnverifiedPath => {
-                                "名前は管理情報から取得・階層は未確認"
-                            }
-                            rescue_core::NameBasis::Generated => {
-                                "元の名前は不明・探索時に名前を生成"
-                            }
-                        });
-                        if let Some(original) = &naming.original_path {
-                            ui.small("元媒体の名前");
-                            ui.add(egui::Label::new(original).wrap());
-                        }
-                        if naming.changes.is_empty() {
-                            ui.label("名前の変更なし");
-                        }
-                        for change in &naming.changes {
-                            ui.separator();
-                            ui.strong(match change.reason {
-                                rescue_core::NameChangeReason::AlternateStream => {
-                                    "代替ストリームを通常ファイルとして保存"
+                    ui.collapsing(
+                        tr!("元の名前と変更履歴", "Original name and changes"),
+                        |ui| {
+                            ui.label(match naming.basis {
+                                rescue_core::NameBasis::MetadataVerifiedPath => {
+                                    tr!(
+                                        "元媒体から名前と親参照を照合",
+                                        "Name and parent references checked against the source"
+                                    )
                                 }
-                                rescue_core::NameChangeReason::PortableName => {
-                                    "保存に使えない文字や長さを調整"
+                                rescue_core::NameBasis::MetadataUnverifiedPath => {
+                                    tr!(
+                                        "名前は管理情報から取得・階層は未確認",
+                                        "Name from metadata; hierarchy unverified"
+                                    )
                                 }
-                                rescue_core::NameChangeReason::UnverifiedHierarchy => {
-                                    "未確認の階層を省略"
-                                }
-                                rescue_core::NameChangeReason::HierarchyLimit => "階層の長さを調整",
-                                rescue_core::NameChangeReason::DirectoryCollision => {
-                                    "同名フォルダーとの衝突を解決"
-                                }
-                                rescue_core::NameChangeReason::FileCollision => {
-                                    "同名ファイルを両方保持"
-                                }
-                                rescue_core::NameChangeReason::ArchiveCollision => {
-                                    "ZIP内の同名を両方保持"
-                                }
-                                rescue_core::NameChangeReason::PartitionNamespace => {
-                                    "パーティション別のフォルダーへ保存"
-                                }
-                                rescue_core::NameChangeReason::StreamingFlatOutput => {
-                                    "大容量保存で階層を省略"
-                                }
-                                rescue_core::NameChangeReason::UniqueOutputName => {
-                                    "重複しない識別名を付加"
-                                }
-                                rescue_core::NameChangeReason::PartialOutput => {
-                                    "未完了のファイル名へ変更"
+                                rescue_core::NameBasis::Generated => {
+                                    tr!(
+                                        "元の名前は不明・探索時に名前を生成",
+                                        "Original name unknown; name generated during scanning"
+                                    )
                                 }
                             });
-                            ui.add(
-                                egui::Label::new(format!("{}\n↓\n{}", change.from, change.to))
-                                    .wrap(),
-                            );
-                        }
-                    });
+                            if let Some(original) = &naming.original_path {
+                                ui.small(tr!("元媒体の名前", "Name on the source"));
+                                ui.add(egui::Label::new(original).wrap());
+                            }
+                            if naming.changes.is_empty() {
+                                ui.label(tr!("名前の変更なし", "Name unchanged"));
+                            }
+                            for change in &naming.changes {
+                                ui.separator();
+                                ui.strong(match change.reason {
+                                    rescue_core::NameChangeReason::AlternateStream => {
+                                        tr!(
+                                            "代替ストリームを通常ファイルとして保存",
+                                            "Alternate stream saved as a regular file"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::PortableName => {
+                                        tr!(
+                                            "保存に使えない文字や長さを調整",
+                                            "Unsupported characters or length adjusted"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::UnverifiedHierarchy => {
+                                        tr!("未確認の階層を省略", "Unverified hierarchy omitted")
+                                    }
+                                    rescue_core::NameChangeReason::HierarchyLimit => {
+                                        tr!("階層の長さを調整", "Hierarchy length adjusted")
+                                    }
+                                    rescue_core::NameChangeReason::DirectoryCollision => {
+                                        tr!(
+                                            "同名フォルダーとの衝突を解決",
+                                            "Folder-name conflict resolved"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::FileCollision => {
+                                        tr!(
+                                            "同名ファイルを両方保持",
+                                            "Both files with the same name kept"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::ArchiveCollision => {
+                                        tr!(
+                                            "ZIP内の同名を両方保持",
+                                            "Both entries with the same ZIP name kept"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::PartitionNamespace => {
+                                        tr!(
+                                            "パーティション別のフォルダーへ保存",
+                                            "Saved in a partition-specific folder"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::StreamingFlatOutput => {
+                                        tr!(
+                                            "大容量保存で階層を省略",
+                                            "Hierarchy omitted for streaming output"
+                                        )
+                                    }
+                                    rescue_core::NameChangeReason::UniqueOutputName => {
+                                        tr!("重複しない識別名を付加", "Unique identifier added")
+                                    }
+                                    rescue_core::NameChangeReason::PartialOutput => {
+                                        tr!(
+                                            "未完了のファイル名へ変更",
+                                            "Renamed as an unfinished file"
+                                        )
+                                    }
+                                });
+                                ui.add(
+                                    egui::Label::new(format!("{}\n↓\n{}", change.from, change.to))
+                                        .wrap(),
+                                );
+                            }
+                        },
+                    );
                 }
                 if let Some(h) = &r.sha256 {
-                    ui.small("出力SHA-256");
+                    ui.small(tr!("出力SHA-256", "Output SHA-256"));
                     ui.add(egui::Label::new(h).wrap());
                 }
                 if let Some(e) = &r.error {
                     ui.label(e);
                 }
                 if !r.missing_ranges.is_empty() {
-                    ui.collapsing("読めなかった範囲", |ui| {
+                    ui.collapsing(tr!("読めなかった範囲", "Unreadable ranges"), |ui| {
                         for gap in r.missing_ranges.iter().take(100) {
-                            ui.label(format!(
+                            ui.label(tr_format!(
                                 "元媒体 {} から {} bytes / ファイル位置 {}",
+                                "Source {} + {} bytes / File offset {}",
                                 gap.source_offset,
                                 gap.length,
-                                gap.logical_offset
-                                    .map_or_else(|| "不明".into(), |at| at.to_string())
+                                gap.logical_offset.map_or_else(
+                                    || tr!("不明", "Unknown").into(),
+                                    |at| at.to_string()
+                                )
                             ));
                         }
                         if r.missing_ranges.len() > 100 {
-                            ui.label("残りの範囲は復元レポートに記録しています。");
+                            ui.label(tr!(
+                                "残りの範囲は復元レポートに記録しています。",
+                                "The recovery report lists the remaining ranges."
+                            ));
                         }
                     });
                 }
             } else {
-                ui.label("未保存");
+                ui.label(tr!("未保存", "Not saved"));
             }
-            ui.small("出力ハッシュは保存バイトの識別値です。削除前の内容との一致は正解データとの照合が必要です。");
-            ui.collapsing("候補の警告", |ui| {
+            ui.small(tr!("出力ハッシュは保存バイトの識別値です。削除前の内容との一致は正解データとの照合が必要です。", "The output hash identifies the saved bytes. Equality with the deleted original requires comparison with known original data."));
+            ui.collapsing(tr!("候補の警告", "Candidate warnings"), |ui| {
                 for w in &c.warnings {
                     ui.label(w);
                 }
             });
         }
-        ui.collapsing("スキャンの警告", |ui| {
+        ui.collapsing(tr!("スキャンの警告", "Scan warnings"), |ui| {
             for w in &s.warnings {
                 ui.label(w);
             }
         });
     }
 }
+fn status_text(status: &str) -> Text {
+    Text::new(
+        language::with(Language::Japanese, || status_label(status).to_owned()),
+        language::with(Language::English, || status_label(status).to_owned()),
+    )
+}
 fn status_label(status: &str) -> &str {
     match status {
-        "completed" => "保存完了",
-        "partial" => "一部保存",
-        "cancelled" => "取消",
-        "failed" => "失敗",
-        "incomplete" => "不完全",
-        "skipped" => "スキップ",
+        "completed" => tr!("保存完了", "Saved"),
+        "partial" => tr!("一部保存", "Partly saved"),
+        "cancelled" => tr!("取消", "Cancelled"),
+        "failed" => tr!("失敗", "Failed"),
+        "incomplete" => tr!("不完全", "Incomplete"),
+        "skipped" => tr!("スキップ", "Skip"),
         _ => status,
     }
 }
@@ -1654,12 +1832,18 @@ fn set_selected(ids: &mut BTreeSet<String>, id: &str, selected: bool) {
 }
 fn allocation_label(c: &Candidate, fs: FileSystem) -> &'static str {
     if c.size == Some(0) {
-        return "データクラスターの割当なし（空ファイル）";
+        return tr!(
+            "データクラスターの割当なし（空ファイル）",
+            "No data clusters allocated (empty file)"
+        );
     }
     match fs {
-        FileSystem::Fat32 => "FAT値0：空きとして記録",
-        FileSystem::Exfat => "割当ビットマップ：空き領域",
-        _ => "割当なし",
+        FileSystem::Fat32 => tr!("FAT値0：空きとして記録", "FAT value 0: recorded as free"),
+        FileSystem::Exfat => tr!(
+            "割当ビットマップ：空き領域",
+            "Allocation bitmap: free regions"
+        ),
+        _ => tr!("割当なし", "Unallocated"),
     }
 }
 #[derive(Clone, Copy)]
@@ -1688,8 +1872,8 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
         )
         .labelled_by(label_id);
         if ui
-            .add_sized([64.0, 28.0], egui::Button::new("参照"))
-            .on_hover_text(format!("{label}を選択"))
+            .add_sized([64.0, 28.0], egui::Button::new(tr!("参照", "Browse")))
+            .on_hover_text(tr_format!("{label}を選択", "Choose {label}"))
             .clicked()
         {
             let dialog = rfd::FileDialog::new();
@@ -1756,6 +1940,7 @@ fn file_icon(ui: &mut egui::Ui, size: f32) {
 }
 impl App {
     fn render(&mut self, ctx: &egui::Context) {
+        let _language = self.language.enter();
         self.primary_rect = None;
         if matches!(self.stage, Stage::Selecting | Stage::Finished)
             && ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::F))
@@ -1775,39 +1960,61 @@ impl App {
                 ui.heading("Rescue");
                 ui.weak(rescue_core::VERSION);
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    for (n, label, active) in [
-                        (
-                            4,
-                            "復元",
-                            matches!(self.stage, Stage::Recovering | Stage::Finished),
-                        ),
-                        (3, "ファイル選択", self.stage == Stage::Selecting),
-                        (2, "スキャン", self.stage == Stage::Scanning),
-                        (
-                            1,
-                            "設定",
-                            matches!(
-                                self.stage,
-                                Stage::Settings | Stage::Imaging | Stage::Migrating
-                            ),
-                        ),
-                    ] {
-                        ui.colored_label(
-                            if active {
-                                egui::Color32::from_rgb(112, 199, 255)
-                            } else {
-                                egui::Color32::GRAY
-                            },
-                            format!("{n}  {label}"),
-                        );
-                        if n > 1 {
-                            ui.weak("›");
-                        }
+                    let before = self.language;
+                    egui::ComboBox::from_label("Language")
+                        .selected_text(self.language.name())
+                        .width(110.0)
+                        .show_ui(ui, |ui| {
+                            for language in [Language::Japanese, Language::English] {
+                                ui.selectable_value(&mut self.language, language, language.name());
+                            }
+                        });
+                    if before != self.language {
+                        self.view_dirty = true;
+                        self.closed.clear();
+                        ctx.request_repaint();
                     }
                 });
             });
+            let _language = self.language.enter();
+            ui.horizontal_wrapped(|ui| {
+                for (n, label, active) in [
+                    (
+                        1,
+                        tr!("設定", "Settings"),
+                        matches!(
+                            self.stage,
+                            Stage::Settings | Stage::Imaging | Stage::Migrating
+                        ),
+                    ),
+                    (2, tr!("スキャン", "Scan"), self.stage == Stage::Scanning),
+                    (
+                        3,
+                        tr!("ファイル選択", "Select files"),
+                        self.stage == Stage::Selecting,
+                    ),
+                    (
+                        4,
+                        tr!("復元", "Recover"),
+                        matches!(self.stage, Stage::Recovering | Stage::Finished),
+                    ),
+                ] {
+                    if n > 1 {
+                        ui.weak("›");
+                    }
+                    ui.colored_label(
+                        if active {
+                            egui::Color32::from_rgb(112, 199, 255)
+                        } else {
+                            egui::Color32::GRAY
+                        },
+                        format!("{n}  {label}"),
+                    );
+                }
+            });
             ui.add_space(7.0);
         });
+        let _language = self.language.enter();
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
             ui.label(&self.status);
             if self.busy() {
@@ -1822,9 +2029,9 @@ impl App {
                         egui::ProgressBar::new(fraction)
                             .desired_width(ui.available_width().min(360.0))
                             .text(if self.stage == Stage::Recovering {
-                                "ファイルを保存中…".into()
+                                tr!("ファイルを保存中…", "Saving files…").into()
                             } else if self.stage == Stage::Migrating {
-                                "索引へコピー中…".into()
+                                tr!("索引へコピー中…", "Copying into an index…").into()
                             } else {
                                 format!(
                                     "{} / {} {:?}",
@@ -1836,32 +2043,44 @@ impl App {
                     );
                     if self.stage == Stage::Scanning
                         && self.index.path.is_some()
-                        && ui.button("中断して保存").clicked()
+                        && ui.button(tr!("中断して保存", "Pause and save")).clicked()
                     {
                         self.cancel.store(true, Ordering::Relaxed);
-                        self.status =
-                            "中断を要求しました。再開位置の保存完了を待っています。".into();
+                        self.status = message!(
+                            "中断を要求しました。再開位置の保存完了を待っています。",
+                            "Pause requested. Waiting for the resume position to be saved."
+                        );
                     }
                     if self.stage == Stage::Imaging
                         && self.image_progress.is_some()
-                        && ui.button("一時停止して保存").clicked()
+                        && ui
+                            .button(tr!("一時停止して保存", "Pause and save"))
+                            .clicked()
                     {
                         self.image_pause_requested = true;
                         self.cancel.store(true, Ordering::Relaxed);
-                        self.status =
-                            "一時停止を要求しました。読取マップの保存完了を待っています。".into();
+                        self.status = message!(
+                            "一時停止を要求しました。読取マップの保存完了を待っています。",
+                            "Pause requested. Waiting for the read map to be saved."
+                        );
                     }
-                    if ui.button("取消").clicked() {
+                    if ui.button(tr!("取消", "Cancel")).clicked() {
                         self.image_pause_requested = false;
                         self.cancel.store(true, Ordering::Relaxed);
-                        self.status = "取消を要求しました。処理の終了を待っています。".into();
+                        self.status = message!(
+                            "取消を要求しました。処理の終了を待っています。",
+                            "Cancellation requested. Waiting for the operation to stop."
+                        );
                     }
                 });
             }
             if !self.report.is_empty() {
-                ui.collapsing("保存場所・レポート", |ui| {
-                    ui.add(egui::Label::new(&self.report).wrap());
-                });
+                ui.collapsing(
+                    tr!("保存場所・レポート", "Saved locations and reports"),
+                    |ui| {
+                        ui.add(egui::Label::new(&self.report).wrap());
+                    },
+                );
             }
         });
         let wide = ctx.content_rect().width() >= 1008.0;
@@ -1884,20 +2103,20 @@ impl App {
                         Stage::Scanning => {
                             ui.add_space(24.0);
                             ui.heading(if self.raid.running {
-                                "RAIDの構成を検査しています"
+                                tr!("RAIDの構成を検査しています", "Checking the RAID configuration")
                             } else if self.discovery_running {
-                                "失われた領域を探しています"
+                                tr!("失われた領域を探しています", "Searching for lost volumes")
                             } else {
-                                "スキャンしています"
+                                tr!("スキャンしています", "Scanning")
                             });
                             ui.label(&self.source);
-                            ui.label("完了後、復元するファイルを選択できます。");
+                            ui.label(tr!("完了後、復元するファイルを選択できます。", "Select files to recover when the scan finishes."));
                         }
                         Stage::Imaging => self.imaging_status(ui),
                         Stage::Migrating => {
-                            ui.heading("セッションをコピー移行しています");
+                            ui.heading(tr!("セッションをコピー移行しています", "Migrating a session copy"));
                             ui.label(&self.session_path);
-                            ui.label("元の記録を保持し、新しい索引を作成しています。取消は画面下から操作できます。");
+                            ui.label(tr!("元の記録を保持し、新しい索引を作成しています。取消は画面下から操作できます。", "Creating a new index while keeping the original session. Use the controls below to cancel."));
                         }
                         _ => self.results_ui(ui),
                     }
@@ -1928,7 +2147,7 @@ impl App {
                     .max_height((ctx.content_rect().height() - 160.0).max(100.0))
                     .show(ui, |ui| self.intelligence(ui));
                 ui.separator();
-                close = ui.button("閉じる").clicked();
+                close = ui.button(tr!("閉じる", "Close")).clicked();
             });
             if response.should_close() || close {
                 self.show_evidence = false;
@@ -1948,6 +2167,31 @@ impl Drop for App {
         self.cancel.store(true, Ordering::Relaxed);
     }
 }
+fn launch_options(
+    args: &[std::ffi::OsString],
+) -> Result<(Option<PathBuf>, Language), &'static str> {
+    let mut session = None;
+    let mut language = Language::Japanese;
+    let mut language_set = false;
+    let mut arguments = args.iter();
+    while let Some(flag) = arguments.next() {
+        if flag == "--session" && session.is_none() {
+            session = Some(PathBuf::from(
+                arguments.next().ok_or("--session requires a path")?,
+            ));
+        } else if flag == "--language" && !language_set {
+            language = match arguments.next().and_then(|v| v.to_str()) {
+                Some("ja") => Language::Japanese,
+                Some("en") => Language::English,
+                _ => return Err("--language requires ja or en"),
+            };
+            language_set = true;
+        } else {
+            return Err("Unknown or repeated option. Use --session FILE and/or --language ja|en.");
+        }
+    }
+    Ok((session, language))
+}
 fn main() -> eframe::Result {
     if let Some(code) = rescue_core::read_broker_entry() {
         std::process::exit(code);
@@ -1956,24 +2200,23 @@ fn main() -> eframe::Result {
         std::process::exit(code);
     }
     let args = std::env::args_os().skip(1).collect::<Vec<_>>();
-    let session = match args.as_slice() {
-        [] => None,
-        [flag, path] if flag == "--session" => Some(PathBuf::from(path)),
+    match args.as_slice() {
         [flag] if flag == "--version" => {
             println!("rescue-gui {}", rescue_core::VERSION);
             return Ok(());
         }
         [flag] if flag == "--help" => {
             println!(
-                "rescue-gui [--session FILE]\nOpen a saved JSON session or SQLite scan index."
+                "rescue-gui [--session FILE] [--language ja|en]\nOpen a saved JSON session or SQLite scan index. Language can also be changed in the window."
             );
             return Ok(());
         }
-        _ => {
-            eprintln!("Usage: rescue-gui [--session FILE]");
-            std::process::exit(2);
-        }
+        _ => {}
     };
+    let (session, language) = launch_options(&args).unwrap_or_else(|error| {
+        eprintln!("{error}");
+        std::process::exit(2);
+    });
     eframe::run_native(
         "Rescue — File Recovery",
         eframe::NativeOptions {
@@ -1986,50 +2229,69 @@ fn main() -> eframe::Result {
                 .with_min_inner_size([720.0, 520.0]),
             ..Default::default()
         },
-        Box::new(move |cc| Ok(Box::new(App::new(cc, session)))),
+        Box::new(move |cc| Ok(Box::new(App::new(cc, session, language)))),
     )
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
+    fn launch_language_keeps_unicode_session_paths_and_rejects_ambiguous_options() {
+        let args = ["--language", "en", "--session", "資料/完了.json"].map(Into::into);
+        let (path, language) = launch_options(&args).unwrap();
+        assert_eq!(path, Some(PathBuf::from("資料/完了.json")));
+        assert_eq!(language, Language::English);
+        assert_eq!(launch_options(&[]).unwrap(), (None, Language::Japanese));
+        for args in [
+            vec!["--language"],
+            vec!["--language", "de"],
+            vec!["--language", "en", "--language", "ja"],
+            vec!["--session"],
+        ] {
+            assert!(launch_options(&args.into_iter().map(Into::into).collect::<Vec<_>>()).is_err());
+        }
+    }
+    #[test]
     fn primary_action_stays_inside_resized_viewports_and_scroll_content() {
         let ctx = egui::Context::default();
         let mut app = App::blank();
         app.source_mode = SourceMode::Image;
-        for stage in [Stage::Settings, Stage::Selecting, Stage::Finished] {
-            app.stage = stage;
-            if stage != Stage::Settings {
-                app.session = Some(session(FileSystem::Ntfs));
-                app.index.path = Some(PathBuf::from("saved/session.sqlite"));
-                app.index.query = app.index_query();
-            }
-            for zoom in [1.0, 1.5, 2.0] {
-                ctx.set_zoom_factor(zoom);
-                for size in [[1260.0, 820.0], [720.0, 520.0], [1008.0, 620.0]] {
-                    for _ in 0..3 {
-                        let _ = ctx.run(
-                            egui::RawInput {
-                                screen_rect: Some(egui::Rect::from_min_size(
-                                    egui::Pos2::ZERO,
-                                    egui::vec2(size[0] * zoom, size[1] * zoom),
-                                )),
-                                ..Default::default()
-                            },
-                            |ctx| app.render(ctx),
+        for language in [Language::Japanese, Language::English] {
+            app.language = language;
+            for stage in [Stage::Settings, Stage::Selecting, Stage::Finished] {
+                app.stage = stage;
+                if stage != Stage::Settings {
+                    app.session = Some(session(FileSystem::Ntfs));
+                    app.index.path = Some(PathBuf::from("saved/session.sqlite"));
+                    app.index.query = app.index_query();
+                }
+                for zoom in [1.0, 1.5, 2.0] {
+                    ctx.set_zoom_factor(zoom);
+                    for size in [[1260.0, 820.0], [720.0, 520.0], [1008.0, 620.0]] {
+                        for _ in 0..3 {
+                            let _ = ctx.run(
+                                egui::RawInput {
+                                    screen_rect: Some(egui::Rect::from_min_size(
+                                        egui::Pos2::ZERO,
+                                        egui::vec2(size[0] * zoom, size[1] * zoom),
+                                    )),
+                                    ..Default::default()
+                                },
+                                |ctx| app.render(ctx),
+                            );
+                        }
+                        let rect = app.primary_rect.expect("primary action exists");
+                        let viewport = ctx.content_rect();
+                        assert!(
+                            viewport.contains_rect(rect),
+                            "{stage:?} {size:?} at {zoom}: button {rect:?}, viewport {viewport:?}"
+                        );
+                        assert!(rect.height() >= 36.0 && rect.width() >= 176.0);
+                        assert!(
+                            viewport.bottom() - rect.bottom() < 100.0,
+                            "primary action must remain near the bottom"
                         );
                     }
-                    let rect = app.primary_rect.expect("primary action exists");
-                    let viewport = ctx.content_rect();
-                    assert!(
-                        viewport.contains_rect(rect),
-                        "{stage:?} {size:?} at {zoom}: button {rect:?}, viewport {viewport:?}"
-                    );
-                    assert!(rect.height() >= 36.0 && rect.width() >= 176.0);
-                    assert!(
-                        viewport.bottom() - rect.bottom() < 100.0,
-                        "primary action must remain near the bottom"
-                    );
                 }
             }
         }
@@ -2105,7 +2367,16 @@ mod tests {
         app.receive();
         assert_eq!(app.stage, Stage::Selecting);
         assert!(app.session.is_some() && app.disk_messages.is_none());
-        assert!(app.disk_status.contains("検出できません"));
+        assert!(
+            app.disk_status
+                .get(Language::Japanese)
+                .contains("検出できません")
+        );
+        assert!(
+            app.disk_status
+                .get(Language::English)
+                .contains("No disks found")
+        );
     }
     #[test]
     fn loaded_session_updates_search_source_and_clears_selection() {

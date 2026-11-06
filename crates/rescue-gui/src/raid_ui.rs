@@ -20,7 +20,7 @@ pub(super) struct State {
     sector: u32,
     members: Vec<MemberInput>,
     destination: String,
-    error: String,
+    error: Text,
     inspection: Option<RaidInspection>,
     search: Option<RaidSearchResult>,
     pinned: Option<RaidConfig>,
@@ -44,7 +44,7 @@ impl Default for State {
                 })
                 .collect(),
             destination: String::new(),
-            error: String::new(),
+            error: Text::default(),
             inspection: None,
             search: None,
             pinned: None,
@@ -87,10 +87,10 @@ impl State {
                 self.search = None;
                 self.error.clear();
             }
-            Err(e) => self.error = e,
+            Err(e) => self.error = e.into(),
         }
     }
-    fn config(&self) -> Result<RaidConfig, String> {
+    fn config(&self) -> Result<RaidConfig, Text> {
         let members = self
             .members
             .iter()
@@ -99,27 +99,31 @@ impl State {
                     None
                 } else {
                     if member.path.trim().is_empty() {
-                        return Err(
-                            "各メンバーのイメージを指定してください。欠損はチェックで明示します。"
-                                .into(),
-                        );
+                        return Err(message!(
+                            "各メンバーのイメージを指定してください。欠損はチェックで明示します。",
+                            "Specify each member image. Mark missing members explicitly."
+                        ));
                     }
                     Some(PathBuf::from(member.path.trim()))
                 };
                 Ok(RaidMember {
                     path,
-                    offset: member
-                        .offset
-                        .parse()
-                        .map_err(|_| "開始位置はバイト単位の整数です。")?,
-                    length: member
-                        .length
-                        .parse()
-                        .map_err(|_| "使用長を指定するか、長さを揃えてください。")?,
+                    offset: member.offset.parse().map_err(|_| {
+                        message!(
+                            "開始位置はバイト単位の整数です。",
+                            "Start positions must be whole numbers of bytes."
+                        )
+                    })?,
+                    length: member.length.parse().map_err(|_| {
+                        message!(
+                            "使用長を指定するか、長さを揃えてください。",
+                            "Specify a usable length or align member lengths."
+                        )
+                    })?,
                     fingerprint: None,
                 })
             })
-            .collect::<Result<Vec<_>, String>>()?;
+            .collect::<Result<Vec<_>, Text>>()?;
         let config = RaidConfig {
             schema_version: 1,
             level: self.level,
@@ -163,29 +167,31 @@ impl State {
         self.inspection = Some(inspection);
         self.error.clear();
     }
-    fn fill_lengths(&mut self) -> Result<(), String> {
+    fn fill_lengths(&mut self) -> Result<(), Text> {
         let mut lengths = Vec::new();
         for m in &self.members {
             if !m.missing {
                 let offset = m
                     .offset
                     .parse::<u64>()
-                    .map_err(|_| "開始位置が不正です。")?;
+                    .map_err(|_| message!("開始位置が不正です。", "Invalid start position."))?;
                 let meta = std::fs::metadata(&m.path).map_err(|e| e.to_string())?;
                 if !meta.is_file() {
-                    return Err("先にディスクのイメージを取得してください。".into());
+                    return Err(message!(
+                        "先にディスクのイメージを取得してください。",
+                        "Acquire a disk image first."
+                    ));
                 }
-                lengths.push(
-                    meta.len()
-                        .checked_sub(offset)
-                        .ok_or("開始位置がイメージの外です。")?,
-                );
+                lengths.push(meta.len().checked_sub(offset).ok_or(message!(
+                    "開始位置がイメージの外です。",
+                    "Start position is outside the image."
+                ))?);
             }
         }
-        let smallest = *lengths
-            .iter()
-            .min()
-            .ok_or("読めるメンバーを1つ以上指定してください。")?;
+        let smallest = *lengths.iter().min().ok_or(message!(
+            "読めるメンバーを1つ以上指定してください。",
+            "Specify at least one readable member."
+        ))?;
         let mut available = lengths.into_iter();
         for m in &mut self.members {
             let length = if m.missing {
@@ -220,7 +226,10 @@ impl App {
         self.raid.running = true;
         self.raid.dialog = false;
         self.stage = Stage::Scanning;
-        self.status = "RAIDのサンプルと構成を検査しています…".into();
+        self.status = message!(
+            "RAIDのサンプルと構成を検査しています…",
+            "Checking RAID samples and configuration…"
+        );
         self.progress = Progress::default();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
@@ -236,7 +245,7 @@ impl App {
                 });
                 let _ = tx.send(match result {
                     Ok(r) => Message::RaidSearched(Box::new(r)),
-                    Err(e) => Message::Error(e.to_string()),
+                    Err(e) => Message::Error(e.to_string().into()),
                 });
             } else {
                 let result = if save {
@@ -249,7 +258,7 @@ impl App {
                         Box::new(r),
                         if save { Some(destination) } else { None },
                     ),
-                    Err(e) => Message::Error(e.to_string()),
+                    Err(e) => Message::Error(e.to_string().into()),
                 });
             }
         });
@@ -257,8 +266,9 @@ impl App {
     pub(super) fn raid_checked(&mut self, report: RaidInspection, path: Option<PathBuf>) {
         self.stage = Stage::Settings;
         self.raid.running = false;
-        self.status = format!(
+        self.status = message!(
             "RAID検査: {} / サンプル欠損 {}",
+            "RAID check: {} / {} missing samples",
             view::size_text(Some(report.evidence.logical_bytes)),
             view::size_text(Some(report.unavailable_sample_bytes))
         );
@@ -276,14 +286,15 @@ impl App {
     pub(super) fn raid_searched(&mut self, report: RaidSearchResult) {
         self.stage = Stage::Settings;
         self.raid.running = false;
-        self.status = format!(
+        self.status = message!(
             "RAID候補: {} / {}構成を検査{}",
+            "RAID candidates: {} / {} configurations checked{}",
             report.candidates.len(),
             report.tested_configurations,
             if report.truncated {
-                "（探索上限）"
+                message!("（探索上限）", " (search limit)")
             } else {
-                ""
+                Text::default()
             }
         );
         self.raid.search = Some(report);
@@ -297,20 +308,20 @@ impl App {
         let mut selected = None;
         let response = responsive_modal(ctx, "raid-configuration", 1000.0).show(ctx, |ui| {
             ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 1000.0));
-            ui.heading("RAIDのメンバーイメージを構成");
-            ui.label("順序・欠損位置・使用範囲を指定します。元メンバーは読み取り専用です。");
+            ui.heading(tr!("RAIDのメンバーイメージを構成", "Configure RAID member images"));
+            ui.label(tr!("順序・欠損位置・使用範囲を指定します。元メンバーは読み取り専用です。", "Specify member order, missing positions and usable ranges. Source members are read-only."));
             egui::ScrollArea::vertical()
                 .max_height((ctx.content_rect().height() - 230.0).max(100.0))
                 .show(ui, |ui| {
                     self.raid.geometry_ui(ui);
                     self.raid.members_ui(ui);
-                    text_row(ui, "構成の保存先", &mut self.raid.destination, "/path/array.rescue-raid.json");
-                    ui.checkbox(&mut self.raid.reorder, "自動候補探索でメンバー順も試す");
-                    ui.small("候補探索: ストライプ4 KiB〜1 MiB、最大128構成・5秒。開始位置と使用長は指定値を維持します。候補は選択後に使用します。");
+                    text_row(ui, tr!("構成の保存先", "Configuration destination"), &mut self.raid.destination, "/path/array.rescue-raid.json");
+                    ui.checkbox(&mut self.raid.reorder, tr!("自動候補探索でメンバー順も試す", "Also try member order in automatic discovery"));
+                    ui.small(tr!("候補探索: ストライプ4 KiB〜1 MiB、最大128構成・5秒。開始位置と使用長は指定値を維持します。候補は選択後に使用します。", "Discovery tries stripes from 4 KiB to 1 MiB, up to 128 configurations and 5 seconds. Specified offsets and lengths are kept. Select a candidate before using it."));
                     selected = self.raid.evidence_ui(ui);
                     ui.horizontal_wrapped(|ui| {
-                        inspect = ui.button("指定した構成を検査").clicked();
-                        search = ui.button("構成の候補を探す").clicked();
+                        inspect = ui.button(tr!("指定した構成を検査", "Check this configuration")).clicked();
+                        search = ui.button(tr!("構成の候補を探す", "Find configuration candidates")).clicked();
                     });
                     if !self.raid.error.is_empty() {
                         ui.colored_label(egui::Color32::YELLOW, &self.raid.error);
@@ -318,11 +329,11 @@ impl App {
                 });
             ui.separator();
             ui.horizontal_wrapped(|ui| {
-                close = ui.add_sized([64.0, 36.0], egui::Button::new("閉じる")).clicked();
+                close = ui.add_sized([64.0, 36.0], egui::Button::new(tr!("閉じる", "Close"))).clicked();
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     save = ui.add_enabled(
                         !self.raid.destination.trim().is_empty(),
-                        egui::Button::new("構成を保存して使用").min_size(egui::vec2(190.0, 36.0)),
+                        egui::Button::new(tr!("構成を保存して使用", "Save and use configuration")).min_size(egui::vec2(190.0, 36.0)),
                     ).clicked();
                 });
             });
@@ -348,7 +359,7 @@ impl App {
 impl State {
     fn geometry_ui(&mut self, ui: &mut egui::Ui) {
         ui.horizontal_wrapped(|ui| {
-            ui.label("方式");
+            ui.label(tr!("方式", "Level"));
             let old = self.level;
             egui::ComboBox::from_id_salt("raid-level")
                 .selected_text(format!("{:?}", self.level))
@@ -371,7 +382,7 @@ impl State {
                     _ => RaidLayout::Fixed,
                 };
             }
-            ui.label("ストライプ");
+            ui.label(tr!("ストライプ", "Stripe"));
             egui::ComboBox::from_id_salt("raid-stripe")
                 .selected_text(view::size_text(Some(u64::from(self.stripe))))
                 .show_ui(ui, |ui| {
@@ -383,7 +394,7 @@ impl State {
                         );
                     }
                 });
-            ui.label("セクター");
+            ui.label(tr!("セクター", "Sector"));
             egui::ComboBox::from_id_salt("raid-sector")
                 .selected_text(self.sector.to_string())
                 .show_ui(ui, |ui| {
@@ -394,7 +405,7 @@ impl State {
         });
         if self.level == RaidLevel::Raid5 {
             ui.horizontal_wrapped(|ui| {
-                ui.label("Pの配置");
+                ui.label(tr!("Pの配置", "P layout"));
                 egui::ComboBox::from_id_salt("raid-layout")
                     .selected_text(format!("{:?}", self.layout))
                     .show_ui(ui, |ui| {
@@ -410,10 +421,13 @@ impl State {
             });
         }
         if self.level == RaidLevel::Raid6 {
-            ui.label("P/Qは末尾2メンバー固定、GF 0x11d、係数2^i。対応配置を確認してください。");
+            ui.label(tr!("P/Qは末尾2メンバー固定、GF 0x11d、係数2^i。対応配置を確認してください。", "P/Q occupy the last two members, with GF 0x11d and coefficients 2^i. Check that this matches your layout."));
         }
         if self.level == RaidLevel::Raid10 {
-            ui.label("メンバー1・2、3・4…をミラーペアとして扱います。");
+            ui.label(tr!(
+                "メンバー1・2、3・4…をミラーペアとして扱います。",
+                "Members 1–2, 3–4, and so on are treated as mirror pairs."
+            ));
         }
     }
     fn members_ui(&mut self, ui: &mut egui::Ui) {
@@ -423,26 +437,34 @@ impl State {
             ui.push_id(index, |ui| {
                 ui.separator();
                 ui.horizontal_wrapped(|ui| {
-                    ui.strong(format!("メンバー {}", index + 1));
-                    ui.checkbox(&mut member.missing, "この位置は欠損");
+                    ui.strong(tr_format!("メンバー {}", "Member {}", index + 1));
+                    ui.checkbox(
+                        &mut member.missing,
+                        tr!("この位置は欠損", "This position is missing"),
+                    );
                     if ui
-                        .add_enabled(index > 0, egui::Button::new("上へ"))
+                        .add_enabled(index > 0, egui::Button::new(tr!("上へ", "Move up")))
                         .clicked()
                     {
                         shift = Some(index);
                     }
-                    if ui.button("削除").clicked() {
+                    if ui.button(tr!("削除", "Remove")).clicked() {
                         remove = Some(index);
                     }
                 });
                 if !member.missing {
-                    path_row(ui, "メンバーイメージ", &mut member.path, Picker::Open);
+                    path_row(
+                        ui,
+                        tr!("メンバーイメージ", "Member image"),
+                        &mut member.path,
+                        Picker::Open,
+                    );
                 }
                 ui.horizontal_wrapped(|ui| {
-                    let label = ui.label("開始バイト").id;
+                    let label = ui.label(tr!("開始バイト", "Start byte")).id;
                     ui.add(egui::TextEdit::singleline(&mut member.offset).desired_width(130.0))
                         .labelled_by(label);
-                    let label = ui.label("使用長").id;
+                    let label = ui.label(tr!("使用長", "Usable length")).id;
                     ui.add(egui::TextEdit::singleline(&mut member.length).desired_width(160.0))
                         .labelled_by(label);
                 });
@@ -455,7 +477,10 @@ impl State {
         }
         ui.horizontal_wrapped(|ui| {
             if ui
-                .add_enabled(self.members.len() < 16, egui::Button::new("メンバーを追加"))
+                .add_enabled(
+                    self.members.len() < 16,
+                    egui::Button::new(tr!("メンバーを追加", "Add member")),
+                )
                 .clicked()
             {
                 self.members.push(MemberInput {
@@ -463,24 +488,41 @@ impl State {
                     ..Default::default()
                 });
             }
-            if ui.button("使用できる長さを揃える").clicked() {
+            if ui
+                .button(tr!("使用できる長さを揃える", "Align usable lengths"))
+                .clicked()
+            {
                 self.error = self.fill_lengths().err().unwrap_or_default();
             }
         });
-        ui.small("長さを揃える操作は最小メンバーの境界までを使います。表示した範囲以外は読みません。取得マップがある場合は宣言された範囲も検査します。");
+        ui.small(tr!("長さを揃える操作は最小メンバーの境界までを使います。表示した範囲以外は読みません。取得マップがある場合は宣言された範囲も検査します。", "Alignment uses the smallest member boundary. Only displayed ranges are read. Declared ranges in any acquisition maps are also checked."));
     }
     fn evidence_ui(&self, ui: &mut egui::Ui) -> Option<usize> {
         let mut selected = None;
         if let Some(result) = &self.search {
             ui.separator();
-            ui.strong(format!("構造を照合できた候補 {}", result.candidates.len()));
+            ui.strong(tr_format!(
+                "構造を照合できた候補 {}",
+                "{} candidates with structural evidence",
+                result.candidates.len()
+            ));
             if result.truncated {
-                ui.label("探索上限に達しました。すべての構成を検査した結果ではありません。");
+                ui.label(tr!(
+                    "探索上限に達しました。すべての構成を検査した結果ではありません。",
+                    "Search limit reached. Not every configuration was checked."
+                ));
             }
             for (index, candidate) in result.candidates.iter().enumerate() {
                 let config = &candidate.inspection.evidence.config;
                 ui.horizontal_wrapped(|ui| {
-                    if ui.button(format!("候補 {} を選択", index + 1)).clicked() {
+                    if ui
+                        .button(tr_format!(
+                            "候補 {} を選択",
+                            "Select candidate {}",
+                            index + 1
+                        ))
+                        .clicked()
+                    {
                         selected = Some(index);
                     }
                     ui.label(format!(
@@ -503,23 +545,27 @@ impl State {
                                     .to_string_lossy()
                                     .into_owned()
                             })
-                            .unwrap_or_else(|| "欠損".into())
+                            .unwrap_or_else(|| tr!("欠損", "Missing").into())
                     })
                     .collect::<Vec<_>>()
                     .join(" → ");
-                ui.small(format!("順序: {order}"));
+                ui.small(tr_format!("順序: {order}", "Order: {order}"));
             }
         }
         if let Some(report) = &self.inspection {
             ui.separator();
-            ui.strong("選択した構成のサンプル検査");
-            ui.label(format!(
+            ui.strong(tr!(
+                "選択した構成のサンプル検査",
+                "Sample check of the selected configuration"
+            ));
+            ui.label(tr_format!(
                 "論理容量 {} / サンプル {} / 不一致・欠損 {}",
+                "Logical capacity {} / {} samples / {} mismatched or missing",
                 view::size_text(Some(report.evidence.logical_bytes)),
                 view::size_text(Some(report.sampled_bytes)),
                 view::size_text(Some(report.unavailable_sample_bytes))
             ));
-            ui.label("サンプルやパリティの一致だけで、元の配列や削除前の内容は確定しません。スキャン結果も確認してください。");
+            ui.label(tr!("サンプルやパリティの一致だけで、元の配列や削除前の内容は確定しません。スキャン結果も確認してください。", "Matching samples or parity alone does not establish the original array layout or content. Check the scan results as well."));
         }
         selected
     }

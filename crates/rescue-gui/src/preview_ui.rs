@@ -69,27 +69,27 @@ impl State {
         let mut close = false;
         let response=egui::Modal::new(egui::Id::new("candidate-preview")).show(ctx,|ui| {
             ui.set_width((ctx.content_rect().width()-48.0).clamp(240.0,640.0));
-            ui.heading("ファイルのプレビュー");
+            ui.heading(tr!("ファイルのプレビュー", "File preview"));
             ui.add(egui::Label::new(&self.name).truncate());
             egui::ScrollArea::both().max_height((ctx.content_rect().height()-230.0).max(100.0)).show(ui,|ui| {
-                if self.receiver.is_some() {ui.spinner();ui.label("元データを確認して表示を作成しています…");}
-                if !self.error.is_empty() {ui.label("このファイルはプレビューできません。復元できるかは候補の状態で確認してください。");ui.label(&self.error);}
+                if self.receiver.is_some() {ui.spinner();ui.label(tr!("元データを確認して表示を作成しています…", "Checking the source and preparing a preview…"));}
+                if !self.error.is_empty() {ui.label(tr!("このファイルはプレビューできません。復元できるかは候補の状態で確認してください。", "This file cannot be previewed. Check the candidate status to see whether it can be recovered."));ui.label(&self.error);}
                 if let Some(preview)=&self.preview {
                     if let Some(texture)=&self.texture {
                         let size=texture.size_vec2();let ratio=(ui.available_width()/size.x).min(1.0);
                         ui.add(egui::Image::new(texture).fit_to_exact_size(size*ratio));
-                        ui.label(format!("元画像 {} × {} / 表示 {} × {}",preview.info.source_width,preview.info.source_height,preview.info.width,preview.info.height));
+                        ui.label(tr_format!("元画像 {} × {} / 表示 {} × {}", "Original {} × {} / Display {} × {}",preview.info.source_width,preview.info.source_height,preview.info.width,preview.info.height));
                     } else {
                         ui.add(egui::Label::new(egui::RichText::new(&preview.text).monospace()).wrap().selectable(true));
-                        if preview.info.truncated {ui.label("先頭64 KiBを表示しています。");}
+                        if preview.info.truncated {ui.label(tr!("先頭64 KiBを表示しています。", "Showing the first 64 KiB."));}
                     }
                     if !preview.info.warnings.is_empty() {
-                        ui.collapsing("検証の詳細",|ui| {for warning in &preview.info.warnings {ui.weak(warning);}});
+                        ui.collapsing(tr!("検証の詳細", "Verification details"),|ui| {for warning in &preview.info.warnings {ui.weak(warning);}});
                     }
                 }
             });
-            ui.separator();ui.label("表示用に変換した内容です。元ファイルの完全性を保証するものではありません。");
-            if ui.button(if self.receiver.is_some(){"取消して閉じる"}else{"閉じる"}).clicked(){close=true;}
+            ui.separator();ui.label(tr!("表示用に変換した内容です。元ファイルの完全性を保証するものではありません。", "This content was converted for display. It does not guarantee that the original file is intact."));
+            if ui.button(if self.receiver.is_some(){tr!("取消して閉じる", "Cancel and close")}else{tr!("閉じる", "Close")}).clicked(){close=true;}
         });
         if response.should_close() || close {
             self.cancel.store(true, Ordering::Relaxed);

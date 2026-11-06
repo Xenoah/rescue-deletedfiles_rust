@@ -45,14 +45,14 @@ impl GroupBy {
     ];
     pub fn label(self) -> &'static str {
         match self {
-            Self::None => "なし",
-            Self::Folder => "元のフォルダー",
-            Self::Type => "種類",
-            Self::Created => "作成日",
-            Self::Modified => "更新日",
-            Self::Size => "サイズ",
-            Self::Initial => "名前の先頭",
-            Self::State => "復元可否",
+            Self::None => tr!("なし", "None"),
+            Self::Folder => tr!("元のフォルダー", "Original folder"),
+            Self::Type => tr!("種類", "Type"),
+            Self::Created => tr!("作成日", "Date created"),
+            Self::Modified => tr!("更新日", "Date modified"),
+            Self::Size => tr!("サイズ", "Size"),
+            Self::Initial => tr!("名前の先頭", "Name initial"),
+            Self::State => tr!("復元可否", "Recovery status"),
         }
     }
 }
@@ -66,16 +66,16 @@ pub fn file_type(c: &Candidate) -> String {
     let name = c.name.split(':').next().unwrap_or(&c.name);
     name.rsplit_once('.')
         .filter(|(base, ext)| !base.is_empty() && !ext.is_empty())
-        .map(|(_, ext)| format!("{} ファイル", ext.to_uppercase()))
-        .unwrap_or_else(|| "ファイル".into())
+        .map(|(_, ext)| tr_format!("{} ファイル", "{} file", ext.to_uppercase()))
+        .unwrap_or_else(|| tr!("ファイル", "File").into())
 }
 pub fn state(c: &Candidate) -> &'static str {
     if !c.supported {
-        "復元不可"
+        tr!("復元不可", "Unavailable")
     } else if c.warnings.is_empty() {
-        "復元候補"
+        tr!("復元候補", "Candidate")
     } else {
-        "要確認"
+        tr!("要確認", "Review needed")
     }
 }
 pub fn size_text(size: Option<u64>) -> String {
@@ -94,9 +94,18 @@ pub fn date_text(date: &Option<FileTimestamp>) -> String {
 }
 pub fn date_hint(date: &Option<FileTimestamp>) -> &'static str {
     match date {
-        Some(d) if d.unix_seconds.is_some() => "管理情報に記録された日時・タイムゾーン",
-        Some(_) => "元の媒体のローカル時刻。タイムゾーンは不明です。",
-        None => "日時の管理情報が残っていません。",
+        Some(d) if d.unix_seconds.is_some() => tr!(
+            "管理情報に記録された日時・タイムゾーン",
+            "Date and timezone recorded in the metadata"
+        ),
+        Some(_) => tr!(
+            "元の媒体のローカル時刻。タイムゾーンは不明です。",
+            "Local time on the source medium. Timezone unknown."
+        ),
+        None => tr!(
+            "日時の管理情報が残っていません。",
+            "No date metadata remains."
+        ),
     }
 }
 fn ordered(value: Ordering, descending: bool) -> Ordering {
@@ -168,7 +177,7 @@ fn group(c: &Candidate, by: GroupBy) -> String {
             .replace('\\', "/")
             .rsplit_once('/')
             .map(|(p, _)| p.to_owned())
-            .unwrap_or_else(|| "ルート / 階層不明".into()),
+            .unwrap_or_else(|| tr!("ルート / 階層不明", "Root / Unknown hierarchy").into()),
         GroupBy::Type => file_type(c),
         GroupBy::State => state(c).into(),
         GroupBy::Created | GroupBy::Modified => {
@@ -179,14 +188,14 @@ fn group(c: &Candidate, by: GroupBy) -> String {
             };
             date.as_ref()
                 .map(|d| d.value.chars().take(10).collect())
-                .unwrap_or_else(|| "日時不明".into())
+                .unwrap_or_else(|| tr!("日時不明", "Unknown date").into())
         }
         GroupBy::Size => match c.size {
-            None => "サイズ不明",
+            None => tr!("サイズ不明", "Unknown size"),
             Some(0) => "0 B",
-            Some(1..=1048575) => "1 B – 1 MB未満",
-            Some(1048576..=1073741823) => "1 MB – 1 GB未満",
-            Some(_) => "1 GB以上",
+            Some(1..=1048575) => tr!("1 B – 1 MB未満", "1 B – less than 1 MB"),
+            Some(1048576..=1073741823) => tr!("1 MB – 1 GB未満", "1 MB – less than 1 GB"),
+            Some(_) => tr!("1 GB以上", "1 GB or larger"),
         }
         .into(),
         GroupBy::Initial => c
@@ -200,7 +209,7 @@ fn group(c: &Candidate, by: GroupBy) -> String {
                     c.to_uppercase().to_string()
                 }
             })
-            .unwrap_or_else(|| "名前不明".into()),
+            .unwrap_or_else(|| tr!("名前不明", "Unknown name").into()),
     }
 }
 pub fn rows(

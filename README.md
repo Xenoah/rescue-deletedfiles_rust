@@ -23,6 +23,11 @@ PNG/JPEGは入力8 MiB・1,677万画素、テキストは先頭64 KiB、1回の�
 
 ![ソースの識別とPDFの復元結果](docs/images/source-identity.png)
 
+画面上部のLanguageから日本語と英語を切り替えられます。日本語の元名と選択を保持し、
+実GUIでPDFとテキストの2件1,428バイトを復元して照合しました。[言語と検証範囲](docs/LANGUAGE.md)
+
+![日本語の名前を保持した英語の復元結果](docs/images/i18n-restored-en.png)
+
 Windowsでは、通常権限の画面から選択ディスクの読取だけを許可する機能を追加中です。
 [権限分離の設計と未完了の検証](docs/READ_ACCESS.md)。以下のダウンロード案内はalpha.15のものです。
 

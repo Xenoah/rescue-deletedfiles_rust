@@ -18,7 +18,7 @@ pub(super) struct State {
     receiver: Option<mpsc::Receiver<Reply>>,
     failed_query: Option<IndexQuery>,
     requested_query: Option<IndexQuery>,
-    error: String,
+    error: Text,
     cancel: QueryCancel,
     sizes: BTreeMap<String, Option<u64>>,
 }
@@ -112,20 +112,24 @@ impl App {
             .and_then(Path::parent)
             .map(|p| p.to_string_lossy().into_owned())
             .unwrap_or_default();
-        self.status = format!(
+        self.status = message!(
             "スキャン{}: {} 候補 · {}",
+            "Scan {}: {} candidates · {}",
             if loaded.status.state == "cancelled" {
-                "を中断"
+                message!("を中断", "paused")
             } else {
-                "を読込み"
+                message!("を読込み", "loaded")
             },
             loaded.status.candidates,
             if loaded.status.resumable {
-                "再開できます"
+                message!("再開できます", "Can resume")
             } else if loaded.status.state == "partial" {
-                "一部未探索・警告を確認してください"
+                message!(
+                    "一部未探索・警告を確認してください",
+                    "Some ranges remain unscanned; check warnings"
+                )
             } else {
-                "探索完了"
+                message!("探索完了", "Scan complete")
             }
         );
         self.index = State {
@@ -209,13 +213,16 @@ impl App {
             return;
         }
         if self.index.cancel.0.load(Ordering::Relaxed) {
-            self.index.error = "検索を取り消しました。条件を変えるか再試行してください。".into();
+            self.index.error = message!(
+                "検索を取り消しました。条件を変えるか再試行してください。",
+                "Search cancelled. Change the query or retry."
+            );
             self.index.failed_query = Some(reply.query);
             return;
         }
         match reply.result {
             Err(error) => {
-                self.index.error = error;
+                self.index.error = error.into();
                 self.index.failed_query = Some(reply.query);
             }
             Ok((status, page)) => {
@@ -276,7 +283,10 @@ impl App {
         let available = can_query && self.index.query == desired;
         ui.horizontal_wrapped(|ui| {
             if ui
-                .add_enabled(can_query, egui::Button::new("最初 / 最新の結果"))
+                .add_enabled(
+                    can_query,
+                    egui::Button::new(tr!("最初 / 最新の結果", "First / Latest results")),
+                )
                 .clicked()
             {
                 self.request_page(Navigation::Reset);
@@ -284,7 +294,7 @@ impl App {
             if ui
                 .add_enabled(
                     available && !self.index.history.is_empty(),
-                    egui::Button::new("前のページ"),
+                    egui::Button::new(tr!("前のページ", "Previous page")),
                 )
                 .clicked()
             {
@@ -293,48 +303,56 @@ impl App {
             if ui
                 .add_enabled(
                     available && self.index.next.is_some(),
-                    egui::Button::new("次のページ"),
+                    egui::Button::new(tr!("次のページ", "Next page")),
                 )
                 .clicked()
             {
                 self.request_page(Navigation::Next);
             }
-            ui.label(format!(
+            ui.label(tr_format!(
                 "{} ページ · 表示 {} 件 / 保存済み {} 候補",
+                "Page {} · Showing {} / {} saved candidates",
                 self.index.page + 1,
                 self.session.as_ref().map_or(0, |s| s.candidates.len()),
                 self.index.status.as_ref().map_or(0, |s| s.candidates)
             ));
             if loading {
                 ui.spinner();
-                ui.label("検索・並べ替えを準備中…");
-                if ui.button("検索を取消").clicked() {
+                ui.label(tr!(
+                    "検索・並べ替えを準備中…",
+                    "Preparing search and sorting…"
+                ));
+                if ui.button(tr!("検索を取消", "Cancel search")).clicked() {
                     self.index.cancel.0.store(true, Ordering::Relaxed);
                 }
             }
             if self.index.status.as_ref().is_some_and(|s| s.resumable)
                 && ui
-                    .add_enabled(available, egui::Button::new("スキャンを再開"))
+                    .add_enabled(
+                        available,
+                        egui::Button::new(tr!("スキャンを再開", "Resume scan")),
+                    )
                     .clicked()
             {
                 self.resume_index();
             }
         });
         if self.group != GroupBy::None {
-            ui.small(
+            ui.small(tr!(
                 "グループ内の件数はこのページの表示件数です。選択はページを移動しても保持します。",
-            );
+                "Group counts refer to this page. Selection is kept when you change pages."
+            ));
         }
         if !self.index.error.is_empty() {
             ui.horizontal_wrapped(|ui| {
                 ui.label(&self.index.error);
-                if ui.button("再試行").clicked() {
+                if ui.button(tr!("再試行", "Retry")).clicked() {
                     self.request_page(Navigation::Reset);
                 }
             });
         }
         if self.selected.len() >= 100_000 {
-            ui.label("選択は1回100,000件までです。複数回に分けて復元してください。");
+            ui.label(tr!("選択は1回100,000件までです。複数回に分けて復元してください。", "Select up to 100,000 files per batch. Recover larger selections in multiple batches."));
         }
     }
     fn resume_index(&mut self) {
@@ -348,7 +366,10 @@ impl App {
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
         self.stage = Stage::Scanning;
-        self.status = "保存した位置からスキャンを再開中…".into();
+        self.status = message!(
+            "保存した位置からスキャンを再開中…",
+            "Resuming the scan from its saved position…"
+        );
         thread::spawn(move || {
             let result = rescue_core::resume_indexed_scan(&path, &cancel, |p| {
                 let _ = tx.try_send(Message::IndexProgress(p));
@@ -357,7 +378,7 @@ impl App {
             .and_then(|p| load(p, query, &cancel));
             let _ = tx.send(match result {
                 Ok(loaded) => Message::IndexResumed(Box::new(loaded)),
-                Err(e) => Message::Error(e),
+                Err(e) => Message::Error(e.into()),
             });
         });
     }
@@ -382,7 +403,7 @@ impl App {
         self.messages = Some(rx);
         self.stage = Stage::Scanning;
         self.progress = Progress::default();
-        self.status = "保存したスキャンを読み込み中…".into();
+        self.status = message!("保存したスキャンを読み込み中…", "Loading a saved scan…");
         thread::spawn(move || {
             let result = (|| -> Result<Message, String> {
                 if CandidateIndex::is_index(&path).map_err(|e| e.to_string())? {
@@ -395,9 +416,12 @@ impl App {
                 }
             })();
             let message = if cancel.load(Ordering::Relaxed) {
-                Message::Error("保存したスキャンの読込みを取り消しました。".into())
+                Message::Error(message!(
+                    "保存したスキャンの読込みを取り消しました。",
+                    "Loading the saved scan was cancelled."
+                ))
             } else {
-                result.unwrap_or_else(Message::Error)
+                result.unwrap_or_else(|e| Message::Error(e.into()))
             };
             let _ = tx.send(message);
         });
@@ -423,14 +447,17 @@ impl App {
         self.messages = Some(rx);
         self.stage = Stage::Migrating;
         self.progress = Progress::default();
-        self.status = "新しい索引へコピー移行しています。元の記録は保持します…".into();
+        self.status = message!(
+            "新しい索引へコピー移行しています。元の記録は保持します…",
+            "Copying the session into a new index. The original is kept…"
+        );
         thread::spawn(move || {
             let result =
                 rescue_core::IndexWriter::import_session_with_cancel(&path, &work, &cancel)
                     .map_err(|e| format!("{}: {e}", e.code()))
                     .and_then(|p| load(p, query, &cancel))
                     .map(|loaded| Message::Indexed(Box::new(loaded)))
-                    .unwrap_or_else(Message::Error);
+                    .unwrap_or_else(|e| Message::Error(e.into()));
             let _ = tx.send(result);
         });
     }
