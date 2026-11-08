@@ -475,3 +475,59 @@ fn windows_ime_cancel_without_empty_preedit_keeps_committed_text_and_next_conver
     assert_eq!(app.filter, "日本語原文");
     assert_eq!(app.selected.len(), 1);
 }
+
+#[test]
+fn windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed() {
+    for ordering in 0..3 {
+        let (ctx, mut app) = app();
+        let owner = egui::Id::new("result-search");
+        let escape = |pressed| egui::Event::Key {
+            key: egui::Key::Escape,
+            physical_key: None,
+            pressed,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        };
+        ctx.memory_mut(|memory| memory.request_focus(owner));
+        frame(&ctx, &mut app, vec![]);
+        frame(&ctx, &mut app, vec![egui::Event::Text("既存".into())]);
+        for event in [
+            egui::ImeEvent::Enabled,
+            egui::ImeEvent::Preedit("とりけし".into()),
+        ] {
+            frame(&ctx, &mut app, vec![egui::Event::Ime(event)]);
+        }
+        assert_eq!(app.filter, "既存とりけし");
+        let disabled = egui::Event::Ime(egui::ImeEvent::Disabled);
+        match ordering {
+            0 => {
+                frame(&ctx, &mut app, vec![escape(true), disabled]);
+            }
+            1 => {
+                frame(&ctx, &mut app, vec![disabled, escape(true)]);
+            }
+            _ => {
+                frame(&ctx, &mut app, vec![escape(true)]);
+                assert_eq!(ctx.memory(|memory| memory.focused()), Some(owner));
+                frame(&ctx, &mut app, vec![disabled]);
+            }
+        }
+        frame(&ctx, &mut app, vec![escape(false)]);
+        assert_eq!(app.filter, "既存", "cancel ordering {ordering}");
+        assert_eq!(ctx.memory(|memory| memory.focused()), Some(owner));
+        assert_eq!(app.selected.len(), 1);
+        for event in [
+            egui::ImeEvent::Enabled,
+            egui::ImeEvent::Preedit("原文".into()),
+            egui::ImeEvent::Disabled,
+            egui::ImeEvent::Commit("原文".into()),
+            egui::ImeEvent::Disabled,
+        ] {
+            frame(&ctx, &mut app, vec![egui::Event::Ime(event)]);
+        }
+        assert_eq!(app.filter, "既存原文");
+        key(&ctx, &mut app, egui::Key::Escape, egui::Modifiers::NONE);
+        assert_eq!(ctx.memory(|memory| memory.focused()), None);
+        assert_eq!(app.filter, "既存原文");
+    }
+}

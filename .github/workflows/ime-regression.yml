@@ -1,0 +1,101 @@
+name: Windows IME cancellation regression
+on:
+  push:
+    branches: ['fix/windows-ime-cancel']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ime-regression-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  PYTHONUTF8: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+jobs:
+  regression:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - name: Install pinned Rust
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy,rustfmt
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-2022-x64-rust-1.99.1-
+      - run: cargo fetch --locked
+      - run: cargo fmt --all -- --check
+      - name: Prove the old normalizer fails the new regression
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import json, subprocess
+          from pathlib import Path
+          path=Path('crates/rescue-gui/src/ime.rs')
+          fixed=path.read_bytes()
+          baseline='e753e6c78fd3e078d21447a63f7ee5c377ca511a'
+          try:
+              path.write_bytes(subprocess.check_output(['git','show',baseline+':'+path.as_posix()]))
+              result=subprocess.run(['cargo','test','-p','rescue-gui','--target','x86_64-pc-windows-msvc','--locked','--offline','windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed','--','--nocapture'],capture_output=True,encoding='utf-8',errors='replace')
+              output=result.stdout+result.stderr
+              Path('ime-baseline-red.log').write_text(output,encoding='utf-8')
+              assert result.returncode==101 and 'cancel ordering 0' in output and '既存とりけし' in output, output[-8000:]
+              Path('ime-baseline-red.json').write_text(json.dumps({'baseline':baseline,'status':'expected-regression-confirmed','exit':result.returncode,'scope':'Actual egui frame with forwarded Escape and IME cancellation; no native input method is simulated by this test.'},indent=2)+'\n')
+          finally:
+              path.write_bytes(fixed)
+          PYTHON
+      - name: Fixed GUI tests
+        run: python scripts/ci_command.py cargo test -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Fixed GUI Clippy
+        run: python scripts/ci_command.py cargo clippy -p rescue-gui --all-targets --target x86_64-pc-windows-msvc --locked --offline -- -D warnings
+      - name: Build fixed native GUI
+        run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Install Japanese input support
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Repeat native Japanese IME cancellation and conversion without retries
+        timeout-minutes: 12
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib, json, os, subprocess
+          from pathlib import Path
+          binary=Path('target/x86_64-pc-windows-msvc/release/rescue-gui.exe')
+          output=Path('ime-native-cycles.json')
+          subprocess.run(['python','scripts/ci_command.py','python','scripts/e2e_gui_windows.py','--binary',str(binary),'--output',str(output),'--desktop-token','--ime','--ime-cycles','8'],check=True)
+          proof=json.loads(output.read_text(encoding='utf-8'))
+          assert proof['status']=='passed' and proof['source_unchanged'] and proof['files_byte_exact']==2
+          assert proof['uia']['native_input_method_tested'] and proof['uia']['input_layout_restored']
+          cycles=proof['uia']['native_ime']['cycles']
+          assert len(cycles)==8 and len(proof['ime_cycle_screenshots'])==8
+          for cycle in cycles:
+              assert cycle['cancel_start_value']=='とりけし' and cycle['cancel_trace'][-1]['value']=='' and cycle['committed_value']=='原文'
+          summary={'status':'passed','commit':os.environ['GITHUB_SHA'],'gui_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'native_ime_cycles':cycles,'screenshots':proof['ime_cycle_screenshots'],'retries':0,'scope':'Eight consecutive cancellation/conversion cycles in one actual non-elevated GUI, followed by byte-exact selected recovery.'}
+          Path('ime-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
+          print(json.dumps(summary,ensure_ascii=False))
+          PYTHON
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-ime-regression
+          path: |
+            ime-*.json
+            ime-*.log
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/std*.txt
+            rescue-owned-uia-*/windows-gui-complete.png
+            rescue-owned-uia-*/windows-ime-cycle-*.png
+          if-no-files-found: error

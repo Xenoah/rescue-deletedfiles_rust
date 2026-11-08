@@ -277,32 +277,71 @@ function Set-ImeQuery {
     $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
     $languages[1].InputMethodTips.Clear();$languages[1].InputMethodTips.Add("0411:$service$profile")
     Set-WinUserLanguageList $languages -Force
-    $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
-    [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
     $tips=@((Get-WinUserLanguageList|Where-Object LanguageTag -eq 'ja-JP').InputMethodTips)
     $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
+    $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
+    [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
     $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
     Start-Sleep -Milliseconds 500
-    [RescueOwnedWindow]::RomanKeys('torikeshi');Start-Sleep -Milliseconds 500
-    $cancelTrace=@()
-    for ($press=1;$press -le 2;$press++) {
-        [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
-        $edit=Await-Control 'Search results' 'Edit'
-        $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
-    }
-    $script:imeDiagnostic.cancel_trace=$cancelTrace
-    Start-Sleep -Milliseconds 300
-    $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-    if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
-    [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
-    $until=[DateTime]::UtcNow.AddSeconds(5)
-    do {
-        Start-Sleep -Milliseconds 100
+    $cycleCount=if ($cfg.ime_cycles) {[int]$cfg.ime_cycles} else {1}
+    if ($cycleCount -lt 1 -or $cycleCount -gt 16) {throw 'IME cycle count must be between 1 and 16'}
+    $cycles=@()
+    for ($cycle=1; $cycle -le $cycleCount; $cycle++) {
+        $script:imeDiagnostic.cycle=$cycle
+        Focus-Owned (Await-Control 'Search results' 'Edit')
+        if ($cycle -gt 1) {
+            [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
+        }
+        [RescueOwnedWindow]::RomanKeys('torikeshi')
+        $cancelPreedit=-join [char[]](0x3068,0x308a,0x3051,0x3057)
+        # Wait for the actual preedit, not an assumed keyboard/TSF processing time.
+        # Otherwise Escape may be sent before there is any composition to cancel.
+        $until=[DateTime]::UtcNow.AddSeconds(5)
+        do {
+            Start-Sleep -Milliseconds 100
+            $preedit=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+        } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
+        $script:imeDiagnostic.cancel_start_value=$preedit
+        if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
+        $cancelTrace=@()
+        for ($press=1;$press -le 2;$press++) {
+            [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
+            $edit=Await-Control 'Search results' 'Edit'
+            $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+        }
+        $script:imeDiagnostic.cancel_trace=$cancelTrace
+        Start-Sleep -Milliseconds 300
         $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-    } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
-    if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
-    $script:imeProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
-    $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
+        if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
+        # A second Escape can legitimately leave the edit after composition ends.
+        # Check cancellation above before restoring focus for the next conversion.
+        Focus-Owned (Await-Control 'Search results' 'Edit')
+        [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
+        $until=[DateTime]::UtcNow.AddSeconds(5)
+        do {
+            Start-Sleep -Milliseconds 100
+            $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+        } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
+        if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
+        $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
+        $cycles+=,$cycleProof
+        Start-Sleep -Milliseconds 100
+        Save-OwnedScreenshot ("windows-ime-cycle-{0}.png" -f $cycle)
+    }
+    $script:imeProof=$cycles[-1].Clone()
+    $script:imeProof.cycles=$cycles
+}
+function Save-OwnedScreenshot([string]$Name) {
+    Add-Type -AssemblyName System.Drawing,System.Windows.Forms
+    $windowBounds=$script:root.Current.BoundingRectangle
+    $bounds=[System.Drawing.Rectangle]::Intersect([System.Drawing.Rectangle]::new([int]$windowBounds.X,[int]$windowBounds.Y,[int]$windowBounds.Width,[int]$windowBounds.Height),[System.Windows.Forms.Screen]::FromHandle($script:owned.MainWindowHandle).Bounds)
+    $bitmap=[System.Drawing.Bitmap]::new([int]$bounds.Width,[int]$bounds.Height)
+    $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
+    try {
+        $graphics.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size)
+        $bitmap.Save((Join-Path $cfg.root $Name),[System.Drawing.Imaging.ImageFormat]::Png)
+    } finally {$graphics.Dispose();$bitmap.Dispose()}
 }
 function Snapshot {
     $result = @()
@@ -402,15 +441,7 @@ try {
     } while ($null -eq $saved -and [DateTime]::UtcNow -lt $until)
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
-    Add-Type -AssemblyName System.Drawing,System.Windows.Forms
-    $windowBounds=$script:root.Current.BoundingRectangle
-    $bounds=[System.Drawing.Rectangle]::Intersect([System.Drawing.Rectangle]::new([int]$windowBounds.X,[int]$windowBounds.Y,[int]$windowBounds.Width,[int]$windowBounds.Height),[System.Windows.Forms.Screen]::FromHandle($script:owned.MainWindowHandle).Bounds)
-    $bitmap=[System.Drawing.Bitmap]::new([int]$bounds.Width,[int]$bounds.Height)
-    $graphics=[System.Drawing.Graphics]::FromImage($bitmap)
-    try {
-        $graphics.CopyFromScreen([int]$bounds.X,[int]$bounds.Y,0,0,$bitmap.Size)
-        $bitmap.Save((Join-Path $cfg.root 'windows-gui-complete.png'),[System.Drawing.Imaging.ImageFormat]::Png)
-    } finally {$graphics.Dispose();$bitmap.Dispose()}
+    Save-OwnedScreenshot 'windows-gui-complete.png'
     if ($cfg.ime) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
     @{status='passed';input_layout_restored=[RescueOwnedWindow]::ImeRestored;process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
