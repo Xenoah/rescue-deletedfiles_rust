@@ -3,11 +3,13 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
-**v1.1.0-alpha.1: UIとダウンロード一覧を整理した先行版。**
-読み取る場所と保存先を分け、現在のステップと次の操作を見つけやすくしました。
-[先行版をダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.1) · [変更と実画面](docs/UI-v1.1.md) · [リリースノート](docs/RELEASE-v1.1.md)
+**v1.1.0-alpha.2: FAT12/16と明示的なFAT推定復元を追加した先行版。**
+読み取る場所と保存先を分け、現在のステップと次の操作を見つけやすくしました。形式ごとの色と拡張子をアイコンに表示し、推定したファイルには内容未確認の表示を残します。
+[先行版をダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.2) · [変更と実画面](docs/UI-v1.1.md) · [リリースノート](docs/RELEASE-v1.1.md)
 
-![v1.1の新しい設定画面](docs/images/v1.1-alpha.1/settings-en.png)
+![v1.1で推定したファイルを保存した実画面](docs/images/v1.1-alpha.2/recovered-ja.png)
+
+同じFAT32比較イメージでは標準設定14/36件、推定を有効にすると36/36件が元のハッシュに一致しました。推定は初期状態で無効です。[対応範囲・制限と検証](docs/FAT-v1.1.md)
 
 添付は各OSのインストーラー・ポータブル版と共通チェックサムだけです。検証資料はリポジトリとActionsに保存します。
 安定版は引き続き[v1.0.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.0.0)です。

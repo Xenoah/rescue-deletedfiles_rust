@@ -126,6 +126,7 @@ struct App {
     carve: bool,
     carve_all: bool,
     fragments: bool,
+    estimate_fat_contiguous: bool,
     extensions: String,
     path_prefix: String,
     depth: String,
@@ -264,6 +265,7 @@ impl App {
             carve: false,
             carve_all: false,
             fragments: false,
+            estimate_fat_contiguous: false,
             extensions: String::new(),
             path_prefix: String::new(),
             depth: String::new(),
@@ -326,6 +328,7 @@ impl App {
                 rescue_core::CarveScope::Unallocated
             },
             fragments: !self.carve && self.fragments,
+            estimate_fat_contiguous: !self.carve && self.estimate_fat_contiguous,
             recovered_volume: if self.carve || self.discovery_source != self.source {
                 None
             } else {
@@ -406,6 +409,7 @@ impl App {
         self.carve = settings.method == ScanMethod::Carve;
         self.carve_all = settings.carve_scope == rescue_core::CarveScope::All;
         self.fragments = settings.fragments;
+        self.estimate_fat_contiguous = settings.estimate_fat_contiguous;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
         self.extensions = settings.extensions.join(", ");
@@ -531,6 +535,7 @@ impl App {
                         max_records: 100_000_000,
                         max_candidates: 10_000_000,
                         fragments: settings.fragments,
+                        estimate_fat_contiguous: settings.estimate_fat_contiguous,
                     },
                     &settings,
                     &cancel,
@@ -1146,6 +1151,7 @@ impl App {
                     text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"));
                     text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"));
                 } else {
+                    ui.checkbox(&mut self.estimate_fat_contiguous, tr!("FATの連続配置を推定する（元の内容との一致は未確認）", "Estimate contiguous FAT files (original content unverified)"));
                     ui.checkbox(&mut self.fragments,tr!("残存するMFTレコードも探索（クイックフォーマット後など）", "Also search for remnant MFT records (for example, after a quick format)"));
                     text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"));
                     text_row(ui, tr!("検索深度", "Search depth"), &mut self.depth, tr!("空欄: 上限なし / 0: 直下 / 最大256", "Blank: unlimited / 0: direct children / Maximum: 256"));
@@ -1298,6 +1304,25 @@ impl App {
                 tr_format!("{} 件選択", "{} selected", self.selected.len()),
                 false,
             );
+            let estimated = self.session.as_ref().map_or(0, |s| {
+                s.candidates
+                    .iter()
+                    .filter(|c| {
+                        c.extent_evidence == rescue_core::ExtentEvidence::EstimatedContiguous
+                    })
+                    .count()
+            });
+            if estimated > 0 {
+                theme::badge(
+                    ui,
+                    tr_format!(
+                        "表示中 {} 件は推定・内容未確認",
+                        "{} shown are estimated; content unverified",
+                        estimated
+                    ),
+                    true,
+                );
+            }
             if self
                 .session
                 .as_ref()
@@ -1543,7 +1568,7 @@ impl App {
                                     });
                                     row.col(|ui| {
                                         ui.horizontal(|ui| {
-                                            file_icon(ui, 16.0);
+                                            file_icon(ui, 16.0, &c.name);
                                             let label = ui
                                                 .add(
                                                     egui::Label::new(&c.name)
@@ -1599,7 +1624,7 @@ impl App {
                                             .find(|r| r.candidate_id == c.id);
                                         ui.label(
                                             saved
-                                                .map(|r| status_label(&r.status))
+                                                .map(|r| if r.status == "completed" && c.extent_evidence == rescue_core::ExtentEvidence::EstimatedContiguous { tr!("保存済み（推定）", "Saved (estimated)") } else { status_label(&r.status) })
                                                 .unwrap_or_else(|| view::state(c)),
                                         )
                                         .on_hover_text(c.warnings.join("\n"));
@@ -1713,7 +1738,7 @@ impl App {
                                                 .show(ui, |ui| {
                                                     ui.set_width(108.0);
                                                     ui.vertical_centered(|ui| {
-                                                        file_icon(ui, 40.0);
+                                                        file_icon(ui, 40.0, &c.name);
                                                         let label = ui
                                                             .add(
                                                                 egui::Label::new(&c.name)
@@ -1880,7 +1905,7 @@ impl App {
             }
             ui.add_space(10.0);
             ui.strong(tr!("配置の根拠", "Extent evidence"));
-            ui.label(format!("{:?}", c.extent_evidence));
+            ui.label(view::extent_label(c.extent_evidence));
             ui.label(
                 match c.extent_evidence {
                     rescue_core::ExtentEvidence::MetadataRemnant => tr!("現行MFT外の残存レコード。選択したブートのクラスタサイズで位置を解釈しています。元の形式や削除状態は未確認です。", "A remnant record outside the current MFT. Locations use the cluster size of the selected boot region. Original format and deletion status remain unverified."),
@@ -2121,7 +2146,9 @@ fn allocation_label(c: &Candidate, fs: FileSystem) -> &'static str {
         );
     }
     match fs {
-        FileSystem::Fat32 => tr!("FAT値0：空きとして記録", "FAT value 0: recorded as free"),
+        FileSystem::Fat12 | FileSystem::Fat16 | FileSystem::Fat32 => {
+            tr!("FAT値0：空きとして記録", "FAT value 0: recorded as free")
+        }
         FileSystem::Exfat => tr!(
             "割当ビットマップ：空き領域",
             "Allocation bitmap: free regions"
@@ -2211,10 +2238,40 @@ fn folder_icon(ui: &mut egui::Ui, size: f32) {
         egui::Color32::from_rgb(255, 207, 81),
     );
 }
-fn file_icon(ui: &mut egui::Ui, size: f32) {
+fn file_icon(ui: &mut egui::Ui, size: f32, name: &str) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(size * 0.78, size), egui::Sense::hover());
     let p = ui.painter();
-    p.rect_filled(r.shrink(1.0), 2.0, egui::Color32::from_rgb(212, 220, 231));
+    let extension = name.rsplit('.').next().unwrap_or("").to_ascii_uppercase();
+    let color = match extension.as_str() {
+        "PNG" | "JPG" | "JPEG" | "GIF" | "BMP" | "WEBP" | "TIFF" => {
+            egui::Color32::from_rgb(114, 74, 157)
+        }
+        "MP4" | "MOV" | "AVI" | "MKV" | "M4V" => egui::Color32::from_rgb(178, 87, 33),
+        "MP3" | "WAV" | "FLAC" | "AAC" | "M4A" => egui::Color32::from_rgb(44, 119, 99),
+        "ZIP" | "7Z" | "RAR" | "GZ" | "BZ2" => egui::Color32::from_rgb(142, 106, 22),
+        "PDF" | "DOCX" | "TXT" | "XLSX" | "CSV" | "PPTX" => egui::Color32::from_rgb(44, 100, 165),
+        _ => theme::MUTED,
+    };
+    p.rect_filled(r.shrink(1.0), 3.0, color.gamma_multiply(0.16));
+    p.rect_filled(
+        egui::Rect::from_min_max(
+            r.min + egui::vec2(1.0, 1.0),
+            egui::pos2(r.left() + 4.0, r.bottom() - 1.0),
+        ),
+        2.0,
+        color,
+    );
+    if size >= 32.0 {
+        let short: String = extension.chars().take(4).collect();
+        p.text(
+            r.center(),
+            egui::Align2::CENTER_CENTER,
+            short,
+            egui::FontId::proportional(10.0),
+            color,
+        );
+        return;
+    }
     for y in [0.45, 0.6, 0.75] {
         p.line_segment(
             [

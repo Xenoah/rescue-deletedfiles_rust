@@ -56,10 +56,8 @@ fn filesystem(image: &mut Image, offset: u64, length: u64) -> Result<Option<File
         Some(FileSystem::Ntfs)
     } else if &boot[3..11] == b"EXFAT   " {
         Some(FileSystem::Exfat)
-    } else if &boot[82..90] == b"FAT32   " {
-        Some(FileSystem::Fat32)
     } else {
-        None
+        crate::fat::detect_boot(&boot, length)
     })
 }
 fn region(

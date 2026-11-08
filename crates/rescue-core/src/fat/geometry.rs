@@ -9,6 +9,7 @@ pub(super) struct Geometry {
     pub heap: u64,
     pub clusters: u32,
     pub root: u32,
+    pub fixed_root: Option<(u64, u64)>,
     pub warnings: Vec<String>,
 }
 
@@ -22,9 +23,66 @@ impl Geometry {
         }
         if &boot[3..11] == b"EXFAT   " {
             Self::exfat(image, &boot)
+        } else if u16_at(&boot, 22)? != 0 {
+            Self::fat12_16(image, &boot)
         } else {
             Self::fat32(image, &boot)
         }
+    }
+
+    fn fat12_16(image: &mut Image, boot: &[u8]) -> Result<Self> {
+        let sector = u64::from(u16_at(boot, 11)?);
+        let spc = u64::from(boot[13]);
+        let reserved = u64::from(u16_at(boot, 14)?);
+        let copies = boot[16];
+        let entries = u64::from(u16_at(boot, 17)?);
+        let short_total = u64::from(u16_at(boot, 19)?);
+        let long_total = u64::from(u32_at(boot, 32)?);
+        let fat_sectors = u64::from(u16_at(boot, 22)?);
+        if ![512, 1024, 2048, 4096].contains(&sector)
+            || !spc.is_power_of_two()
+            || spc > 128
+            || reserved == 0
+            || !(1..=2).contains(&copies)
+            || entries == 0
+            || fat_sectors == 0
+            || (short_total != 0 && long_total != 0 && short_total != long_total)
+        {
+            return Err(invalid("FAT12/16 BPB geometry"));
+        }
+        let total = if short_total != 0 {
+            short_total
+        } else {
+            long_total
+        };
+        let root_sector = reserved + fat_sectors * u64::from(copies);
+        let root_sectors = (entries * 32).div_ceil(sector);
+        let data_sector = root_sector + root_sectors;
+        if data_sector >= total || total * sector > image.length {
+            return Err(invalid("truncated FAT12/16 volume or overlapping regions"));
+        }
+        let clusters = (total - data_sector) / spc;
+        let (filesystem, fat_bytes) = match clusters {
+            1..4085 => (FileSystem::Fat12, ((clusters + 2) * 3).div_ceil(2)),
+            4085..65525 => (FileSystem::Fat16, (clusters + 2) * 2),
+            _ => return Err(invalid("FAT12/16 cluster count")),
+        };
+        if fat_bytes > fat_sectors * sector {
+            return Err(invalid("FAT12/16 allocation table capacity"));
+        }
+        Ok(Self {
+            filesystem,
+            sector,
+            cluster: sector * spc,
+            fat_offsets: (0..copies)
+                .map(|n| (reserved + u64::from(n) * fat_sectors) * sector)
+                .collect(),
+            heap: data_sector * sector,
+            clusters: clusters as u32,
+            root: 0,
+            fixed_root: Some((root_sector * sector, entries * 32)),
+            warnings: Vec::new(),
+        })
     }
 
     fn fat32(image: &mut Image, boot: &[u8]) -> Result<Self> {
@@ -98,6 +156,7 @@ impl Geometry {
             heap: data_sector * sector,
             clusters: clusters as u32,
             root: u32_at(boot, 44)?,
+            fixed_root: None,
             warnings,
         };
         geometry.address(geometry.root)?;
@@ -169,6 +228,7 @@ impl Geometry {
             heap: heap * sector,
             clusters,
             root: u32_at(boot, 96)?,
+            fixed_root: None,
             warnings,
         };
         geometry.address(geometry.root)?;

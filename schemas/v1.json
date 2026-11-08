@@ -230,6 +230,8 @@
     "FileSystem": {
       "enum": [
         "ntfs",
+        "fat12",
+        "fat16",
         "fat32",
         "exfat",
         "raw",
@@ -256,7 +258,8 @@
         "jpeg_validated",
         "pdf_structure",
         "zip_crc_validated",
-        "media_structure"
+        "media_structure",
+        "estimated_contiguous"
       ]
     },
     "RecoveryBoot": {
@@ -497,6 +500,10 @@
         },
         "fragments": {
           "type": "boolean"
+        },
+        "estimate_fat_contiguous": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [

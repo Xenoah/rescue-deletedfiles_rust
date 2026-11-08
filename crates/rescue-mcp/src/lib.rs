@@ -156,7 +156,7 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"indexed":{"type":"boolean","default":false},"max_records":{"type":"integer","minimum":1,"maximum":100000000},"max_candidates":{"type":"integer","minimum":1,"maximum":10000000},"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"carve_scope":{"type":"string","enum":["unallocated","all"],"default":"unallocated"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false}}),
+            json!({"source":string,"request_id":string,"indexed":{"type":"boolean","default":false},"max_records":{"type":"integer","minimum":1,"maximum":100000000},"max_candidates":{"type":"integer","minimum":1,"maximum":10000000},"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"carve_scope":{"type":"string","enum":["unallocated","all"],"default":"unallocated"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false},"estimate_fat_contiguous":{"type":"boolean","default":false,"description":"Explicitly opt in to labelled contiguous guesses for cleared FAT files; original content is not verified."}}),
             &["source", "request_id"],
             false
         ),
@@ -610,6 +610,11 @@ impl Server {
                         Some("all") => rescue_core::CarveScope::All,
                         _ => return Err("carve_scope must be unallocated or all".into()),
                     },
+                    estimate_fat_contiguous: args
+                        .get("estimate_fat_contiguous")
+                        .map(|v| v.as_bool().ok_or("invalid estimate_fat_contiguous"))
+                        .transpose()?
+                        .unwrap_or(false),
                     fragments: args
                         .get("fragments")
                         .map(|v| v.as_bool().ok_or("invalid fragments"))
@@ -655,6 +660,7 @@ impl Server {
                         )
                         .map_err(err)?,
                         fragments: settings.fragments,
+                        estimate_fat_contiguous: settings.estimate_fat_contiguous,
                     };
                     self.start_index_job(indexed_jobs::Task::Scan {
                         source: path,

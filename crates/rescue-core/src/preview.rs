@@ -410,10 +410,14 @@ fn render(mut session: Session) -> Result<Preview> {
             Err(e) => return Err(e),
         },
         FileSystem::Raw => RecoverySource::Carved,
-        FileSystem::Fat32 | FileSystem::Exfat => {
+        FileSystem::Fat12 | FileSystem::Fat16 | FileSystem::Fat32 | FileSystem::Exfat => {
             let fresh = restore::validation::fat_selection(
                 &mut image,
                 &BTreeSet::from([old.id.clone()]),
+                session
+                    .search
+                    .as_ref()
+                    .is_some_and(|s| s.estimate_fat_contiguous),
                 &cancel,
             )?;
             if fresh.filesystem != session.filesystem {

@@ -96,12 +96,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub enum FileSystem {
     #[default]
     Ntfs,
+    Fat12,
+    Fat16,
     Fat32,
     Exfat,
     /// Signature scan of a regular image; no filesystem interpretation.
     Raw,
     /// A physical disk containing one or more partition volumes.
     Disk,
+}
+impl FileSystem {
+    pub(crate) fn classic_fat(self) -> bool {
+        matches!(self, Self::Fat12 | Self::Fat16 | Self::Fat32)
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -112,6 +119,8 @@ pub enum ExtentEvidence {
     Metadata,
     MetadataRemnant,
     ResidualFatChain,
+    /// Explicit opt-in: cleared FAT entries are assumed to have been contiguous.
+    EstimatedContiguous,
     SingleCluster,
     NoFatChain,
     PngValidated,
@@ -373,6 +382,8 @@ pub struct ScanOptions {
     pub max_records: u64,
     pub max_candidates: usize,
     pub fragments: bool,
+    #[serde(default)]
+    pub estimate_fat_contiguous: bool,
 }
 impl Default for ScanOptions {
     fn default() -> Self {
@@ -380,6 +391,7 @@ impl Default for ScanOptions {
             max_records: 2_000_000,
             max_candidates: 100_000,
             fragments: false,
+            estimate_fat_contiguous: false,
         }
     }
 }
@@ -417,8 +429,9 @@ fn scan_volume(
     } else {
         3
     };
-    let search = options.fragments.then(|| SearchSettings {
-        fragments: true,
+    let search = (options.fragments || options.estimate_fat_contiguous).then(|| SearchSettings {
+        fragments: options.fragments,
+        estimate_fat_contiguous: options.estimate_fat_contiguous,
         ..Default::default()
     });
     if &image.boot_read(512)?[3..11] != b"NTFS    " {
@@ -905,7 +918,15 @@ pub fn recover_to(
         RecoverySource::Carved
     } else {
         let wanted = selected.iter().map(|c| c.id.clone()).collect();
-        let fresh = restore::validation::fat_selection(&mut image, &wanted, cancel)?;
+        let fresh = restore::validation::fat_selection(
+            &mut image,
+            &wanted,
+            session
+                .search
+                .as_ref()
+                .is_some_and(|s| s.estimate_fat_contiguous),
+            cancel,
+        )?;
         if fresh.cancelled {
             return Err(Error::Cancelled);
         }

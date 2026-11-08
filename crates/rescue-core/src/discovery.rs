@@ -111,6 +111,17 @@ fn geometry(boot: &[u8]) -> Result<Geometry> {
             u16_at(boot, 50),
             1,
         )
+    } else if let Some(filesystem @ (FileSystem::Fat12 | FileSystem::Fat16)) =
+        crate::fat::detect_boot(boot, u64::MAX)
+    {
+        let small = u16_at(boot, 19);
+        (
+            filesystem,
+            u16_at(boot, 11),
+            if small == 0 { u32_at(boot, 32) } else { small },
+            0,
+            1,
+        )
     } else {
         return Err(invalid("unrecognized filesystem"));
     };
@@ -244,7 +255,9 @@ pub(crate) fn probe_image(
             evidence.extend(ntfs.warnings.clone());
             Ok(evidence)
         }
-        Some(FileSystem::Fat32 | FileSystem::Exfat) => crate::fat::probe(image),
+        Some(FileSystem::Fat12 | FileSystem::Fat16 | FileSystem::Fat32 | FileSystem::Exfat) => {
+            crate::fat::probe(image)
+        }
         _ => Err(invalid("unsupported filesystem")),
     }
 }

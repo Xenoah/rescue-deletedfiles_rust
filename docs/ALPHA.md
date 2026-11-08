@@ -2,7 +2,7 @@
 
 既存リンクとの互換性のためファイル名は `ALPHA.md` のままです。実装の上限と対応プロファイルを記載します。
 
-Quickは物理ディスク・ボリューム・RAWイメージを読み取り専用で開きます。MBR／EBR／GPTの境界を検証し、NTFS・FAT32・exFATの各パーティションを探索します。GPTはヘッダーと配列のCRC、主・副の整合性を確認します。一方が壊れた場合は有効な方を警告付きで使い、修復は行いません。
+Quickは物理ディスク・ボリューム・RAWイメージを読み取り専用で開きます。MBR／EBR／GPTの境界を検証し、NTFS・FAT12/16/32・exFATの各パーティションを探索します。GPTはヘッダーと配列のCRC、主・副の整合性を確認します。一方が壊れた場合は有効な方を警告付きで使い、修復は行いません。
 Carvingはディスク全体または指定した開始以上・終了未満のバイト範囲を読み、PNG/JPEG/PDF/ZIP/Office/MP4/MOVを探索します。既定は未割当領域の候補を選別し、割当が不明な場合は理由を表示して検索します。全領域も明示選択できます。[範囲の詳細](ALLOCATION_SCOPE.md)。
 
 Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロックデバイス、macOSは`/dev/[r]diskN[sM]`を受け付けます。GUIはディスク選択を既定にし、イメージは補助モードです。デバイスにはOSの読取権限が必要です。Windowsは通常権限のGUI/CLIから、明示した要求だけを[一時的な読取補助プロセス](READ_ACCESS.md)へ渡します。解析と保存は通常権限で行います。
@@ -14,7 +14,7 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
 - resident/non-resident/圧縮ADSを個別候補として列挙し、通常ファイルとして別名保存。
 - 削除済みMFTレコードの列挙とUTF-16の名前。親参照のシーケンス番号を照合した階層表示。
 - MFT自身のrunlistによる読取、セクターfixup・属性・範囲の検証。
-- FAT32の削除エントリー、残存チェーン、1クラスター内のファイル、長いファイル名とチェックサム。
+- FAT12/16/32の削除エントリー、残存チェーン、1クラスター内のファイル、長いファイル名とチェックサム。
   ミラーFATは参照箇所を比較し、不一致を拒否します。ミラー無効時は指定されたactive FATを使い、理由を記録します。
 - exFATのブート領域とバックアップのチェックサム、エントリー集合、upcase表と名前ハッシュ。
   NoFatChainの連続割当、残存チェーン、割当ビットマップ、valid data lengthに対応します。
@@ -47,7 +47,7 @@ Windowsは`\\.\PhysicalDriveN`、`\\.\D:`、Volume GUID、Linuxはブロック�
 - RAIDは[RAID.md](RAID.md)のJBOD/0/1/5/6/10配置をメンバーイメージから再構成します。ライブメンバーと入れ子配列は拒否します。消失領域・バックアップブート・残存MFTは[DISCOVERY.md](DISCOVERY.md)のプロファイルに対応します。読取マップ付き取得・再開の対応は[IMAGING.md](IMAGING.md)を参照。
 - 最大256パーティション、GPT配列16MiB・4096エントリー、EBRチェーン128まで。重複・循環・範囲外・主副GPTの不一致・ハイブリッドMBRは拒否します。512/4096セクターのディスクイメージを検証します。未対応パーティションの省略は警告とtruncatedで示します。
 - 同じディスクへの保存と元の場所への復元は[保存仕様](SAME-LOCATION.md)に従います。選択データは合計512 MiBまで先に読み出します。
-- FAT12/16、dual-FATのTexFAT、未知のexFAT revisionは未対応です。
+- dual-FATのTexFAT、未知のexFAT revisionは未対応です。
   主・副ブートの書換修復は行いません。検証できるバックアップを明示選択する探索は対応します。
 - FATのチェーンが消えた複数クラスターのファイルは復元不可にします。連続配置の推測はまだ行いません。
   既知の先頭クラスター内に収まるファイル、またはexFATのNoFatChainは復元できます。
@@ -121,3 +121,7 @@ PDF・ZIP/ZIP64・DOCX/XLSX/PPTX・MP4/MOVの連続配置carvingを追加。[形
 共通ジョブ・名前変更の履歴・ソースID/候補参照・読取不能範囲付きバイナリ書き出し・FATミラー不一致の扱いは
 [JOB_CONTRACT.md](JOB_CONTRACT.md)、[NAMING.md](NAMING.md)、[SOURCE_CONTRACT.md](SOURCE_CONTRACT.md)、[DAMAGED_MEDIA.md](DAMAGED_MEDIA.md)を参照してください。
 再開可能な索引と1,000万候補の検証は[INDEX.md](INDEX.md)、[PERFORMANCE-v1.md](PERFORMANCE-v1.md)に記録しています。
+
+## v1.1のFAT追加
+
+FAT12/16と、明示的に有効化するFAT12/16/32の連続配置推定を追加しました。[現行の対応範囲・制限](FAT-v1.1.md)を参照してください。推定の「保存完了」は元の内容の正しさを証明しません。

@@ -1,4 +1,4 @@
-//! Read-only FAT32/exFAT directory recovery. No guessed multi-cluster extents.
+//! Read-only FAT12/16/32 and exFAT directory recovery.
 mod geometry;
 pub(crate) mod indexed;
 mod names;
@@ -16,6 +16,10 @@ use std::{
 };
 
 const MAX_CLUSTER_VISITS: u64 = 2_000_000;
+const ESTIMATE_VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
+fn estimate_budget() -> u64 {
+    ESTIMATE_VALIDATION_BUDGET
+}
 const DISAGREE: &str = "mirrored FAT copies disagree on a referenced cluster";
 const MAX_CHAIN: u64 = 1_048_576;
 const MAX_DIRECTORIES: usize = 16384;
@@ -27,6 +31,49 @@ pub(crate) fn filesystem(image: &mut Image) -> Result<FileSystem> {
     Ok(Geometry::open(image)?.filesystem)
 }
 
+/// Identify classic FAT by cluster count, never by the cosmetic filesystem label.
+/// Full scanning subsequently verifies geometry, mirrors and live ownership.
+pub(crate) fn detect_boot(boot: &[u8], length: u64) -> Option<FileSystem> {
+    if boot.len() < 512 || boot[510..512] != [0x55, 0xaa] {
+        return None;
+    }
+    let sector = u64::from(u16_at(boot, 11).ok()?);
+    let spc = u64::from(boot[13]);
+    let reserved = u64::from(u16_at(boot, 14).ok()?);
+    let copies = u64::from(boot[16]);
+    if ![512, 1024, 2048, 4096].contains(&sector)
+        || !spc.is_power_of_two()
+        || spc > 128
+        || reserved == 0
+        || !(1..=2).contains(&copies)
+    {
+        return None;
+    }
+    let root = u64::from(u16_at(boot, 17).ok()?);
+    let short_fat = u64::from(u16_at(boot, 22).ok()?);
+    let fat = if short_fat == 0 {
+        u64::from(u32_at(boot, 36).ok()?)
+    } else {
+        short_fat
+    };
+    let small = u64::from(u16_at(boot, 19).ok()?);
+    let total = if small == 0 {
+        u64::from(u32_at(boot, 32).ok()?)
+    } else {
+        small
+    };
+    let data = reserved + copies * fat + (root * 32).div_ceil(sector);
+    if fat == 0 || data >= total || total * sector > length {
+        return None;
+    }
+    match (total - data) / spc {
+        1..4085 if short_fat != 0 && root != 0 => Some(FileSystem::Fat12),
+        4085..65525 if short_fat != 0 && root != 0 => Some(FileSystem::Fat16),
+        65525..=0x0fff_fff5 if short_fat == 0 && root == 0 => Some(FileSystem::Fat32),
+        _ => None,
+    }
+}
+
 pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
     let geometry = Geometry::open(image)?;
     let mut copies = Vec::new();
@@ -35,9 +82,19 @@ pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
         let Ok(bytes) = image.read(*offset, 8) else {
             continue;
         };
-        let first = u32_at(&bytes, 0)?;
-        let second = u32_at(&bytes, 4)?;
-        if first & 0x0fff_fff8 == 0x0fff_fff8 && second & 0x0fff_fff8 == 0x0fff_fff8 {
+        let valid = match geometry.filesystem {
+            FileSystem::Fat12 => {
+                u16_at(&bytes, 0)? & 0xff8 == 0xff8 && u16_at(&bytes, 1)? >> 4 == 0xfff
+            }
+            FileSystem::Fat16 => {
+                u16_at(&bytes, 0)? & 0xfff8 == 0xfff8 && u16_at(&bytes, 2)? & 0x3fff == 0x3fff
+            }
+            _ => {
+                u32_at(&bytes, 0)? & 0x0fff_fff8 == 0x0fff_fff8
+                    && u32_at(&bytes, 4)? & 0x0fff_fff8 == 0x0fff_fff8
+            }
+        };
+        if valid {
             copies.push(bytes);
         }
     }
@@ -52,10 +109,11 @@ pub(crate) fn probe(image: &mut Image) -> Result<Vec<String>> {
             geometry.fat_offsets.len()
         ));
     }
-    let root = image.read(
-        geometry.address(geometry.root)?,
-        geometry.cluster.min(65536) as usize,
-    )?;
+    let (root_at, root_size) = match geometry.fixed_root {
+        Some(root) => root,
+        None => (geometry.address(geometry.root)?, geometry.cluster),
+    };
+    let root = image.read(root_at, root_size.min(65536) as usize)?;
     if geometry.filesystem == FileSystem::Exfat {
         for kind in [0x81, 0x82] {
             let entry = root
@@ -131,6 +189,7 @@ struct Volume {
     copy: Option<usize>,
     /// Chains resolved from a single FAT copy because the mirrors disagreed.
     copy_choices: Vec<String>,
+    estimate_validation_remaining: u64,
 }
 
 /// Allocation-only view for signature search. It does not infer deletion from
@@ -148,10 +207,13 @@ impl AllocationReader {
             visits: 0,
             copy: None,
             copy_choices: Vec::new(),
+            estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
         };
         if volume.geometry.filesystem == FileSystem::Exfat {
             volume.prepare_exfat(image, 1_048_576, cancel)?;
-        } else if volume.next(image, volume.geometry.root)? == 0 {
+        } else if volume.geometry.fixed_root.is_none()
+            && volume.next(image, volume.geometry.root)? == 0
+        {
             return Err(invalid("FAT32 root directory is marked free"));
         }
         Ok(Self(volume))
@@ -243,35 +305,45 @@ impl Volume {
     fn next(&mut self, image: &mut Image, cluster: u32) -> Result<u32> {
         self.geometry.address(cluster)?;
         let sector = self.geometry.sector;
-        let within = u64::from(cluster) * 4;
+        let (within, count) = match self.geometry.filesystem {
+            FileSystem::Fat12 => (u64::from(cluster) * 3 / 2, 2),
+            FileSystem::Fat16 => (u64::from(cluster) * 2, 2),
+            _ => (u64::from(cluster) * 4, 4),
+        };
         let mut values = Vec::new();
         let mut unreadable = None;
-        for (index, base) in self.geometry.fat_offsets.iter().enumerate() {
+        'copies: for (index, base) in self.geometry.fat_offsets.iter().enumerate() {
             if self.copy.is_some_and(|only| only != index) {
                 continue;
             }
-            let offset = base + within / sector * sector;
-            if !self.fat_cache.contains_key(&offset) {
-                if self.fat_cache.len() >= 128 {
-                    self.fat_cache.pop_first();
-                }
-                match image.read(offset, sector as usize) {
-                    Ok(bytes) => {
-                        self.fat_cache.insert(offset, bytes);
+            let mut raw = [0u8; 4];
+            for (n, byte) in raw.iter_mut().take(count).enumerate() {
+                let at = within + n as u64;
+                let offset = base + at / sector * sector;
+                if !self.fat_cache.contains_key(&offset) {
+                    if self.fat_cache.len() >= 128 {
+                        self.fat_cache.pop_first();
                     }
-                    // An unreadable sector of one mirror: use the remaining copies.
-                    Err(e @ (Error::MissingRanges(_) | Error::Io(_))) => {
-                        unreadable = Some(e);
-                        continue;
+                    match image.read(offset, sector as usize) {
+                        Ok(bytes) => {
+                            self.fat_cache.insert(offset, bytes);
+                        }
+                        Err(e @ (Error::MissingRanges(_) | Error::Io(_))) => {
+                            unreadable = Some(e);
+                            continue 'copies;
+                        }
+                        Err(e) => return Err(e),
                     }
-                    Err(e) => return Err(e),
                 }
+                *byte = self.fat_cache[&offset][(at % sector) as usize];
             }
-            let mut value = u32_at(&self.fat_cache[&offset], (within % sector) as usize)?;
-            if self.geometry.filesystem == FileSystem::Fat32 {
-                value &= 0x0fff_ffff;
-            }
-            values.push(value);
+            let value = u32::from_le_bytes(raw);
+            values.push(match self.geometry.filesystem {
+                FileSystem::Fat12 if cluster.is_multiple_of(2) => value & 0xfff,
+                FileSystem::Fat12 => value >> 4,
+                FileSystem::Fat32 => value & 0x0fff_ffff,
+                _ => value,
+            });
         }
         if values.is_empty() {
             return Err(unreadable.unwrap_or_else(|| invalid("no FAT copy")));
@@ -282,10 +354,43 @@ impl Volume {
         Ok(values[0])
     }
     fn is_end(&self, next: u32) -> bool {
-        if self.geometry.filesystem == FileSystem::Fat32 {
-            next >= 0x0fff_fff8
+        match self.geometry.filesystem {
+            FileSystem::Fat12 => next >= 0xff8,
+            FileSystem::Fat16 => next >= 0xfff8,
+            FileSystem::Fat32 => next >= 0x0fff_fff8,
+            _ => next == 0xffff_ffff,
+        }
+    }
+    fn is_fixed_root(&self, folder: &Folder) -> bool {
+        self.geometry.fixed_root.is_some()
+            && folder.first == 0
+            && folder.parent.is_none()
+            && folder.path.is_empty()
+            && folder.depth == 0
+            && !folder.deleted
+    }
+    fn directory_size(&self, folder: &Folder, clusters: &[u32]) -> u64 {
+        if self.is_fixed_root(folder) {
+            self.geometry.fixed_root.unwrap().1
         } else {
-            next == 0xffff_ffff
+            clusters.len() as u64 * self.geometry.cluster
+        }
+    }
+    fn directory_data(&self, folder: &Folder, clusters: &[u32]) -> Result<Data> {
+        let size = self.directory_size(folder, clusters);
+        if self.is_fixed_root(folder) {
+            let (start, _) = self.geometry.fixed_root.unwrap();
+            Ok(Data::NonResident {
+                runs: vec![Run {
+                    logical: 0,
+                    physical: Some(start),
+                    length: size,
+                }],
+                size,
+                initialized: size,
+            })
+        } else {
+            self.data(clusters, size, size)
         }
     }
     fn chain(
@@ -691,6 +796,15 @@ struct Folder {
     parent: Option<usize>,
 }
 
+fn directory_first(filesystem: FileSystem, raw: &[u8]) -> Result<u32> {
+    let low = u32::from(u16_at(raw, 26)?);
+    Ok(if filesystem == FileSystem::Fat32 {
+        low | u32::from(u16_at(raw, 20)?) << 16
+    } else {
+        low
+    })
+}
+
 fn candidate(
     filesystem: FileSystem,
     offset: u64,
@@ -699,10 +813,11 @@ fn candidate(
     size: u64,
     raw: &[u8],
 ) -> Candidate {
-    let label = if filesystem == FileSystem::Fat32 {
-        "fat32"
-    } else {
-        "exfat"
+    let label = match filesystem {
+        FileSystem::Fat12 => "fat12",
+        FileSystem::Fat16 => "fat16",
+        FileSystem::Fat32 => "fat32",
+        _ => "exfat",
     };
     let path = if prefix.path.is_empty() {
         name.text.clone()
@@ -796,6 +911,7 @@ pub(crate) fn scan_selected(
         visits: 0,
         copy: None,
         copy_choices: Vec::new(),
+        estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
     };
     if scan.filesystem == FileSystem::Exfat {
         match volume.prepare_exfat(image, options.max_records, cancel) {
@@ -846,7 +962,9 @@ pub(crate) fn scan_selected(
             }
             continue;
         }
-        let clusters = if folder.contiguous {
+        let clusters = if volume.is_fixed_root(&folder) {
+            Ok(Vec::new())
+        } else if folder.contiguous {
             let pseudo = Entry {
                 candidate: candidate(
                     scan.filesystem,
@@ -892,7 +1010,7 @@ pub(crate) fn scan_selected(
                 continue;
             }
         };
-        let size = clusters.len() as u64 * volume.geometry.cluster;
+        let size = volume.directory_size(&folder, &clusters);
         if size == 0 || size > MAX_DIRECTORY_BYTES || folder.depth > 64 || folder.path.len() > 4096
         {
             scan.truncated = true;
@@ -928,16 +1046,14 @@ pub(crate) fn scan_selected(
         if !folder.deleted {
             live_clusters.extend(&clusters);
         }
-        if folder.deleted
-            && scan.filesystem == FileSystem::Fat32
-            && volume.next(image, folder.first)? == 0
+        if folder.deleted && scan.filesystem.classic_fat() && volume.next(image, folder.first)? == 0
         {
             scan.truncated = true;
             if scan.warnings.len() < 100 {
                 scan.warnings.push(format!("deleted directory {}: chain cleared; only its known first cluster was examined", folder.path));
             }
         }
-        let mut directory = Directory::new(volume.data(&clusters, size, size)?);
+        let mut directory = Directory::new(volume.directory_data(&folder, &clusters)?);
         let mut long = Vec::new();
         loop {
             if cancel.load(Ordering::Relaxed) {
@@ -960,7 +1076,7 @@ pub(crate) fn scan_selected(
             if slot.raw[0] == 0 {
                 break;
             }
-            let parsed = if scan.filesystem == FileSystem::Fat32 {
+            let parsed = if scan.filesystem.classic_fat() {
                 if slot.raw[11] == 0x0f {
                     if long.len() < 21 {
                         long.push(slot.raw);
@@ -978,8 +1094,7 @@ pub(crate) fn scan_selected(
                 }
                 let name = names::fat32_name(&slot.raw, &lfn);
                 let size = u32_at(&slot.raw, 28)? as u64;
-                let first =
-                    (u32::from(u16_at(&slot.raw, 20)?) << 16) | u32::from(u16_at(&slot.raw, 26)?);
+                let first = directory_first(scan.filesystem, &slot.raw)?;
                 let mut raw = lfn.iter().flatten().copied().collect::<Vec<_>>();
                 raw.extend(slot.raw);
                 let mut entry = Entry {
@@ -1212,6 +1327,7 @@ pub(crate) fn scan_selected(
         conflicted: &conflicted,
         live_clusters: &live_clusters,
         live_complete,
+        estimate_contiguous: options.estimate_fat_contiguous,
     };
     for (entry, origin) in entries {
         let result = recover_entry(
@@ -1249,6 +1365,7 @@ struct Ownership<'a> {
     conflicted: &'a BTreeSet<usize>,
     live_clusters: &'a Owners,
     live_complete: bool,
+    estimate_contiguous: bool,
 }
 fn recover_entry(
     image: &mut Image,
@@ -1271,7 +1388,73 @@ fn recover_entry(
         };
     }
     let attempt = (|| -> Result<Data> {
-        let clusters = volume.file_clusters(image, &entry, true, cancel)?;
+        let (clusters, estimated) = match volume.file_clusters(image, &entry, true, cancel) {
+            Ok(clusters) => (clusters, false),
+            Err(Error::Unsupported(reason))
+                if ownership.estimate_contiguous
+                    && scan.filesystem.classic_fat()
+                    && reason.starts_with("deleted cluster chain is cleared/cut") =>
+            {
+                if !ownership.live_complete {
+                    return Err(Error::Unsupported(
+                        "FAT estimate refused: live ownership traversal was incomplete".into(),
+                    ));
+                }
+                let count = entry.size.div_ceil(volume.geometry.cluster);
+                if count > MAX_CHAIN || entry.size > 64 * 1024 * 1024 {
+                    return Err(Error::Limit(
+                        "FAT estimate exceeds the cluster or 64 MiB file limit".into(),
+                    ));
+                }
+                let last = u64::from(entry.first)
+                    .checked_add(count)
+                    .and_then(|n| n.checked_sub(1))
+                    .filter(|n| *n <= u64::from(u32::MAX))
+                    .ok_or_else(|| invalid("estimated FAT cluster overflow"))?;
+                volume.geometry.address(entry.first)?;
+                volume.geometry.address(last as u32)?;
+                let mut clusters = Vec::with_capacity(count as usize);
+                for cluster in u64::from(entry.first)..=last {
+                    volume.visit(cancel)?;
+                    let cluster = cluster as u32;
+                    if ownership.live_clusters.contains(&cluster) {
+                        entry.candidate.allocation_status = AllocationStatus::Conflict;
+                        return Err(Error::Unsupported(
+                            "FAT estimate overlaps a live file or directory".into(),
+                        ));
+                    }
+                    // A guess requires every configured mirror to be readable
+                    // and free. Residual-chain mirror fallback is not used here.
+                    for copy in 0..volume.geometry.fat_offsets.len() {
+                        volume.copy = Some(copy);
+                        let value = volume.next(image, cluster);
+                        volume.copy = None;
+                        if value? != 0 {
+                            entry.candidate.allocation_status = AllocationStatus::Conflict;
+                            return Err(Error::Unsupported(
+                                "FAT estimate includes a non-free cluster".into(),
+                            ));
+                        }
+                    }
+                    clusters.push(cluster);
+                }
+                entry.candidate.extent_evidence = ExtentEvidence::EstimatedContiguous;
+                let checked = crate::carve::validate_estimated_extent(
+                    image,
+                    volume.geometry.address(entry.first)?,
+                    entry.size,
+                    &entry.candidate.name,
+                    cancel,
+                    &mut volume.estimate_validation_remaining,
+                )?;
+                entry.candidate.warnings.push(format!(
+                    "ESTIMATED_CONTIGUOUS: the FAT chain was cleared; consecutive free clusters were assumed by explicit opt-in. {} Original content and fragmentation are unverified; compare with a known hash or inspect the output.",
+                    if checked { "Format structure was validated." } else { "No structural validator is available for this format." }
+                ));
+                (clusters, true)
+            }
+            Err(error) => return Err(error),
+        };
         if scan.filesystem == FileSystem::Exfat {
             entry.candidate.extent_evidence = if clusters.is_empty() {
                 ExtentEvidence::Metadata
@@ -1299,9 +1482,12 @@ fn recover_entry(
                 );
             }
         } else {
-            let free = clusters.is_empty()
+            let free = estimated
+                || clusters.is_empty()
                 || (clusters.len() == 1 && volume.next(image, entry.first)? == 0);
-            entry.candidate.extent_evidence = if clusters.is_empty() {
+            entry.candidate.extent_evidence = if estimated {
+                ExtentEvidence::EstimatedContiguous
+            } else if clusters.is_empty() {
                 ExtentEvidence::Metadata
             } else if free {
                 ExtentEvidence::SingleCluster
@@ -1409,11 +1595,13 @@ mod tests {
         for options in [
             ScanOptions {
                 fragments: false,
+                estimate_fat_contiguous: false,
                 max_records: 1,
                 max_candidates: 100,
             },
             ScanOptions {
                 fragments: false,
+                estimate_fat_contiguous: false,
                 max_records: 100,
                 max_candidates: 1,
             },

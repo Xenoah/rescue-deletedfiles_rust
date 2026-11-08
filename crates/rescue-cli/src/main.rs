@@ -174,6 +174,9 @@ enum Command {
         /// Also search self-contained NTFS records outside the current MFT.
         #[arg(long)]
         fragments: bool,
+        /// Estimate contiguous extents for deleted FAT files whose entire chain is free.
+        #[arg(long)]
+        estimate_fat_contiguous: bool,
         #[arg(long)]
         json: bool,
     },
@@ -626,6 +629,7 @@ fn run() -> Result<i32, Error> {
             range_end,
             volume_id,
             fragments,
+            estimate_fat_contiguous,
         } => {
             rescue_core::guard_output_path(&source, &work_dir)?;
             let recovered_volume = if let Some(id) = volume_id {
@@ -669,6 +673,7 @@ fn run() -> Result<i32, Error> {
                 range_end,
                 recovered_volume,
                 fragments,
+                estimate_fat_contiguous,
             };
             if !indexed && (max_records.is_some() || max_candidates.is_some()) {
                 return Err(Error::Request(
@@ -683,6 +688,7 @@ fn run() -> Result<i32, Error> {
                     100_000
                 }),
                 fragments,
+                estimate_fat_contiguous,
             };
             if indexed {
                 let path = rescue_core::scan_indexed(

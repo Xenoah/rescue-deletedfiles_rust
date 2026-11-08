@@ -32,6 +32,8 @@ pub(crate) struct State {
     live_complete: bool,
     folders_seen: usize,
     visits: u64,
+    #[serde(default = "estimate_budget")]
+    estimate_validation_remaining: u64,
     staged: u64,
     next_entry: u64,
     base_candidates: usize,
@@ -73,6 +75,7 @@ impl State {
             live_complete: true,
             folders_seen: 0,
             visits: volume.visits,
+            estimate_validation_remaining: volume.estimate_validation_remaining,
             staged: 0,
             next_entry: 0,
             base_candidates,
@@ -86,6 +89,7 @@ impl State {
             || self.staged > options.max_candidates as u64
             || self.next_entry > self.staged
             || self.visits > MAX_CLUSTER_VISITS
+            || self.estimate_validation_remaining > ESTIMATE_VALIDATION_BUDGET
             || self.parents.len() > MAX_DIRECTORIES
             || self.folders_seen != self.parents.len()
             || self.live.len() + self.deleted.len() + self.folders_seen > MAX_DIRECTORIES
@@ -111,9 +115,9 @@ impl State {
             return Err(Error::Request("invalid FAT traversal checkpoint".into()));
         }
         if let Some(a) = &self.active {
-            let size = a.clusters.len() as u64 * volume.geometry.cluster;
+            let size = volume.directory_size(&a.folder, &a.clusters);
             if a.origin >= self.parents.len()
-                || a.clusters.is_empty()
+                || (a.clusters.is_empty() && !volume.is_fixed_root(&a.folder))
                 || size > MAX_DIRECTORY_BYTES
                 || a.at > size
                 || !a.at.is_multiple_of(32)
@@ -160,7 +164,9 @@ fn begin_folder(
         }
         return Ok(());
     }
-    let clusters = if folder.contiguous {
+    let clusters = if volume.is_fixed_root(&folder) {
+        Ok(Vec::new())
+    } else if folder.contiguous {
         let pseudo = Entry {
             candidate: candidate(
                 state.scan.filesystem,
@@ -207,7 +213,7 @@ fn begin_folder(
             return Ok(());
         }
     };
-    let size = clusters.len() as u64 * volume.geometry.cluster;
+    let size = volume.directory_size(&folder, &clusters);
     if size == 0 || size > MAX_DIRECTORY_BYTES || folder.depth > 64 || folder.path.len() > 4096 {
         state.scan.truncated = true;
         if !folder.deleted {
@@ -245,7 +251,7 @@ fn begin_folder(
         state.live_clusters.extend(&clusters);
     }
     if folder.deleted
-        && state.scan.filesystem == FileSystem::Fat32
+        && state.scan.filesystem.classic_fat()
         && volume.next(image, folder.first)? == 0
     {
         state.scan.truncated = true;
@@ -278,8 +284,7 @@ fn traverse(
     let Some(mut active) = state.active.take() else {
         return Ok(vec![]);
     };
-    let size = active.clusters.len() as u64 * volume.geometry.cluster;
-    let mut directory = Directory::new(volume.data(&active.clusters, size, size)?);
+    let mut directory = Directory::new(volume.directory_data(&active.folder, &active.clusters)?);
     directory.at = active.at;
     let mut staged = vec![];
     let started = state.scan.scanned_records;
@@ -312,7 +317,7 @@ fn traverse(
             break;
         }
         let previous = staged.len();
-        let parsed = if state.scan.filesystem == FileSystem::Fat32 {
+        let parsed = if state.scan.filesystem.classic_fat() {
             if slot.raw[11] == 0x0f {
                 if active.long.len() < 21 {
                     active.long.push(slot.raw);
@@ -332,8 +337,7 @@ fn traverse(
             }
             let name = names::fat32_name(&slot.raw, &lfn);
             let size = u32_at(&slot.raw, 28)? as u64;
-            let first =
-                (u32::from(u16_at(&slot.raw, 20)?) << 16) | u32::from(u16_at(&slot.raw, 26)?);
+            let first = directory_first(state.scan.filesystem, &slot.raw)?;
             let mut raw = lfn.iter().flatten().copied().collect::<Vec<_>>();
             raw.extend(slot.raw);
             let mut entry = Entry {
@@ -571,6 +575,7 @@ pub(crate) fn run_volume(
         visits: 0,
         copy: None,
         copy_choices: Vec::new(),
+        estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
     };
     if volume.geometry.filesystem == FileSystem::Exfat {
         volume.prepare_exfat(volume_image, checkpoint.options.max_records, cancel)?;
@@ -592,12 +597,14 @@ pub(crate) fn run_volume(
             .checked_sub(state.base_candidates)
             .ok_or_else(|| Error::Request("FAT candidate budget".into()))?,
         fragments: false,
+        estimate_fat_contiguous: checkpoint.options.estimate_fat_contiguous,
     };
     if state.base_candidates > committed {
         return Err(Error::Request("FAT candidate baseline".into()));
     }
     state.validate(&volume, options, header)?;
     volume.visits = state.visits;
+    volume.estimate_validation_remaining = state.estimate_validation_remaining;
     let settings = header.search.clone().unwrap_or_default();
     loop {
         if cancel.load(Ordering::Relaxed) {
@@ -621,6 +628,7 @@ pub(crate) fn run_volume(
                 conflicted: &state.conflicted,
                 live_clusters: &state.live_clusters,
                 live_complete: state.live_complete,
+                estimate_contiguous: options.estimate_fat_contiguous,
             };
             let mut bytes = 0u64;
             for _ in 0..128 {
@@ -671,6 +679,7 @@ pub(crate) fn run_volume(
             }
         }
         state.visits = volume.visits;
+        state.estimate_validation_remaining = volume.estimate_validation_remaining;
         header.scanned_records = checkpoint.previous_records + state.scan.scanned_records;
         header.invalid_records = state.base_invalid + state.scan.invalid_records;
         header.truncated |= state.scan.truncated;

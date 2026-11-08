@@ -72,10 +72,40 @@ pub fn file_type(c: &Candidate) -> String {
 pub fn state(c: &Candidate) -> &'static str {
     if !c.supported {
         tr!("復元不可", "Unavailable")
+    } else if c.extent_evidence == rescue_core::ExtentEvidence::EstimatedContiguous {
+        tr!("推定（内容未確認）", "Estimated (unverified)")
     } else if c.warnings.is_empty() {
         tr!("復元候補", "Candidate")
     } else {
         tr!("要確認", "Review needed")
+    }
+}
+pub fn extent_label(evidence: rescue_core::ExtentEvidence) -> &'static str {
+    use rescue_core::ExtentEvidence::*;
+    match evidence {
+        EstimatedContiguous => tr!(
+            "推定連続配置・元の内容との一致は未確認",
+            "Estimated contiguous layout; original content unverified"
+        ),
+        Metadata => tr!("残存する管理情報", "Surviving filesystem metadata"),
+        MetadataRemnant => tr!(
+            "現在の管理領域外に残存する記録",
+            "Metadata remnant outside the current table"
+        ),
+        ResidualFatChain => tr!("残存するFATチェーン", "Surviving FAT chain"),
+        SingleCluster => tr!(
+            "開始クラスタ内の範囲",
+            "Extent within the known first cluster"
+        ),
+        NoFatChain => tr!(
+            "連続配置を示すexFAT管理情報",
+            "exFAT metadata declares a contiguous extent"
+        ),
+        PngValidated | JpegValidated | PdfStructure | ZipCrcValidated | MediaStructure => tr!(
+            "形式の構造を検証・元の内容との一致は未確認",
+            "Format structure checked; original content unverified"
+        ),
+        Unknown => tr!("配置の根拠は不明", "Extent evidence unknown"),
     }
 }
 pub fn size_text(size: Option<u64>) -> String {

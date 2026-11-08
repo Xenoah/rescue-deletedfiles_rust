@@ -24,7 +24,13 @@ pub(crate) fn layout(session: &Session) -> Result<()> {
             || !layout.regions.contains(&volume.region)
             || !matches!(
                 volume.region.filesystem,
-                Some(FileSystem::Ntfs | FileSystem::Fat32 | FileSystem::Exfat)
+                Some(
+                    FileSystem::Ntfs
+                        | FileSystem::Fat12
+                        | FileSystem::Fat16
+                        | FileSystem::Fat32
+                        | FileSystem::Exfat
+                )
             )
             || Image::open_region(&session.source, Some(&volume.region))?.fingerprint()?
                 != volume.fingerprint
@@ -38,6 +44,7 @@ pub(crate) fn layout(session: &Session) -> Result<()> {
 pub(crate) fn fat_selection(
     image: &mut Image,
     ids: &BTreeSet<String>,
+    estimate_fat_contiguous: bool,
     cancel: &AtomicBool,
 ) -> Result<fat::Scan> {
     let scan = fat::scan_selected(
@@ -48,6 +55,7 @@ pub(crate) fn fat_selection(
             // when the last requested entry is found.
             max_candidates: usize::MAX,
             fragments: false,
+            estimate_fat_contiguous,
         },
         Some(ids),
         cancel,

@@ -12,6 +12,9 @@ import time
 import urllib.error
 import urllib.request
 import zipfile
+from e2e_classic_fat import main as classic_fat
+from e2e_estimated_fat import main as estimated_fat
+from independent_classic_fat import main as independent_classic_fat
 from e2e_formats import main as formats
 from e2e_jpeg import main as jpeg
 from e2e_documents import main as documents
@@ -75,6 +78,8 @@ def main():
         data=download(name,limit)
         if hashlib.sha256(data).hexdigest()!=manifest[name]:raise RuntimeError('published checksum mismatch: '+name)
         return data
+    from release_assets import package_names
+    if set(manifest)!=set(package_names(a.tag.removeprefix('v'))):raise RuntimeError('Public checksum manifest must contain exactly eight distributions')
     version=a.tag.removeprefix('v');stem=f'rescue-{version}-{a.platform}-{a.arch}'
     name=stem+('-portable.tar.gz' if a.platform=='linux' else '-portable.zip')
     archive=verified(name,192*1024*1024)
@@ -121,6 +126,9 @@ def main():
                        ('preview',preview),('allocation_scope',allocation_scope),('job_contract',job_contract),
                        ('naming',naming),('source_contract',source_contract),('export_raw',export_raw),('damaged_fat',damaged_fat)]:
         result[suite_name+'_verification']=recorded_suite(binary,suite,(a.output/(suite_name+'-results.json')).resolve())
+    result['classic_fat_verification']=classic_fat(binary,a.output/'classic-fat-results.json')
+    result['estimated_fat_verification']=estimated_fat(binary,a.output/'estimated-fat-results.json')
+    if a.platform=='linux':result['independent_classic_fat_verification']=independent_classic_fat(binary,a.output/'independent-classic-fat-results.json')
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))

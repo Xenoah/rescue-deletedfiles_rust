@@ -111,7 +111,12 @@ impl Scope {
                     let mut image = Image::open_region(&self.path, Some(&region))?;
                     let backend = match region.filesystem {
                         Some(FileSystem::Ntfs) => Backend::Ntfs(Box::new(Ntfs::open(&mut image)?)),
-                        Some(FileSystem::Fat32 | FileSystem::Exfat) => {
+                        Some(
+                            FileSystem::Fat12
+                            | FileSystem::Fat16
+                            | FileSystem::Fat32
+                            | FileSystem::Exfat,
+                        ) => {
                             Backend::Fat(Box::new(fat::AllocationReader::open(&mut image, cancel)?))
                         }
                         _ => {

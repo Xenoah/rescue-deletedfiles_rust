@@ -263,7 +263,15 @@ fn read_volume(
                 .iter()
                 .map(|c| c.id.strip_prefix(prefix).unwrap_or(&c.id).to_owned())
                 .collect();
-            let fresh = validation::fat_selection(&mut image, &ids, cancel)?;
+            let fresh = validation::fat_selection(
+                &mut image,
+                &ids,
+                session
+                    .search
+                    .as_ref()
+                    .is_some_and(|s| s.estimate_fat_contiguous),
+                cancel,
+            )?;
             if fresh.filesystem != session.filesystem {
                 return Err(Error::SourceChanged);
             }

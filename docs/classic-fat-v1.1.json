@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "version": "rescue 1.1.0-alpha.2",
+  "binary_sha256": "c7c77aa97c9cb85d110d6f31c2e25adc876a033c2b95cd6030374c4533a44dfa",
+  "checks": 18,
+  "cases": [
+    "fat12_fixed_root_lfn_subdirectory_and_packed_boundary",
+    "fat12_legacy_index_mcp_bytes",
+    "fat12_cleared_loop_live_overlap_refused",
+    "fat12_short_fat_refused",
+    "fat12_no_root_refused",
+    "fat12_bad_cluster_refused",
+    "fat12_conflicting_totals_refused",
+    "fat12_mbr_bounded_volume",
+    "fat12_gpt_bounded_volume",
+    "fat16_fixed_root_lfn_subdirectory_and_packed_boundary",
+    "fat16_legacy_index_mcp_bytes",
+    "fat16_cleared_loop_live_overlap_refused",
+    "fat16_short_fat_refused",
+    "fat16_no_root_refused",
+    "fat16_bad_cluster_refused",
+    "fat16_conflicting_totals_refused",
+    "fat16_mbr_bounded_volume",
+    "fat16_gpt_bounded_volume"
+  ],
+  "files_byte_exact": 60,
+  "source_unchanged": true,
+  "scope": "FAT12/16 fixed roots, packed FAT boundaries, ownership and all frontends.\n\nFixtures are ordinary files. Byte truth is generated independently of the Rust\nparser. Existing FAT32/exFAT adversarial suites still run unchanged."
+}

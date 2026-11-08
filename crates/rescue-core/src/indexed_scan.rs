@@ -51,6 +51,7 @@ pub fn scan_indexed(
 ) -> Result<PathBuf> {
     settings.validate()?;
     options.fragments = settings.fragments;
+    options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
     if options.max_candidates == 0
         || options.max_candidates > 10_000_000
         || options.max_records == 0
@@ -258,7 +259,11 @@ fn run(
         || checkpoint.plans.iter().any(|p| {
             !matches!(
                 p.filesystem,
-                FileSystem::Ntfs | FileSystem::Fat32 | FileSystem::Exfat
+                FileSystem::Ntfs
+                    | FileSystem::Fat12
+                    | FileSystem::Fat16
+                    | FileSystem::Fat32
+                    | FileSystem::Exfat
             )
         })
     {
@@ -300,7 +305,10 @@ fn run(
     header.cancelled = false;
     let settings = header.search.clone().unwrap_or_default();
     settings.validate()?;
-    if settings.method != ScanMethod::Quick || settings.fragments != checkpoint.options.fragments {
+    if settings.method != ScanMethod::Quick
+        || settings.fragments != checkpoint.options.fragments
+        || settings.estimate_fat_contiguous != checkpoint.options.estimate_fat_contiguous
+    {
         return Err(Error::Request(
             "saved metadata scan settings changed".into(),
         ));

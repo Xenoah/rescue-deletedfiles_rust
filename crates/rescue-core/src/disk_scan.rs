@@ -41,9 +41,12 @@ pub fn scan_source(
         truncated: false,
         invalid_records: 0,
         warnings: layout.warnings,
-        search: options.fragments.then(|| crate::SearchSettings {
-            fragments: true,
-            ..Default::default()
+        search: (options.fragments || options.estimate_fat_contiguous).then(|| {
+            crate::SearchSettings {
+                fragments: options.fragments,
+                estimate_fat_contiguous: options.estimate_fat_contiguous,
+                ..Default::default()
+            }
         }),
         region: None,
         volumes: Vec::new(),
@@ -63,6 +66,7 @@ pub fn scan_source(
         }
         let remaining = ScanOptions {
             fragments: options.fragments,
+            estimate_fat_contiguous: options.estimate_fat_contiguous,
             max_records: options.max_records.saturating_sub(session.scanned_records),
             max_candidates: options
                 .max_candidates
@@ -197,7 +201,13 @@ pub(crate) fn recover_disk(
             || !layout.regions.contains(&volume.region)
             || !matches!(
                 volume.region.filesystem,
-                Some(FileSystem::Ntfs | FileSystem::Fat32 | FileSystem::Exfat)
+                Some(
+                    FileSystem::Ntfs
+                        | FileSystem::Fat12
+                        | FileSystem::Fat16
+                        | FileSystem::Fat32
+                        | FileSystem::Exfat
+                )
             )
         {
             return Err(Error::SourceChanged);

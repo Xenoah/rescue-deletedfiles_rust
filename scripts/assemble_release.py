@@ -57,6 +57,14 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         ok=proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['source_unchanged'] and proof['checks']>0
         if platform=='linux':ok=ok and proof['checks']>=checks and (files is None or proof['files_byte_exact']==files)
         if not ok:contract_failures.append(f"{prefix}/{platform}/{arch}: observed {{'version':{proof.get('version')!r},'status':{proof.get('status')!r},'checks':{proof.get('checks')!r},'files':{proof.get('files_byte_exact')!r}}}")
+    if modern:
+        for prefix,checks,files in [('classic-fat',18,60),('estimated-fat',19,10)]:
+            proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
+            assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=checks and proof['files_byte_exact']==files and proof['source_unchanged']
+            if prefix=='estimated-fat':assert proof['known_incorrect_estimates_labelled_unverified']==1
+        if platform=='linux':
+            proof=json.loads((dist/'independent-classic-fat-linux-x64.json').read_text())
+            assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['files_byte_exact']==8 and proof['source_unchanged']
     fuzz=json.loads((dist/f'fuzz-results-{platform}-{arch}.json').read_text())
     if not (fuzz['version']==f'rescue {VERSION}' and fuzz['status']=='passed' and fuzz['checks']>=400 and fuzz['panics']==0 and fuzz['source_unchanged']):contract_failures.append(f"fuzz/{platform}/{arch}: observed checks {fuzz.get('checks')!r}")
     if platform=='windows':

@@ -25,6 +25,67 @@ const WINDOW: u64 = 1024 * 1024;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
 const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
+/// Reject failed structure checks on an explicitly estimated FAT extent. A
+/// successful structure check still cannot prove original file identity.
+pub(crate) fn validate_estimated_extent(
+    image: &mut Image,
+    at: u64,
+    size: u64,
+    name: &str,
+    cancel: &AtomicBool,
+    budget: &mut u64,
+) -> Result<bool> {
+    if size > container::MAX_ENCODED as u64 {
+        return Err(Error::Limit(
+            "estimated FAT file exceeds the 64 MiB validation limit".into(),
+        ));
+    }
+    let end = at
+        .checked_add(size)
+        .filter(|end| *end <= image.length)
+        .ok_or_else(|| Error::Invalid("estimated FAT extent outside source".into()))?;
+    let extension = name.rsplit('.').next().unwrap_or("").to_ascii_lowercase();
+    let head = image.read(at, size.min(12) as usize)?;
+    charge(budget, head.len())?;
+    let format = match extension.as_str() {
+        "png" | "apng" => Some(Format::Png),
+        "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
+        "pdf" => Some(Format::Pdf),
+        "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
+        "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
+        _ if head.starts_with(SIGNATURE) => Some(Format::Png),
+        _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
+        _ if head.starts_with(b"%PDF-") => Some(Format::Pdf),
+        _ if head.starts_with(b"PK\x03\x04") => Some(Format::Zip),
+        _ => None,
+    };
+    let Some(format) = format else {
+        return Ok(false);
+    };
+    let (_, validated, _) = format.validate(image, at, cancel, budget, end)?;
+    if validated.len() as u64 > size {
+        return Err(Error::Invalid(
+            "validated format exceeds estimated FAT size".into(),
+        ));
+    }
+    if validated.len() as u64 != size {
+        let remaining = size.saturating_sub(validated.len() as u64);
+        if format != Format::Pdf || remaining > 4096 {
+            return Err(Error::Invalid(
+                "estimated FAT length differs from validated format extent".into(),
+            ));
+        }
+        let tail = image.read(at + validated.len() as u64, remaining as usize)?;
+        charge(budget, tail.len())?;
+        if !tail.iter().all(u8::is_ascii_whitespace) {
+            return Err(Error::Invalid(
+                "non-whitespace after estimated PDF extent".into(),
+            ));
+        }
+    }
+    Ok(true)
+}
+
 fn charge(budget: &mut u64, amount: usize) -> Result<()> {
     *budget = budget
         .checked_sub(amount as u64)
@@ -504,6 +565,7 @@ mod tests {
             &path,
             ScanOptions {
                 fragments: false,
+                estimate_fat_contiguous: false,
                 max_records: 0,
                 max_candidates: 1,
             },

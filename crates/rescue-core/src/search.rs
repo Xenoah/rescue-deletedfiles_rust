@@ -40,9 +40,17 @@ pub struct SearchSettings {
     pub recovered_volume: Option<crate::SourceRegion>,
     #[serde(default)]
     pub fragments: bool,
+    /// Opt in to clearly labelled contiguous guesses when every FAT entry is free.
+    #[serde(default)]
+    pub estimate_fat_contiguous: bool,
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.estimate_fat_contiguous && self.method != ScanMethod::Quick {
+            return Err(Error::Request(
+                "FAT contiguous estimation requires a metadata scan".into(),
+            ));
+        }
         if self.fragments && self.method != ScanMethod::Quick {
             return Err(Error::Request(
                 "MFT remnants require a metadata scan".into(),
@@ -162,6 +170,7 @@ pub fn scan_with_settings(
 ) -> Result<Session> {
     settings.validate()?;
     options.fragments = settings.fragments;
+    options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
     let mut session = match settings.method {
         ScanMethod::Quick => {
             if let Some(region) = &settings.recovered_volume {
