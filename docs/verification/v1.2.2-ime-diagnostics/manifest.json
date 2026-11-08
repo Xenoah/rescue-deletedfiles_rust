@@ -154,6 +154,27 @@
         }
       ],
       "candidate_timing": "Before Escape, the app shows とりけし but prediction popup still shows type/true/test. After the first Escape, Japanese predictions including 取り消し appear; after the second Escape the popup closes but composition remains. This suggests pending prediction updates race the two-Escape sequence; not yet proven by native-control comparison."
+    },
+    {
+      "case": "wpf-baseline-setup",
+      "run": 42507873185,
+      "status": "failed",
+      "artifact_zip_sha256": "4354cabe32094cb9da4e48437278fd1790e2d05c1b4d2395e42a97cceeffd739",
+      "finding": "Raw-event diagnostic repeats first8pass/secondprocessconversionfailure. The standard WPF comparison did not reach input: its temporary config lacked an explicit ACL grant to the restricted runner identity. This is no evidence of WPF IME behavior. Added the same owned-fixture ACL grant used by the product UIA suite.",
+      "files": [
+        {
+          "file": "wpf-baseline-setup/uia.json",
+          "sha256": "685ac6ca0cac486cffa50f35fe2197d8e09db840987008510e1da3181ad256e8"
+        },
+        {
+          "file": "wpf-baseline-setup/stderr.txt",
+          "sha256": "1983dc057515bac2fa5bbbcfc0fc49a51083532657de13b0693e60bcc4ba1c3a"
+        },
+        {
+          "file": "wpf-baseline-setup/baseline-stderr.txt",
+          "sha256": "e08d8400740d4ab7309fe9149f5db20734439e26d189d04cccfe24b3efbc91a8"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {

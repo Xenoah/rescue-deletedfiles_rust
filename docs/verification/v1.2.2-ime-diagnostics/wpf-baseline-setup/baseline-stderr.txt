@@ -1,0 +1,8 @@
+Get-Content : Access is denied
+At D:\a\rescue-deletedfiles_rust\rescue-deletedfiles_rust\scripts\gui_windows.ps1:182 char:8
++ $cfg = Get-Content -LiteralPath $Config -Raw -Encoding UTF8 | Convert ...
++        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : PermissionDenied: (D:\a\rescue-del...kwd\config.json:String) [Get-Content], Unauthorized 
+   AccessException
+    + FullyQualifiedErrorId : ItemExistsUnauthorizedAccessError,Microsoft.PowerShell.Commands.GetContentCommand
+ 
