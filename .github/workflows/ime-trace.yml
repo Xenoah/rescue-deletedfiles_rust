@@ -21,6 +21,7 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - run: rustup toolchain install 1.99.1 --profile minimal
       - uses: actions/cache/restore@v4
+        id: cargo-cache
         with:
           path: |
             ~/.cargo/registry
@@ -36,6 +37,15 @@ jobs:
           if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
       - name: Build uninstrumented release GUI
         run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Preserve compiled dependencies for the final native release gate
+        if: steps.cargo-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Reproduce the preceding native GUI sessions
         shell: bash
         run: |

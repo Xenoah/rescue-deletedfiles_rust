@@ -12,7 +12,7 @@ def require_repeated_ime(proof, count=8, require_stages=False):
         if not (
             cycle['cancel_start_value'] == 'とりけし'
             and cycle['cancelled_roman_keys'] == 'torikeshi'
-            and cycle['committed_roman_keys'] == 'genbun'
+            and cycle['committed_roman_keys'] == ('genbunn' if require_stages else 'genbun')
             and cycle['committed_value'] == '原文'
             and cycle['unicode_injection_used'] is False
             and cycle['cancel_escape_presses'] == 2
@@ -24,7 +24,7 @@ def require_repeated_ime(proof, count=8, require_stages=False):
             raise ValueError(f'Native IME cancellation/conversion evidence differs: cycle {index}')
         if require_stages:
             for field, phase, value, selected in [
-                ('conversion_preedit', 'conversion-preedit', 'げんぶｎ', 'げんぶｎ'),
+                ('conversion_preedit', 'conversion-preedit', 'げんぶん', 'げんぶん'),
                 ('converted_preedit', 'converted-preedit', '原文', '原文'),
                 ('commit_state', 'committed', '原文', ''),
             ]:

@@ -50,12 +50,12 @@ class InstallerVersions(unittest.TestCase):
 class RepeatedImeEvidence(unittest.TestCase):
     def test_rejects_visible_but_uncommitted_conversion(self):
         cycle={'cancel_start_value':'とりけし','cancelled_roman_keys':'torikeshi',
-               'committed_roman_keys':'genbun','committed_value':'原文',
+               'committed_roman_keys':'genbunn','committed_value':'原文',
                'unicode_injection_used':False,'cancel_escape_presses':2,
                'cancel_trace':[{'escape':1,'value':'とりけし'}, {'escape':2,'value':''}],
                'space_presses':1,'enter_presses':1}
         for field,phase,value,selected in [
-            ('conversion_preedit','conversion-preedit','げんぶｎ','げんぶｎ'),
+            ('conversion_preedit','conversion-preedit','げんぶん','げんぶん'),
             ('converted_preedit','converted-preedit','原文','原文'),
             ('commit_state','committed','原文','')]:
             cycle[field]={'phase':phase,'value':value,'selected_text':selected,

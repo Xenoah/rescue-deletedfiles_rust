@@ -363,10 +363,10 @@ function Set-ImeQuery {
         # A second Escape can legitimately leave the edit after composition ends.
         # Check cancellation above before restoring focus for the next conversion.
         Focus-Owned (Await-Control 'Search results' 'Edit')
-        [RescueOwnedWindow]::RomanKeys('genbun')
-        # A terminal Roman n remains pending until Space (or a second n).
-        # Observe exactly what the installed IME produced for genbun.
-        $kana=-join [char[]](0x3052,0x3093,0x3076,0xff4e)
+        # Complete the terminal kana explicitly. With a pending single n, the
+        # first Space can finish the kana without selecting a kanji candidate.
+        [RescueOwnedWindow]::RomanKeys('genbunn')
+        $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
         $conversionPreedit=Wait-ImeState $kana 'conversion-preedit'
         [RescueOwnedWindow]::Tap(0x20)
         $convertedPreedit=Wait-ImeState $cfg.query 'converted-preedit'
@@ -375,8 +375,8 @@ function Set-ImeQuery {
         # text selection proves Enter has actually completed the composition.
         $committed=Wait-ImeState $cfg.query 'committed' $true
         $value=$committed.value
-        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
-        $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
+        $script:steps.Add('native-ime: cancel prediction and composition / convert genbunn / commit '+$cfg.query)
         $cycles+=,$cycleProof
         Start-Sleep -Milliseconds 100
         Save-OwnedScreenshot ("windows-ime-cycle-{0}.png" -f $cycle)
