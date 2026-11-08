@@ -1,0 +1,58 @@
+﻿{
+    "scope":  "Diagnostic standard WPF TextBox, same token and IME setup; never release proof",
+    "description":  " / activation=Windows+Space / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+    "shutdown":  [
+                     {
+                         "phase":  "before-layout-restore",
+                         "utc":  "2026-11-08T19:16:30.5527576Z"
+                     },
+                     {
+                         "phase":  "after-layout-restore",
+                         "utc":  "2026-11-08T19:16:30.6612978Z"
+                     },
+                     {
+                         "phase":  "before-window-close",
+                         "utc":  "2026-11-08T19:16:30.6623134Z"
+                     }
+                 ],
+    "cycles":  [
+                   {
+                       "observations":  [
+                                            {
+                                                "expected":  "とりけし",
+                                                "value":  "とりけし",
+                                                "stage":  "cancel-preedit",
+                                                "elapsed_ms":  117
+                                            },
+                                            {
+                                                "expected":  "",
+                                                "value":  "",
+                                                "stage":  "cancelled",
+                                                "elapsed_ms":  4706
+                                            },
+                                            {
+                                                "expected":  "げんぶん",
+                                                "value":  "げんぶん",
+                                                "stage":  "kana",
+                                                "elapsed_ms":  112
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "げんぶん",
+                                                "stage":  "converted",
+                                                "elapsed_ms":  10107
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "げんぶん",
+                                                "stage":  "committed",
+                                                "elapsed_ms":  10107
+                                            }
+                                        ],
+                       "cycle":  1
+                   }
+               ],
+    "error":  "System.Management.Automation.RuntimeException: Native WPF conversion also failed",
+    "restore_layout":  true,
+    "status":  "failed"
+}

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from release_assets import package_names, stage_downloads
 from installer_versions import versions
-from ime_evidence import require_repeated_ime
+from ime_evidence import require_ime_cleanup, require_repeated_ime
 
 
 class DownloadContract(unittest.TestCase):
@@ -48,6 +48,43 @@ class InstallerVersions(unittest.TestCase):
 
 
 class RepeatedImeEvidence(unittest.TestCase):
+    def test_rejects_success_before_forced_exit_or_unrestored_profile(self):
+        proof={'status':'passed','uia':{'input_profile_cleanup':'outer-language-profile',
+               'shutdown':{'graceful':True,'forced':False,'phase':'process-exited','exit_code':0}}}
+        original=[{'tag':'en-US','tips':['0409:00000409'],'handwriting':False,'spellchecking':True}]
+        profile={'prepared':True,'restored':True,'before':original,'after':copy.deepcopy(original)}
+        require_ime_cleanup(proof,profile)
+        for key,value in [('graceful',False),('forced',True),('exit_code',-1),('phase','before-window-close')]:
+            bad=copy.deepcopy(proof);bad['uia']['shutdown'][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):require_ime_cleanup(bad,profile)
+        for key,value in [('prepared',False),('restored',False),('after',[]),('before',[])]:
+            bad=copy.deepcopy(profile);bad[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):require_ime_cleanup(proof,bad)
+
+    def test_rejects_visible_but_uncommitted_conversion(self):
+        cycle={'cancel_start_value':'とりけし','cancelled_roman_keys':'torikeshi',
+               'committed_roman_keys':'genbunn','committed_value':'原文',
+               'unicode_injection_used':False,'cancel_escape_presses':2,
+               'cancel_trace':[{'escape':1,'value':'とりけし'}, {'escape':2,'value':''}],
+               'space_presses':1,'enter_presses':1}
+        for field,phase,value,selected in [
+            ('conversion_preedit','conversion-preedit','げんぶん','げんぶん'),
+            ('converted_preedit','converted-preedit','原文','原文'),
+            ('commit_state','committed','原文','')]:
+            cycle[field]={'phase':phase,'value':value,'selected_text':selected,
+                          'selection_ranges':1,'elapsed_ms':100,'limit_ms':10000,
+                          'collapsed':field=='commit_state','reader':'native-uia-com'}
+        proof={'uia':{'native_ime':{'cycles':[copy.deepcopy(cycle) for _ in range(8)]}},
+               'ime_cycle_screenshots':[{'cycle':i,'sha256':'a'*64} for i in range(1,9)]}
+        require_repeated_ime(proof,require_stages=True)
+        for field,value in [('selected_text','原文'),('value','げんぶん'),('selection_ranges',0)]:
+            bad=copy.deepcopy(proof)
+            bad['uia']['native_ime']['cycles'][3]['commit_state'][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):
+                require_repeated_ime(bad,require_stages=True)
+        bad=copy.deepcopy(proof);del bad['uia']['native_ime']['cycles'][3]['converted_preedit']
+        with self.assertRaises(ValueError):require_repeated_ime(bad,require_stages=True)
+
     def test_rejects_missing_or_failed_middle_cycle(self):
         cycle={'cancel_start_value':'とりけし','cancelled_roman_keys':'torikeshi',
                'committed_roman_keys':'genbun','committed_value':'原文',

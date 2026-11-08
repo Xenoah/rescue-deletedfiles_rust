@@ -1,0 +1,1237 @@
+﻿{
+    "root_class":  "Window Class",
+    "gui_token":  {
+                      "administrator_enabled":  false,
+                      "elevated":  0,
+                      "integrity":  8192,
+                      "elevation_type":  1
+                  },
+    "provider":  {
+                     "framework":  "Win32",
+                     "handle":  852430,
+                     "server_side":  true,
+                     "adapter_wait_ms":  152,
+                     "getobject_completed":  true,
+                     "baseline":  {
+                                      "framework":  "WPF",
+                                      "error":  null,
+                                      "server_side":  true,
+                                      "name":  "Rescue native baseline button",
+                                      "children":  2,
+                                      "pid":  5184
+                                  },
+                     "session":  {
+                                     "station":  "WinSta0",
+                                     "console":  2,
+                                     "gui":  2,
+                                     "desktop":  "Default",
+                                     "client":  2
+                                 },
+                     "getobject_result":  65536,
+                     "late_accesskit_property":  2896068712016,
+                     "accesskit_property":  2896068712016
+                 },
+    "root_name":  "Rescue — File Recovery",
+    "native_wait_observation":  [
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  126
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  248
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  373
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  543
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  661
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  790
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  910
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1044
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1165
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1287
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1398
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1532
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1649
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1773
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  1883
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2048
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2164
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2274
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2383
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2546
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2664
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2774
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  2902
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3034
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3150
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3254
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3372
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3534
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3651
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3761
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  3869
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4006
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4120
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4230
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4340
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4449
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4559
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4671
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4793
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  4903
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5042
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5153
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5262
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5373
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5553
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5670
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5780
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  5889
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6038
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6155
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6257
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6375
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6539
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6657
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6767
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  6891
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7025
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7142
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7268
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7377
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7526
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7643
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7753
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  7863
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8016
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8128
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8238
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8348
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8457
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8567
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8677
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8802
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  8910
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9045
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9161
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9278
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9397
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9549
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9665
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9776
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  9898
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10050
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10165
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10274
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10384
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10533
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10650
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10759
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  10869
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11012
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11134
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11245
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11369
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11513
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11623
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11734
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11843
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  11952
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12062
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12171
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12280
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12393
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12543
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12660
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12770
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  12878
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13027
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13145
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13256
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13381
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13513
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13635
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13757
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  13882
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14035
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14152
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14278
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14403
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14532
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14654
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14779
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  14904
+                                    },
+                                    {
+                                        "value":  "とりけし",
+                                        "elapsed_ms":  15054
+                                    }
+                                ],
+    "status":  "failed",
+    "steps":  [
+                  "keyboard-space: Saved image",
+                  "keyboard-unicode: Image file",
+                  "keyboard-space: Save as ZIP",
+                  "keyboard-unicode: Destination",
+                  "keyboard-space: Start scan",
+                  "keyboard-tab-and-shift-tab: Search results / Select visible candidates",
+                  "keyboard-unicode: Search results",
+                  "keyboard-space: Select visible candidates"
+              ],
+    "error":  "System.Management.Automation.RuntimeException: Native IME cancellation did not clear preedit within the deadline: とりけし",
+    "tree":  [
+                 {
+                     "focusable":  false,
+                     "name":  "Rescue",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    33,
+                                    83,
+                                    40
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1.2.2",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    99,
+                                    42,
+                                    28,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Language",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "SelectionPatternIdentifiers.Pattern",
+                                      "ValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ComboBox",
+                     "bounds":  [
+                                    906,
+                                    44,
+                                    110,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Language",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    839,
+                                    45,
+                                    58,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1  Settings",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    18,
+                                    81,
+                                    63,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "2  Scan",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    109,
+                                    81,
+                                    43,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "3  Select files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    181,
+                                    81,
+                                    80,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "4  Recover",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    289,
+                                    81,
+                                    62,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Scan loaded: 36 candidates · Scan complete",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    705,
+                                    264,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Discovered files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    127,
+                                    154,
+                                    34
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1 selected",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    178,
+                                    131,
+                                    61,
+                                    26
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "View",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    164,
+                                    29,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Details",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    45,
+                                    164,
+                                    49,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Icons",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    102,
+                                    164,
+                                    39,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Group",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    164,
+                                    164,
+                                    36,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Group",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "SelectionPatternIdentifiers.Pattern",
+                                      "ValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ComboBox",
+                     "bounds":  [
+                                    208,
+                                    166,
+                                    100,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Recovery evidence",
+                     "patterns":  [
+                                      "TogglePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.CheckBox",
+                     "bounds":  [
+                                    316,
+                                    166,
+                                    129,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Preview",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    453,
+                                    165,
+                                    55,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Search results",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    192,
+                                    85,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Search results",
+                     "patterns":  [
+                                      "ValuePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Edit",
+                     "bounds":  [
+                                    101,
+                                    192,
+                                    280,
+                                    28
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Select visible candidates",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    389,
+                                    195,
+                                    155,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Clear selection",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    553,
+                                    195,
+                                    96,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "First / Latest results",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    223,
+                                    130,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Previous page",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    146,
+                                    223,
+                                    92,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Next page",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    246,
+                                    223,
+                                    68,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Page 1 · Showing 0 / 36 saved candidates",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    323,
+                                    223,
+                                    249,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Name  ↑",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    43,
+                                    263,
+                                    63,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Date created",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    301,
+                                    263,
+                                    85,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Date modified",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    487,
+                                    263,
+                                    92,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Type",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    673,
+                                    263,
+                                    37,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Size",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    786,
+                                    263,
+                                    32,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Status",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    884,
+                                    263,
+                                    46,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Files: scroll area",
+                     "patterns":  [
+
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Pane",
+                     "bounds":  [
+                                    8,
+                                    258,
+                                    1008,
+                                    35
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Files: horizontal scroll",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "RangeValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ScrollBar",
+                     "bounds":  [
+                                    8,
+                                    291,
+                                    1008,
+                                    2
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1 selected · 1.3 KB",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    571,
+                                    110,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Save as ZIP",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    126,
+                                    571,
+                                    71,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-iyz0b_4l\\recovered.zip",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    205,
+                                    571,
+                                    590,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Back to settings",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    595,
+                                    104,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Recover selected files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    792,
+                                    595,
+                                    224,
+                                    38
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Saved locations and reports",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    636,
+                                    174,
+                                    23
+                                ],
+                     "enabled":  true
+                 }
+             ],
+    "window_title":  "Rescue — File Recovery",
+    "native_ime_debug":  {
+                             "tips":  [
+                                          null
+                                      ],
+                             "requested_tip":  "0411:{03B5835F-F03C-411B-9CE2-AA23E1171E36}{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}",
+                             "cycle":  1,
+                             "cancel_start_value":  "とりけし",
+                             "installed_profile":  "HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{03B5835F-F03C-411B-9CE2-AA23E1171E36}\\LanguageProfile\\0x00000411\\{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}",
+                             "cancel_trace":  [
+                                                  {
+                                                      "foreground":  852430,
+                                                      "focus":  "Search results",
+                                                      "responding":  true,
+                                                      "value":  "とりけし",
+                                                      "escape":  1,
+                                                      "owned_hwnd":  852430
+                                                  },
+                                                  {
+                                                      "completion_limit_ms":  10000,
+                                                      "completion_wait_ms":  10126,
+                                                      "focus":  "Search results",
+                                                      "value":  "とりけし",
+                                                      "responding":  true,
+                                                      "initial_value":  "とりけし",
+                                                      "escape":  2,
+                                                      "owned_hwnd":  852430,
+                                                      "foreground":  852430
+                                                  }
+                                              ]
+                         }
+}

@@ -1,0 +1,42 @@
+﻿{
+    "scope":  "Diagnostic standard WPF TextBox, same token and IME setup; never release proof",
+    "status":  "passed",
+    "description":  " / activation=Windows+Space / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+    "cycles":  [
+                   {
+                       "observations":  [
+                                            {
+                                                "expected":  "とりけし",
+                                                "value":  "とりけし",
+                                                "stage":  "cancel-preedit",
+                                                "elapsed_ms":  2617
+                                            },
+                                            {
+                                                "expected":  "",
+                                                "value":  "",
+                                                "stage":  "cancelled",
+                                                "elapsed_ms":  107
+                                            },
+                                            {
+                                                "expected":  "げんぶん",
+                                                "value":  "げんぶん",
+                                                "stage":  "kana",
+                                                "elapsed_ms":  202
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "原文",
+                                                "stage":  "converted",
+                                                "elapsed_ms":  154
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "原文",
+                                                "stage":  "committed",
+                                                "elapsed_ms":  108
+                                            }
+                                        ],
+                       "cycle":  1
+                   }
+               ]
+}

@@ -1,0 +1,1520 @@
+﻿{
+    "root_class":  "Window Class",
+    "candidate_advance_diagnostic":  {
+                                         "observations":  [
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  226
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  442
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  667
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  888
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  1107
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  1336
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  1556
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  1775
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  1994
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  2226
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  2445
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  2664
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  2885
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  3103
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  3328
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  3551
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  3770
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  3991
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  4210
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  4428
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  4648
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  4868
+                                                              },
+                                                              {
+                                                                  "state":  {
+                                                                                "value":  "げんぶん",
+                                                                                "selected_text":  "げんぶん",
+                                                                                "selection_ranges":  1,
+                                                                                "collapsed":  false,
+                                                                                "process_id":  3912,
+                                                                                "foreground_process_id":  3912
+                                                                            },
+                                                                  "elapsed_ms":  5086
+                                                              }
+                                                          ],
+                                         "before_value":  "げんぶん",
+                                         "additional_space_presses":  1
+                                     },
+    "gui_token":  {
+                      "administrator_enabled":  false,
+                      "elevated":  0,
+                      "integrity":  8192,
+                      "elevation_type":  1
+                  },
+    "provider":  {
+                     "framework":  "Win32",
+                     "handle":  393534,
+                     "server_side":  true,
+                     "adapter_wait_ms":  126,
+                     "getobject_completed":  true,
+                     "baseline":  {
+                                      "framework":  "WPF",
+                                      "error":  null,
+                                      "server_side":  true,
+                                      "name":  "Rescue native baseline button",
+                                      "children":  2,
+                                      "pid":  5664
+                                  },
+                     "session":  {
+                                     "station":  "WinSta0",
+                                     "console":  2,
+                                     "gui":  2,
+                                     "desktop":  "Default",
+                                     "client":  2
+                                 },
+                     "getobject_result":  65536,
+                     "late_accesskit_property":  1507179492960,
+                     "accesskit_property":  1507179492960
+                 },
+    "root_name":  "Rescue — File Recovery",
+    "native_wait_observation":  [
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  176
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  300
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  407
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  519
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  669
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  785
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  895
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1005
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1153
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1270
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1380
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1490
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1637
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1756
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1864
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  1974
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2084
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2212
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2335
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2444
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2554
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2662
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2773
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2882
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  2992
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3172
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3289
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3399
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3509
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3657
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3774
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3883
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  3993
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4142
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4260
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4374
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4494
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4659
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4777
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4886
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  4996
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5123
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5238
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5348
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5457
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5566
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5676
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5785
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  5895
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6020
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6137
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6255
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6364
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6477
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6637
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6755
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6865
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  6974
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7094
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7210
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7320
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7429
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7539
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7657
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7774
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7882
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  7992
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8156
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8275
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8384
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8497
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8659
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8775
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8885
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  8995
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9135
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9246
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9356
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9465
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9574
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9683
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9794
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  9919
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10044
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10153
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10264
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10389
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10503
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10655
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10769
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10879
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  10989
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11136
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11255
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11381
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11490
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11637
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11757
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11882
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  11992
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12126
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12242
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12351
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12461
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12571
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12680
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12793
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  12915
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13024
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13158
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13266
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13383
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13493
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13640
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13758
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13868
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  13978
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14106
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14229
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14340
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14449
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14558
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14667
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14778
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  14891
+                                    },
+                                    {
+                                        "value":  "げんぶん",
+                                        "elapsed_ms":  15013
+                                    }
+                                ],
+    "status":  "failed",
+    "steps":  [
+                  "keyboard-space: Saved image",
+                  "keyboard-unicode: Image file",
+                  "keyboard-space: Save as ZIP",
+                  "keyboard-unicode: Destination",
+                  "keyboard-space: Start scan",
+                  "keyboard-tab-and-shift-tab: Search results / Select visible candidates",
+                  "keyboard-unicode: Search results",
+                  "keyboard-space: Select visible candidates"
+              ],
+    "error":  "System.Management.Automation.RuntimeException: Native IME state did not complete: phase=converted-preedit, expected=原文, actual=げんぶん, selected=げんぶん",
+    "tree":  [
+                 {
+                     "focusable":  false,
+                     "name":  "Rescue",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    33,
+                                    83,
+                                    40
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1.2.2",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    99,
+                                    42,
+                                    28,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Language",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "SelectionPatternIdentifiers.Pattern",
+                                      "ValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ComboBox",
+                     "bounds":  [
+                                    906,
+                                    44,
+                                    110,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Language",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    839,
+                                    45,
+                                    58,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1  Settings",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    18,
+                                    81,
+                                    63,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "2  Scan",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    109,
+                                    81,
+                                    43,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "3  Select files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    181,
+                                    81,
+                                    80,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "4  Recover",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    289,
+                                    81,
+                                    62,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Scan loaded: 36 candidates · Scan complete",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    705,
+                                    264,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Discovered files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    127,
+                                    154,
+                                    34
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1 selected",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    178,
+                                    131,
+                                    61,
+                                    26
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "View",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    164,
+                                    29,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Details",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    45,
+                                    164,
+                                    49,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Icons",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    102,
+                                    164,
+                                    39,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Group",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    164,
+                                    164,
+                                    36,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Group",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "SelectionPatternIdentifiers.Pattern",
+                                      "ValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ComboBox",
+                     "bounds":  [
+                                    208,
+                                    166,
+                                    100,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Recovery evidence",
+                     "patterns":  [
+                                      "TogglePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.CheckBox",
+                     "bounds":  [
+                                    316,
+                                    166,
+                                    129,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Preview",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    453,
+                                    165,
+                                    55,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Search results",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    192,
+                                    85,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Search results",
+                     "patterns":  [
+                                      "ValuePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Edit",
+                     "bounds":  [
+                                    101,
+                                    192,
+                                    280,
+                                    28
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Select visible candidates",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    389,
+                                    195,
+                                    155,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Clear selection",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    553,
+                                    195,
+                                    96,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "First / Latest results",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    223,
+                                    130,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Previous page",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    146,
+                                    223,
+                                    92,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Next page",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    246,
+                                    223,
+                                    68,
+                                    23
+                                ],
+                     "enabled":  false
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Page 1 · Showing 0 / 36 saved candidates",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    323,
+                                    223,
+                                    249,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Name  ↑",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    43,
+                                    263,
+                                    63,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Date created",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    301,
+                                    263,
+                                    85,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Date modified",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    487,
+                                    263,
+                                    92,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Type",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    673,
+                                    263,
+                                    37,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Size",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    786,
+                                    263,
+                                    32,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Status",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    884,
+                                    263,
+                                    46,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Files: scroll area",
+                     "patterns":  [
+
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Pane",
+                     "bounds":  [
+                                    8,
+                                    258,
+                                    1008,
+                                    35
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Files: horizontal scroll",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "RangeValuePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.ScrollBar",
+                     "bounds":  [
+                                    8,
+                                    291,
+                                    1008,
+                                    2
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "1 selected · 1.3 KB",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    8,
+                                    571,
+                                    110,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "Save as ZIP",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    126,
+                                    571,
+                                    71,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  false,
+                     "name":  "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yblm70qq\\recovered.zip",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern",
+                                      "TextPatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Text",
+                     "bounds":  [
+                                    205,
+                                    571,
+                                    601,
+                                    21
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Back to settings",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    595,
+                                    104,
+                                    23
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Recover selected files",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    792,
+                                    595,
+                                    224,
+                                    38
+                                ],
+                     "enabled":  true
+                 },
+                 {
+                     "focusable":  true,
+                     "name":  "Saved locations and reports",
+                     "patterns":  [
+                                      "InvokePatternIdentifiers.Pattern"
+                                  ],
+                     "offscreen":  false,
+                     "type":  "ControlType.Button",
+                     "bounds":  [
+                                    8,
+                                    636,
+                                    174,
+                                    23
+                                ],
+                     "enabled":  true
+                 }
+             ],
+    "window_title":  "Rescue — File Recovery",
+    "native_ime_debug":  {
+                             "tips":  [
+                                          null
+                                      ],
+                             "requested_tip":  "0411:{03B5835F-F03C-411B-9CE2-AA23E1171E36}{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}",
+                             "last_state":  {
+                                                "limit_ms":  10000,
+                                                "foreground_process_id":  3912,
+                                                "selected_text":  "げんぶん",
+                                                "value":  "げんぶん",
+                                                "reader":  "native-uia-com",
+                                                "phase":  "converted-preedit",
+                                                "collapsed":  false,
+                                                "owned_process_id":  3912,
+                                                "elapsed_ms":  10064,
+                                                "selection_ranges":  1
+                                            },
+                             "cycle":  1,
+                             "cancel_start_value":  "とりけし",
+                             "installed_profile":  "HKLM:\\SOFTWARE\\Microsoft\\CTF\\TIP\\{03B5835F-F03C-411B-9CE2-AA23E1171E36}\\LanguageProfile\\0x00000411\\{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}",
+                             "cancel_trace":  [
+                                                  {
+                                                      "foreground":  393534,
+                                                      "focus":  "Search results",
+                                                      "responding":  true,
+                                                      "value":  "とりけし",
+                                                      "escape":  1,
+                                                      "owned_hwnd":  393534
+                                                  },
+                                                  {
+                                                      "completion_limit_ms":  10000,
+                                                      "completion_wait_ms":  4300,
+                                                      "focus":  "Search results",
+                                                      "value":  "",
+                                                      "responding":  true,
+                                                      "initial_value":  "とりけし",
+                                                      "escape":  2,
+                                                      "owned_hwnd":  393534,
+                                                      "foreground":  393534
+                                                  }
+                                              ]
+                         }
+}

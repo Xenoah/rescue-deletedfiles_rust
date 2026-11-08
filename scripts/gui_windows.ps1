@@ -1,17 +1,21 @@
 # Own-process UI Automation on a disposable native Windows runner. No host
 # storage, external windows, or user files are selected.
-param([Parameter(Mandatory=$true)][string]$Config)
+param([Parameter(Mandatory=$true)][string]$Config,[switch]$DefinitionsOnly)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
-[ComImport,Guid("71C6E74C-0F28-11D8-A82A-00065B84435C"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface RescueInputProfileManager {
-    void ActivateProfile(uint type,ushort language,ref Guid service,ref Guid profile,IntPtr layout,uint flags);
-}
 public static class RescueOwnedWindow {
+    [DllImport("dbghelp.dll", SetLastError=true)]
+    static extern bool MiniDumpWriteDump(IntPtr process, uint pid, IntPtr file, uint kind, IntPtr exception, IntPtr stream, IntPtr callback);
+    public static void SaveDump(IntPtr process,uint pid,string path) {
+        using(var file=new System.IO.FileStream(path,System.IO.FileMode.CreateNew,System.IO.FileAccess.Write)) {
+            if(!MiniDumpWriteDump(process,pid,file.SafeFileHandle.DangerousGetHandle(),0x1000,IntPtr.Zero,IntPtr.Zero,IntPtr.Zero))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        }
+    }
     [DllImport("advapi32.dll", SetLastError=true)]
     static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
     [DllImport("advapi32.dll", SetLastError=true)]
@@ -62,12 +66,11 @@ public static class RescueOwnedWindow {
     public static bool ImeRestored=false;
     public static void RestoreJapaneseIme(IntPtr hwnd) {
         if(previousImeLayout==IntPtr.Zero || ImeRestored)return;
-        Guid empty=Guid.Empty;
-        var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
-        try {manager.ActivateProfile(2,(ushort)(previousImeLayout.ToInt64()&65535),ref empty,ref empty,previousImeLayout,0x20000004);}
-        finally {Marshal.ReleaseComObject(manager);}
-        // TSF profile activation alone need not change an inactive window's
-        // thread HKL. Request the saved layout on this owned HWND as well.
+        if(GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero))==previousImeLayout) {ImeRestored=true;return;}
+        // Restore only the owned thread's input language. A session-wide TSF
+        // ActivateProfile also changes shared input-service processes and can
+        // block cleanup on their RPC calls. User profile restoration belongs
+        // to the outer fixture after all GUI sessions.
         SetForegroundWindow(hwnd);
         // Windows posts WM_INPUTLANGCHANGEREQUEST; a synchronous SendMessage
         // can deadlock TSF cross-thread callbacks while this driver is waiting.
@@ -81,25 +84,24 @@ public static class RescueOwnedWindow {
     }
     public static string EnableJapaneseIme(IntPtr hwnd,string serviceId,string profileId) {
         previousImeLayout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
-        // Modern Microsoft IME is a TSF profile; the old E0010411 HKL can
-        // silently return the English fallback even with Japanese FOD present.
-        Guid service=new Guid(serviceId),profile=new Guid(profileId);
-        var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
-        try {manager.ActivateProfile(1,0x411,ref service,ref profile,IntPtr.Zero,0x20000005);}
-        finally {Marshal.ReleaseComObject(manager);}
-        IntPtr layout=IntPtr.Zero;
-        for(int i=0;i<30;i++) {
+        // Select the already registered IME through the normal Windows input
+        // switcher, without forcing every process in the session through TSF.
+        // The hosted fixture has English and Microsoft Japanese input methods.
+        bool switched=(previousImeLayout.ToInt64()&65535)!=0x411;
+        if(switched) {Key(0x5b,false,false);Tap(0x20);Key(0x5b,true,false);}
+        IntPtr layout=previousImeLayout;
+        for(int i=0;i<50;i++) {
             System.Threading.Thread.Sleep(100);
             layout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
             if((layout.ToInt64()&65535)==0x411)break;
         }
-        if((layout.ToInt64()&65535)!=0x411)throw new Exception("Japanese TSF profile did not activate for the owned GUI: "+layout.ToInt64());
+        if((layout.ToInt64()&65535)!=0x411)throw new Exception("Windows+Space did not select Japanese input for the owned GUI: "+layout.ToInt64());
         var description=new System.Text.StringBuilder(256);ImmGetDescription(layout,description,256);
         IntPtr ime=ImmGetDefaultIMEWnd(hwnd);UIntPtr result;
         if(ime==IntPtr.Zero)throw new Exception("Owned GUI has no native IME window");
         SendMessageTimeout(ime,0x283,new UIntPtr(6),new IntPtr(1),2,5000,out result);
         SendMessageTimeout(ime,0x283,new UIntPtr(2),new IntPtr(0x19),2,5000,out result);
-        return description.ToString()+" / TSF="+serviceId+"/"+profileId+" / HKL="+layout.ToInt64()+" / IMM="+ImmIsIME(layout);
+        return description.ToString()+" / activation="+(switched?"Windows+Space":"already-Japanese")+" / TSF="+serviceId+"/"+profileId+" / HKL="+layout.ToInt64()+" / IMM="+ImmIsIME(layout);
     }
     public static void RomanKeys(string value) {foreach(char c in value) Tap((ushort)Char.ToUpperInvariant(c));}
     [StructLayout(LayoutKind.Sequential)]
@@ -267,18 +269,32 @@ function Check-TabNavigation {
     if ($backward.Name -ne 'Search results') {throw "Shift+Tab did not return to search: forward=$($forward.Name), backward=$($backward.Name)"}
     $script:steps.Add("keyboard-tab-and-shift-tab: Search results / $($forward.Name)")
 }
+function Wait-ImeState([string]$Expected,[string]$Phase,[bool]$Committed=$false) {
+    $timer=[System.Diagnostics.Stopwatch]::StartNew()
+    do {
+        Start-Sleep -Milliseconds 100
+        $raw=& $cfg.selection_probe $script:owned.Id
+        if ($LASTEXITCODE -ne 0) {throw 'Owned native UIA selection probe failed'}
+        $selection=$raw | ConvertFrom-Json
+        $value=$selection.value;$selected=$selection.selected_text
+        $selectionMatches=if ($Committed) {$selection.collapsed -and $selected -ceq ''} else {!$selection.collapsed -and $selected -ceq $Expected}
+        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$selection.selection_ranges;collapsed=$selection.collapsed;foreground_process_id=$selection.foreground_process_id;owned_process_id=$script:owned.Id;reader='native-uia-com';elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
+        $script:imeDiagnostic.last_state=$state
+        if ($selection.foreground_process_id -ne $script:owned.Id) {throw 'Owned GUI lost keyboard foreground during IME state observation'}
+        if ($value -ceq $Expected -and $selectionMatches) {return $state}
+    } while ($timer.Elapsed.TotalSeconds -lt 10)
+    throw "Native IME state did not complete: phase=$Phase, expected=$Expected, actual=$value, selected=$selected"
+}
 function Set-ImeQuery {
-    # Register an already-installed Microsoft IME in this disposable user's
-    # language list. Restore the original list in finally, even on failure.
-    $script:priorLanguages=Get-WinUserLanguageList
+    # The workflow registers Japanese before launching any IME GUI and restores
+    # it after all sessions. Re-registering/removing a TSF profile around every
+    # process can leave subsequent native controls with a stale IME service.
     $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
     $installed="HKLM:\SOFTWARE\Microsoft\CTF\TIP\$service\LanguageProfile\0x00000411\$profile"
     if (!(Test-Path -LiteralPath $installed)) {throw 'The installed Japanese Microsoft IME TSF registration is missing'}
-    $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
-    $languages[1].InputMethodTips.Clear();$languages[1].InputMethodTips.Add("0411:$service$profile")
-    Set-WinUserLanguageList $languages -Force
-    $tips=@((Get-WinUserLanguageList|Where-Object LanguageTag -eq 'ja-JP').InputMethodTips)
+    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -match '^ja($|-)') {$language.InputMethodTips}})
     $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
+    if ($tips -notcontains "0411:$service$profile") {throw 'Prepare the Japanese user language profile before starting the GUI test'}
     $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
     [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
     $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
@@ -303,28 +319,57 @@ function Set-ImeQuery {
         } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
         $script:imeDiagnostic.cancel_start_value=$preedit
         if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
+        if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-preedit-{0}.png" -f $cycle)}
         $cancelTrace=@()
         for ($press=1;$press -le 2;$press++) {
             [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
             $edit=Await-Control 'Search results' 'Edit'
-            $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            $value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+            $sample=@{escape=$press;value=$value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            if ($press -eq 2) {
+                # A cold Microsoft IME prediction worker can hold Escape in
+                # ImmTranslateMessage for several seconds. Observe completion
+                # before asserting; do not send another key or refocus/clear.
+                $sample.initial_value=$value
+                $completion=[System.Diagnostics.Stopwatch]::StartNew()
+                while ($value -ne '' -and $completion.Elapsed.TotalSeconds -lt 10) {
+                    Start-Sleep -Milliseconds 100
+                    $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+                }
+                $sample.value=$value
+                $sample.focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name
+                $sample.completion_wait_ms=[int]$completion.Elapsed.TotalMilliseconds
+                $sample.completion_limit_ms=10000
+            }
+            $cancelTrace+=,$sample
+            if ($env:RESCUE_IME_TRACE -eq '1') {
+                $reply=[UIntPtr]::Zero
+                $cancelTrace[-1].responding=[RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0,[UIntPtr]::Zero,[IntPtr]::Zero,2,200,[ref]$reply) -ne [IntPtr]::Zero
+                $cancelTrace[-1].foreground=[RescueOwnedWindow]::GetForegroundWindow().ToInt64()
+                $cancelTrace[-1].owned_hwnd=$script:owned.MainWindowHandle.ToInt64()
+            }
+            if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-escape-{0}-{1}.png" -f $cycle,$press)}
         }
         $script:imeDiagnostic.cancel_trace=$cancelTrace
-        Start-Sleep -Milliseconds 300
         $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
+        if ($value -ne '') {throw "Native IME cancellation did not clear preedit within the deadline: $value"}
         # A second Escape can legitimately leave the edit after composition ends.
         # Check cancellation above before restoring focus for the next conversion.
         Focus-Owned (Await-Control 'Search results' 'Edit')
-        [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
-        $until=[DateTime]::UtcNow.AddSeconds(5)
-        do {
-            Start-Sleep -Milliseconds 100
-            $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
-        if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
-        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
-        $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
+        # Complete the terminal kana explicitly. With a pending single n, the
+        # first Space can finish the kana without selecting a kanji candidate.
+        [RescueOwnedWindow]::RomanKeys('genbunn')
+        $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
+        $conversionPreedit=Wait-ImeState $kana 'conversion-preedit'
+        [RescueOwnedWindow]::Tap(0x20)
+        $convertedPreedit=Wait-ImeState $cfg.query 'converted-preedit'
+        [RescueOwnedWindow]::Tap(13)
+        # The displayed kanji alone can still be preedit. A collapsed native
+        # text selection proves Enter has actually completed the composition.
+        $committed=Wait-ImeState $cfg.query 'committed' $true
+        $value=$committed.value
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
+        $script:steps.Add('native-ime: cancel prediction and composition / convert genbunn / commit '+$cfg.query)
         $cycles+=,$cycleProof
         Start-Sleep -Milliseconds 100
         Save-OwnedScreenshot ("windows-ime-cycle-{0}.png" -f $cycle)
@@ -355,6 +400,7 @@ function Snapshot {
     }
     return $result
 }
+if ($DefinitionsOnly) {return}
 try {
     [RescueWpfProbe]::Start()
     Start-Sleep -Milliseconds 1000
@@ -442,8 +488,7 @@ try {
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
     Save-OwnedScreenshot 'windows-gui-complete.png'
-    if ($cfg.ime) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-    @{status='passed';input_layout_restored=[RescueOwnedWindow]::ImeRestored;process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='passed';input_profile_cleanup='outer-language-profile';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
     $evidence = @{status='failed';gui_token=$script:guiToken;native_ime_debug=$script:imeDiagnostic;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
@@ -453,19 +498,72 @@ try {
         $evidence.root_class=$script:root.Current.ClassName
         $evidence.tree=@(Snapshot)
         $evidence.provider.late_accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
+        Save-OwnedScreenshot 'windows-gui-failed.png'
+        if ($env:RESCUE_IME_TRACE -eq '1') {
+            [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-failed.dmp'))
+            # Diagnose delayed native processing without sending another key,
+            # retrying the action, or changing this run's failed result.
+            $observation=[System.Diagnostics.Stopwatch]::StartNew()
+            $evidence.native_wait_observation=@()
+            do {
+                Start-Sleep -Milliseconds 100
+                $remaining=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+                $evidence.native_wait_observation+=@{elapsed_ms=[int]$observation.Elapsed.TotalMilliseconds;value=$remaining}
+            } while ($remaining -ne '' -and $observation.Elapsed.TotalSeconds -lt 15)
+            Save-OwnedScreenshot 'windows-after-native-wait.png'
+            if ($remaining -ne '') {[RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-still-waiting.dmp'))}
+            if ($script:imeDiagnostic.last_state.phase -eq 'converted-preedit') {
+                # Diagnose candidate advancement only AFTER preserving failure.
+                # This never changes this run to passed and sends no Enter.
+                $evidence.candidate_advance_diagnostic=@{additional_space_presses=1;before_value=$remaining;observations=@()}
+                [RescueOwnedWindow]::Tap(0x20)
+                $candidateTimer=[System.Diagnostics.Stopwatch]::StartNew()
+                do {
+                    Start-Sleep -Milliseconds 200
+                    $raw=& $cfg.selection_probe $script:owned.Id
+                    if ($LASTEXITCODE -ne 0) {throw 'Candidate diagnostic selection probe failed'}
+                    $state=$raw | ConvertFrom-Json
+                    $evidence.candidate_advance_diagnostic.observations+=@{elapsed_ms=[int]$candidateTimer.Elapsed.TotalMilliseconds;state=$state}
+                } while ($candidateTimer.Elapsed.TotalSeconds -lt 5)
+                Save-OwnedScreenshot 'windows-after-candidate-advance.png'
+            }
+        }
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
 } finally {
-    try {
-        if ($script:priorLanguages) {
-            Set-WinUserLanguageList $script:priorLanguages -Force
-            if ($null -ne $script:owned -and !$script:owned.HasExited) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-        }
-    } finally {
-        if ($null -ne $script:owned) {
-            $script:owned.Refresh()
-            if (!$script:owned.HasExited) { $null = $script:owned.CloseMainWindow(); if (!$script:owned.WaitForExit(5000)) {$script:owned.Kill();$script:owned.WaitForExit()} }
+    # Close normally before the outer fixture restores the language profile.
+    # Forcing an HKL change during teardown stalled standard WPF controls too,
+    # and left the next process unable to convert. Never count forced exit as
+    # success merely because the UI assertions completed first.
+    if ($null -ne $script:owned) {
+        $script:owned.Refresh()
+        $shutdown=@{graceful=$false;forced=$false;phase='before-window-close'}
+        $resultRecord=if (Test-Path -LiteralPath $cfg.result) {Get-Content -LiteralPath $cfg.result -Raw -Encoding UTF8|ConvertFrom-Json} else {[pscustomobject]@{status='failed'}}
+        $resultRecord|Add-Member -NotePropertyName shutdown -NotePropertyValue $shutdown -Force
+        $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+        try {
+            if (!$script:owned.HasExited) {
+                $shutdown.close_requested=$script:owned.CloseMainWindow()
+                $timer=[System.Diagnostics.Stopwatch]::StartNew()
+                $shutdown.graceful=$script:owned.WaitForExit(5000)
+                $shutdown.elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds
+                if (!$shutdown.graceful) {
+                    if ($env:RESCUE_IME_TRACE -eq '1') {
+                        [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-close-timeout.dmp'))
+                    }
+                    $shutdown.forced=$true
+                    $script:owned.Kill();$script:owned.WaitForExit()
+                }
+            } else {$shutdown.graceful=$true}
+            $shutdown.exit_code=$script:owned.ExitCode
+            $shutdown.phase='process-exited'
+            if (!$shutdown.graceful -or $shutdown.exit_code -ne 0) {
+                $resultRecord.status='failed'
+                throw 'Owned GUI did not exit normally; UI success cannot hide a forced shutdown or crash'
+            }
+        } finally {
+            $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
         }
     }
 }

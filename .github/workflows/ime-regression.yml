@@ -66,6 +66,7 @@ jobs:
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
       - name: Repeat native Japanese IME cancellation and conversion without retries
         timeout-minutes: 12
         shell: bash
@@ -78,7 +79,7 @@ jobs:
           subprocess.run(['python','scripts/ci_command.py','python','scripts/e2e_gui_windows.py','--binary',str(binary),'--output',str(output),'--desktop-token','--ime','--ime-cycles','8'],check=True)
           proof=json.loads(output.read_text(encoding='utf-8'))
           assert proof['status']=='passed' and proof['source_unchanged'] and proof['files_byte_exact']==2
-          assert proof['uia']['native_input_method_tested'] and proof['uia']['input_layout_restored']
+          assert proof['uia']['native_input_method_tested'] and proof['uia']['input_profile_cleanup']=='outer-language-profile'
           cycles=proof['uia']['native_ime']['cycles']
           assert len(cycles)==8 and len(proof['ime_cycle_screenshots'])==8
           for cycle in cycles:
@@ -86,6 +87,20 @@ jobs:
           summary={'status':'passed','commit':os.environ['GITHUB_SHA'],'gui_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'native_ime_cycles':cycles,'screenshots':proof['ime_cycle_screenshots'],'retries':0,'scope':'Eight consecutive cancellation/conversion cycles in one actual non-elevated GUI, followed by byte-exact selected recovery.'}
           Path('ime-regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n',encoding='utf-8')
           print(json.dumps(summary,ensure_ascii=False))
+          PYTHON
+      - name: Restore the original Japanese IME test profile
+        if: always() && runner.os == 'Windows'
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Verify complete fixture cleanup
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ime_evidence import require_ime_cleanup
+          require_ime_cleanup(json.loads(Path('ime-native-cycles.json').read_text()),json.loads(Path('ime-profile-state.json').read_text(encoding='utf-8-sig')))
           PYTHON
       - uses: actions/upload-artifact@v4
         if: always()

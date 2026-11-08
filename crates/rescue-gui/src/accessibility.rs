@@ -477,6 +477,63 @@ fn windows_ime_cancel_without_empty_preedit_keeps_committed_text_and_next_conver
 }
 
 #[test]
+fn windows_ime_delayed_native_cancellation_batch_preserves_committed_text() {
+    let (ctx, mut app) = app();
+    let owner = egui::Id::new("result-search");
+    ctx.memory_mut(|memory| memory.request_focus(owner));
+    frame(&ctx, &mut app, vec![]);
+    frame(&ctx, &mut app, vec![egui::Event::Text("既存".into())]);
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            egui::Event::Ime(egui::ImeEvent::Preedit("とりけし".into())),
+        ],
+    );
+    let escape = |pressed| egui::Event::Key {
+        key: egui::Key::Escape,
+        physical_key: Some(egui::Key::Escape),
+        pressed,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    };
+    // Actual Windows trace 42499949821: after a native prediction wait,
+    // cancellation and both queued Escape releases arrive in one input batch.
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+            egui::Event::Ime(egui::ImeEvent::Commit(String::new())),
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+            escape(false),
+            escape(true),
+            escape(false),
+        ],
+    );
+    assert_eq!(app.filter, "既存");
+    assert_eq!(ctx.memory(|memory| memory.focused()), Some(owner));
+    frame(
+        &ctx,
+        &mut app,
+        vec![
+            egui::Event::Ime(egui::ImeEvent::Enabled),
+            egui::Event::Ime(egui::ImeEvent::Preedit("原文".into())),
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+            egui::Event::Ime(egui::ImeEvent::Commit("原文".into())),
+            egui::Event::Ime(egui::ImeEvent::Disabled),
+        ],
+    );
+    assert_eq!(app.filter, "既存原文");
+    key(&ctx, &mut app, egui::Key::Escape, egui::Modifiers::NONE);
+    assert_eq!(ctx.memory(|memory| memory.focused()), None);
+    assert_eq!(app.filter, "既存原文");
+}
+
+#[test]
 fn windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed() {
     for ordering in 0..3 {
         let (ctx, mut app) = app();

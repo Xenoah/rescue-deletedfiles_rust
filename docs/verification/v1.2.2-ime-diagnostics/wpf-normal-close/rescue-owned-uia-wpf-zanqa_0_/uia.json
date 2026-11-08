@@ -1,0 +1,57 @@
+﻿{
+    "scope":  "Diagnostic standard WPF TextBox, same token and IME setup; never release proof",
+    "description":  " / activation=Windows+Space / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+    "shutdown":  [
+                     {
+                         "phase":  "before-window-close",
+                         "utc":  "2026-11-08T19:14:51.0822064Z"
+                     },
+                     {
+                         "phase":  "after-window-close",
+                         "utc":  "2026-11-08T19:14:51.1201929Z"
+                     },
+                     {
+                         "phase":  "cleanup-complete",
+                         "utc":  "2026-11-08T19:14:51.1231911Z"
+                     }
+                 ],
+    "cycles":  [
+                   {
+                       "observations":  [
+                                            {
+                                                "expected":  "とりけし",
+                                                "value":  "とりけし",
+                                                "stage":  "cancel-preedit",
+                                                "elapsed_ms":  1540
+                                            },
+                                            {
+                                                "expected":  "",
+                                                "value":  "",
+                                                "stage":  "cancelled",
+                                                "elapsed_ms":  106
+                                            },
+                                            {
+                                                "expected":  "げんぶん",
+                                                "value":  "げんぶん",
+                                                "stage":  "kana",
+                                                "elapsed_ms":  130
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "原文",
+                                                "stage":  "converted",
+                                                "elapsed_ms":  107
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "原文",
+                                                "stage":  "committed",
+                                                "elapsed_ms":  107
+                                            }
+                                        ],
+                       "cycle":  1
+                   }
+               ],
+    "restore_layout":  false,
+    "status":  "passed"
+}

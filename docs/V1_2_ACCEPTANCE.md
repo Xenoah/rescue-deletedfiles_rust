@@ -2,6 +2,16 @@
 
 2026-11-08 UTC。ユーザーの進行指示を受けた、破損USB/SDへの対応強化と既知ハッシュ照合を実装・公開・検証した。APFS等の別フェーズは含めない。
 
+## v1.2.2の完了状態
+
+v1.2.2を安定版として公開した。最終コミット `33261891be5ffc830a909d253e1a3da733bd8e2d` のネイティブCIと、公開したポータブルを再ダウンロードした実物検証は、Windows x64・Linux x64・macOS Intel/Apple Siliconの全4環境で合格した。ネイティブは実行1回、公開実物は実行1回で合格している。
+
+Windowsは公開前・公開後とも実Microsoft日本語IMEの取消・変換・確定を8回ずつ検証し、使用したGUIのSHA-256が一致した。GUIの通常終了と、元の言語設定の完全復元も確認した。追加の候補試験では4回の新規起動・計32回に成功している。過去の失敗はそのまま保存し、合格へ置き換えていない。
+
+ローカルはRust86テスト・35統合群・6配布契約テスト、Clippy、fmt、26枚の新規GUI画面と復元バイト一致を確認した。公開添付は8配布物と共通SHA256SUMSの9点で、実際に9点を取得して全配布物のチェックサムを照合した。
+
+[公開確認](verification/v1.2.2-release.json) · [公開実物の全記録](verification/v1.2.2-published.json) · [ネイティブIME](verification/v1.2.2-native-ime.json) · [32回の連続起動](verification/v1.2.2-ime-stress.json) · [実画面](UI-v1.2.md)。以下の失敗・診断の記述は、この完了までの経緯である。
+
 ## 公開状態
 
 4段階すべてを個別にpush・リリースし、各タグでWindows x64・Linux x64・macOS Intel/Apple SiliconのネイティブCIと公開実物の再検証に合格した。各リリースの添付は8インストーラー/ポータブルとSHA256SUMSの9点。既存タグや配布済みバイナリは変更していない。
@@ -12,10 +22,11 @@
 | [v1.2.0-alpha.2](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2) | CP932短名・元バイト保持 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895) | [全記録](verification/v1.2.0-alpha.2-published.json) · [公開確認](verification/v1.2.0-alpha.2-release.json) |
 | [v1.2.0-alpha.3](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.3) | exFAT破損変換表の限定的継続 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42475953647) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42478332375) | [全記録](verification/v1.2.0-alpha.3-published.json) · [公開確認](verification/v1.2.0-alpha.3-release.json) |
 | [v1.2.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0) | 既知SHA-256照合・統合・インストーラー版番号 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477916390) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42480695687) | [全記録](verification/v1.2.0-published.json) · [公開確認](verification/v1.2.0-release.json) |
+| [v1.2.2](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.2) | Windows IME取消・正常終了・設定復元 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514904244) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42518348653) | [全記録](verification/v1.2.2-published.json) · [公開確認](verification/v1.2.2-release.json) |
 
 公開後のJSONは署名・梱包後の実CLIを再ダウンロードして得た全記録。ActionsアーティファクトZIP内の全メンバーをPUBLISHED-SHA256SUMSで照合し、集約JSONをそのまま保存した。ZIPとJSONのSHA-256、公開9資産、タグのコミット、両ワークフローを公開確認JSONに記録している。
 
-## 安定版の検証
+## v1.2.0の検証
 
 - Rust 82テスト、35統合群、Clippy（警告をエラーとして扱う）、fmt、配布添付/版番号の3契約テスト。
 - 段階的取得の13条件：実読取ヘルパー停止による期限超過、遅い結果の排除、取消、同一ソース再接続、差し替え拒否、旧マップ互換、逆方向再試行と全バイト一致。
@@ -27,13 +38,13 @@
 
 [安定版のローカル集計](verification/v1.2.0-local.json) · [取得](acquisition-v1.2.json) · [CP932](cp932-v1.2.json) · [exFAT](exfat-damage-v1.2.json) · [既知ハッシュ](known-hashes-v1.2.json)
 
-## 実GUIと互換性
+## v1.2.0の実GUIと互換性
 
 安定版の実GUIをマウス/キーボードで操作し、26画面を撮影した。従来の36ファイル・152,325バイト、CP932の8ファイル・224バイト、破損exFATの8ファイル・14,135バイトを元データと照合した。exFATの全11候補で名前検証の欠落を保持し、配置を証明できない3件は復元対象から除外した。
 
 取得GUIでは1秒の期限超過後に失敗/未読範囲を保持し、元ソースから再開して64 MiB全量のSHA-256が一致した。ハッシュGUIでは一致2件・一覧にない6件・照合不能0件を確認し、元の警告を含む別JSON保存、日英表示、720×520でのスクロールを検証した。
 
-[実画面](UI-v1.2.md) · [画面/バイナリ/出力のSHA-256とGUI全記録](gui-v1.2-results.json)
+[v1.2.0の実画面](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/UI-v1.2.md) · [v1.2.0のGUI全記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/gui-v1.2-results.json)
 
 CP932を使うセッションはスキーマ10、破損exFAT設定は11。旧版CLIの実物が新スキーマを拒否することを確認した。[alpha.2互換性](verification/v1.2.0-alpha.2-compatibility.json) · [alpha.3互換性](verification/v1.2.0-alpha.3-compatibility.json)。従来のASCIIセッションと旧linear読取マップは維持する。
 
@@ -57,18 +68,69 @@ EscがIME取消より先にフォーカスを外す経路を実eguiフレーム�
 
 v1.2.1のネイティブCIと公開実物の両方に8回連続試験を要求し、中間回の失敗や不足した証跡を拒否する。各回のPNGはActionsの専用アーティファクトに保持し、リリース添付は9点を維持する。
 
-v1.2.1ローカルではRust 85テストと4契約テストが成功。GUIの26画面を新規撮影し、断片化NTFSの36ファイル、CP932の8ファイル、破損exFATの8ファイルを全バイト照合した。64 MiBの取得タイムアウト・再開、HTML/CSVの結果保持、既知ハッシュの2/6/0件・別JSON保存、日英切替・狭幅スクロールも確認した。[今回のGUI全記録](gui-v1.2-results.json)。従来のv1.2.0 GUI記録は[元タグ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/gui-v1.2-results.json)に固定している。
+v1.2.1ローカルではRust 85テストと4契約テストが成功。GUIの26画面を新規撮影し、断片化NTFSの36ファイル、CP932の8ファイル、破損exFATの8ファイルを全バイト照合した。64 MiBの取得タイムアウト・再開、HTML/CSVの結果保持、既知ハッシュの2/6/0件・別JSON保存、日英切替・狭幅スクロールも確認した。[v1.2.1候補のGUI全記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.1/docs/gui-v1.2-results.json)。従来のv1.2.0 GUI記録は[元タグ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/gui-v1.2-results.json)に固定している。
 
 過去の断続的失敗の正確な入力イベント列は採取していないため、単一原因と断定しない。今回の根拠は、旧処理で再現する取消経路の修正と実Microsoft日本語IMEの連続検証である。v1.2.1の公開完了と配布実物の結果は公開後に別記録へ追記する。
 
 ## v1.2.1の公開停止
 
-v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格したが、Windowsの実IME試験で1回目の取消が失敗した。Escを2回送った後も「とりけし」が残り、フォーカスは両回とも検索欄だった。フォーカスを維持する修正だけでは残る経路を解消できていない。リリースは公開しておらず、同じ試験の再実行で成功扱いにはしていない。[失敗時の全記録](verification/v1.2.1-withheld.json)。
+v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格したが、Windowsの実IME試験で1回目の取消が失敗した。Escを2回送った後も「とりけし」が残り、フォーカスは両回とも検索欄だった。この時点では、フォーカス維持の修正後も失敗する原因を特定できていなかった。リリースは公開しておらず、同じ試験の再実行で成功扱いにはしていない。[失敗時の全記録](verification/v1.2.1-withheld.json)。
 
 既存のv1.2.1タグは保持し、追加診断では実入力イベント・選択範囲・失敗画面を採取する。最新版のダウンロード案内は公開済みv1.2.0へ戻した。
 
-追加診断では、同じWindows上でアプリを起動し直す2回目の初回取消で失敗を再現した。直前の未確定文字の描画以降、Escや入力言語の復元要求のイベントが記録されず、復元要求もタイムアウトした。停止箇所はまだ特定していない。[生イベント・失敗画面・SHA-256](verification/v1.2.1-native-stall/manifest.json)を保存し、所有するGUIプロセスのスレッド情報を追加採取している。
+追加診断では、同じWindows上でアプリを起動し直す2回目の初回取消で失敗を再現した。直前の未確定文字の描画以降、Escや入力言語の復元要求のイベントが記録されず、復元要求もタイムアウトした。この時点では停止箇所を特定していなかった。[生イベント・失敗画面・SHA-256](verification/v1.2.1-native-stall/manifest.json)を保存し、所有するGUIプロセスのスレッド情報を追加採取している。
 
 [所有GUIのネイティブスタック](verification/v1.2.1-native-stall/native-stack-manifest.json)では、メインスレッドはWindows日本語IMEの内部で待機し、予測変換のワーカーもRPC応答を待っていた。両Esc後とも前面ウィンドウは対象GUIで、WM_NULLには応答した。永続的なデッドロックか処理の遅延かは、この一時点の採取だけでは断定しない。
 
 追加キー・再フォーカス・文字列消去を行わず失敗後の経過を観測すると、未確定文字の描画から5.587秒後（旧失敗判定後の観測3.551秒）に取消通知が届き、検索文字列が空になった。[完了までの実イベント・画面・記録](verification/v1.2.1-native-stall/native-wait-manifest.json)。固定約1.1秒の判定がWindows IMEの処理完了より先だった。修正ではEscを2回だけ送り、実UIA値の空文字への変化を最大10秒待つ。旧診断結果は失敗のまま保持し、修正後の配布用ビルドは別の試験で検証する。
+
+## v1.2.2候補の修正と再検証
+
+取消はEscを2回だけ送り、最大10秒で実UIA値が空になることを検証する。遅れて届いた実イベント列を再現するRust回帰試験は、修正後に合格し、v1.2.0の旧処理では確定済み文字に未確定文字が残って失敗する。
+
+続く変換試験にも固定400ミリ秒の待機があり、Spaceの後に表示状態を確認せずEnterを送り、「げんぶん」のまま確定していた。取消の待機修正が有効だった[実行42500970262](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42500970262)で確認した。末尾をnnで明示するgenbunn入力に統一し、変換前の「げんぶん」、変換後の「原文」、確定後の選択範囲の縮退を順番に確認する。ただし、末尾nを完成させても2回目の新規起動で変換に失敗したため、これを原因解決とは扱わない。
+
+ローカルのv1.2.2はRust 86テスト、35統合テスト群、Clippy（警告をエラーとして扱う）、fmt、配布・版番号・IMEの6契約テストに合格。新規撮影した26画面でNTFS 36件、CP932 8件、破損exFAT 8件の全バイト一致、64 MiBの取得タイムアウトと再開、HTML/CSV、既知ハッシュの2/6/0件を確認した。[実画面](UI-v1.2.md) · [GUI全記録](gui-v1.2-results.json)。連続起動試験は下記の32回に合格した。最終コミットの4環境CIと公開実物の検証も完了し、v1.2.2を安定版にした。
+
+状態確認を追加した初回試験では、テスト用PowerShellの.NET TextPattern.GetTextでAccessViolationExceptionが発生した。検証成功とは扱わず、Windows標準のCOM APIを直接使い、対象GUIのPIDと検索欄の名前を確認して選択文字・選択範囲を読む試験用クライアントを追加した。[変換タイミング失敗・読み取り失敗・旧処理の回帰ログ](verification/v1.2.2-ime-diagnostics/manifest.json)。このクライアントは製品や配布パッケージには含めない。
+
+[実行42505810350](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42505810350)の生イベントでは、Spaceの後にWindowsが通知した文字列も「げんぶん」で、「原文」の通知はなかった。前面は対象GUIのままだった。失敗を保存した後の15秒の観測と、診断用の追加Space 1回でも変換しなかった。追加操作は合格判定に使用していない。
+
+終了時に共有IMEサービスを巻き込む仮説も検証したが、[実行42506839758](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42506839758)は最初のIME起動で取消に失敗し、先行するGUI試験の終了時に残存プロセスはなかった。サービス保持処理は使用されておらず、この仮説は支持されないため変更を取り除いた。10秒の期限後さらに15秒観測しても未確定文字が残り、メインスレッドは通常のメッセージ待機中だった。標準WPF入力欄で同じ操作を行う比較診断を追加し、製品と環境の切り分けを続けている。全記録と実画面は[診断台帳](verification/v1.2.2-ime-diagnostics/manifest.json)に保持する。
+
+[候補コミット3cb664fの4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42504672980)は成功し、9点の配布候補を組み立てた。Windowsでは8回の取消・変換・確定と2ファイルのバイト一致を確認し、[元のJSONと9画面のハッシュ](verification/v1.2.2-native-ime-candidate.json)を照合した。別ホストの連続起動試験には上記失敗が残るため、この結果だけでv1.2.2を公開せず、追加診断を続ける。
+
+[実行42508798006](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42508798006)では、同じ通常権限の標準WPF TextBoxでも「げんぶん」から「原文」への変換に失敗した。取消は4,708ミリ秒で完了したが、Space後10秒もひらがなのままで、Enter後も「げんぶん」が確定した。Rescue/egui固有の描画だけでは説明できない。なお、この実行の製品試験は候補一覧を対象PIDのUIAで取得できず停止しており、候補待機の成功証跡ではない。その待機処理は取り除いた。[標準WPFの実画面と両方の記録](verification/v1.2.2-ime-diagnostics/native-wpf-conversion/wpf-uia.json)。
+
+次の検証では、日本語入力のユーザー設定をGUI起動前に一度だけ登録し、全セッション終了後に元へ戻す。各GUIの入力レイアウトの復元は維持する。毎回の登録・解除が共有IME状態へ与える影響を調べるための修正であり、結果が出るまでは解決済みとは扱わない。
+
+日本語の言語タグはWindows上で`ja`へ正規化されるため、登録確認を修正した。設定の事前登録と元への完全復元が成功した[実行42510204521](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42510204521)でも、最初の8回は成功し、2回目の新規起動で変換に失敗した。標準WPFでも同じ変換失敗を再現しており、入力言語の登録期間だけでは解消していない。次の診断では、所有するデスクトップの権限を全GUI試験の間で維持して最後に完全復元し、各GUIのプロセスJob終了直前に残るプロセスを記録する。
+
+デスクトップ権限を連続維持した[実行42511059930](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42511059930)でも2回目の変換に失敗した。最初のIME成功時を含めJob内の残存プロセスは0件で、Job終了による共有入力ホストの強制終了はこの実行の原因ではない。元のデスクトップ権限は完全復元した。
+
+入力切替を通常のWindows+Spaceへ変更し、元の入力言語の復元を所有ウィンドウに限定した[実行42512064340](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42512064340)も、最初の8回は成功して2回目の変換に失敗した。標準WPFもその後に失敗したが、これまでのWPF比較はRescueを動かした後であるため、製品終了が共有状態に及ぼす影響までは除外できない。Rescueを一度も起動しない新規ホストで標準WPFを2回起動する比較と、同一の配布候補GUIをWindows 2025で動かす比較を進めている。いずれも旧失敗の再実行や合格への付替えではなく、原因を限定するための別診断である。
+
+### 連続起動に失敗するテスト終了処理の切り分け
+
+Rescueを起動しない新規Windows 2022ホストでも、標準WPF入力欄の1回目は変換に成功した後、終了が75秒でタイムアウトし、2回目は変換に失敗した。[独立した標準コントロールの記録](verification/v1.2.2-ime-diagnostics/fresh-wpf-before-rescue/wpf-fresh-sessions.json)。入力欄の値だけが成功していても、正常終了していないため試験全体は失敗とする。
+
+[終了手順だけを変えた比較](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42513969720)では次の差を確認した。両方とも同じ通常権限のトークンと実キー入力を使用し、Rescueは起動していない。
+
+| 終了手順 | 1回目 | 2回目 | 最後の設定復元 |
+| --- | --- | --- | --- |
+| ウィンドウに元のHKLへの変更を要求して終了 | 変換成功後、ウィンドウ終了が停止・75秒で強制終了 | 変換失敗・終了も停止 | 言語一覧とデスクトップ権限を復元 |
+| ウィンドウを通常終了 | 変換成功・38ミリ秒で閉じる | 変換成功・30ミリ秒で閉じる | 言語一覧とデスクトップ権限を復元 |
+
+[失敗側の各段階](verification/v1.2.2-ime-diagnostics/wpf-layout-restore/wpf-fresh-sessions.json) · [通常終了側の実画面と記録](verification/v1.2.2-ime-diagnostics/wpf-normal-close/wpf-fresh-sessions.json)。HKL変更要求自体は返っているが、その後のCloseが戻らない。製品テストではウィンドウを通常終了させ、全試験終了後に元の言語設定を一度だけ復元する。さらに、GUIの強制終了・異常終了や設定の復元漏れを配布判定で拒否する契約テストを追加した。修正後の製品試験は次節のとおり、別の新規ホストで32回すべてに合格した。
+
+Windows 2025の比較は日本語機能のインストールが10分でタイムアウトし、製品試験に到達していない。[実行42512979548](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42512979548)。これは製品のIME合否の証跡には数えない。
+
+### 修正した終了手順での32回連続検証
+
+[実行42514259957](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514259957)は初回実行で合格した。通常のGUI・通常権限UIA・実キー操作の後に、Rescueを新たに4回起動して各8回の取消・変換・確定を実行した。毎回Escは2回、SpaceとEnterは各1回で、追加入力や再試行はない。各GUIは終了コード0で通常終了し、全セッション後に元の言語一覧・入力方法・オプションとデスクトップ権限を復元した。取消完了の追加待機は最大234ミリ秒だった。
+
+使用したGUIは候補の4環境CIで作成したポータブルそのもので、SHA-256は `3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed`。計測用の製品コード変更はない。最終リリース用のネイティブCI・公開実物検証は、この追加診断とは別に実施する。
+
+[32回の状態・終了・復元・36画像のハッシュ](verification/v1.2.2-ime-stress.json)。
+
+![4回目の新規起動・8回目の取消後の再変換と確定](images/v1.2.2-ime-candidate/session-4-cycle-8.png)

@@ -1,0 +1,43 @@
+﻿{
+    "scope":  "Diagnostic standard WPF TextBox, same token and IME setup; never release proof",
+    "status":  "failed",
+    "description":  " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+    "error":  "System.Management.Automation.RuntimeException: Native WPF conversion also failed",
+    "cycles":  [
+                   {
+                       "observations":  [
+                                            {
+                                                "expected":  "とりけし",
+                                                "value":  "とりけし",
+                                                "stage":  "cancel-preedit",
+                                                "elapsed_ms":  224
+                                            },
+                                            {
+                                                "expected":  "",
+                                                "value":  "",
+                                                "stage":  "cancelled",
+                                                "elapsed_ms":  4708
+                                            },
+                                            {
+                                                "expected":  "げんぶん",
+                                                "value":  "げんぶん",
+                                                "stage":  "kana",
+                                                "elapsed_ms":  107
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "げんぶん",
+                                                "stage":  "converted",
+                                                "elapsed_ms":  10073
+                                            },
+                                            {
+                                                "expected":  "原文",
+                                                "value":  "げんぶん",
+                                                "stage":  "committed",
+                                                "elapsed_ms":  10019
+                                            }
+                                        ],
+                       "cycle":  1
+                   }
+               ]
+}

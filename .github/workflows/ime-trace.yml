@@ -1,0 +1,94 @@
+name: Trace Windows IME cancellation
+on:
+  push:
+    branches: ['fix/windows-ime-trace']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+env:
+  PYTHONUTF8: '1'
+  RESCUE_IME_TRACE: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+jobs:
+  trace:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse the Windows fixture scripts before execution
+        shell: powershell
+        run: |
+          foreach ($name in 'gui_windows.ps1','windows_ime_profile.ps1','ime_wpf_baseline.ps1') {
+            $tokens=$null;$errors=$null
+            $null=[System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd "scripts/$name"),[ref]$tokens,[ref]$errors)
+            if ($errors.Count) {throw ($errors|Out-String)}
+          }
+      - name: Check the native UIA probe toolchain before the GUI build
+        run: python -c "import sys,tempfile; from pathlib import Path; sys.path.insert(0,'scripts'); from windows_selection_probe import build; print(build(Path(tempfile.mkdtemp(prefix='rescue-uia-build-'))))"
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-windows-x64
+          path: native-candidate
+          run-id: 42504672980
+          github-token: ${{ github.token }}
+      - name: Verify the previously tested immutable Windows GUI bytes
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          source=Path('native-candidate'); portable=source/'rescue-1.2.2-windows-x64-portable.zip'
+          target=Path('target/x86_64-pc-windows-msvc/release'); target.mkdir(parents=True)
+          with zipfile.ZipFile(portable) as z:
+              data=z.read('rescue-gui.exe')
+          expected='3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed'
+          assert hashlib.sha256(data).hexdigest()==expected
+          assert json.loads((source/'gui-ime-windows-x64.json').read_text())['gui_binary_sha256']==expected
+          (target/'rescue-gui.exe').write_bytes(data)
+          Path('trace-binary-provenance.json').write_text(json.dumps({'native_run':42504672980,'native_commit':'3cb664fe8ef4ce2e460199c2fbc3ef7d07641153','gui_sha256':expected,'instrumented':False})+'\n')
+          PYTHON
+      - name: Build the owned minidump reader with the installed Windows SDK
+        shell: pwsh
+        run: |
+          $vs=& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
+          cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && cl /nologo /EHsc /MT scripts\inspect_windows_dump.cpp /Fe:inspect-windows-dump.exe /link dbgeng.lib"
+          if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
+      - name: Prepare Japanese input before the desktop batch
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
+      - name: Verify fresh GUIs with stable desktop access across all sessions
+        run: python scripts/ci_command.py python scripts/ime_stress_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe
+      - name: Restore the original user language profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Inspect owned GUI dumps after a failure
+        if: always()
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $symbols="srv*$env:RUNNER_TEMP\rescue-symbols*https://msdl.microsoft.com/download/symbols;$env:GITHUB_WORKSPACE\target\x86_64-pc-windows-msvc\release"
+          Get-ChildItem rescue-owned-uia-*/*.dmp | ForEach-Object {
+            & ./inspect-windows-dump.exe $_.FullName $symbols 2>&1 | Out-File ($_.FullName + '-stacks.txt') -Encoding utf8
+          }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-ime-event-trace
+          path: |
+            trace-*.json
+            ime-profile-state.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/*.txt
+            rescue-owned-uia-*/windows*.png
+            rescue-owned-uia-*/*.dmp
+          if-no-files-found: error

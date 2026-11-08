@@ -2,11 +2,11 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**最新公開版はv1.2.0です。** v1.2.1は公開前のWindows IME試験で失敗したため、配布していません。追加修正と診断を進めています。[停止した検証の記録](docs/verification/v1.2.1-withheld.json)。
+**最新公開版はv1.2.2です。** Windows日本語IMEの取消処理と、実操作テストの終了手順を修正しました。 v1.2.1は公開前の試験で停止し、既存タグを保持しています。[修正と検証の記録](docs/V1_2_ACCEPTANCE.md)。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/RELEASE-v1.2.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_2_ACCEPTANCE.md)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.2) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.2/docs/RELEASE-v1.2.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_2_ACCEPTANCE.md)
 
-![設定画面](docs/images/v1.2/settings-ja.png)
+![設定画面](docs/images/v1.2.2/settings-ja.png)
 
 ## ダウンロード
 
@@ -14,12 +14,12 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 | 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-windows-x64-portable.zip) |
-| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/rescue-1.2.0-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-x64-portable.zip) |
 
-リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
@@ -33,11 +33,11 @@ Windowsは発行元署名なし、macOSはアドホック署名・公証なし�
 - 保存時のSHA-256と既知一覧を照合。一致・一覧にない・照合不能を分け、元の警告も残します。
 - 復元結果のHTML/CSV保存。元のJSONと同じ警告・欠損・名前・出力ハッシュを保持します。
 
-![選択したファイルの復元結果](docs/images/v1.2/recovered-ja.png)
+![選択したファイルの復元結果](docs/images/v1.2.2/recovered-ja.png)
 
 FATのチェーンが消えた複数クラスターは標準では推定しません。詳細設定で有効にした場合だけ連続配置を推定し、割当競合や構造不正を拒否します。同じ固定FAT32イメージでは標準14/36件、推定有効36/36件が元のSHA-256と一致しました。一般的な復元率ではありません。未知形式の断片化では誤った推定があり得るため、保存後も「内容未確認」と表示します。[対応範囲と実測](docs/FAT-v1.1.md)。
 
-![ブラウザーで読む復元レポート](docs/images/v1.2/html-report.png)
+![ブラウザーで読む復元レポート](docs/images/v1.2.2/html-report.png)
 
 [UIの実操作](docs/UI-v1.2.md) · [レポート](docs/REPORTS.md) · [既知ハッシュ照合](docs/KNOWN-HASHES.md) · [CP932](docs/CP932.md) · [exFAT破損表](docs/EXFAT-DAMAGE.md) · [現行の制限](docs/ALPHA.md) · [索引](docs/INDEX.md) · [同じ場所への保存](docs/SAME-LOCATION.md)
 

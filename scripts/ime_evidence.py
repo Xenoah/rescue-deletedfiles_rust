@@ -2,7 +2,25 @@
 import re
 
 
-def require_repeated_ime(proof, count=8):
+def require_ime_cleanup(proof, profile):
+    """Require normal GUI exit and exact restoration after the entire batch."""
+    uia = proof.get('uia', {})
+    shutdown = uia.get('shutdown', {})
+    if not (
+        uia.get('input_profile_cleanup') == 'outer-language-profile'
+        and shutdown.get('graceful') is True
+        and shutdown.get('forced') is False
+        and shutdown.get('phase') == 'process-exited'
+        and shutdown.get('exit_code') == 0
+        and profile.get('prepared') is True
+        and profile.get('restored') is True
+        and profile.get('before')
+        and profile.get('before') == profile.get('after')
+    ):
+        raise ValueError('Native IME cleanup is incomplete or GUI did not exit normally')
+
+
+def require_repeated_ime(proof, count=8, require_stages=False):
     cycles = proof['uia']['native_ime']['cycles']
     screenshots = proof['ime_cycle_screenshots']
     if len(cycles) != count or len(screenshots) != count:
@@ -12,7 +30,7 @@ def require_repeated_ime(proof, count=8):
         if not (
             cycle['cancel_start_value'] == 'とりけし'
             and cycle['cancelled_roman_keys'] == 'torikeshi'
-            and cycle['committed_roman_keys'] == 'genbun'
+            and cycle['committed_roman_keys'] == ('genbunn' if require_stages else 'genbun')
             and cycle['committed_value'] == '原文'
             and cycle['unicode_injection_used'] is False
             and cycle['cancel_escape_presses'] == 2
@@ -22,3 +40,23 @@ def require_repeated_ime(proof, count=8):
             and re.fullmatch(r'[0-9a-f]{64}', shot['sha256'])
         ):
             raise ValueError(f'Native IME cancellation/conversion evidence differs: cycle {index}')
+        if require_stages:
+            for field, phase, value, selected in [
+                ('conversion_preedit', 'conversion-preedit', 'げんぶん', 'げんぶん'),
+                ('converted_preedit', 'converted-preedit', '原文', '原文'),
+                ('commit_state', 'committed', '原文', ''),
+            ]:
+                state = cycle.get(field, {})
+                if not (
+                    state.get('phase') == phase
+                    and state.get('value') == value
+                    and state.get('selected_text') == selected
+                    and state.get('selection_ranges') == 1
+                    and state.get('collapsed') is (field == 'commit_state')
+                    and state.get('reader') == 'native-uia-com'
+                    and state.get('limit_ms') == 10000
+                    and 0 <= state.get('elapsed_ms', -1) <= 10000
+                ):
+                    raise ValueError(f'Native IME stage evidence differs: cycle {index}, {field}')
+            if cycle.get('space_presses') != 1 or cycle.get('enter_presses') != 1:
+                raise ValueError(f'Native IME conversion key count differs: cycle {index}')

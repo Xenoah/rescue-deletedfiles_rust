@@ -1,0 +1,518 @@
+{
+  "records": [
+    {
+      "case": "conversion-timing",
+      "run": 42500970262,
+      "status": "failed",
+      "files": [
+        {
+          "file": "conversion-timing/uia.json",
+          "sha256": "073f8b7f6dd79e6a257e35bfd07de1145e228dace69a01fb821300577b5b1b81"
+        },
+        {
+          "file": "conversion-timing/windows-ime-escape-1-1.png",
+          "sha256": "6f846b3ab00762d2118d3b06586de77846600f0138ca16a44ceb75f288bd9ce4"
+        },
+        {
+          "file": "conversion-timing/windows-ime-escape-1-2.png",
+          "sha256": "2b266537241f663423ff50b61ff9743ec06e4cbf10a5c700a1a361755274f3ea"
+        },
+        {
+          "file": "conversion-timing/windows-ime-preedit-1.png",
+          "sha256": "73da3c0cacb5d34d5475febf88a1bd85be5d4afb2b4f7b14ffc102b8b3c5e6f0"
+        }
+      ]
+    },
+    {
+      "case": "textpattern-crash",
+      "run": 42501896857,
+      "status": "failed",
+      "files": [
+        {
+          "file": "textpattern-crash/trace-ime-1.json",
+          "sha256": "a29526645fd6fde964a012838841cf9a8e20d62756a988cb528dd03c1bd5560a"
+        },
+        {
+          "file": "textpattern-crash/driver-stderr.txt",
+          "sha256": "ab6c7beaee80e6c44d9e9fc47080d1b35fab6b055d5d97c4645847aab616b069"
+        }
+      ]
+    },
+    {
+      "case": "pending-roman-n",
+      "run": 42502824894,
+      "status": "failed",
+      "files": [
+        {
+          "file": "pending-roman-n/uia.json",
+          "sha256": "879d08fafef521664c3e9eaabc52a10719e04942bcd6138b6e8c5b22f5387e1c"
+        }
+      ],
+      "finding": "Native COM GetText and CompareEndpoints succeeded. genbun produces pending げんぶｎ, not げんぶん, before Space. Corrected exact expected preedit; no extra input keys."
+    },
+    {
+      "case": "pending-n-conversion",
+      "run": 42503381529,
+      "status": "failed",
+      "first_process_cycles_passed": 8,
+      "second_process_failure": "First cycle: after a single Space pending げんぶｎ became selected げんぶん and remained kana at the 10s deadline; no Enter was sent.",
+      "files": [
+        {
+          "file": "pending-n-conversion/uia.json",
+          "sha256": "5027f8772d3af952ada0d8865bd6d4aac083a4253c6883a45a717da3933533fb"
+        },
+        {
+          "file": "pending-n-conversion/windows-gui-failed.png",
+          "sha256": "05abf2d40dfb553ba5bda9bd66b8c84a3a73543aa29c8dd117387c93a33a9c82"
+        }
+      ]
+    },
+    {
+      "case": "complete-kana-conversion",
+      "run": 42504221859,
+      "status": "failed",
+      "artifact_zip_sha256": "599dd1bccbca1800285a617b6a363982455a4070d60d2314da243ca0dbc9d1a3",
+      "finding": "Explicit genbunn completes げんぶん but the second fresh process still does not receive 原文. This disproves pending terminal n as the sufficient cause.",
+      "files": [
+        {
+          "file": "complete-kana-conversion/uia.json",
+          "sha256": "f300ce7365f0cb975359d06d10fa09c6fc566568ba02011e13aac67c080c1831"
+        },
+        {
+          "file": "complete-kana-conversion/windows-gui-failed.png",
+          "sha256": "fa97ab8fd399cebb94730506735892132a426b98e21e05775e3adafeb4dbb3f2"
+        }
+      ]
+    },
+    {
+      "case": "native-conversion-events",
+      "run": 42505810350,
+      "status": "failed",
+      "artifact_zip_sha256": "a015cdbc67e4c2cf46ab9a4fff8cb1611bee6b1c2d7a6534a08d2ba6b29b5610",
+      "finding": "Foreground stays in the owned process. After Space, Windows emits only Preedit(げんぶん); no 原文 event. After preserving failure and 15s observation, one additional diagnostic Space also leaves kana. No Enter was sent; run remains failed.",
+      "files": [
+        {
+          "file": "native-conversion-events/uia.json",
+          "sha256": "3a710810904a4a6c95373c2ce44a25102a05e84449fd2451b078646f4fc13532"
+        },
+        {
+          "file": "native-conversion-events/stderr.txt",
+          "sha256": "e33f9ac31ae2340ebdfcb663eb0312da4be18faf52fca6cf1b2970f14d6d2fe8"
+        },
+        {
+          "file": "native-conversion-events/windows-gui-failed.png",
+          "sha256": "015b53cfb181d7226f548c48920d804c72fc45cbb2c5f8e3e005a78edebe9cd9"
+        },
+        {
+          "file": "native-conversion-events/windows-after-candidate-advance.png",
+          "sha256": "f268e69e8908b1931202f77871f4cfcd9ffa011e27a204137997d63e1db7f33b"
+        },
+        {
+          "file": "native-conversion-events/owned-gui-failed.dmp-stacks.txt",
+          "sha256": "21bb8f749a4dfbd2d8c296e10f6f0077c18f572cd2d333407b5b0026ec4e63f3"
+        }
+      ]
+    },
+    {
+      "case": "input-service-hypothesis",
+      "run": 42506839758,
+      "status": "failed",
+      "artifact_zip_sha256": "260834e7ab1b4c2475220c06d04fc3f66e88dece700c12c7a38672fe9406d8a6",
+      "finding": "Uninstrumented GUI fails cancellation in its first IME process. Preceding successful GUI jobs had no surviving processes; the input-service preservation branch was never used. After the 10s deadline and another 15s of observation the preedit remains. Main-thread dumps show normal winit message wait. The service-preservation hypothesis is not supported and the code was removed.",
+      "files": [
+        {
+          "file": "input-service-hypothesis/uia.json",
+          "sha256": "1172bb8759ac6f3b04cb1a150c7b67234d73e2be3e2ab7195c84be9465aa2767"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-escape-1-2.png",
+          "sha256": "6ec0befa7aa084d8af2f87a00357d1f9172adf93102ced3d9d778b42aea6e591"
+        },
+        {
+          "file": "input-service-hypothesis/owned-gui-failed.dmp-stacks.txt",
+          "sha256": "533b291e4b0393984d917adaf18a607e8689544207ff778c7c8b68b0fe009a4c"
+        },
+        {
+          "file": "input-service-hypothesis/owned-gui-still-waiting.dmp-stacks.txt",
+          "sha256": "38523eee1e462899e232ef269b8a2833e36eaaaa182213ff3916b022378d7c0f"
+        },
+        {
+          "file": "input-service-hypothesis/trace-limited.json",
+          "sha256": "b1268e4454859d8a7853a3bc0bc35759d797d4e5ee0b34de2f0851f69c645e09"
+        },
+        {
+          "file": "input-service-hypothesis/trace-keyboard.json",
+          "sha256": "b33446e749a81cd5952ca2ff25a386fc70bd61a36b222c0307fd360cbbecc522"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-preedit-1.png",
+          "sha256": "643c868cd8579c16b26bcf738463db8c335db0e6685db91b14e0f9373b6a04dc"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-escape-1-1.png",
+          "sha256": "c6eb35f00f498989e702dc50889f91d4b256220ad0510728429ed3c81a1be996"
+        }
+      ],
+      "candidate_timing": "Before Escape, the app shows とりけし but prediction popup still shows type/true/test. After the first Escape, Japanese predictions including 取り消し appear; after the second Escape the popup closes but composition remains. This suggests pending prediction updates race the two-Escape sequence; not yet proven by native-control comparison."
+    },
+    {
+      "case": "wpf-baseline-setup",
+      "run": 42507873185,
+      "status": "failed",
+      "artifact_zip_sha256": "4354cabe32094cb9da4e48437278fd1790e2d05c1b4d2395e42a97cceeffd739",
+      "finding": "Raw-event diagnostic repeats first8pass/secondprocessconversionfailure. The standard WPF comparison did not reach input: its temporary config lacked an explicit ACL grant to the restricted runner identity. This is no evidence of WPF IME behavior. Added the same owned-fixture ACL grant used by the product UIA suite.",
+      "files": [
+        {
+          "file": "wpf-baseline-setup/uia.json",
+          "sha256": "685ac6ca0cac486cffa50f35fe2197d8e09db840987008510e1da3181ad256e8"
+        },
+        {
+          "file": "wpf-baseline-setup/stderr.txt",
+          "sha256": "1983dc057515bac2fa5bbbcfc0fc49a51083532657de13b0693e60bcc4ba1c3a"
+        },
+        {
+          "file": "wpf-baseline-setup/baseline-stderr.txt",
+          "sha256": "e08d8400740d4ab7309fe9149f5db20734439e26d189d04cccfe24b3efbc91a8"
+        }
+      ]
+    },
+    {
+      "case": "native-wpf-conversion",
+      "run": 42508798006,
+      "status": "failed",
+      "artifact_zip_sha256": "4a7228eeeff689b593349dc8adbe4602a3cc34bd72d7a648849e0a391138dbc7",
+      "finding": "Product candidate-readiness probe failed before sending Escape: prediction popup was visibly current but not exposed under the owned PID in UIA. That unusable gate was removed. The standard WPF TextBox then reproduced the same kana-only conversion: cancelled after4708ms, completedげんぶん, oneSpace and10s remainedげんぶん, Enter and10s committedげんぶん. Thus conversion failure is not specific to Rescue/egui. New hypothesis under test: changing the user language profile around every GUI session disrupts shared TSF/IME state. Prepare once before GUI launch and restore once after all sessions; per-GUI active layout still restored.",
+      "files": [
+        {
+          "file": "native-wpf-conversion/product-uia.json",
+          "sha256": "65a5de9bb5fdfa0386fdbe8a086f0b2a2dabcde27809b3472904617f2ac12c5f"
+        },
+        {
+          "file": "native-wpf-conversion/product-candidate-visible.png",
+          "sha256": "a4a21eed72795b97aa0131526f0fdde65ca448a831eca313fdbb89806d19e2f3"
+        },
+        {
+          "file": "native-wpf-conversion/wpf-uia.json",
+          "sha256": "4d5505542f320a9c624da6a1db4983c0e817b2583e2a24a55d8fa2a1af6bc735"
+        },
+        {
+          "file": "native-wpf-conversion/wpf-kana-committed.png",
+          "sha256": "e97e107ffb624c76d3b17670ee7571f83dbeeca3595037df01eea174dcf89fc6"
+        }
+      ]
+    },
+    {
+      "case": "canonical-language-tag",
+      "run": 42509885835,
+      "status": "failed-before-ime",
+      "artifact_zip_sha256": "af0eebfbaa650b9ad00da0e94b8666414426d0a976a326b906ea6bf18115ab81",
+      "finding": "Profile preparation succeeded in registering MicrosoftJapaneseTIP, but Windows canonicalized LanguageTag to ja, while the readiness guard required ja-JP. The GUI IME test never ran. Exact original language list restoration passed. The guard now accepts Japanese language tags beginning with ja or ja-.",
+      "files": [
+        {
+          "file": "canonical-language-tag/ime-profile-state.json",
+          "sha256": "e51aaeed5ace1ccddd257a486f00b7a999cd7935f532107c523cf7772deacc7b"
+        }
+      ]
+    },
+    {
+      "case": "stable-language-profile",
+      "run": 42510204521,
+      "status": "failed",
+      "artifact_zip_sha256": "7c5b97abd3795d3202b682009ed38ef39705b6448bb8e9cbcd609624eae63c1a",
+      "finding": "Japanese language profile preparation and exact restoration both passed. Using the actual native portable GUI (sha3deff...), first process8cycles passed; second processfirstcycle still failed conversion. WPF also committedげんぶん instead of原文. Stable language registration alone does not solve this. Next check holds the owned desktop/window-station grant across the entire GUI batch and records job survivors before normal cleanup.",
+      "files": [
+        {
+          "file": "stable-language-profile/ime-profile-state.json",
+          "sha256": "e02590f5adcb19d837485881d54b51858896a4b71d79c172e6c11812e17a6d39"
+        },
+        {
+          "file": "stable-language-profile/first-ime-passed.json",
+          "sha256": "231cd586ca3af048ba04a67cc76491843c6fa4a877c7b7d3ec2a2758d5948a01"
+        },
+        {
+          "file": "stable-language-profile/second-ime-failed.json",
+          "sha256": "02b5dc6dca76de50ca098758ce65d0ed9c01be6db6d3787ba56fdb931949e41a"
+        },
+        {
+          "file": "stable-language-profile/wpf-uia.json",
+          "sha256": "cf66ac884b7fb5684c61cfd69e93341c832bdc0032392287252b50d842feb80e"
+        }
+      ]
+    },
+    {
+      "case": "stable-desktop-access",
+      "run": 42511059930,
+      "status": "failed",
+      "artifact_zip_sha256": "47b2ebcd1ef2ebc510d2af74406ce25c8dd8b3334c541245afd411a83da2be5e",
+      "finding": "Stable outer desktop/window-station access does not resolve first8pass/secondprocessconversionfailure. Both original ACLs restored exactly. Read-only Job process queries show no remaining processes after the first successful IME GUI, nor after preceding limited/keyboard sessions. Therefore normal Job close did not kill a surviving input host in this run. Next fixture avoids session-wide ITfInputProcessorProfileMgr activation/restoration: select Japanese with actual Windows+Space and restore only the owned HWND language with bounded PostMessage observation.",
+      "files": [
+        {
+          "file": "stable-desktop-access/trace-desktop-lifetime.json",
+          "sha256": "d972ee18e058b80404e9d773413af6335106c661c838c2397c7f806de6b0f140"
+        },
+        {
+          "file": "stable-desktop-access/trace-ime-1.json",
+          "sha256": "0848849f855727cfee01d3ecbede44e21a3991fd2e9a351773e273fa52f1fe7a"
+        },
+        {
+          "file": "stable-desktop-access/trace-ime-2.json",
+          "sha256": "e5c2c2c681c636883661310d69220bf2947e1977bfa8f5054cf4e32b88d6790a"
+        }
+      ]
+    },
+    {
+      "case": "native-input-switch",
+      "run": 42512064340,
+      "status": "failed",
+      "artifact_zip_sha256": "737e1bf6a655c6d2d7c60101a2453f40880bde4b2859e9601316c901d533d575",
+      "finding": "Selecting Japanese with native Windows+Space and restoring only the owned HWND layout still gives first8pass/secondprocessconversionfailure. Standard WPF subsequently also fails conversion. No Job survivors were observed. These WPF checks follow Rescue, so they do not yet distinguish an independent OS/fixture defect from shared state affected by a prior Rescue process. Fresh-host WPF-first comparison is required.",
+      "files": [
+        {
+          "file": "native-input-switch/trace-desktop-lifetime.json",
+          "sha256": "b76907d151a61bc7c76ded5d404f0bf803569b0c28fccb382735e3db0f63240a"
+        },
+        {
+          "file": "native-input-switch/ime-profile-state.json",
+          "sha256": "dfd66eb147f1ff9705fafaa6f619bda8ee62c5dffa260db1c2f1bc9f1990ec28"
+        },
+        {
+          "file": "native-input-switch/trace-ime-1.json",
+          "sha256": "7c76b0d0b26784700ee4978c643158cd56cb20f7075f40bac8f51f6e9f0e4330"
+        },
+        {
+          "file": "native-input-switch/product-uia.json",
+          "sha256": "4a9ef47e75fa79f564362996553b783f78edf209b8c53cdce019cc4be9c0ae34"
+        },
+        {
+          "file": "native-input-switch/product-failed.png",
+          "sha256": "e9f44df5d09acc5145180b4c7668aab5e55725198face0b4788a7d1d5fd9b717"
+        },
+        {
+          "file": "native-input-switch/wpf-uia.json",
+          "sha256": "947e4316a7de1a7cf9d6a4eba6a32a396a7cb53bddd9e03ecdb51ca00c2be0e5"
+        },
+        {
+          "file": "native-input-switch/wpf-kana-committed.png",
+          "sha256": "d5186958a9c7ed1bf8880d1de0aa56dacafd6dcefdc1ebf4b8268ed28675baf8"
+        }
+      ]
+    },
+    {
+      "case": "fresh-wpf-before-rescue",
+      "run": 42513472603,
+      "status": "failed",
+      "artifact_zip_sha256": "0c37cc8ef7edcc1464abc241b8b71361e4a81a9ca974c5a02a48da729ac29366",
+      "finding": "Rescue never ran. First standard WPF control converted correctly but its driver did not exit within75s; second failed conversion. Both launch return codes were1, so the first UI passed record is not an overall pass.",
+      "files": [
+        {
+          "file": "fresh-wpf-before-rescue/ime-profile-state.json",
+          "sha256": "b1eb7b4ac1bdf04a663c2e5dfd156e5f7da579b7eb2a7897c05538d10b38786c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/uia.json",
+          "sha256": "e8a2dd775983178d57652d140147972acab9ffa88c33b1b1ea645c1a939730eb"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-cancel-preedit.png",
+          "sha256": "cdc2b8dc42c8c6bfcca8235bed76a5b65c5838acdbf7169bbbf9d3534faa2d59"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-cancelled.png",
+          "sha256": "90005aa64f8983bb94055364b69cd26d4f6e37a63e5f5088eba0766498832864"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-committed.png",
+          "sha256": "ee4766ab8293c44f23cc8207268fdd503c37ee6cfbae2455497404be6688672e"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-converted.png",
+          "sha256": "f0cd16f8438e63f754232df3cbfb138c049c766613529ad6b0be6f114982383f"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-kana.png",
+          "sha256": "0ffd2b45369c04dec3c9070839fca5059b36d72bd655f9ff19fc8f996eaad949"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/uia.json",
+          "sha256": "5b350c906513a05bca9f5f9cae0ab468b2bf10d99a641991075ea360375ec401"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-cancel-preedit.png",
+          "sha256": "6ffddf84ab6f6af12c5536b919b317ae5f93c4d7005ca2d22e77c3622656bf2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-cancelled.png",
+          "sha256": "6ffddf84ab6f6af12c5536b919b317ae5f93c4d7005ca2d22e77c3622656bf2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-committed.png",
+          "sha256": "39d9fe8028b21ca5dfd492e9909dfdd48f3362ae1ddc23cc65092bd75b448b2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-converted.png",
+          "sha256": "e6455be71ef0aa235c315b881e6d0b34a9cc4290d415b5815dd2cc44aeec3c17"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-kana.png",
+          "sha256": "c810841618451e5b58c610b7dd16ecfb20d04f9b535708cfbbc88b88c4301f30"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/wpf-fresh-sessions.json",
+          "sha256": "2fb88c213de8b39b5ef5718b853b8c4d9a2613173d535e6e5a00f4edf3779f7e"
+        }
+      ]
+    },
+    {
+      "case": "wpf-layout-restore",
+      "run": 42513969720,
+      "status": "failed",
+      "artifact_zip_sha256": "bf5a1c250389f8505e478af6351348b6f34edcb02357d6b0be6a69bd9a7254b5",
+      "finding": "Explicit input-layout restore completed, then window.Close blocked. First WPF conversion passed but process required timeout termination; second conversion failed. Both75s launcher timeouts remain failures.",
+      "files": [
+        {
+          "file": "wpf-layout-restore/ime-profile-state.json",
+          "sha256": "34b01e92112dd8f1a93c0183e8df1d1d69138dade7679f7eb61d381834a0b76e"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/launch.json",
+          "sha256": "b3408771df8fb9c27ec348896e13b37ed29261badaf4cc5fda72b078bdc35cd1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/uia.json",
+          "sha256": "39f735a7b53b0aee3a1770315cff74c8739e924926120423784239a3d5e16a9a"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-cancel-preedit.png",
+          "sha256": "a345f5cbcb580e39f8ede922a34a6637e303dc342ce5878cfaa60d2cd4b87591"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-cancelled.png",
+          "sha256": "9f25e3ee44d5757793287c916de7d339b95175507fdb0cc826a05c0448bc96d6"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-committed.png",
+          "sha256": "c70ae51cca9c06ba315bbb4cd5843ada20781e777817f6e443252a4168f6b50d"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-converted.png",
+          "sha256": "2ef6df67273b0be3f46e23d086051ce347c830251f34775c7e1b359490b3e918"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-kana.png",
+          "sha256": "0f249f193336f62e6670d2fa8b61a40c90f8d5399cc54b26a09129f8d902d761"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/launch.json",
+          "sha256": "6b57b12c74220493dc4e2bee65cae0c071fd91847ec0dcfa6b0c066fe4f8a266"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/uia.json",
+          "sha256": "37a56ba84f17076c5aaea43ad5cd4934f5c9c2aa59a386ab170194dc9fac02b9"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-cancel-preedit.png",
+          "sha256": "7ca741317a15473184f10f7d9ae08edf8ba00fb97a4b858156d46bc829da5acd"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-cancelled.png",
+          "sha256": "ba1b6c9ed20d5d94fb3100b6a9f9ff78dff39bfe38fbf88d13fa2ba21b80b6a1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-committed.png",
+          "sha256": "55e3d4f45e07f4c81882659f7220974ae0aa2d61377a5f61fbe9d5d3640ddac1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-converted.png",
+          "sha256": "db8b8091bc60d4e7826844958bdba862ccfd900a7a648fc046009c1ba69dfdaf"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-kana.png",
+          "sha256": "44cdb97b3b840ae4ee40651697b261d8493483b3fbed357289e1c3b48691f9d0"
+        },
+        {
+          "file": "wpf-layout-restore/wpf-fresh-sessions.json",
+          "sha256": "debeacd2f26e6cfe46a6f3a2409b991f1b044af201c1491d7060d8359b04f629"
+        }
+      ]
+    },
+    {
+      "case": "wpf-normal-close",
+      "run": 42513969720,
+      "status": "passed",
+      "artifact_zip_sha256": "32f4241749ae8afdf0a631c5292d77c1f224ead9564ab02ae529065fe1f6287f",
+      "finding": "With the same Windows2022 token and keys, normal closure without a per-window HKL reset passed both fresh WPF sessions; window close completed in38ms and30ms. Full original language profile and desktop ACLs were restored by the outer fixture. This supports removing the fixture teardown reset, while keeping actual input and exit checks.",
+      "files": [
+        {
+          "file": "wpf-normal-close/ime-profile-state.json",
+          "sha256": "dfd66eb147f1ff9705fafaa6f619bda8ee62c5dffa260db1c2f1bc9f1990ec28"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/launch.json",
+          "sha256": "aa45abc6433335bc83b4b9a1e8a7bdd1a9e6f47824a6eff043f653baf309259d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/uia.json",
+          "sha256": "91ca0b768af61d335977364171d5fcd2ec3b47de9f560b40365eaa602c44c25d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-cancel-preedit.png",
+          "sha256": "7c2ee8c8baaf959496214ec966bcf569d810f2ef7e65684941f7b405433aec75"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-cancelled.png",
+          "sha256": "c5c15c1c95e426490f8b77899f966e117cc21a0f99f2c7ab703c218a42a37000"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-committed.png",
+          "sha256": "74cc6096191c4b737fa6ed63b48ad9a4db9ae4034b0a7652293110c34cf71514"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-converted.png",
+          "sha256": "5e9b57aaa74945435cb712e5d6060cda42d3afc58047942ea8e482f231c076e7"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-kana.png",
+          "sha256": "2b4b034bec4849848c7a738571521ef1d54e4add59ba2a55caf0e91028658313"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/launch.json",
+          "sha256": "aa45abc6433335bc83b4b9a1e8a7bdd1a9e6f47824a6eff043f653baf309259d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/uia.json",
+          "sha256": "090090415385bbf3ff27a84e65a49bd716fda153cdf975b8b059ee6eeb2cfe3d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-cancel-preedit.png",
+          "sha256": "93a109eebbe061a8bb2a6d5e2c9400fca48b3d030e230d55baaf4abc27f52aaf"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-cancelled.png",
+          "sha256": "c1eb5f127a4ae90eac64035617f61c93836a60e0b1b7b31976f8d32cefc53fdb"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-committed.png",
+          "sha256": "5f174ee37a0957afedfa8f659c8b504f15e6702af1792f7e09aedefcefed1402"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-converted.png",
+          "sha256": "253652766d62ae282d917326a25759ed763dfa5923295812ac6f304d6d11dd5d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-kana.png",
+          "sha256": "bd0b01b9a041749199c4bdefddac36ff446bd3cdc3fce4df437205883167041b"
+        },
+        {
+          "file": "wpf-normal-close/wpf-fresh-sessions.json",
+          "sha256": "e873cc798df5692f1e9ca1094fc93cafd5f6236c664764e06d89bf79050500a1"
+        }
+      ]
+    }
+  ],
+  "old_normalizer_regression": {
+    "file": "delayed-batch-old-regression.txt",
+    "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
+    "result": "failed as expected with retained preedit; fixed normalizer passes"
+  },
+  "interpretation": "Fresh standard WPF controls reproduce the restart failure without any Rescue process. A controlled teardown comparison isolates per-window HKL restoration: that mode stalls subsequent close and the next control fails conversion; normal closure completes twice, with the full original language profile and desktop permissions restored after the batch. The corrected product fixture passed32staged IME cycles in4fresh processes on42514259957, using unchanged native portable GUI bytes3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed. All GUIs exited normally; full settings restoration and36screenshot hashes were verified. No failed run is counted as passed."
+}

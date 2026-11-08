@@ -26,6 +26,9 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         if entry['path'].name=='sample.txt':entry['path']=entry['path'].with_name('原文.txt')
     truth,_=ntfs_image(source,corpus,'fragmented');before=file_hash(source)
     config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'ime':ime,'ime_cycles':ime_cycles,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
+    if ime:
+        from windows_selection_probe import build
+        cfg=json.loads(config.read_text(encoding='utf-8'));cfg['selection_probe']=str(build(root));config.write_text(json.dumps(cfg,ensure_ascii=False),encoding='utf-8')
     powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
     check(powershell.is_file(),'system PowerShell executable is missing')
     command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
@@ -68,8 +71,10 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         else:
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}
-    output.write_text(json.dumps({'status':'failed','exit':completed.returncode,'uia':tree,'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    output.write_text(json.dumps({'status':'failed','exit':completed.returncode,'uia':tree,'limited_token':getattr(completed,'token_profile',None),'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     gui_log=(root/'stderr.txt').read_text(encoding='utf-8',errors='replace') if (root/'stderr.txt').exists() else '(no GUI log)'
+    (root/'driver-stdout.txt').write_text(completed.stdout,encoding='utf-8')
+    (root/'driver-stderr.txt').write_text(completed.stderr,encoding='utf-8')
     executable=binary.read_bytes()
     tree['native_provider_linked']={'accesskit_property_name':'AccessKitAdapter'.encode('utf-16-le') in executable,'uia_return_raw_element_provider':b'UiaReturnRawElementProvider' in executable}
     check(completed.returncode==0 and tree['status']=='passed',json.dumps(tree,ensure_ascii=False)[-7000:]+'\n'+completed.stdout+completed.stderr+'\nGUI: '+gui_log[-3000:])
