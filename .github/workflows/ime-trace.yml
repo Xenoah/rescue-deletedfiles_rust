@@ -30,8 +30,14 @@ jobs:
           restore-keys: windows-2022-x64-rust-1.99.1-
       - name: Instrument this diagnostic build only
         run: python scripts/instrument_ime_trace.py
+      - name: Build the owned minidump reader with the installed Windows SDK
+        shell: pwsh
+        run: |
+          $vs=& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
+          cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && cl /nologo /EHsc /MT scripts\inspect_windows_dump.cpp /Fe:inspect-windows-dump.exe /link dbgeng.lib"
+          if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
       - name: Build traced GUI
-        run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+        run: python scripts/ci_command.py cargo rustc --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline -- -C debuginfo=1 -C strip=none
       - name: Reproduce the preceding native GUI sessions
         shell: bash
         run: |
@@ -50,6 +56,15 @@ jobs:
           for session in 1 2 3 4; do
             python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output "trace-ime-$session.json" --desktop-token --ime --ime-cycles 8 || exit $?
           done
+      - name: Inspect owned GUI dumps after a failure
+        if: always()
+        shell: pwsh
+        timeout-minutes: 5
+        run: |
+          $symbols="srv*$env:RUNNER_TEMP\rescue-symbols*https://msdl.microsoft.com/download/symbols;$env:GITHUB_WORKSPACE\target\x86_64-pc-windows-msvc\release"
+          Get-ChildItem rescue-owned-uia-*/owned-gui-failed.dmp | ForEach-Object {
+            & ./inspect-windows-dump.exe $_.FullName $symbols 2>&1 | Out-File (Join-Path $_.DirectoryName 'native-stacks.txt') -Encoding utf8
+          }
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -59,4 +74,5 @@ jobs:
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/*.txt
             rescue-owned-uia-*/windows*.png
+            rescue-owned-uia-*/*.dmp
           if-no-files-found: error

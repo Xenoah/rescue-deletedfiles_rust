@@ -12,6 +12,14 @@ public interface RescueInputProfileManager {
     void ActivateProfile(uint type,ushort language,ref Guid service,ref Guid profile,IntPtr layout,uint flags);
 }
 public static class RescueOwnedWindow {
+    [DllImport("dbghelp.dll", SetLastError=true)]
+    static extern bool MiniDumpWriteDump(IntPtr process, uint pid, IntPtr file, uint kind, IntPtr exception, IntPtr stream, IntPtr callback);
+    public static void SaveDump(IntPtr process,uint pid,string path) {
+        using(var file=new System.IO.FileStream(path,System.IO.FileMode.CreateNew,System.IO.FileAccess.Write)) {
+            if(!MiniDumpWriteDump(process,pid,file.SafeFileHandle.DangerousGetHandle(),0x1000,IntPtr.Zero,IntPtr.Zero,IntPtr.Zero))
+                throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        }
+    }
     [DllImport("advapi32.dll", SetLastError=true)]
     static extern bool OpenProcessToken(IntPtr process, uint access, out IntPtr token);
     [DllImport("advapi32.dll", SetLastError=true)]
@@ -309,6 +317,12 @@ function Set-ImeQuery {
             [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
             $edit=Await-Control 'Search results' 'Edit'
             $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            if ($env:RESCUE_IME_TRACE -eq '1') {
+                $reply=[UIntPtr]::Zero
+                $cancelTrace[-1].responding=[RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0,[UIntPtr]::Zero,[IntPtr]::Zero,2,200,[ref]$reply) -ne [IntPtr]::Zero
+                $cancelTrace[-1].foreground=[RescueOwnedWindow]::GetForegroundWindow().ToInt64()
+                $cancelTrace[-1].owned_hwnd=$script:owned.MainWindowHandle.ToInt64()
+            }
             if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-escape-{0}-{1}.png" -f $cycle,$press)}
         }
         $script:imeDiagnostic.cancel_trace=$cancelTrace
@@ -456,6 +470,7 @@ try {
         $evidence.tree=@(Snapshot)
         $evidence.provider.late_accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
         Save-OwnedScreenshot 'windows-gui-failed.png'
+        if ($env:RESCUE_IME_TRACE -eq '1') {[RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-failed.dmp'))}
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
