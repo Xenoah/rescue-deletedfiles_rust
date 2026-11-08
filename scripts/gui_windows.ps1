@@ -316,7 +316,24 @@ function Set-ImeQuery {
         for ($press=1;$press -le 2;$press++) {
             [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
             $edit=Await-Control 'Search results' 'Edit'
-            $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            $value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+            $sample=@{escape=$press;value=$value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            if ($press -eq 2) {
+                # A cold Microsoft IME prediction worker can hold Escape in
+                # ImmTranslateMessage for several seconds. Observe completion
+                # before asserting; do not send another key or refocus/clear.
+                $sample.initial_value=$value
+                $completion=[System.Diagnostics.Stopwatch]::StartNew()
+                while ($value -ne '' -and $completion.Elapsed.TotalSeconds -lt 10) {
+                    Start-Sleep -Milliseconds 100
+                    $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+                }
+                $sample.value=$value
+                $sample.focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name
+                $sample.completion_wait_ms=[int]$completion.Elapsed.TotalMilliseconds
+                $sample.completion_limit_ms=10000
+            }
+            $cancelTrace+=,$sample
             if ($env:RESCUE_IME_TRACE -eq '1') {
                 $reply=[UIntPtr]::Zero
                 $cancelTrace[-1].responding=[RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0,[UIntPtr]::Zero,[IntPtr]::Zero,2,200,[ref]$reply) -ne [IntPtr]::Zero
@@ -326,9 +343,8 @@ function Set-ImeQuery {
             if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-escape-{0}-{1}.png" -f $cycle,$press)}
         }
         $script:imeDiagnostic.cancel_trace=$cancelTrace
-        Start-Sleep -Milliseconds 300
         $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
+        if ($value -ne '') {throw "Native IME cancellation did not clear preedit within the deadline: $value"}
         # A second Escape can legitimately leave the edit after composition ends.
         # Check cancellation above before restoring focus for the next conversion.
         Focus-Owned (Await-Control 'Search results' 'Edit')

@@ -28,16 +28,14 @@ jobs:
             target
           key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
           restore-keys: windows-2022-x64-rust-1.99.1-
-      - name: Instrument this diagnostic build only
-        run: python scripts/instrument_ime_trace.py
       - name: Build the owned minidump reader with the installed Windows SDK
         shell: pwsh
         run: |
           $vs=& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
           cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && cl /nologo /EHsc /MT scripts\inspect_windows_dump.cpp /Fe:inspect-windows-dump.exe /link dbgeng.lib"
           if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
-      - name: Build traced GUI
-        run: python scripts/ci_command.py cargo rustc --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline -- -C debuginfo=1 -C strip=none
+      - name: Build uninstrumented release GUI
+        run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
       - name: Reproduce the preceding native GUI sessions
         shell: bash
         run: |
