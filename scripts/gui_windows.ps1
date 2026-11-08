@@ -294,6 +294,9 @@ function Set-ImeQuery {
     Start-Sleep -Milliseconds 300
     $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
     if ($value -ne '') {throw "Native IME cancellation committed unexpected text: $value"}
+    # A second Escape can legitimately leave the edit after composition ends.
+    # Check cancellation above before restoring focus for the next conversion.
+    Focus-Owned (Await-Control 'Search results' 'Edit')
     [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
     $until=[DateTime]::UtcNow.AddSeconds(5)
     do {
