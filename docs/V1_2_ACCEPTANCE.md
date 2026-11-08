@@ -79,7 +79,7 @@ v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格し�
 
 続く変換試験にも固定400ミリ秒の待機があり、Spaceの後に表示状態を確認せずEnterを送り、「げんぶん」のまま確定していた。取消の待機修正が有効だった[実行42500970262](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42500970262)で確認した。末尾をnnで明示するgenbunn入力に統一し、変換前の「げんぶん」、変換後の「原文」、確定後の選択範囲の縮退を順番に確認する。ただし、末尾nを完成させても2回目の新規起動で変換に失敗したため、これを原因解決とは扱わない。
 
-ローカルのv1.2.2はRust 86テスト、35統合テスト群、Clippy（警告をエラーとして扱う）、fmt、配布・版番号・IMEの6契約テストに合格。新規撮影した26画面でNTFS 36件、CP932 8件、破損exFAT 8件の全バイト一致、64 MiBの取得タイムアウトと再開、HTML/CSV、既知ハッシュの2/6/0件を確認した。[実画面](UI-v1.2.md) · [GUI全記録](gui-v1.2-results.json)。Windowsの新しい状態確認経路は検証中で、v1.2.2は未公開。
+ローカルのv1.2.2はRust 86テスト、35統合テスト群、Clippy（警告をエラーとして扱う）、fmt、配布・版番号・IMEの6契約テストに合格。新規撮影した26画面でNTFS 36件、CP932 8件、破損exFAT 8件の全バイト一致、64 MiBの取得タイムアウトと再開、HTML/CSV、既知ハッシュの2/6/0件を確認した。[実画面](UI-v1.2.md) · [GUI全記録](gui-v1.2-results.json)。連続起動試験は下記の32回に合格した。v1.2.2は最終コミットの4環境CIと公開実物の検証を完了してから安定版とする。
 
 状態確認を追加した初回試験では、テスト用PowerShellの.NET TextPattern.GetTextでAccessViolationExceptionが発生した。検証成功とは扱わず、Windows標準のCOM APIを直接使い、対象GUIのPIDと検索欄の名前を確認して選択文字・選択範囲を読む試験用クライアントを追加した。[変換タイミング失敗・読み取り失敗・旧処理の回帰ログ](verification/v1.2.2-ime-diagnostics/manifest.json)。このクライアントは製品や配布パッケージには含めない。
 
@@ -110,6 +110,16 @@ Rescueを起動しない新規Windows 2022ホストでも、標準WPF入力欄�
 | ウィンドウに元のHKLへの変更を要求して終了 | 変換成功後、ウィンドウ終了が停止・75秒で強制終了 | 変換失敗・終了も停止 | 言語一覧とデスクトップ権限を復元 |
 | ウィンドウを通常終了 | 変換成功・38ミリ秒で閉じる | 変換成功・30ミリ秒で閉じる | 言語一覧とデスクトップ権限を復元 |
 
-[失敗側の各段階](verification/v1.2.2-ime-diagnostics/wpf-layout-restore/wpf-fresh-sessions.json) · [通常終了側の実画面と記録](verification/v1.2.2-ime-diagnostics/wpf-normal-close/wpf-fresh-sessions.json)。HKL変更要求自体は返っているが、その後のCloseが戻らない。製品テストではウィンドウを通常終了させ、全試験終了後に元の言語設定を一度だけ復元する。さらに、GUIの強制終了・異常終了や設定の復元漏れを配布判定で拒否する契約テストを追加した。32回の実IME検証は別の新規ホストで実行中である。
+[失敗側の各段階](verification/v1.2.2-ime-diagnostics/wpf-layout-restore/wpf-fresh-sessions.json) · [通常終了側の実画面と記録](verification/v1.2.2-ime-diagnostics/wpf-normal-close/wpf-fresh-sessions.json)。HKL変更要求自体は返っているが、その後のCloseが戻らない。製品テストではウィンドウを通常終了させ、全試験終了後に元の言語設定を一度だけ復元する。さらに、GUIの強制終了・異常終了や設定の復元漏れを配布判定で拒否する契約テストを追加した。修正後の製品試験は次節のとおり、別の新規ホストで32回すべてに合格した。
 
 Windows 2025の比較は日本語機能のインストールが10分でタイムアウトし、製品試験に到達していない。[実行42512979548](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42512979548)。これは製品のIME合否の証跡には数えない。
+
+### 修正した終了手順での32回連続検証
+
+[実行42514259957](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514259957)は初回実行で合格した。通常のGUI・通常権限UIA・実キー操作の後に、Rescueを新たに4回起動して各8回の取消・変換・確定を実行した。毎回Escは2回、SpaceとEnterは各1回で、追加入力や再試行はない。各GUIは終了コード0で通常終了し、全セッション後に元の言語一覧・入力方法・オプションとデスクトップ権限を復元した。取消完了の追加待機は最大234ミリ秒だった。
+
+使用したGUIは候補の4環境CIで作成したポータブルそのもので、SHA-256は `3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed`。計測用の製品コード変更はない。最終リリース用のネイティブCI・公開実物検証は、この追加診断とは別に実施する。
+
+[32回の状態・終了・復元・36画像のハッシュ](verification/v1.2.2-ime-stress.json)。
+
+![4回目の新規起動・8回目の取消後の再変換と確定](images/v1.2.2-ime-candidate/session-4-cycle-8.png)
