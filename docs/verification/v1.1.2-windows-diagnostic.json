@@ -11,7 +11,7 @@
     "bytes": 237719
   },
   "full_ime_result": "v1.1.2-windows-ime.json",
-  "full_ime_result_sha256": "483d723578a1db88c62787a9683be1d460adeafa437d788047e11955f06aaa44",
+  "full_ime_result_sha256": "0325652e795003bb8edf57c21093e4a2abaf1c242da5e9053b1dfa987610cc1d",
   "gui_binary_sha256": "b56fe049e7cb3a94d53beb7ae2b86baeea4475f1899824f7b6c02da9839228d1",
   "files_byte_exact": 2,
   "source_unchanged": true,
@@ -22,5 +22,7 @@
     "job_id": 128600978076,
     "step": "Non-elevated Windows GUI with native Japanese IME",
     "observed": "Second Escape moved focus to the root window; subsequent committed value was empty. Product input-control and IME-driver sources matched the successful alpha.2. Full Windows gate was rerun unchanged; see final release record for its conclusion."
-  }
+  },
+  "artifact_ime_result_sha256": "483d723578a1db88c62787a9683be1d460adeafa437d788047e11955f06aaa44",
+  "retained_result_encoding": "UTF-8; CRLF normalized to LF for Git storage; JSON content unchanged."
 }
