@@ -71,7 +71,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         else:
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}
-    output.write_text(json.dumps({'status':'failed','exit':completed.returncode,'uia':tree,'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    output.write_text(json.dumps({'status':'failed','exit':completed.returncode,'uia':tree,'limited_token':getattr(completed,'token_profile',None),'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     gui_log=(root/'stderr.txt').read_text(encoding='utf-8',errors='replace') if (root/'stderr.txt').exists() else '(no GUI log)'
     (root/'driver-stdout.txt').write_text(completed.stdout,encoding='utf-8')
     (root/'driver-stderr.txt').write_text(completed.stderr,encoding='utf-8')

@@ -58,28 +58,15 @@ jobs:
           $vs=& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
           cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && cl /nologo /EHsc /MT scripts\inspect_windows_dump.cpp /Fe:inspect-windows-dump.exe /link dbgeng.lib"
           if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
-      - name: Reproduce the preceding native GUI sessions
-        shell: bash
-        run: |
-          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-native.json
-          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-limited.json --desktop-token
-          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-keyboard.json --desktop-token --keyboard
-      - name: Install Japanese input support after the preceding GUI sessions
+      - name: Prepare Japanese input before the desktop batch
         shell: powershell
         timeout-minutes: 10
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
           ./scripts/windows_ime_profile.ps1 -Action Prepare
-      - name: Trace eight IME cycles in each of four fresh GUI processes
-        shell: bash
-        run: |
-          for session in 1 2 3 4; do
-            python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output "trace-ime-$session.json" --desktop-token --ime --ime-cycles 8 || exit $?
-          done
-      - name: Compare a standard WPF TextBox after the product observation
-        if: failure()
-        run: python scripts/ci_command.py python scripts/ime_wpf_baseline.py
+      - name: Verify fresh GUIs with stable desktop access across all sessions
+        run: python scripts/ci_command.py python scripts/ime_stress_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe
       - name: Restore the original user language profile
         if: always()
         shell: powershell
