@@ -1,0 +1,63 @@
+{
+  "tag": "v1.2.0-alpha.2",
+  "commit": "a0f433f664f3063ffc237b3bb8b53f7ec7f767a1",
+  "status": "passed",
+  "native_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163",
+  "public_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895",
+  "native_platforms": 4,
+  "public_platforms": 4,
+  "release_assets": 9,
+  "release": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2",
+  "published_at": "2026-11-08T11:52:10Z",
+  "assets": [
+    {
+      "name": "rescue-1.2.0-alpha.2-linux-x64-portable.tar.gz",
+      "size": 13206845,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-linux-x64-portable.tar.gz"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-linux-x64.deb",
+      "size": 10018408,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-linux-x64.deb"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-macos-arm64-portable.zip",
+      "size": 9328431,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-macos-arm64-portable.zip"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-macos-arm64.pkg",
+      "size": 9322578,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-macos-arm64.pkg"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-macos-x64-portable.zip",
+      "size": 10067079,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-macos-x64-portable.zip"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-macos-x64.pkg",
+      "size": 10061039,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-macos-x64.pkg"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-windows-x64-portable.zip",
+      "size": 11308970,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-windows-x64-portable.zip"
+    },
+    {
+      "name": "rescue-1.2.0-alpha.2-windows-x64-setup.exe",
+      "size": 9849065,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/rescue-1.2.0-alpha.2-windows-x64-setup.exe"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 861,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.0-alpha.2/SHA256SUMS.txt"
+    }
+  ],
+  "artifact_id": 13616373621,
+  "artifact_zip_sha256": "5ae748c4b6d84e40dc2afe61dce3c08588b236abbb7132a676bd6f168bc09074",
+  "all_artifact_member_checksums_verified": true,
+  "published_proof_sha256": "75dcf9b16b82ecd4cd923bbca501e25c01ed47278efbbbf1737fc777b099e8ce"
+}

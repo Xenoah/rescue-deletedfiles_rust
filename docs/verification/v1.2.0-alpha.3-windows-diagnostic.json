@@ -1,0 +1,40 @@
+{
+  "release_tag": "v1.2.0-alpha.3",
+  "tag_commit": "cb8b12369ba4423f4498a636721ef31b10b14614",
+  "run_id": 42479486714,
+  "run_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42479486714",
+  "status": "passed",
+  "scope": "Unchanged-tag diagnostic using the exact verified native portable GUI after one public Windows IME cancellation failure. All four diagnostic paths (unlimited UIA, desktop-token UIA, keyboard, native IME) passed. Does not replace public package acceptance or establish the intermittent failure root cause.",
+  "artifact": {
+    "id": 13616494260,
+    "sha256": "c59b29c83b6578198bb76a3cfbda3e652657c5b97e33b6ac59546c2b7a26d56f",
+    "bytes": 239901
+  },
+  "full_ime_result": "v1.2.0-alpha.3-windows-ime.json",
+  "full_ime_result_sha256": "7b89bb1fdcbf255d18f6ee6d485e50c066afba6b6d03207d57d69c7941dc50ff",
+  "artifact_ime_result_sha256": "ff2bd3a1196cebd5bd16dd119481ea1925c8b325feaadddde8c448287da9c4ae",
+  "retained_result_encoding": "UTF-8; CRLF normalized to LF for Git storage; JSON content unchanged.",
+  "gui_binary_sha256": "adb29a82341ab0de11599cf5d1fc657c8b19b5839b689e64c80b15dd69dce66e",
+  "files_byte_exact": 2,
+  "source_unchanged": true,
+  "screenshot": "../images/v1.2-alpha.3/windows-ime-recovered.png",
+  "screenshot_sha256": "fc18c1b304daf5bef2c7593ecf2f42ae32ca0a75ba771dc94aadcfebce234c09",
+  "first_attempt": {
+    "public_run": 42478332375,
+    "job_id": 128724561424,
+    "step": "Public Windows GUI native Japanese IME",
+    "cancel_trace": [
+      {
+        "escape": 1,
+        "focus": "Search results",
+        "value": ""
+      },
+      {
+        "escape": 2,
+        "focus": "Search results",
+        "value": "とりけし"
+      }
+    ],
+    "observed": "Cancellation left preedit text after the second Escape. Product IME normalization and the native input driver were unchanged from alpha.2; the same alpha.3 native binary passed on a fresh diagnostic host. Root cause remains unconfirmed. The unchanged failed Windows public gate is being rerun, including all CLI/native and UIA/keyboard/IME tests."
+  }
+}
