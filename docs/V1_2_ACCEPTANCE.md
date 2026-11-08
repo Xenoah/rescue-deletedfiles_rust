@@ -1,78 +1,50 @@
-# v1.2 次段階の受入台帳
+# v1.2 受入台帳
 
-2026-11-08 UTC。v1.1.2後にユーザーから進行指示を受けた、破損USB/SDへの対応強化を扱います。APFS等の別フェーズは含めません。
+2026-11-08 UTC。ユーザーの進行指示を受けた、破損USB/SDへの対応強化と既知ハッシュ照合を実装・公開・検証した。APFS等の別フェーズは含めない。
 
-| 段階 | 範囲 | 状態 |
-| --- | --- | --- |
-| alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
-| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
-| alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 4環境ネイティブCI合格・公開済み、公開実物はWindows再試行を含め4環境合格 |
-| 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 安定版公開済み・4環境ネイティブCI合格、公開実物の再検証中 |
+## 公開状態
 
-## 取得強化の完了条件
+4段階すべてを個別にpush・リリースし、各タグでWindows x64・Linux x64・macOS Intel/Apple SiliconのネイティブCIと公開実物の再検証に合格した。各リリースの添付は8インストーラー/ポータブルとSHA256SUMSの9点。既存タグや配布済みバイナリは変更していない。
 
-- 既読範囲を再取得せず、順方向→逆方向・小ブロック→セクター単位の取得量を記録する。
-- 読取の待機時間を制限し、遅い結果を誤って保存しない。OS内で停止したI/Oの物理的な即時取消は保証しない。読み取り処理が終了しなければ新しい処理を無制限に増やさず停止する。
-- 再接続はソースID・容量・セクターサイズ・通常ファイルの更新時刻を照合し、別媒体への入れ替えを拒否する。
-- RAWの同期後だけ成功範囲を読取マップに追記する。中断・強制終了・容量不足・欠損伝播・出力先保護を維持する。
-- 旧読取マップの再開を維持する。新しい取得方式はマップに記録し、再開時の解釈を変えない。
-- 正解データ付きの一時的/恒久的な読取失敗、遅延、切断・再接続を試験する。実ハードウェア故障の測定とは区別する。
+| 公開版 | 範囲 | ネイティブCI | 公開実物 | 保存した証拠 |
+| --- | --- | --- | --- | --- |
+| [v1.2.0-alpha.1](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1) | 段階的な取得・待機上限・再接続 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556) | [全記録](verification/v1.2.0-alpha.1-published.json) · [公開確認](verification/v1.2.0-alpha.1-release.json) |
+| [v1.2.0-alpha.2](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2) | CP932短名・元バイト保持 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895) | [全記録](verification/v1.2.0-alpha.2-published.json) · [公開確認](verification/v1.2.0-alpha.2-release.json) |
+| [v1.2.0-alpha.3](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.3) | exFAT破損変換表の限定的継続 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42475953647) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42478332375) | [全記録](verification/v1.2.0-alpha.3-published.json) · [公開確認](verification/v1.2.0-alpha.3-release.json) |
+| [v1.2.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0) | 既知SHA-256照合・統合・インストーラー版番号 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477916390) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42480695687) | [全記録](verification/v1.2.0-published.json) · [公開確認](verification/v1.2.0-release.json) |
 
-各段階でローカルの回帰、4環境のネイティブCI、公開した実物のテストを実行します。画面は実際のGUIで操作して撮影し、対象バージョンとファイルのハッシュを記録します。配布添付は8パッケージと共通SHA-256の9点を維持します。
+公開後のJSONは署名・梱包後の実CLIを再ダウンロードして得た全記録。ActionsアーティファクトZIP内の全メンバーをPUBLISHED-SHA256SUMSで照合し、集約JSONをそのまま保存した。ZIPとJSONのSHA-256、公開9資産、タグのコミット、両ワークフローを公開確認JSONに記録している。
 
-## alpha.1 ローカル結果
+## 安定版の検証
 
-Rust 75テスト、32統合群、Clippy、fmt、配布添付の2契約テストが合格。
-Linux DEB/portableの内容検証と、同梱CLI/MCPの60項目が合格。
-読取プロセス停止・取消・再接続・差し替え・旧マップ互換の13項目が合格。
-実GUIは36ファイル・152,325バイトを復元し、HTML/CSVの内容がJSONと一致。
-取得GUIでは1秒の期限超過で4 MiBを失敗、60 MiBを未読として保持し、再開後の64 MiBすべてが元SHA-256と一致した。
+- Rust 82テスト、35統合群、Clippy（警告をエラーとして扱う）、fmt、配布添付/版番号の3契約テスト。
+- 段階的取得の13条件：実読取ヘルパー停止による期限超過、遅い結果の排除、取消、同一ソース再接続、差し替え拒否、旧マップ互換、逆方向再試行と全バイト一致。
+- CP932の34条件・168出力：FAT12/16/32、LFN優先、削除先頭/曖昧境界/不正バイト、JSON/索引/MCP/ZIP/レポート、MBR/GPT、実プロセス強制終了後の再開。
+- exFATの31条件・72出力：読取可能な変換表の内容/チェックサム破損に限った明示的継続、元の警告保持、配置/割当/エントリ検証、正常な表の名前ハッシュ検証、再開。
+- 既知ハッシュの18条件・32出力：実CLI/MCPのフォルダー/ZIP復元、同じ内容の複数ラベル、一覧の書式/上限/矛盾、完了していない復元の区別、元の警告の保持、別JSONへの非上書き保存。
+- Linuxローカル配布物の内容と同梱CLI/MCP 60項目に合格。ネイティブCIでは4環境のインストーラー/ポータブルと内部版番号を検証した。
+- 公開実物は各環境で35形式・36ファイルの8条件×CLI/MCPが576/576、MBR/GPT/所有仮想ディスクの出力が864/864バイト一致。Windowsは通常権限のUIA・実キー・Microsoft日本語IMEも通過した。詳細と他の回帰条件は上表の全記録を参照。
 
-[ローカル集計](verification/v1.2.0-alpha.1-local.json) · [取得試験](acquisition-v1.2.json) · [GUIと画面ハッシュ](gui-v1.2-results.json) · [画面](UI-v1.2.md)
+[安定版のローカル集計](verification/v1.2.0-local.json) · [取得](acquisition-v1.2.json) · [CP932](cp932-v1.2.json) · [exFAT](exfat-damage-v1.2.json) · [既知ハッシュ](known-hashes-v1.2.json)
 
-これらは合成障害/所有ファイルによる検証で、物理故障媒体の復旧率ではない。
+## 実GUIと互換性
 
-## alpha.2 ローカル結果
+安定版の実GUIをマウス/キーボードで操作し、26画面を撮影した。従来の36ファイル・152,325バイト、CP932の8ファイル・224バイト、破損exFATの8ファイル・14,135バイトを元データと照合した。exFATの全11候補で名前検証の欠落を保持し、配置を証明できない3件は復元対象から除外した。
 
-CP932の34条件で168出力がバイト一致。FAT12/16/32、JSONセッション/索引/MCP、MBR/GPT、プレビュー、ZIP、HTML/CSV、強制終了後の再開を確認した。
-新しいCP932セッション/索引はスキーマ10を使い、v1.2.0-alpha.1の実CLIが拒否することを確認した。旧ASCIIセッションは新しい版でも復元できる。
+取得GUIでは1秒の期限超過後に失敗/未読範囲を保持し、元ソースから再開して64 MiB全量のSHA-256が一致した。ハッシュGUIでは一致2件・一覧にない6件・照合不能0件を確認し、元の警告を含む別JSON保存、日英表示、720×520でのスクロールを検証した。
 
-[CP932の条件と結果](cp932-v1.2.json) · [旧版との実物確認](verification/v1.2.0-alpha.2-compatibility.json) · [文字コードと名前の不確実性](CP932.md)
+[実画面](UI-v1.2.md) · [画面/バイナリ/出力のSHA-256とGUI全記録](gui-v1.2-results.json)
 
-実GUIでCP932の8ファイル・224バイトと、従来の36ファイル・152,325バイトが一致。取得の期限超過後に64 MiBを再開し、全バイトが元イメージと一致した。実画面18枚とハッシュを記録した。
+CP932を使うセッションはスキーマ10、破損exFAT設定は11。旧版CLIの実物が新スキーマを拒否することを確認した。[alpha.2互換性](verification/v1.2.0-alpha.2-compatibility.json) · [alpha.3互換性](verification/v1.2.0-alpha.3-compatibility.json)。従来のASCIIセッションと旧linear読取マップは維持する。
 
-[alpha.2ローカル集計](verification/v1.2.0-alpha.2-local.json) · [実画面](UI-v1.2.md)
+先行版の画面/ローカル結果は各タグで固定して保存している。上表の公開後記録はそのタグの配布物を検証したもので、先行版の画像を安定版の画像として数えていない。
 
-alpha.1は[全4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276)に合格し、[9添付で公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1)済み。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556)は全4環境で合格。
+## 確認した範囲と残る課題
 
-[alpha.1公開後の全記録](verification/v1.2.0-alpha.1-published.json) · [リリース確認](verification/v1.2.0-alpha.1-release.json)
+取得障害/破損表は所有する合成イメージと実プロセス停止で試験した。ネイティブの仮想ディスク・容量不足・アクセス拒否も検証したが、物理故障媒体の一般的な復旧率を測定したものではない。OS内I/Oや最初のデバイス検出の即時取消は保証しない。
 
-## alpha.3 ローカル結果
+exFATのビットマップ欠損、変換表の欠落/重複/不正チェーン、エントリ集合やUTF-16の不正は継続対象ではない。既知ハッシュは復元時に記録した値を比較し、保存後のファイルを再読取しない。名前の確定や一覧/外部レポートの真正性確認とは区別する。
 
-大文字変換表のチェックサム・展開内容の破損を明示的に許可する31条件で、72出力が元データと一致。表の欠落・重複・サイズ/チェーン不正、割当情報の欠損、エントリチェックサム/UTF-16破損、ライブ所有競合は従来どおり拒否または未対応とした。正常な表の名前ハッシュ検証は維持した。
+追加FS・入力形式、断片化動画、カメラRAW、物理媒体での測定、署名/公証、人によるアクセシビリティ評価等は[後続課題台帳](BACKLOG_V1_1.md)に残す。
 
-JSON/索引・MBR/GPT・CLI/MCP・プレビュー・ZIP/HTML/CSV・プロセス強制終了後の再開を確認。スキーマ11をalpha.2の実物CLIが拒否することも確認した。
-
-[exFAT破損表の条件と制限](EXFAT-DAMAGE.md) · [旧版との実物確認](verification/v1.2.0-alpha.3-compatibility.json)
-
-実GUIで36ファイルの従来フロー、CP932の8ファイル、破損exFATの8ファイルを照合。取得のタイムアウトと64 MiB全量の再開も確認し、実画面20枚を保存した。
-
-[alpha.3ローカル集計](verification/v1.2.0-alpha.3-local.json) · [exFAT試験の全条件](exfat-damage-v1.2.json) · [実画面](UI-v1.2.md)
-
-## v1.2.0 安定版のローカル結果
-
-既知SHA-256照合の18条件で32出力のバイト一致を確認。CLI・MCP・GUIで一致/一覧外/照合不能を区別し、名前の不確実性、元の警告、欠損範囲を維持する。照合一覧のラベルをファイルパスとして開かない。保存後に変えたファイルを再検査したかのように表示しない。
-
-82 Rustテスト、35統合群、Clippy/fmt、配布添付・インストーラ版番号の3テストが合格。Linux DEBとportableの実物、および同梱CLI/MCPの60項目が合格した。先行版から安定版へのWindows/macOS内部版番号の逆戻りも修正した。
-
-実GUIでは36件の従来フロー、CP932の8件、破損exFATの8件、64 MiB取得の中断/再開、照合結果の保存を確認。26枚の実画面とSHA-256を保存した。
-
-[安定版ローカル全記録](verification/v1.2.0-local.json) · [既知ハッシュ試験](known-hashes-v1.2.json) · [実GUIと画面](UI-v1.2.md)
-
-alpha.2: [ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163)合格、[公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2)済み。[公開実物検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895)も4環境で合格。
-
-## 公開後の進行状況
-
-alpha.2は[公開実物の全記録](verification/v1.2.0-alpha.2-published.json)と[公開確認](verification/v1.2.0-alpha.2-release.json)を保存済み。alpha.3も[全記録](verification/v1.2.0-alpha.3-published.json)と[公開確認](verification/v1.2.0-alpha.3-release.json)を保存した。alpha.3は初回のWindows IME取消で失敗し、同一実物の別ホスト診断後、Windows公開ゲート全体を変更せず再実行して合格した。[失敗と診断の記録](verification/v1.2.0-alpha.3-windows-diagnostic.json)。原因は未特定で、修正済みや環境起因とは断定しない。
-
-v1.2.0は[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477916390)に初回で合格し、9添付で[安定版を公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0)した。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42480695687)を実行中。
+alpha.3の公開Windows試験は初回に日本語IME取消で失敗した。同一配布バイナリの別ホスト診断を通し、失敗したWindows公開ゲート全体を変更せず再実行して合格した。原因の断定や修正済みとの主張はしない。[失敗内容と診断記録](verification/v1.2.0-alpha.3-windows-diagnostic.json) · [実IMEの全結果](verification/v1.2.0-alpha.3-windows-ime.json)。安定版自身の公開検証は上表の別記録で確認する。
