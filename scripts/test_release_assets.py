@@ -55,11 +55,12 @@ class RepeatedImeEvidence(unittest.TestCase):
                'cancel_trace':[{'escape':1,'value':'とりけし'}, {'escape':2,'value':''}],
                'space_presses':1,'enter_presses':1}
         for field,phase,value,selected in [
-            ('conversion_preedit','conversion-preedit','げんぶん','げんぶん'),
+            ('conversion_preedit','conversion-preedit','げんぶｎ','げんぶｎ'),
             ('converted_preedit','converted-preedit','原文','原文'),
             ('commit_state','committed','原文','')]:
             cycle[field]={'phase':phase,'value':value,'selected_text':selected,
-                          'selection_ranges':1,'elapsed_ms':100,'limit_ms':10000}
+                          'selection_ranges':1,'elapsed_ms':100,'limit_ms':10000,
+                          'collapsed':field=='commit_state','reader':'native-uia-com'}
         proof={'uia':{'native_ime':{'cycles':[copy.deepcopy(cycle) for _ in range(8)]}},
                'ime_cycle_screenshots':[{'cycle':i,'sha256':'a'*64} for i in range(1,9)]}
         require_repeated_ime(proof,require_stages=True)

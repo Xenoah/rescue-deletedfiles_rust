@@ -24,7 +24,7 @@ def require_repeated_ime(proof, count=8, require_stages=False):
             raise ValueError(f'Native IME cancellation/conversion evidence differs: cycle {index}')
         if require_stages:
             for field, phase, value, selected in [
-                ('conversion_preedit', 'conversion-preedit', 'げんぶん', 'げんぶん'),
+                ('conversion_preedit', 'conversion-preedit', 'げんぶｎ', 'げんぶｎ'),
                 ('converted_preedit', 'converted-preedit', '原文', '原文'),
                 ('commit_state', 'committed', '原文', ''),
             ]:
@@ -34,6 +34,8 @@ def require_repeated_ime(proof, count=8, require_stages=False):
                     and state.get('value') == value
                     and state.get('selected_text') == selected
                     and state.get('selection_ranges') == 1
+                    and state.get('collapsed') is (field == 'commit_state')
+                    and state.get('reader') == 'native-uia-com'
                     and state.get('limit_ms') == 10000
                     and 0 <= state.get('elapsed_ms', -1) <= 10000
                 ):

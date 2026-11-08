@@ -364,7 +364,9 @@ function Set-ImeQuery {
         # Check cancellation above before restoring focus for the next conversion.
         Focus-Owned (Await-Control 'Search results' 'Edit')
         [RescueOwnedWindow]::RomanKeys('genbun')
-        $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
+        # A terminal Roman n remains pending until Space (or a second n).
+        # Observe exactly what the installed IME produced for genbun.
+        $kana=-join [char[]](0x3052,0x3093,0x3076,0xff4e)
         $conversionPreedit=Wait-ImeState $kana 'conversion-preedit'
         [RescueOwnedWindow]::Tap(0x20)
         $convertedPreedit=Wait-ImeState $cfg.query 'converted-preedit'
