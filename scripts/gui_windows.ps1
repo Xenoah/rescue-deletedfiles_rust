@@ -303,11 +303,13 @@ function Set-ImeQuery {
         } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
         $script:imeDiagnostic.cancel_start_value=$preedit
         if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
+        if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-preedit-{0}.png" -f $cycle)}
         $cancelTrace=@()
         for ($press=1;$press -le 2;$press++) {
             [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
             $edit=Await-Control 'Search results' 'Edit'
             $cancelTrace+=@{escape=$press;value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value;focus=[System.Windows.Automation.AutomationElement]::FocusedElement.Current.Name}
+            if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-escape-{0}-{1}.png" -f $cycle,$press)}
         }
         $script:imeDiagnostic.cancel_trace=$cancelTrace
         Start-Sleep -Milliseconds 300

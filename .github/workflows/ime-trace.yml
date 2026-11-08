@@ -7,6 +7,7 @@ permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
+  RESCUE_IME_TRACE: '1'
   RUSTFLAGS: '-C target-feature=+crt-static'
 jobs:
   trace:
@@ -31,20 +32,24 @@ jobs:
         run: python scripts/instrument_ime_trace.py
       - name: Build traced GUI
         run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
-      - name: Install Japanese input support
-        shell: powershell
-        timeout-minutes: 10
-        run: |
-          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
-          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
       - name: Reproduce the preceding native GUI sessions
         shell: bash
         run: |
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-native.json
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-limited.json --desktop-token
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-keyboard.json --desktop-token --keyboard
-      - name: Trace real IME events and text selection through sixteen cycles
-        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-ime.json --desktop-token --ime --ime-cycles 16
+      - name: Install Japanese input support after the preceding GUI sessions
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Trace eight IME cycles in each of four fresh GUI processes
+        shell: bash
+        run: |
+          for session in 1 2 3 4; do
+            python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output "trace-ime-$session.json" --desktop-token --ime --ime-cycles 8 || exit $?
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:
