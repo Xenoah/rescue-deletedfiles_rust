@@ -60,12 +60,20 @@ jobs:
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Add raw event logging only to this diagnostic build
+        shell: bash
+        run: |
+          python scripts/instrument_ime_trace.py
+          python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
       - name: Trace eight IME cycles in each of four fresh GUI processes
         shell: bash
         run: |
           for session in 1 2 3 4; do
             python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output "trace-ime-$session.json" --desktop-token --ime --ime-cycles 8 || exit $?
           done
+      - name: Compare a standard WPF TextBox after the product observation
+        if: always()
+        run: python scripts/ci_command.py python scripts/ime_wpf_baseline.py
       - name: Inspect owned GUI dumps after a failure
         if: always()
         shell: pwsh

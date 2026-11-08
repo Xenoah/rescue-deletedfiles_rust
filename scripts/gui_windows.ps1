@@ -1,6 +1,6 @@
 # Own-process UI Automation on a disposable native Windows runner. No host
 # storage, external windows, or user files are selected.
-param([Parameter(Mandatory=$true)][string]$Config)
+param([Parameter(Mandatory=$true)][string]$Config,[switch]$DefinitionsOnly)
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient, UIAutomationTypes
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Xaml
@@ -408,6 +408,7 @@ function Snapshot {
     }
     return $result
 }
+if ($DefinitionsOnly) {return}
 try {
     [RescueWpfProbe]::Start()
     Start-Sleep -Milliseconds 1000
