@@ -143,8 +143,17 @@
         {
           "file": "input-service-hypothesis/trace-keyboard.json",
           "sha256": "b33446e749a81cd5952ca2ff25a386fc70bd61a36b222c0307fd360cbbecc522"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-preedit-1.png",
+          "sha256": "643c868cd8579c16b26bcf738463db8c335db0e6685db91b14e0f9373b6a04dc"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-escape-1-1.png",
+          "sha256": "c6eb35f00f498989e702dc50889f91d4b256220ad0510728429ed3c81a1be996"
         }
-      ]
+      ],
+      "candidate_timing": "Before Escape, the app shows とりけし but prediction popup still shows type/true/test. After the first Escape, Japanese predictions including 取り消し appear; after the second Escape the popup closes but composition remains. This suggests pending prediction updates race the two-Escape sequence; not yet proven by native-control comparison."
     }
   ],
   "old_normalizer_regression": {

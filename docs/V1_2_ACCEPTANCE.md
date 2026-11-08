@@ -86,3 +86,5 @@ v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格し�
 [実行42505810350](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42505810350)の生イベントでは、Spaceの後にWindowsが通知した文字列も「げんぶん」で、「原文」の通知はなかった。前面は対象GUIのままだった。失敗を保存した後の15秒の観測と、診断用の追加Space 1回でも変換しなかった。追加操作は合格判定に使用していない。
 
 終了時に共有IMEサービスを巻き込む仮説も検証したが、[実行42506839758](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42506839758)は最初のIME起動で取消に失敗し、先行するGUI試験の終了時に残存プロセスはなかった。サービス保持処理は使用されておらず、この仮説は支持されないため変更を取り除いた。10秒の期限後さらに15秒観測しても未確定文字が残り、メインスレッドは通常のメッセージ待機中だった。標準WPF入力欄で同じ操作を行う比較診断を追加し、製品と環境の切り分けを続けている。全記録と実画面は[診断台帳](verification/v1.2.2-ime-diagnostics/manifest.json)に保持する。
+
+[候補コミット3cb664fの4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42504672980)は成功し、9点の配布候補を組み立てた。Windowsでは8回の取消・変換・確定と2ファイルのバイト一致を確認し、[元のJSONと9画面のハッシュ](verification/v1.2.2-native-ime-candidate.json)を照合した。別ホストの連続起動試験には上記失敗が残るため、この結果だけでv1.2.2を公開せず、追加診断を続ける。
