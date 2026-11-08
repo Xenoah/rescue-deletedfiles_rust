@@ -70,6 +70,8 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}
     output.write_text(json.dumps({'status':'failed','exit':completed.returncode,'uia':tree,'stdout':completed.stdout,'stderr':completed.stderr},ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     gui_log=(root/'stderr.txt').read_text(encoding='utf-8',errors='replace') if (root/'stderr.txt').exists() else '(no GUI log)'
+    (root/'driver-stdout.txt').write_text(completed.stdout,encoding='utf-8')
+    (root/'driver-stderr.txt').write_text(completed.stderr,encoding='utf-8')
     executable=binary.read_bytes()
     tree['native_provider_linked']={'accesskit_property_name':'AccessKitAdapter'.encode('utf-16-le') in executable,'uia_return_raw_element_provider':b'UiaReturnRawElementProvider' in executable}
     check(completed.returncode==0 and tree['status']=='passed',json.dumps(tree,ensure_ascii=False)[-7000:]+'\n'+completed.stdout+completed.stderr+'\nGUI: '+gui_log[-3000:])

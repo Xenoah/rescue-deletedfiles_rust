@@ -453,6 +453,7 @@ try {
         $evidence.root_class=$script:root.Current.ClassName
         $evidence.tree=@(Snapshot)
         $evidence.provider.late_accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
+        Save-OwnedScreenshot 'windows-gui-failed.png'
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure

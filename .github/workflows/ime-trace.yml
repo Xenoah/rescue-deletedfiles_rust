@@ -1,0 +1,57 @@
+name: Trace Windows IME cancellation
+on:
+  push:
+    branches: ['fix/windows-ime-trace']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+jobs:
+  trace:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - run: rustup toolchain install 1.99.1 --profile minimal
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-2022-x64-rust-1.99.1-
+      - name: Instrument this diagnostic build only
+        run: python scripts/instrument_ime_trace.py
+      - name: Build traced GUI
+        run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Install Japanese input support
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+      - name: Reproduce the preceding native GUI sessions
+        shell: bash
+        run: |
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-native.json
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-limited.json --desktop-token
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-keyboard.json --desktop-token --keyboard
+      - name: Trace real IME events and text selection through sixteen cycles
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-ime.json --desktop-token --ime --ime-cycles 16
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-ime-event-trace
+          path: |
+            trace-*.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/*.txt
+            rescue-owned-uia-*/windows*.png
+          if-no-files-found: error
