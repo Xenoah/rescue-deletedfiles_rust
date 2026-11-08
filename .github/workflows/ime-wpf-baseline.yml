@@ -1,0 +1,54 @@
+name: Compare IME in fresh standard Windows controls
+on:
+  push:
+    branches: ['fix/windows-ime-baseline']
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+jobs:
+  baseline:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Parse the Windows fixture scripts
+        shell: powershell
+        run: |
+          foreach ($name in 'gui_windows.ps1','windows_ime_profile.ps1','ime_wpf_baseline.ps1') {
+            $tokens=$null;$errors=$null
+            $null=[System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd "scripts/$name"),[ref]$tokens,[ref]$errors)
+            if ($errors.Count) {throw ($errors|Out-String)}
+          }
+      - name: Prepare Japanese input before either standard control starts
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
+      - name: Compare two independent standard WPF processes without running Rescue
+        run: python scripts/ci_command.py python scripts/ime_wpf_fresh_sessions.py
+      - name: Restore the original user language profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standard-ime-${{ matrix.os }}
+          path: |
+            wpf-fresh-sessions.json
+            ime-profile-state.json
+            rescue-owned-uia-wpf-*/uia.json
+            rescue-owned-uia-wpf-*/*.txt
+            rescue-owned-uia-wpf-*/windows*.png
+          if-no-files-found: error
