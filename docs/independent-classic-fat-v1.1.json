@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.1",
-  "binary_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
+  "version": "rescue 1.1.2",
+  "binary_sha256": "4aa4bede554e94d60fd8e620dcefa0b371e2b5ff48627f51512c479bfed330bd",
   "files_byte_exact": 8,
   "source_unchanged": true,
   "cases": [
@@ -11,7 +11,7 @@
       "cluster_bytes": 512,
       "files_byte_exact": 4,
       "estimated_files_byte_exact": 2,
-      "source_sha256": "0a6c19271aaf69f899ddddc40de0a564a3328ef1a5cb54a584ccceca08bb6436"
+      "source_sha256": "285e6aac21b3e5af5087b9c25366a4c7ed3f37be58a74d2ce647c8b14f72d8ca"
     },
     {
       "filesystem": "fat16",
@@ -19,7 +19,7 @@
       "cluster_bytes": 2048,
       "files_byte_exact": 4,
       "estimated_files_byte_exact": 2,
-      "source_sha256": "54c9640648232ac2031130df37e0d3231783338aeed1179a97ecf9d9c295b9b1"
+      "source_sha256": "452c18a6745d3cd1e9514e745d6a21220724f3c8aa2ba01b4d76bc9598b844db"
     }
   ],
   "scope": "Actual mkfs.fat + mcopy + mdel deletion on FAT12 and FAT16 images."

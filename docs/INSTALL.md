@@ -19,7 +19,7 @@ alpha.6以降の配布ビルドはVCランタイムを静的リンクする。GU
 glibc 2.35以降を必要とする。インストール版はDebian/Ubuntu系のDEB。
 
 ```sh
-sudo apt install ./rescue-1.1.1-linux-x64.deb
+sudo apt install ./rescue-1.1.2-linux-x64.deb
 rescue-gui
 rescue --version
 sudo apt remove rescue-deletedfiles

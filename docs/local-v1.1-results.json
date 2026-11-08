@@ -1,8 +1,8 @@
 {
   "status": "passed",
-  "version": "1.1.1",
-  "cli_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
-  "gui_sha256": "7a3a3331130952547e7e1e5370615751453942537ce5effaa45fca0f9bca17ed",
+  "version": "1.1.2",
+  "cli_sha256": "4aa4bede554e94d60fd8e620dcefa0b371e2b5ff48627f51512c479bfed330bd",
+  "gui_sha256": "32fd82117e5631cacde474b036c6bab1663ea79cc4f081b91142f15135ab193e",
   "rust_tests": 74,
   "integration_suites": [
     "e2e.py",
@@ -39,17 +39,17 @@
   ],
   "clippy": "all targets, warnings denied",
   "logs_sha256": {
-    "tests-patch.log": "1631a2c00ef74ee0516587f90f584b0145428a34ee1990707537447ea3f31b3f",
-    "clippy-patch.log": "a0fb458db896ea0002fcf01e5f1ddbe7744999c76487a61c708e5c9a318c5c83",
-    "integration-patch.log": "61ee806620edc8d512e90af604ed938b46b8fed80753a872a6cbcb51f5f880dc"
+    "tests-patch2.log": "66950d18711d668f70480f8cd263a90b1db8a6642b2b4b271195a5f2a55f3ead",
+    "clippy-patch2.log": "42d7c5a1f2bf1f94aa9d803bd09bd5803c6fc1dfa201afbc6b7b72f1434ba324",
+    "integration-patch2.log": "ccf0f399fd5ccdeca6d12d0e90648331ff25c4dfa2a375cb43050319f2325829"
   },
   "local_package": {
     "status": "passed",
-    "version": "1.1.1",
+    "version": "1.1.2",
     "platform": "linux",
     "arch": "x64",
-    "portable_cli_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
-    "portable_gui_sha256": "7a3a3331130952547e7e1e5370615751453942537ce5effaa45fca0f9bca17ed",
+    "portable_cli_sha256": "4aa4bede554e94d60fd8e620dcefa0b371e2b5ff48627f51512c479bfed330bd",
+    "portable_gui_sha256": "32fd82117e5631cacde474b036c6bab1663ea79cc4f081b91142f15135ab193e",
     "installer_validation": "deb_extracted_version_payload_and_shortcuts_verified",
     "packaged_cli_mcp_features": "passed: 35 formats, ZIP bytes/CRC/SHA, date and scope",
     "gui_startup": "renderer_initialized_then_alive_3_seconds",

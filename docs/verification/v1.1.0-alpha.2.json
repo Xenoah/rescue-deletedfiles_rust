@@ -1,0 +1,70 @@
+{
+  "release_tag": "v1.1.0-alpha.2",
+  "release_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.2",
+  "tag_commit": "95b2d77ce839e906f06cb91f6b1c19c8f39c1faf",
+  "native": {
+    "run_id": 42434125613,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42434125613",
+    "conclusion": "success"
+  },
+  "public": {
+    "run_id": 42435989738,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42435989738",
+    "conclusion": "success",
+    "head_sha": "95b2d77ce839e906f06cb91f6b1c19c8f39c1faf",
+    "evidence_artifact": {
+      "id": 13600240240,
+      "digest": "sha256:0847744c70b586b29a532344a569cb78e319fe4d39195b804e4124ec639f7255",
+      "bytes": 238513,
+      "summary": "v1.1.0-alpha.2-public.md"
+    }
+  },
+  "assets": [
+    {
+      "name": "rescue-1.1.0-alpha.2-linux-x64-portable.tar.gz",
+      "bytes": 12585686,
+      "digest": "sha256:e6251197c02922684d05be062f229f175a9faaa1c82898350e24192a2d78cc8b"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-linux-x64.deb",
+      "bytes": 9487296,
+      "digest": "sha256:fe2882d45299b366dc54354c37a4329ff56322f9f06d983cf46645f23ac2a1a4"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-macos-arm64-portable.zip",
+      "bytes": 8734115,
+      "digest": "sha256:f601fb07371c902399736c0aaeffee71a5e4e86416bf1a92b09ac6c4ad333953"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-macos-arm64.pkg",
+      "bytes": 8734891,
+      "digest": "sha256:c99ef8da3e5339dfeebba2bb0e80b81c12d9b961e439c39d5024850463861aa2"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-macos-x64-portable.zip",
+      "bytes": 9447594,
+      "digest": "sha256:1ca84befa9b4c0d8e076d7c72bba5eeebcaa083769129207b3fb88c2af3830a2"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-macos-x64.pkg",
+      "bytes": 9448346,
+      "digest": "sha256:7b468ea1865220f10bb22c81ac958e073dede4ed1ddf1467f494479488f06b51"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-windows-x64-portable.zip",
+      "bytes": 10694609,
+      "digest": "sha256:c6f4da9800b606e1ac7d99a9fa7b3927c4b6019c1a2f5906d48b4cbf9868e456"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.2-windows-x64-setup.exe",
+      "bytes": 9411747,
+      "digest": "sha256:240ebea6d813299bbe88b038653c05041823e9b24ab922ef850eef746a135460"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 861,
+      "digest": "sha256:039e473641d540959ebb4c263e34d95f37067c7672e9fd2d15c3481f977fcdf6"
+    }
+  ],
+  "scope": "GitHub API observations of successful native and exact public package workflows and nine released assets. The generated public verification summary is retained alongside this record."
+}

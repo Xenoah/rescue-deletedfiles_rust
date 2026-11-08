@@ -1,5 +1,6 @@
 """Regressions for GitHub issues 1-3: raw batches, FAT provenance, file types."""
 import argparse,hashlib,json,sqlite3,struct,subprocess,tempfile
+from contextlib import closing
 from pathlib import Path
 from e2e import Client,check,run
 from make_fixture import build,record,filename,resident,MFT_LCN,SECTOR,RECORD
@@ -17,7 +18,9 @@ def main(binary,output=None):
             f.seek(MFT_LCN*SECTOR+32*RECORD);f.write(record(32,[filename('original:colon.txt'),resident(0x80,b'base'),resident(0x80,b'stream',name='stream.dat')]))
         before=file_hash(source);scan=run(binary,'scan','--indexed','--source',source,'--work-dir',root/'index','--json');session=scan['session']
         rows=pages(binary,session)
-        with sqlite3.connect(session) as db:kinds={row[0]:row[1] for row in db.execute('SELECT id,type_key FROM candidate')}
+        # A SQLite connection context commits/rolls back; it does not close the
+        # handle. Explicit closure also permits Windows temporary-file cleanup.
+        with closing(sqlite3.connect(session)) as db:kinds={row[0]:row[1] for row in db.execute('SELECT id,type_key FROM candidate')}
         check(kinds['mft-24-7']=='TXT','literal colon type corrupted')
         stream=next(c for c in rows if c['stream_name']=='stream.dat');check(kinds[stream['id']]=='TXT','explicit ADS suffix not stripped')
         cases+=['literal_colon_and_last_component_type','explicit_ads_uses_base_extension']
@@ -68,7 +71,7 @@ def main(binary,output=None):
             line=process.stderr.readline();check(bool(line),('early mirror scan exit',process.poll()));event=json.loads(line);index=Path(event['index'])
             if event['progress']['scanned_records']>=128:break
         process.kill();process.communicate(timeout=20)
-        with sqlite3.connect(index) as db:checkpoint=json.loads(db.execute('SELECT engine_state FROM checkpoint').fetchone()[0])
+        with closing(sqlite3.connect(index)) as db:checkpoint=json.loads(db.execute('SELECT engine_state FROM checkpoint').fetchone()[0])
         check(checkpoint['fat']['copy_choices'] and 'FAT copy 0' in checkpoint['fat']['copy_choices'][0],'checkpoint lost mirror choice')
         run(binary,'resume','--session',index,'--json')
         header=run(binary,'report','--session',index,'--json')['session'];check([w for w in header['warnings'] if 'Damaged FAT mirror:' in w]==warnings,'resumed warning differs')

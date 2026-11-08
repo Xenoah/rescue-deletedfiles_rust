@@ -2,9 +2,9 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**v1.1.1**ではUIを整理し、FAT12/16、明示的なFAT推定復元、HTML/CSVレポートを追加しました。公開前に確認した3件の不具合も修正しています。
+**v1.1.2**ではUIを整理し、FAT12/16、明示的なFAT推定復元、HTML/CSVレポートを追加しました。公開前に確認した3件の不具合も修正しています。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.1) · [変更内容](docs/RELEASE-v1.1.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_1_ACCEPTANCE.md)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.2) · [変更内容](docs/RELEASE-v1.1.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_1_ACCEPTANCE.md)
 
 ![v1.1の設定画面](docs/images/v1.1/settings-ja.png)
 
@@ -14,12 +14,12 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 | 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-windows-x64-portable.zip) |
-| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/rescue-1.1.1-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/rescue-1.1.2-macos-x64-portable.zip) |
 
-リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.1/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.2/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 

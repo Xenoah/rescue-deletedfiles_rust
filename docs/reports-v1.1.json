@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.1",
-  "binary_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
+  "version": "rescue 1.1.2",
+  "binary_sha256": "4aa4bede554e94d60fd8e620dcefa0b371e2b5ff48627f51512c479bfed330bd",
   "checks": 14,
   "cases": [
     "actual_recovered_bytes",
