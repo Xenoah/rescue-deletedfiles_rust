@@ -284,15 +284,16 @@ function Set-ImeQuery {
     $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
     Start-Sleep -Milliseconds 500
     [RescueOwnedWindow]::RomanKeys('torikeshi')
+    $cancelPreedit=-join [char[]](0x3068,0x308a,0x3051,0x3057)
     # Wait for the actual preedit, not an assumed keyboard/TSF processing time.
     # Otherwise Escape may be sent before there is any composition to cancel.
     $until=[DateTime]::UtcNow.AddSeconds(5)
     do {
         Start-Sleep -Milliseconds 100
         $preedit=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-    } while ($preedit -cne 'とりけし' -and [DateTime]::UtcNow -lt $until)
+    } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
     $script:imeDiagnostic.cancel_start_value=$preedit
-    if ($preedit -cne 'とりけし') {throw "Native IME cancellation preedit was not ready: $preedit"}
+    if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
     $cancelTrace=@()
     for ($press=1;$press -le 2;$press++) {
         [RescueOwnedWindow]::Tap(27);Start-Sleep -Milliseconds 400
