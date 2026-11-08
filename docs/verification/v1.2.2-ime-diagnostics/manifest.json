@@ -1,0 +1,48 @@
+{
+  "records": [
+    {
+      "case": "conversion-timing",
+      "run": 42500970262,
+      "status": "failed",
+      "files": [
+        {
+          "file": "conversion-timing/uia.json",
+          "sha256": "073f8b7f6dd79e6a257e35bfd07de1145e228dace69a01fb821300577b5b1b81"
+        },
+        {
+          "file": "conversion-timing/windows-ime-escape-1-1.png",
+          "sha256": "6f846b3ab00762d2118d3b06586de77846600f0138ca16a44ceb75f288bd9ce4"
+        },
+        {
+          "file": "conversion-timing/windows-ime-escape-1-2.png",
+          "sha256": "2b266537241f663423ff50b61ff9743ec06e4cbf10a5c700a1a361755274f3ea"
+        },
+        {
+          "file": "conversion-timing/windows-ime-preedit-1.png",
+          "sha256": "73da3c0cacb5d34d5475febf88a1bd85be5d4afb2b4f7b14ffc102b8b3c5e6f0"
+        }
+      ]
+    },
+    {
+      "case": "textpattern-crash",
+      "run": 42501896857,
+      "status": "failed",
+      "files": [
+        {
+          "file": "textpattern-crash/trace-ime-1.json",
+          "sha256": "a29526645fd6fde964a012838841cf9a8e20d62756a988cb528dd03c1bd5560a"
+        },
+        {
+          "file": "textpattern-crash/driver-stderr.txt",
+          "sha256": "ab6c7beaee80e6c44d9e9fc47080d1b35fab6b055d5d97c4645847aab616b069"
+        }
+      ]
+    }
+  ],
+  "old_normalizer_regression": {
+    "file": "delayed-batch-old-regression.txt",
+    "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
+    "result": "failed as expected with retained preedit; fixed normalizer passes"
+  },
+  "interpretation": "Cancellation polling completed after 4413ms. A later fixed-time conversion asserted kana instead of kanji. New stage observation via .NET TextPattern.GetText crashed the test driver with AccessViolationException; a native COM client is being validated. No failed run is counted as passed."
+}

@@ -1,0 +1,24 @@
+
+running 1 test
+test accessibility::windows_ime_delayed_native_cancellation_batch_preserves_committed_text ... FAILED
+
+failures:
+
+---- accessibility::windows_ime_delayed_native_cancellation_batch_preserves_committed_text stdout ----
+
+thread 'accessibility::windows_ime_delayed_native_cancellation_batch_preserves_committed_text' (13966) panicked at crates/rescue-gui/src/accessibility.rs:517:5:
+assertion `left == right` failed
+  left: "既存とりけし"
+ right: "既存"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    accessibility::windows_ime_delayed_native_cancellation_batch_preserves_committed_text
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+   Compiling rescue-gui v1.2.1 (/workspace/rescue/crates/rescue-gui)
+    Finished `release` profile [optimized] target(s) in 51.18s
+     Running unittests src/main.rs (target/release/deps/rescue_gui-ee2c9cda41287ac8)
+error: test failed, to rerun pass `-p rescue-gui --bin rescue-gui`
