@@ -1,0 +1,32 @@
+{
+  "status": "failed",
+  "application_version": "1.2.1",
+  "published": false,
+  "run": 42498137163,
+  "run_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42498137163",
+  "commit": "2353126329aff746bc7d9229be5be5842d0fa0bf",
+  "artifact_id": 13624383543,
+  "artifact_zip_sha256": "d70e108d9e782b6d25410788df4f856402efe3a5a13e61b12c56e09f53bbffc9",
+  "scope": "Diagnostic source instrumentation only; four fresh GUI processes with eight native IME cycles planned, aborting at first failure. First process passed eight cycles. Second process failed its first cancellation. No release was published.",
+  "observations": [
+    "The search field retained とりけし and focus after both real Escape presses.",
+    "The last recorded input frame contains native preedit and Roman key releases. No subsequent Escape or input-layout events appear in the GUI log.",
+    "Native input-layout restoration also timed out during cleanup.",
+    "The failed screenshot has selected preedit but no visible prediction candidate popup."
+  ],
+  "interpretation": "Native input processing appears stalled; the trace alone does not establish a deadlock or distinguish it from delayed OS processing. Owned GUI thread-stack diagnostics are pending.",
+  "files": [
+    {
+      "file": "stderr.txt",
+      "sha256": "6da48f84945d9bb61e66f362beb9ebb9158d1c986c24819eb9026de33fddbdc9"
+    },
+    {
+      "file": "uia.json",
+      "sha256": "b28616b831ac502db0155237878af5d64ce2da3f47db64fe6c70bffd2bda7d51"
+    },
+    {
+      "file": "windows-gui-failed.png",
+      "sha256": "bd71288f22712fa2987dbd1f45e87552cfc558038801b557e5e19383ec9d8533"
+    }
+  ]
+}

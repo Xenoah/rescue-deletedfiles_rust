@@ -1,0 +1,25 @@
+{
+  "status": "failed",
+  "run": 42499121489,
+  "run_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42499121489",
+  "commit": "9bb49fa41452db8dd5453a54d1dfef83598f51f3",
+  "artifact_id": 13624738322,
+  "artifact_zip_sha256": "f06bf624b34c37250190275d6505d5ee955f623fe6447b96e3292e684a9b84ef",
+  "observations": [
+    "Both Escape samples retained とりけし. The foreground window was the owned GUI and it responded to WM_NULL in both samples.",
+    "The main native thread waits in Microsoft Japanese IME (IMJPAPI), called via IMETIP, msctf, imm32 ImmTranslateMessage, user32 TranslateMessage and winit dispatch_peeked_messages.",
+    "An IMJPPRED worker is waiting on an RPC response.",
+    "The failure occurs before another Escape or cancellation event reaches egui."
+  ],
+  "limits": "This is a point-in-time minidump of an owned synthetic test. Microsoft private symbols were not available, so names next to internal addresses are nearest exported symbols. It does not establish indefinite deadlock or a product mutex failure. A diagnostic with no additional keys observes the subsequent 15 seconds.",
+  "files": [
+    {
+      "file": "native-stacks.txt",
+      "sha256": "a2df911576bd95df49bc0216237e53b5c84b7316e317ce7531b6fa3574bb89b7"
+    },
+    {
+      "file": "native-stack-uia.json",
+      "sha256": "bcf0a226f4ae9829f7753d2f0e697fc210ca54bd1c2438bc4bdef9301df492a4"
+    }
+  ]
+}

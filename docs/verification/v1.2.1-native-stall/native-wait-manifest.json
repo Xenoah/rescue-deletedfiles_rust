@@ -1,0 +1,31 @@
+{
+  "status": "original_assertion_failed_then_native_cancellation_completed",
+  "run": 42499949821,
+  "run_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42499949821",
+  "commit": "5c229c99cde9748b9ca6b19e3cc2be137acd41ff",
+  "artifact_id": 13624822960,
+  "artifact_zip_sha256": "fcdec7c91e289ff01ebec4bca444528741ae07990d745f2890dc3b3cbd27b071",
+  "extra_keys_sent": 0,
+  "extra_focus_or_clear_actions": 0,
+  "initial_preedit_frame_seconds": 10.6298121,
+  "cancellation_frame_seconds": 16.2163893,
+  "elapsed_between_frames_seconds": 5.5865772,
+  "post_failure_observation_ms": 3551,
+  "final_search_value": "",
+  "cause": "The fixed approximately 1.1 second cancellation assertion ran before Windows Microsoft IME completed its native prediction/TranslateMessage wait. Without further input, the queued cancellation and Escape notifications arrived and the existing normalizer removed the preedit. The diagnostic run remains failed; its result was not rewritten to passed.",
+  "fix": "After exactly two Escape presses, poll the real UIA search value until empty with a bounded 10 second deadline before refocusing or sending the next conversion. Record the initial sample and wait duration. Keep all eight cancellation/conversion checks.",
+  "files": [
+    {
+      "file": "native-wait-uia.json",
+      "sha256": "05c5a9ea4d67ba531a32e242024cfdb5e2ed9a8bf41832acc8a915069eeebb49"
+    },
+    {
+      "file": "native-wait-events.txt",
+      "sha256": "8312dc008690e36fe12c9835ee0127af0eb8cf245e9cda71d24612f189e11e28"
+    },
+    {
+      "file": "native-wait-complete.png",
+      "sha256": "79c6cdb896f45bada1dfd586c48fa8a7419c89d554dc1e98763e06943ac5ab53"
+    }
+  ]
+}
