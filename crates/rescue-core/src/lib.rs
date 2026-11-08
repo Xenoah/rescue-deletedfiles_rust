@@ -289,7 +289,13 @@ impl Session {
             .search
             .as_ref()
             .is_some_and(|s| s.fat_short_name_encoding == FatShortNameEncoding::Cp932);
-        (1..=10).contains(&self.schema_version) && (self.schema_version == 10) == cp932
+        let damaged_upcase = self
+            .search
+            .as_ref()
+            .is_some_and(|s| s.exfat_allow_damaged_upcase);
+        (1..=11).contains(&self.schema_version)
+            && (self.schema_version == 11) == damaged_upcase
+            && (damaged_upcase || (self.schema_version == 10) == cp932)
     }
 
     pub fn candidate_filesystem(&self, candidate: &Candidate) -> FileSystem {
@@ -412,6 +418,8 @@ pub struct ScanOptions {
     pub estimate_fat_contiguous: bool,
     #[serde(default)]
     pub fat_short_name_encoding: FatShortNameEncoding,
+    #[serde(default)]
+    pub exfat_allow_damaged_upcase: bool,
 }
 impl Default for ScanOptions {
     fn default() -> Self {
@@ -421,6 +429,7 @@ impl Default for ScanOptions {
             fragments: false,
             estimate_fat_contiguous: false,
             fat_short_name_encoding: FatShortNameEncoding::Ascii,
+            exfat_allow_damaged_upcase: false,
         }
     }
 }
@@ -451,7 +460,9 @@ fn scan_volume(
 ) -> Result<Session> {
     let mut image = Image::open_region(path, region)?;
     let fingerprint = image.fingerprint()?;
-    let schema_version = if options.fat_short_name_encoding == FatShortNameEncoding::Cp932 {
+    let schema_version = if options.exfat_allow_damaged_upcase {
+        11
+    } else if options.fat_short_name_encoding == FatShortNameEncoding::Cp932 {
         10
     } else if options.fragments || region.is_some_and(|r| r.recovery_boot.is_some()) {
         8
@@ -461,12 +472,14 @@ fn scan_volume(
         3
     };
     let search = (options.fragments
+        || options.exfat_allow_damaged_upcase
         || options.estimate_fat_contiguous
         || options.fat_short_name_encoding != FatShortNameEncoding::Ascii)
         .then(|| SearchSettings {
             fragments: options.fragments,
             estimate_fat_contiguous: options.estimate_fat_contiguous,
             fat_short_name_encoding: options.fat_short_name_encoding,
+            exfat_allow_damaged_upcase: options.exfat_allow_damaged_upcase,
             ..Default::default()
         });
     if &image.boot_read(512)?[3..11] != b"NTFS    " {
@@ -966,6 +979,10 @@ pub fn recover_to(
                 .map_or(crate::FatShortNameEncoding::Ascii, |s| {
                     s.fat_short_name_encoding
                 }),
+            session
+                .search
+                .as_ref()
+                .is_some_and(|s| s.exfat_allow_damaged_upcase),
             cancel,
         )?;
         if fresh.cancelled {

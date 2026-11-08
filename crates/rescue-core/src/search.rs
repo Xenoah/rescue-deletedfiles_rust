@@ -45,9 +45,16 @@ pub struct SearchSettings {
     pub estimate_fat_contiguous: bool,
     #[serde(default)]
     pub fat_short_name_encoding: crate::FatShortNameEncoding,
+    #[serde(default)]
+    pub exfat_allow_damaged_upcase: bool,
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.exfat_allow_damaged_upcase && self.method != ScanMethod::Quick {
+            return Err(Error::Request(
+                "damaged exFAT upcase handling requires a metadata scan".into(),
+            ));
+        }
         if self.fat_short_name_encoding != crate::FatShortNameEncoding::Ascii
             && self.method != ScanMethod::Quick
         {
@@ -181,6 +188,7 @@ pub fn scan_with_settings(
     options.fragments = settings.fragments;
     options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
     options.fat_short_name_encoding = settings.fat_short_name_encoding;
+    options.exfat_allow_damaged_upcase = settings.exfat_allow_damaged_upcase;
     let mut session = match settings.method {
         ScanMethod::Quick => {
             if let Some(region) = &settings.recovered_volume {

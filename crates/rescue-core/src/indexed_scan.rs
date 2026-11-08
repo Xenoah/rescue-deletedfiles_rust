@@ -53,6 +53,7 @@ pub fn scan_indexed(
     options.fragments = settings.fragments;
     options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
     options.fat_short_name_encoding = settings.fat_short_name_encoding;
+    options.exfat_allow_damaged_upcase = settings.exfat_allow_damaged_upcase;
     if options.max_candidates == 0
         || options.max_candidates > 10_000_000
         || options.max_records == 0
@@ -136,7 +137,9 @@ pub fn scan_indexed(
     let mut header = Session {
         source_info: None,
         raid: None,
-        schema_version: if settings.fat_short_name_encoding == crate::FatShortNameEncoding::Cp932 {
+        schema_version: if settings.exfat_allow_damaged_upcase {
+            11
+        } else if settings.fat_short_name_encoding == crate::FatShortNameEncoding::Cp932 {
             10
         } else if settings.fragments {
             8
@@ -312,6 +315,7 @@ fn run(
         || settings.fragments != checkpoint.options.fragments
         || settings.estimate_fat_contiguous != checkpoint.options.estimate_fat_contiguous
         || settings.fat_short_name_encoding != checkpoint.options.fat_short_name_encoding
+        || settings.exfat_allow_damaged_upcase != checkpoint.options.exfat_allow_damaged_upcase
     {
         return Err(Error::Request(
             "saved metadata scan settings changed".into(),

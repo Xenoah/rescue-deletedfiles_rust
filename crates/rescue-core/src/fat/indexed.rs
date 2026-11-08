@@ -54,7 +54,13 @@ impl State {
                 scanned_records: 0,
                 total_records: 0,
                 invalid_records: 0,
-                warnings: volume.geometry.warnings.clone(),
+                warnings: volume
+                    .geometry
+                    .warnings
+                    .iter()
+                    .chain(volume.upcase_warning.iter())
+                    .cloned()
+                    .collect(),
                 cancelled: false,
                 truncated: false,
             },
@@ -402,8 +408,8 @@ fn traverse(
                 Ok(parsed) => {
                     let name = names::Name {
                         text: parsed.name,
-                        verified: true,
-                        warnings: Vec::new(),
+                        verified: volume.upcase_warning.is_none(),
+                        warnings: volume.upcase_warning.iter().cloned().collect(),
                     };
                     let raw = set.iter().flatten().copied().collect::<Vec<_>>();
                     let mut entry = Entry {
@@ -576,6 +582,7 @@ pub(crate) fn run_volume(
         fat_cache: BTreeMap::new(),
         bitmap: None,
         upcase: vec![],
+        upcase_warning: None,
         system_clusters: vec![],
         visits: 0,
         copy: None,
@@ -583,7 +590,12 @@ pub(crate) fn run_volume(
         estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
     };
     if volume.geometry.filesystem == FileSystem::Exfat {
-        volume.prepare_exfat(volume_image, checkpoint.options.max_records, cancel)?;
+        volume.prepare_exfat(
+            volume_image,
+            checkpoint.options.max_records,
+            checkpoint.options.exfat_allow_damaged_upcase,
+            cancel,
+        )?;
     }
     let committed = writer.index().status()?.candidates as usize;
     let mut state = checkpoint
@@ -604,6 +616,7 @@ pub(crate) fn run_volume(
         fragments: false,
         estimate_fat_contiguous: checkpoint.options.estimate_fat_contiguous,
         fat_short_name_encoding: checkpoint.options.fat_short_name_encoding,
+        exfat_allow_damaged_upcase: checkpoint.options.exfat_allow_damaged_upcase,
     };
     if state.base_candidates > committed {
         return Err(Error::Request("FAT candidate baseline".into()));

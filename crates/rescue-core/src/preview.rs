@@ -424,6 +424,10 @@ fn render(mut session: Session) -> Result<Preview> {
                     .map_or(crate::FatShortNameEncoding::Ascii, |s| {
                         s.fat_short_name_encoding
                     }),
+                session
+                    .search
+                    .as_ref()
+                    .is_some_and(|s| s.exfat_allow_damaged_upcase),
                 &cancel,
             )?;
             if fresh.filesystem != session.filesystem {

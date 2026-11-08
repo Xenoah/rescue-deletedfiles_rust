@@ -1,0 +1,15 @@
+{
+  "tag": "v1.2.0-alpha.1",
+  "commit": "270b2279e4e445da4be2b208db88c291e3cbda52",
+  "status": "passed",
+  "native_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276",
+  "public_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556",
+  "native_platforms": 4,
+  "public_platforms": 4,
+  "release_assets": 9,
+  "release": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1",
+  "artifact_id": 13614853550,
+  "artifact_zip_sha256": "6c056fd9cd9062dfb1141d0f59c6c5e39b2e2852f55e79a0bf7c74148eb9ed8a",
+  "all_artifact_member_checksums_verified": true,
+  "published_proof_sha256": "c43901d440f60aa3215ca00c0d2ca42eea93bb08e8e8cd0eb1acf694b9006d9c"
+}

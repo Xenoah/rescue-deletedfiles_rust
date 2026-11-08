@@ -2,8 +2,8 @@
   "status": "passed",
   "schema_version": 1,
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
-  "version": "rescue 1.2.0-alpha.2",
-  "binary_sha256": "c5e57659fc9fa88fc1e2d67be0209b558a5b2c1d86d7da78c60580b6e52a06b7",
+  "version": "rescue 1.2.0-alpha.3",
+  "binary_sha256": "a608f7e3f2834f24c716ad98852f9b23ef334564b64b410bb022ee90e1f120cb",
   "checks": 13,
   "cases": [
     "actual reader wait deadline",

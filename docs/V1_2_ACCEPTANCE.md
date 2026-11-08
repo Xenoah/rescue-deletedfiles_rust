@@ -4,9 +4,9 @@
 
 | 段階 | 範囲 | 状態 |
 | --- | --- | --- |
-| alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI合格・公開済み、公開実物の再検証中 |
-| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 79 Rustテスト・33統合群・実GUI・Linux配布物合格、ネイティブ/公開検証待ち |
-| alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 未着手 |
+| alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
+| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | ローカル・実GUI合格、push済み、4環境ネイティブCI実行中 |
+| alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 79 Rustテスト・34統合群・実GUI・Linux配布物合格、ネイティブ/公開検証待ち |
 | 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 未着手 |
 
 ## 取得強化の完了条件
@@ -43,4 +43,18 @@ CP932の34条件で168出力がバイト一致。FAT12/16/32、JSONセッショ�
 
 [alpha.2ローカル集計](verification/v1.2.0-alpha.2-local.json) · [実画面](UI-v1.2.md)
 
-alpha.1は[全4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276)に合格し、[9添付で公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1)済み。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556)は実行中。
+alpha.1は[全4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276)に合格し、[9添付で公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1)済み。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556)は全4環境で合格。
+
+[alpha.1公開後の全記録](verification/v1.2.0-alpha.1-published.json) · [リリース確認](verification/v1.2.0-alpha.1-release.json)
+
+## alpha.3 ローカル結果
+
+大文字変換表のチェックサム・展開内容の破損を明示的に許可する31条件で、72出力が元データと一致。表の欠落・重複・サイズ/チェーン不正、割当情報の欠損、エントリチェックサム/UTF-16破損、ライブ所有競合は従来どおり拒否または未対応とした。正常な表の名前ハッシュ検証は維持した。
+
+JSON/索引・MBR/GPT・CLI/MCP・プレビュー・ZIP/HTML/CSV・プロセス強制終了後の再開を確認。スキーマ11をalpha.2の実物CLIが拒否することも確認した。
+
+[exFAT破損表の条件と制限](EXFAT-DAMAGE.md) · [旧版との実物確認](verification/v1.2.0-alpha.3-compatibility.json)
+
+実GUIで36ファイルの従来フロー、CP932の8ファイル、破損exFATの8ファイルを照合。取得のタイムアウトと64 MiB全量の再開も確認し、実画面20枚を保存した。
+
+[alpha.3ローカル集計](verification/v1.2.0-alpha.3-local.json) · [exFAT試験の全条件](exfat-damage-v1.2.json) · [実画面](UI-v1.2.md)

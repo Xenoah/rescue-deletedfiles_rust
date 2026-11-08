@@ -513,6 +513,10 @@
           ],
           "default": "ascii",
           "description": "Explicit OEM interpretation of FAT 8.3 names; missing field preserves legacy ASCII behavior."
+        },
+        "exfat_allow_damaged_upcase": {
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -698,7 +702,7 @@
         "schema_version": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 10
+          "maximum": 11
         },
         "filesystem": {
           "$ref": "#/$defs/FileSystem"
@@ -805,6 +809,66 @@
           "if": {
             "properties": {
               "schema_version": {
+                "const": 11
+              }
+            },
+            "required": [
+              "schema_version"
+            ]
+          },
+          "then": {
+            "properties": {
+              "search": {
+                "type": "object",
+                "properties": {
+                  "exfat_allow_damaged_upcase": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "exfat_allow_damaged_upcase"
+                ]
+              }
+            },
+            "required": [
+              "search"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "search": {
+                "type": "object",
+                "properties": {
+                  "exfat_allow_damaged_upcase": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "exfat_allow_damaged_upcase"
+                ]
+              }
+            },
+            "required": [
+              "search"
+            ]
+          },
+          "then": {
+            "properties": {
+              "schema_version": {
+                "const": 11
+              }
+            },
+            "required": [
+              "schema_version"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "schema_version": {
                 "const": 10
               }
             },
@@ -833,21 +897,45 @@
         },
         {
           "if": {
-            "properties": {
-              "search": {
-                "type": "object",
+            "allOf": [
+              {
                 "properties": {
-                  "fat_short_name_encoding": {
-                    "const": "cp932"
+                  "search": {
+                    "type": "object",
+                    "properties": {
+                      "fat_short_name_encoding": {
+                        "const": "cp932"
+                      }
+                    },
+                    "required": [
+                      "fat_short_name_encoding"
+                    ]
                   }
                 },
                 "required": [
-                  "fat_short_name_encoding"
+                  "search"
                 ]
+              },
+              {
+                "not": {
+                  "properties": {
+                    "search": {
+                      "type": "object",
+                      "properties": {
+                        "exfat_allow_damaged_upcase": {
+                          "const": true
+                        }
+                      },
+                      "required": [
+                        "exfat_allow_damaged_upcase"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "search"
+                  ]
+                }
               }
-            },
-            "required": [
-              "search"
             ]
           },
           "then": {
@@ -855,7 +943,10 @@
               "schema_version": {
                 "const": 10
               }
-            }
+            },
+            "required": [
+              "schema_version"
+            ]
           }
         }
       ]

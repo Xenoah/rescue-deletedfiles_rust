@@ -189,6 +189,9 @@ enum Command {
         /// Decode FAT 8.3 names with an explicitly selected OEM code page.
         #[arg(long, default_value = "ascii", value_parser = ["ascii", "cp932"])]
         fat_short_name_encoding: String,
+        /// Continue when only the exFAT upcase table content/checksum is damaged; names remain unverified.
+        #[arg(long)]
+        exfat_allow_damaged_upcase: bool,
         #[arg(long)]
         json: bool,
     },
@@ -664,6 +667,7 @@ fn run() -> Result<i32, Error> {
             fragments,
             estimate_fat_contiguous,
             fat_short_name_encoding,
+            exfat_allow_damaged_upcase,
         } => {
             rescue_core::guard_output_path(&source, &work_dir)?;
             let recovered_volume = if let Some(id) = volume_id {
@@ -713,6 +717,7 @@ fn run() -> Result<i32, Error> {
                 fragments,
                 estimate_fat_contiguous,
                 fat_short_name_encoding,
+                exfat_allow_damaged_upcase,
             };
             if !indexed && (max_records.is_some() || max_candidates.is_some()) {
                 return Err(Error::Request(
@@ -729,6 +734,7 @@ fn run() -> Result<i32, Error> {
                 fragments,
                 estimate_fat_contiguous,
                 fat_short_name_encoding,
+                exfat_allow_damaged_upcase,
             };
             if indexed {
                 let path = rescue_core::scan_indexed(

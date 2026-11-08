@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "version": "1.2.0-alpha.3",
+  "old_version": "rescue 1.2.0-alpha.2",
+  "old_cli_sha256": "c5e57659fc9fa88fc1e2d67be0209b558a5b2c1d86d7da78c60580b6e52a06b7",
+  "new_cli_sha256": "a608f7e3f2834f24c716ad98852f9b23ef334564b64b410bb022ee90e1f120cb",
+  "cases": [
+    {
+      "mode": "json",
+      "old_cli_exit_code": 4,
+      "old_cli_error": {
+        "error": {
+          "affected_scope": "command",
+          "code": "UNSUPPORTED",
+          "message": "unsupported: session schema",
+          "retryable": false
+        },
+        "schema_version": 1
+      }
+    },
+    {
+      "mode": "index",
+      "old_cli_exit_code": 2,
+      "old_cli_error": {
+        "error": {
+          "affected_scope": "command",
+          "code": "INVALID_REQUEST",
+          "message": "invalid request: invalid index header",
+          "retryable": false
+        },
+        "schema_version": 1
+      }
+    }
+  ]
+}

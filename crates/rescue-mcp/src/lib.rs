@@ -156,7 +156,7 @@ fn tools() -> Value {
         tool(
             "start_scan",
             "Scan an allowed read-only disk, volume or image: quick = NTFS/FAT12/FAT16/FAT32/exFAT metadata (default); carve = contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV; image decoding, PDF classic-xref references, ZIP CRC or media sample tables are checked. Media frames and PDF pages are not decoded. Carving cannot establish deletion/allocation status. Poll get_job; progress.unit identifies records or bytes.",
-            json!({"source":string,"request_id":string,"indexed":{"type":"boolean","default":false},"max_records":{"type":"integer","minimum":1,"maximum":100000000},"max_candidates":{"type":"integer","minimum":1,"maximum":10000000},"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"carve_scope":{"type":"string","enum":["unallocated","all"],"default":"unallocated"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false},"fat_short_name_encoding":{"type":"string","enum":["ascii","cp932"],"default":"ascii","description":"Explicit FAT 8.3 name decoding; raw bytes and uncertainty are retained."},"estimate_fat_contiguous":{"type":"boolean","default":false,"description":"Explicitly opt in to labelled contiguous guesses for cleared FAT files; original content is not verified."}}),
+            json!({"source":string,"request_id":string,"indexed":{"type":"boolean","default":false},"max_records":{"type":"integer","minimum":1,"maximum":100000000},"max_candidates":{"type":"integer","minimum":1,"maximum":10000000},"mode":{"type":"string","enum":["quick","carve"],"default":"quick"},"carve_scope":{"type":"string","enum":["unallocated","all"],"default":"unallocated"},"extensions":{"type":"array","items":{"type":"string"},"maxItems":64},"path_prefix":{"type":"string"},"max_depth":{"type":"integer","minimum":0,"maximum":256},"range_start":{"type":"integer","minimum":0},"range_end":{"type":"integer","minimum":0},"recovered_volume":region,"fragments":{"type":"boolean","default":false},"exfat_allow_damaged_upcase":{"type":"boolean","default":false,"description":"Allow damaged exFAT upcase content only; entry checksums, allocation and ownership remain required; name hashes are unverified."},"fat_short_name_encoding":{"type":"string","enum":["ascii","cp932"],"default":"ascii","description":"Explicit FAT 8.3 name decoding; raw bytes and uncertainty are retained."},"estimate_fat_contiguous":{"type":"boolean","default":false,"description":"Explicitly opt in to labelled contiguous guesses for cleared FAT files; original content is not verified."}}),
             &["source", "request_id"],
             false
         ),
@@ -618,6 +618,11 @@ impl Server {
                         Some(Some("cp932")) => rescue_core::FatShortNameEncoding::Cp932,
                         _ => return Err("fat_short_name_encoding must be ascii or cp932".into()),
                     },
+                    exfat_allow_damaged_upcase: args
+                        .get("exfat_allow_damaged_upcase")
+                        .map(|v| v.as_bool().ok_or("invalid exfat_allow_damaged_upcase"))
+                        .transpose()?
+                        .unwrap_or(false),
                     estimate_fat_contiguous: args
                         .get("estimate_fat_contiguous")
                         .map(|v| v.as_bool().ok_or("invalid estimate_fat_contiguous"))
@@ -670,6 +675,7 @@ impl Server {
                         fragments: settings.fragments,
                         estimate_fat_contiguous: settings.estimate_fat_contiguous,
                         fat_short_name_encoding: settings.fat_short_name_encoding,
+                        exfat_allow_damaged_upcase: settings.exfat_allow_damaged_upcase,
                     };
                     self.start_index_job(indexed_jobs::Task::Scan {
                         source: path,

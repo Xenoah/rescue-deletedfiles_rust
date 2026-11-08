@@ -132,6 +132,7 @@ struct App {
     fragments: bool,
     estimate_fat_contiguous: bool,
     fat_short_name_encoding: rescue_core::FatShortNameEncoding,
+    exfat_allow_damaged_upcase: bool,
     extensions: String,
     path_prefix: String,
     depth: String,
@@ -277,6 +278,7 @@ impl App {
             fragments: false,
             estimate_fat_contiguous: false,
             fat_short_name_encoding: rescue_core::FatShortNameEncoding::Ascii,
+            exfat_allow_damaged_upcase: false,
             extensions: String::new(),
             path_prefix: String::new(),
             depth: String::new(),
@@ -341,6 +343,7 @@ impl App {
             },
             fragments: !self.carve && self.fragments,
             estimate_fat_contiguous: !self.carve && self.estimate_fat_contiguous,
+            exfat_allow_damaged_upcase: !self.carve && self.exfat_allow_damaged_upcase,
             fat_short_name_encoding: if self.carve {
                 rescue_core::FatShortNameEncoding::Ascii
             } else {
@@ -428,6 +431,7 @@ impl App {
         self.fragments = settings.fragments;
         self.estimate_fat_contiguous = settings.estimate_fat_contiguous;
         self.fat_short_name_encoding = settings.fat_short_name_encoding;
+        self.exfat_allow_damaged_upcase = settings.exfat_allow_damaged_upcase;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
         self.extensions = settings.extensions.join(", ");
@@ -555,6 +559,7 @@ impl App {
                         fragments: settings.fragments,
                         estimate_fat_contiguous: settings.estimate_fat_contiguous,
                         fat_short_name_encoding: settings.fat_short_name_encoding,
+                        exfat_allow_damaged_upcase: settings.exfat_allow_damaged_upcase,
                     },
                     &settings,
                     &cancel,
@@ -1196,6 +1201,10 @@ impl App {
                     });
                     if self.fat_short_name_encoding == rescue_core::FatShortNameEncoding::Cp932 {
                         ui.small(tr!("FATの8.3名だけに適用します。消えた先頭文字は補わず、曖昧なバイトは {16進数} で示します。", "Applies only to FAT 8.3 names. Missing leading characters are not invented; ambiguous bytes appear as {hex}."));
+                    }
+                    ui.checkbox(&mut self.exfat_allow_damaged_upcase, tr!("exFATの大文字変換表が壊れていても探索する（名前の検証は不完全）", "Scan with a damaged exFAT upcase table (names incompletely verified)"));
+                    if self.exfat_allow_damaged_upcase {
+                        ui.small(tr!("表の内容・チェックサムの破損に限定します。配置・割当・エントリの検証は維持し、名前ハッシュの未検証を結果に残します。", "Limited to table content/checksum damage. Extents, allocation and entry checksums remain required; missing name-hash verification is recorded."));
                     }
                     ui.checkbox(&mut self.fragments,tr!("残存するMFTレコードも探索（クイックフォーマット後など）", "Also search for remnant MFT records (for example, after a quick format)"));
                     text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"));

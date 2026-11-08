@@ -1,124 +1,136 @@
 {
   "status": "passed",
-  "application_version": "1.2.0-alpha.2",
-  "time_utc": "2026-11-08T11:09:51.915118+00:00",
+  "application_version": "1.2.0-alpha.3",
+  "time_utc": "2026-11-08T11:28:44.738809+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "scope": "Owned Linux Xvfb/Openbox actual mouse/keyboard: choose saved FAT32 image and ZIP destination, explicitly check contiguous estimation, new scan, Ctrl+F PDF search, selection retained after clearing filter, select 36, switch colored icons/details, restore, export HTML/CSV through actual GUI, switch Japanese to English, return to settings and resize to 720x520. No mock screenshot or simulated recovery.",
   "settings_to_scan_to_selected_recovery": true,
   "source_unchanged": true,
   "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
-  "gui_binary_sha256": "9e36a011872d7ca6ebecb025a9234b2ae0321e99b5f973c87ab320ca02634d92",
-  "cli_binary_sha256": "c5e57659fc9fa88fc1e2d67be0209b558a5b2c1d86d7da78c60580b6e52a06b7",
+  "gui_binary_sha256": "3bcf72c4a436eea6acf1bf7c96c65a6bdf3284f77bfc2dd7c5a0466ddf62cd5e",
+  "cli_binary_sha256": "a608f7e3f2834f24c716ad98852f9b23ef334564b64b410bb022ee90e1f120cb",
   "files_byte_exact": 36,
   "estimated_files_byte_exact": 22,
   "bytes_exact": 152325,
-  "archive_sha256": "0ef10fdce103a00fbc831545955eb516cc415beb359605cf427358f9b961a042",
+  "archive_sha256": "22954ab7ad244db4e94fd0740ea87ad5b0a01b63131e71da4ec0d606b54453c3",
   "screenshots": [
     {
-      "file": "images/v1.2-alpha.2/cp932-results-ja.png",
-      "sha256": "7fd06905fafca85d2e07ebe87c665cd471c40f127e89c8005de239afab342658",
+      "file": "images/v1.2-alpha.3/cp932-results-ja.png",
+      "sha256": "f96dfcf0114f746e25d747f2b9b087a9ce323c4e61dce40a95c1662b23affd0e",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/cp932-settings-ja.png",
-      "sha256": "124de0a4ad977dd21af40394e2be187fcd4c7c2925fb29ac58b013e0ed27209a",
+      "file": "images/v1.2-alpha.3/cp932-settings-ja.png",
+      "sha256": "4a26fcb74f2c1ee4a5f2e198ceccaba35f67333325c5b48478331f403775de02",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/html-report.png",
-      "sha256": "30f8765bbc135f92ee4406c0b9a289317cac4c387b70bf339796fc82126979f5",
+      "file": "images/v1.2-alpha.3/exfat-results-ja.png",
+      "sha256": "74e5739df641c8868a611466a0d9912497364a6a99c80c9fa200e9e6c8079a33",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.3/exfat-settings-ja.png",
+      "sha256": "de43637dc2060655701d445dd358b0f0780458f914969afde0219d6c4f6c48dd",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.3/html-report.png",
+      "sha256": "e81e24a82d20d2aea1faebd1ee1e9baec4f81b854208d201ea886e9fd6dd8d41",
       "width": 1400,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/icons-ja.png",
-      "sha256": "4e49fcec4e644a6cfa543a4b24d02d2d4ef49c7b85611f46e844e6f798edca60",
+      "file": "images/v1.2-alpha.3/icons-ja.png",
+      "sha256": "045d06e4ffe314729ebc9c3de56b96c48c671a0399544090b7f11478524b9be9",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/imaging-map-ja.png",
-      "sha256": "0b4da9fa7209a02d50a31fadaef76a97aa7e7862efb0dde299c0b5ffad0b0105",
+      "file": "images/v1.2-alpha.3/imaging-map-ja.png",
+      "sha256": "efcefdc55fb9ac1100f8d4b6684f2be4fb71119c067388395bf4b755b260a146",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/imaging-resumed-ja.png",
-      "sha256": "099c580f4d647af9e880c3d4482a59dfec800e2f3dc2a54a95034b3e8bfd6048",
+      "file": "images/v1.2-alpha.3/imaging-resumed-ja.png",
+      "sha256": "b2742894548304de1fecaef1cf5fad5965e1b0cc686dc7e7783fa8f3d2b88884",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/imaging-settings-ja.png",
-      "sha256": "15db42bd4e8a6553ef9ffee1a53605c6166275baa1520767dac026ce945da009",
+      "file": "images/v1.2-alpha.3/imaging-settings-ja.png",
+      "sha256": "d6845b59eda6c3af4f168649625bbb2c4ca153aca19089d3ff49ee3319da9a0a",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/imaging-timeout-ja.png",
-      "sha256": "7cbfd8bb3adcba4e61f5413c688c144c97af2264ceb16fcc8f235a7c026bb614",
+      "file": "images/v1.2-alpha.3/imaging-timeout-ja.png",
+      "sha256": "582c270cceac34a93a7f853bb4db6262cbdd66244799821cb7e8d5bfb21a544f",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/imaging-wait-ja.png",
-      "sha256": "4de4207e37383d90f4b98bf11034702e3c4a3fc9cac976659fd81d4b3445047c",
+      "file": "images/v1.2-alpha.3/imaging-wait-ja.png",
+      "sha256": "2d8100219192f2419b3863a10ecb2870b07e066d2840d08cf610317b9743dda4",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/narrow-en.png",
-      "sha256": "bce560b7dc58eb1143b01a575fde699627c1f00af7a1753f7d7593af73e213d6",
+      "file": "images/v1.2-alpha.3/narrow-en.png",
+      "sha256": "20ef2aa4f33adbfbe20e98b7fe4916bd4800634974d7298ba249353271ec53ff",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/recovered-en.png",
-      "sha256": "2603ab970cc404c6017072c32544649fa51e3073c8e3e2f4f630d8287a4d23c6",
+      "file": "images/v1.2-alpha.3/recovered-en.png",
+      "sha256": "b9b4f2419ef77b85bf02269ac0cbff01f50a2ec70bf55e5506cec40776ddf03b",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/recovered-ja.png",
-      "sha256": "02faea2cd921340ff67cf7296bd762fba754b93080e814f740d17c7c7948226d",
+      "file": "images/v1.2-alpha.3/recovered-ja.png",
+      "sha256": "14697647200e102422abadec5d540e801e0ccbb271f77a38ce40b7f1c0b902b3",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/report-actions-ja.png",
-      "sha256": "52780d1692d383597e0454cc6e5c684eb368bd2f57fd168504a0f6263077da6f",
+      "file": "images/v1.2-alpha.3/report-actions-ja.png",
+      "sha256": "5e3b354640bbd025a32fb45554b9356972d381a86023dba3adce749daefcac31",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/report-dialog-ja.png",
-      "sha256": "a984492aafca4483b1f4ba1573072e42963c2dd53ea0dcd3f4de8ffd335da019",
+      "file": "images/v1.2-alpha.3/report-dialog-ja.png",
+      "sha256": "7605937e62b59ce81dd8d8d1343e1914b62d9aaa4f651cc03ab910f0c26b35d3",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/report-saved-ja.png",
-      "sha256": "787dad56857e0d376fa5bc120fe977392a20b41fbc120ed47ffc34296c028ecd",
+      "file": "images/v1.2-alpha.3/report-saved-ja.png",
+      "sha256": "6c22bb4a52773064124f41e0e78b80d8cd030fa6b87eee49943426625b4fae1f",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/search-ja.png",
-      "sha256": "13ca0dac0f054695da62c827cc207f6362384fe7edc32b69c990657d0ba4434b",
+      "file": "images/v1.2-alpha.3/search-ja.png",
+      "sha256": "4c7832504f135195530e97334b6a2ca4e870c38e56fb711474dd10c95250c493",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/selection-retained-ja.png",
-      "sha256": "cf9a1e998c9ef0ffd6f83c0480af783c349e667e5927dba0e8d3454cb5d1c72d",
+      "file": "images/v1.2-alpha.3/selection-retained-ja.png",
+      "sha256": "575d82f10ef80a3282d1ea9fca087e6243d796f4187f91d2abdb32cc7c866337",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.2-alpha.2/settings-ja.png",
-      "sha256": "e1e0855500bb328ceeffd70411b80c3fa1dab3c22668574e6c0100881f9fa763",
+      "file": "images/v1.2-alpha.3/settings-ja.png",
+      "sha256": "fee3959a5826655579de93d1ab38f035ac31fcaac3fbf59313f737428e8fcb81",
       "width": 1440,
       "height": 1000
     }
@@ -390,8 +402,8 @@
   "native_windows_gui": "Required separately in tag CI: UIA, keyboard and actual Japanese IME",
   "historical_gui_records": "alpha.1 responsive/narrow and NTFS GUI flow remains recorded at its original tag, not recounted here.",
   "readable_reports": {
-    "html_sha256": "67d16b1afcf904da13a4cd901997145bd492d2e909661e6389a1eeb7c6964545",
-    "csv_sha256": "cd4382931acc7b95dc0e159bde914e0a84a0049bc2ec23b2df9e0b6f1736c6af",
+    "html_sha256": "7c4abd9891514e30ee4c93fc0857a5d622fafebafb3ffdf0a9730daad3f4068e",
+    "csv_sha256": "0be4821092d9b50a9e1250e3a75d9ae212a43d9491a9e0dcb320a9c4aa2b1e1e",
     "files_exactly_match_json": 36,
     "estimated_labelled": 22,
     "browser": {
@@ -404,7 +416,7 @@
   "imaging": {
     "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
     "image_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
-    "read_map_sha256": "c0d277b2db5157e786ed7f9cef9d6c235436cead4a40c9a6d0abdf7f848d809c",
+    "read_map_sha256": "45330a3f2bee315cc4d77ad156acaba4d2d7c816d8ee9af0c351bd4d74bc5efd",
     "acquired_bytes": 67108864,
     "strategy": "adaptive",
     "timeout_copied_bytes": 0,
@@ -421,73 +433,245 @@
     "bytes_exact": 224,
     "source_unchanged": true,
     "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
-    "archive_sha256": "fea6da789c5c73eae9b6edd6a0882113b79c530f189aa97543be453293ee6f73",
+    "archive_sha256": "4046a5e811838d64ae59fe34b6d1720dd329f21f5e5d6b6df939069fc4d16b5c",
     "files": [
       {
         "candidate_id": "fat16-34304",
         "archive_entry": "_{FA967B}語.TXT",
-        "sha256": "aede0888240b13a56cda0b6dbbf6ca5a61f165bea975db8092071507c28038d1",
         "bytes": 28,
+        "sha256": "aede0888240b13a56cda0b6dbbf6ca5a61f165bea975db8092071507c28038d1",
         "original_path": "?{FA967B}語.TXT",
         "raw_short_name_hex": "E5FA967B8CEA2020545854"
       },
       {
         "candidate_id": "fat16-34336",
         "archive_entry": "_{B6}ﾀｶﾅ.TXT",
-        "sha256": "5159e05c82adcf05b25abe964d0c1fd813e2a87b8125493842a8ced5057e436b",
         "bytes": 28,
+        "sha256": "5159e05c82adcf05b25abe964d0c1fd813e2a87b8125493842a8ced5057e436b",
         "original_path": "?{B6}ﾀｶﾅ.TXT",
         "raw_short_name_hex": "E5B6C0B6C5202020545854"
       },
       {
         "candidate_id": "fat16-34368",
         "archive_entry": "_{817F}.TXT",
-        "sha256": "acb21c7cf221d26e9f1789e93bb11608e5e74f51bb88d89c6b8505e7e7a06558",
         "bytes": 28,
+        "sha256": "acb21c7cf221d26e9f1789e93bb11608e5e74f51bb88d89c6b8505e7e7a06558",
         "original_path": "?{817F}.TXT",
         "raw_short_name_hex": "E5817F2020202020545854"
       },
       {
         "candidate_id": "fat16-34400",
         "archive_entry": "_ower.txt",
-        "sha256": "65bdbec6dc23eca200e6fb6b8d95e786ae7afd6834bba94c5d80d057d465717c",
         "bytes": 28,
+        "sha256": "65bdbec6dc23eca200e6fb6b8d95e786ae7afd6834bba94c5d80d057d465717c",
         "original_path": "?ower.txt",
         "raw_short_name_hex": "E54F574552202020545854"
       },
       {
         "candidate_id": "fat16-34464",
         "archive_entry": "長い日本語名.txt",
-        "sha256": "16d136d6522d01f99481fddf6263d612846bb697db669304bd6d3262af0730a5",
         "bytes": 28,
+        "sha256": "16d136d6522d01f99481fddf6263d612846bb697db669304bd6d3262af0730a5",
         "original_path": "長い日本語名.txt",
         "raw_short_name_hex": null
       },
       {
         "candidate_id": "fat16-53248",
         "archive_entry": "_HILD.TXT",
-        "sha256": "982385bb9aa349f45884e91e456c41e4ac825defc16cb15cdba5c56a9e8f1bf1",
         "bytes": 28,
+        "sha256": "982385bb9aa349f45884e91e456c41e4ac825defc16cb15cdba5c56a9e8f1bf1",
         "original_path": "日本/?HILD.TXT",
         "raw_short_name_hex": "E548494C44202020545854"
       },
       {
         "candidate_id": "fat16-75264",
         "archive_entry": "_HILD (復元 1).TXT",
-        "sha256": "15204953270bad0ad14f2af236ae73cf6e863673c82f386f242f1127667d36a2",
         "bytes": 28,
+        "sha256": "15204953270bad0ad14f2af236ae73cf6e863673c82f386f242f1127667d36a2",
         "original_path": "藹/?HILD.TXT",
         "raw_short_name_hex": "E548494C44202020545854"
       },
       {
         "candidate_id": "fat16-75776",
         "archive_entry": "_HILD (復元 2).TXT",
-        "sha256": "e53f0b3183c6a1b34638703cff7f7d0d2ad3a58a1cd05ac22587ed85db04fc36",
         "bytes": 28,
+        "sha256": "e53f0b3183c6a1b34638703cff7f7d0d2ad3a58a1cd05ac22587ed85db04fc36",
         "original_path": "ⅰ≒/?HILD.TXT",
         "raw_short_name_hex": "E548494C44202020545854"
       }
     ],
-    "scope": "Actual Linux GUI: explicitly select CP932, scan an owned synthetic FAT16 fixture, select eight files and save ZIP. Original payloads, metadata paths and seven raw 11-byte names verified against fixture truth; the valid UTF-16 LFN is unchanged."
+    "scope": "Actual Linux GUI: explicit CP932 setting, new scan, eight files selected and recovered to ZIP, all bytes and original name provenance verified."
+  },
+  "exfat_damage": {
+    "status": "passed",
+    "files_byte_exact": 8,
+    "unverified_candidates": 11,
+    "unsupported_candidates": 3,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "549d7e64edea419b14f217d1d7739b2cc59516a37aef2292e606f0999617c063",
+    "files": [
+      {
+        "candidate_id": "exfat-65600",
+        "archive_entry": "連続配置.bin",
+        "bytes": 5000,
+        "sha256": "8f480fda8ce1df2291d038945ccf2007c9e8fd8b69cc7a6ff7566d30824bdb1c",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [],
+          "displayed_name": "連続配置.bin",
+          "original_name": "連続配置.bin",
+          "original_path": "連続配置.bin",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-65696",
+        "archive_entry": "fragmented.bin",
+        "bytes": 9000,
+        "sha256": "32e9e2352c513fd231f0426f8221ec43e30b491a5836fa65de2103a116479768",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [],
+          "displayed_name": "fragmented.bin",
+          "original_name": "fragmented.bin",
+          "original_path": "fragmented.bin",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-66080",
+        "archive_entry": "empty.txt",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [],
+          "displayed_name": "empty.txt",
+          "original_name": "empty.txt",
+          "original_path": "empty.txt",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-66176",
+        "archive_entry": "single-cleared.bin",
+        "bytes": 25,
+        "sha256": "81acf43899ed877252210799918ff149ef1b6b1221f04f69544c61cbf27340ea",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [],
+          "displayed_name": "single-cleared.bin",
+          "original_name": "single-cleared.bin",
+          "original_path": "single-cleared.bin",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-66496",
+        "archive_entry": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin",
+        "bytes": 16,
+        "sha256": "03eb6308c7dbc7a942d8511159f5a41299228e193ff09191eeba194d02173420",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [
+            {
+              "from": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin",
+              "reason": "portable_name",
+              "to": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin"
+            }
+          ],
+          "displayed_name": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin",
+          "original_name": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin",
+          "original_path": "長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長長.bin",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-69600",
+        "archive_entry": "cross-cluster.txt",
+        "bytes": 41,
+        "sha256": "78cab4d3f8f05c9e56658c11c26d6698527aa7971c69d1d753b226846e59c544",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [],
+          "displayed_name": "cross-cluster.txt",
+          "original_name": "cross-cluster.txt",
+          "original_path": "cross-cluster.txt",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-876544",
+        "archive_entry": "inner.txt",
+        "bytes": 28,
+        "sha256": "2fb4af6648e779daa0deca70a91c95cae4beaabf99899fb47d0556d71bff068e",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [
+            {
+              "from": "DeletedFolder/inner.txt",
+              "reason": "unverified_hierarchy",
+              "to": "inner.txt"
+            }
+          ],
+          "displayed_name": "inner.txt",
+          "original_name": "inner.txt",
+          "original_path": "DeletedFolder/inner.txt",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      },
+      {
+        "candidate_id": "exfat-958464",
+        "archive_entry": "inner (復元 1).txt",
+        "bytes": 25,
+        "sha256": "1f53bac003a00f93748400c21c567b0879ef03b4d3f5003b99dfe7afefa0b2b8",
+        "naming": {
+          "basis": "metadata_unverified_path",
+          "changes": [
+            {
+              "from": "LiveFolder/inner.txt",
+              "reason": "unverified_hierarchy",
+              "to": "inner.txt"
+            },
+            {
+              "from": "inner.txt",
+              "reason": "archive_collision",
+              "to": "inner (復元 1).txt"
+            }
+          ],
+          "displayed_name": "inner.txt",
+          "original_name": "inner.txt",
+          "original_path": "LiveFolder/inner.txt",
+          "stream_name": null
+        },
+        "warnings": [
+          "EXFAT_UPCASE_UNVERIFIED: FAT: exFAT upcase checksum/length; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+        ]
+      }
+    ],
+    "scope": "Actual Linux GUI: explicitly allow damaged exFAT upcase content, new indexed scan, select the eight supported files out of eleven and recover to ZIP. Every candidate retains missing name-hash evidence; unsupported extents remain excluded. All payloads match fixture truth."
   }
 }

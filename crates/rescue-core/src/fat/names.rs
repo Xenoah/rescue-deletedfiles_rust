@@ -320,14 +320,21 @@ pub(super) fn exfat_entry(entries: &[[u8; 32]], upcase: &[u16]) -> Result<ExfatE
         return Err(invalid("exFAT embedded name terminator"));
     }
     let name = String::from_utf16(&codes).map_err(|_| invalid("exFAT name UTF-16"))?;
-    let mut name_hash = 0u16;
-    for code in &codes {
-        for byte in upcase[usize::from(*code)].to_le_bytes() {
-            name_hash = name_hash.rotate_right(1).wrapping_add(u16::from(byte));
+    // Empty only after the explicitly opted-in, validated system stream failed
+    // its table checksum/decoding. Do not substitute Unicode casing rules.
+    if !upcase.is_empty() {
+        let mut name_hash = 0u16;
+        for code in &codes {
+            let upper = upcase
+                .get(usize::from(*code))
+                .ok_or_else(|| invalid("incomplete exFAT upcase table"))?;
+            for byte in upper.to_le_bytes() {
+                name_hash = name_hash.rotate_right(1).wrapping_add(u16::from(byte));
+            }
         }
-    }
-    if name_hash != u16_at(stream, 4)? {
-        return Err(invalid("exFAT name hash mismatch"));
+        if name_hash != u16_at(stream, 4)? {
+            return Err(invalid("exFAT name hash mismatch"));
+        }
     }
     let size = u64_at(stream, 24)?;
     let initialized = u64_at(stream, 8)?;

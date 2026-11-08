@@ -183,6 +183,7 @@ struct Volume {
     fat_cache: BTreeMap<u64, Vec<u8>>,
     bitmap: Option<Bitmap>,
     upcase: Vec<u16>,
+    upcase_warning: Option<String>,
     system_clusters: Vec<u32>,
     visits: u64,
     /// Use only this FAT copy (set while resolving a mirrored-copy disagreement).
@@ -203,6 +204,7 @@ impl AllocationReader {
             fat_cache: BTreeMap::new(),
             bitmap: None,
             upcase: Vec::new(),
+            upcase_warning: None,
             system_clusters: Vec::new(),
             visits: 0,
             copy: None,
@@ -210,7 +212,7 @@ impl AllocationReader {
             estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
         };
         if volume.geometry.filesystem == FileSystem::Exfat {
-            volume.prepare_exfat(image, 1_048_576, cancel)?;
+            volume.prepare_exfat(image, 1_048_576, false, cancel)?;
         } else if volume.geometry.fixed_root.is_none()
             && volume.next(image, volume.geometry.root)? == 0
         {
@@ -612,7 +614,13 @@ impl Volume {
             & (1 << (bit % 8))
             != 0)
     }
-    fn prepare_exfat(&mut self, image: &mut Image, limit: u64, cancel: &AtomicBool) -> Result<()> {
+    fn prepare_exfat(
+        &mut self,
+        image: &mut Image,
+        limit: u64,
+        allow_damaged_upcase: bool,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
         let root = self.chain(image, self.geometry.root, None, false, cancel)?;
         let size = root.len() as u64 * self.geometry.cluster;
         if size > MAX_DIRECTORY_BYTES {
@@ -680,7 +688,15 @@ impl Volume {
         let bytes =
             self.data(&table_chain, table_size, table_size)?
                 .read(image, 0, table_size as usize)?;
-        self.upcase = names::upcase_table(&bytes, u32_at(&upcase, 4)?)?;
+        match names::upcase_table(&bytes, u32_at(&upcase, 4)?) {
+            Ok(table) => self.upcase = table,
+            Err(Error::Invalid(reason)) if allow_damaged_upcase => {
+                self.upcase_warning = Some(format!(
+                    "EXFAT_UPCASE_UNVERIFIED: {reason}; explicit damaged-upcase option. Entry-set checksum and allocation checks retained; name hash cannot be verified. Original path spelling is unverified."
+                ));
+            }
+            Err(error) => return Err(error),
+        }
         let mut metadata = BTreeSet::new();
         for cluster in root.iter().chain(&bitmap_chain).chain(&table_chain) {
             if !metadata.insert(*cluster) || !self.allocated(image, *cluster)? {
@@ -907,6 +923,7 @@ pub(crate) fn scan_selected(
         fat_cache: BTreeMap::new(),
         bitmap: None,
         upcase: Vec::new(),
+        upcase_warning: None,
         system_clusters: Vec::new(),
         visits: 0,
         copy: None,
@@ -914,7 +931,12 @@ pub(crate) fn scan_selected(
         estimate_validation_remaining: ESTIMATE_VALIDATION_BUDGET,
     };
     if scan.filesystem == FileSystem::Exfat {
-        match volume.prepare_exfat(image, options.max_records, cancel) {
+        match volume.prepare_exfat(
+            image,
+            options.max_records,
+            options.exfat_allow_damaged_upcase,
+            cancel,
+        ) {
             Ok(()) => {}
             Err(Error::Cancelled) => {
                 scan.cancelled = true;
@@ -928,6 +950,7 @@ pub(crate) fn scan_selected(
             Err(error) => return Err(error),
         }
     }
+    scan.warnings.extend(volume.upcase_warning.iter().cloned());
     let mut entries = Vec::new();
     let mut selected_bytes = 0u64;
     let mut directory_clusters: BTreeMap<u32, usize> = BTreeMap::new();
@@ -1146,8 +1169,8 @@ pub(crate) fn scan_selected(
                     Ok(parsed) => {
                         let name = names::Name {
                             text: parsed.name,
-                            verified: true,
-                            warnings: Vec::new(),
+                            verified: volume.upcase_warning.is_none(),
+                            warnings: volume.upcase_warning.iter().cloned().collect(),
                         };
                         let raw = set.iter().flatten().copied().collect::<Vec<_>>();
                         let mut entry = Entry {
@@ -1597,6 +1620,7 @@ mod tests {
                 fragments: false,
                 estimate_fat_contiguous: false,
                 fat_short_name_encoding: crate::FatShortNameEncoding::Ascii,
+                exfat_allow_damaged_upcase: false,
                 max_records: 1,
                 max_candidates: 100,
             },
@@ -1604,6 +1628,7 @@ mod tests {
                 fragments: false,
                 estimate_fat_contiguous: false,
                 fat_short_name_encoding: crate::FatShortNameEncoding::Ascii,
+                exfat_allow_damaged_upcase: false,
                 max_records: 100,
                 max_candidates: 1,
             },

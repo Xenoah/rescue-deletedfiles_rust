@@ -33,7 +33,7 @@ def copy_docs(target,notices):
     # Offline installation/usage help only. Test corpora, research reports and
     # historical screenshots stay in the repository and CI artifacts.
     docs=target/'docs';docs.mkdir()
-    for name in ['INSTALL.md','ALPHA.md','READ_ACCESS.md','INDEX.md','LANGUAGE.md','FAT-v1.1.md','REPORTS.md','IMAGING.md','CP932.md','SAME-LOCATION.md']:
+    for name in ['INSTALL.md','ALPHA.md','READ_ACCESS.md','INDEX.md','LANGUAGE.md','FAT-v1.1.md','REPORTS.md','IMAGING.md','CP932.md','EXFAT-DAMAGE.md','SAME-LOCATION.md']:
         shutil.copy2(ROOT/'docs'/name,docs/name)
     (docs/'ONLINE.md').write_text(
         '# Documentation and verification\n\n'
