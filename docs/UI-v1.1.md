@@ -33,3 +33,11 @@ Linuxの実GUIをXvfb/Openbox上で起動し、実際のマウスとキー入力
 ![コロンを含む通常名をTXTと表示](images/v1.1/issue3-type-ja.png)
 
 ![選択した1件を復元](images/v1.1/issue3-recovered-ja.png)
+
+## Windowsの日本語IME操作後の実画面
+
+同じ`v1.1.2`タグのWindows診断環境で撮影しました。非昇格・中整合性のGUIにMicrosoft日本語IMEのローマ字キーを入力し、変換・取消・「原文」の確定を実行。選択した日本語名2ファイルのZIP復元と元データの全バイト一致を確認しています。
+
+![Windowsで日本語IME入力後に2ファイルを復元](images/v1.1/windows-ime-recovered.png)
+
+[診断の出典・画面ハッシュ](verification/v1.1.2-windows-diagnostic.json)と[実行結果](verification/v1.1.2-windows-ime.json)を保存しています。初回CIのIME入力状態に依存する失敗を切り分けるための別実行であり、公開条件のネイティブCI・公開パッケージ検証とは区別しています。

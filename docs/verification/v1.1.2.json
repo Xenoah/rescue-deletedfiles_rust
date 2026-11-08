@@ -1,0 +1,104 @@
+{
+  "release_tag": "v1.1.2",
+  "release_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.2",
+  "observed_at_utc": "2026-11-08T03:38:23.565036+00:00",
+  "tag_commit": "ef3f15fd6a68cdcea7b2e8124c43ef2aac16bb92",
+  "latest_stable": true,
+  "native": {
+    "run_id": 42438017936,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42438017936",
+    "conclusion": "success",
+    "head_sha": "ef3f15fd6a68cdcea7b2e8124c43ef2aac16bb92",
+    "run_attempt": 2
+  },
+  "public": {
+    "run_id": 42442795449,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449",
+    "conclusion": "success",
+    "head_sha": "ef3f15fd6a68cdcea7b2e8124c43ef2aac16bb92",
+    "run_attempt": 1,
+    "jobs": [
+      {
+        "name": "test (macos-26-intel, macos, x64)",
+        "conclusion": "success",
+        "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449/job/128615396812"
+      },
+      {
+        "name": "test (windows-2022, windows, x64)",
+        "conclusion": "success",
+        "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449/job/128615396884"
+      },
+      {
+        "name": "test (macos-26, macos, arm64)",
+        "conclusion": "success",
+        "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449/job/128615396990"
+      },
+      {
+        "name": "test (ubuntu-22.04, linux, x64)",
+        "conclusion": "success",
+        "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449/job/128615397002"
+      },
+      {
+        "name": "attach-evidence",
+        "conclusion": "success",
+        "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42442795449/job/128617519100"
+      }
+    ],
+    "evidence_artifact": {
+      "id": 13602114351,
+      "digest": "sha256:3afbfbde450dd18ccce61ce29cc5d666e836689a4811d65942cf5c097d607112",
+      "bytes": 242153,
+      "summary": "v1.1.2-public.md",
+      "full_result": "v1.1.2-public-full.json",
+      "full_result_sha256": "3eab200e88995927cc0a6dd7b7deaf3668b2a8feebe9d9881abd214adc3fac51"
+    }
+  },
+  "assets": [
+    {
+      "name": "rescue-1.1.2-linux-x64-portable.tar.gz",
+      "bytes": 12722725,
+      "digest": "sha256:077abc9aad5c45a747674044c4efe63c75e9c2b738d990ace5e39643291038c4"
+    },
+    {
+      "name": "rescue-1.1.2-linux-x64.deb",
+      "bytes": 9602714,
+      "digest": "sha256:cc95f0aa9a0b409245a434c2609d923ff4d5346f83614f07365347dbc04d7b90"
+    },
+    {
+      "name": "rescue-1.1.2-macos-arm64-portable.zip",
+      "bytes": 8874201,
+      "digest": "sha256:81b19aaf5cbc96d0df4b76669951594c47ed211f69a8572df8cbab546343b1b4"
+    },
+    {
+      "name": "rescue-1.1.2-macos-arm64.pkg",
+      "bytes": 8868361,
+      "digest": "sha256:a53144b20907be1f3eac097c42fbbe6e928c0e245a8b61098ea179d083c10546"
+    },
+    {
+      "name": "rescue-1.1.2-macos-x64-portable.zip",
+      "bytes": 9597936,
+      "digest": "sha256:3d95442253f7318b531e20eeb45eb79dcbff9d61e51eaab4ba989ccd89cc6cef"
+    },
+    {
+      "name": "rescue-1.1.2-macos-x64.pkg",
+      "bytes": 9598027,
+      "digest": "sha256:1247f3daaa854061885bfeb07c3f65b5726ee81134dcfd89d8a7755bdca08f76"
+    },
+    {
+      "name": "rescue-1.1.2-windows-x64-portable.zip",
+      "bytes": 10839989,
+      "digest": "sha256:24351a38a31d21d6ecf5505f1ba45604face550fd69b1a530363a08511f73108"
+    },
+    {
+      "name": "rescue-1.1.2-windows-x64-setup.exe",
+      "bytes": 9498233,
+      "digest": "sha256:42383ab2e853ac419c784751e42ee14ba551159ce4ca4845deebb235eae5f82a"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 797,
+      "digest": "sha256:a8739f7f271b373be3804f925b3a596a29f83af9e892212dbf0b03328791dc87"
+    }
+  ],
+  "scope": "GitHub API observations after all native and exact public package workflows passed. Archive and every internal checksum verified. Full public aggregate retained unchanged; release assets remain exactly nine download/install files."
+}

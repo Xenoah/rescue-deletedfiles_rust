@@ -1,0 +1,26 @@
+{
+  "release_tag": "v1.1.2",
+  "tag_commit": "ef3f15fd6a68cdcea7b2e8124c43ef2aac16bb92",
+  "run_id": 42439920685,
+  "run_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42439920685",
+  "status": "passed",
+  "scope": "Separate unchanged-tag Windows diagnostic after first native-CI IME failure. Not a substitute for the native release gate or public-package acceptance. UIA, keyboard and native IME all passed on this diagnostic host.",
+  "artifact": {
+    "id": 13601507420,
+    "sha256": "8a56153ba03887b913e2081b007126e60c573de741124c34b29da2af7bbee89b",
+    "bytes": 237719
+  },
+  "full_ime_result": "v1.1.2-windows-ime.json",
+  "full_ime_result_sha256": "483d723578a1db88c62787a9683be1d460adeafa437d788047e11955f06aaa44",
+  "gui_binary_sha256": "b56fe049e7cb3a94d53beb7ae2b86baeea4475f1899824f7b6c02da9839228d1",
+  "files_byte_exact": 2,
+  "source_unchanged": true,
+  "screenshot": "../images/v1.1/windows-ime-recovered.png",
+  "screenshot_sha256": "2a16886d4b211d0b6d9a6407db8a6d2bd6c520b3a286e4c4f4f0f73871ef4a13",
+  "first_attempt": {
+    "native_run": 42438017936,
+    "job_id": 128600978076,
+    "step": "Non-elevated Windows GUI with native Japanese IME",
+    "observed": "Second Escape moved focus to the root window; subsequent committed value was empty. Product input-control and IME-driver sources matched the successful alpha.2. Full Windows gate was rerun unchanged; see final release record for its conclusion."
+  }
+}

@@ -4,7 +4,7 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 **v1.1.2**ではUIを整理し、FAT12/16、明示的なFAT推定復元、HTML/CSVレポートを追加しました。公開前に確認した3件の不具合も修正しています。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.2) · [変更内容](docs/RELEASE-v1.1.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_1_ACCEPTANCE.md)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.2) · [変更内容](docs/RELEASE-v1.1.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_1_ACCEPTANCE.md) · [公開実物の検証結果](docs/verification/v1.1.2-public.md)
 
 ![v1.1の設定画面](docs/images/v1.1/settings-ja.png)
 

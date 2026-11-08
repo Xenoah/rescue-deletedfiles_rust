@@ -36,7 +36,7 @@ Windows x64はsetup.exe、Linux x64はDEB、macOSはCPUに合うPKGを選んで�
 
 ## 検証
 
-Rust 74テスト、31統合群、Clippy。Windows・Linux・macOS Intel/ARMの全ネイティブ検証を公開条件とします。Windowsは通常権限でUIA・実キー・Microsoft日本語IMEを検証。公開後には実際の配布物を再取得して再検証し、結果リンクを追記します。
+Rust 74テスト、31統合群、Clippyに加え、Windows・Linux・macOS Intel/ARMの全ネイティブ検証が成功しました。公開配布物の4環境再検証も成功し、公開Windows GUIでは通常権限のUIA・実キー・Microsoft日本語IMEを検証しています。[公開実物の結果](verification/v1.1.2-public.md)を永続保存しました。
 
 最終GUIで新規スキャン・検索・選択保持・ZIP復元・HTML/CSV保存・日英切替・720×520表示を実施。36件・152,325バイトが元SHA-256と一致し、推定22件の表示と全入力の不変を確認しました。同じ固定FAT32比較イメージは標準14/36件、推定有効36/36件でした。
 
