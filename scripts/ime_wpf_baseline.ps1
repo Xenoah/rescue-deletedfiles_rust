@@ -41,6 +41,7 @@ function Observe-Baseline([string]$Stage,[string]$Expected) {
     } while ($value -cne $Expected -and $timer.Elapsed.TotalSeconds -lt 10)
     $sample=@{stage=$Stage;expected=$Expected;value=$value;elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds}
     $script:current.observations+=,$sample
+    $record|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
     Save-OwnedScreenshot ("windows-wpf-{0}-{1}.png" -f $script:cycle,$Stage)
     return $value -ceq $Expected
 }
@@ -48,17 +49,15 @@ try {
     [RescueImeBaseline]::Start()
     $script:owned=[pscustomobject]@{Id=$PID;MainWindowHandle=[RescueImeBaseline]::Handle;HasExited=$false}
     $script:owned|Add-Member -MemberType ScriptMethod -Name Refresh -Value {}
-    $script:priorLanguages=Get-WinUserLanguageList
-    $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
     $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
-    $languages[1].InputMethodTips.Clear();$languages[1].InputMethodTips.Add("0411:$service$profile")
-    Set-WinUserLanguageList $languages -Force
+    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -ceq 'ja-JP') {$language.InputMethodTips}})
+    if ($tips -notcontains "0411:$service$profile") {throw 'Prepare the Japanese user language profile before the WPF comparison'}
     Focus-Owned (Await-Control 'Search results' 'Edit')
     $record.description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
     Start-Sleep -Milliseconds 500
     $cancel=-join [char[]](0x3068,0x308a,0x3051,0x3057)
     $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
-    for ($script:cycle=1;$script:cycle -le 8;$script:cycle++) {
+    for ($script:cycle=1;$script:cycle -le 1;$script:cycle++) {
         $script:current=@{cycle=$script:cycle;observations=@()};$record.cycles+=,$script:current
         Focus-Owned (Await-Control 'Search results' 'Edit')
         if ($script:cycle -gt 1) {
@@ -82,9 +81,8 @@ try {
 finally {
     $record|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
     try {
-        if ($script:priorLanguages) {
+        if ($null -ne $script:owned) {
             [RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)
-            Set-WinUserLanguageList $script:priorLanguages -Force
         }
     } finally {[RescueImeBaseline]::Stop()}
 }

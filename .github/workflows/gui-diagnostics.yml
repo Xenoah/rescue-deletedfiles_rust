@@ -109,6 +109,7 @@ jobs:
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           $capability | Select-Object Name,State | ConvertTo-Json
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
       - name: Record native language and token environment
         shell: powershell
         continue-on-error: true
@@ -168,6 +169,10 @@ jobs:
           shutil.copy2(binary,root/binary.name)
           (root/'compiled-provenance.json').write_text(json.dumps({'commit':os.environ['GITHUB_SHA'],'run':os.environ['GITHUB_RUN_ID'],'sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'scope':'Compiled diagnostic executable only; not package or acceptance evidence.'}))
           PYTHON
+      - name: Restore the original Japanese IME test profile
+        if: always() && runner.os == 'Windows'
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
       - uses: actions/upload-artifact@v4
         if: ${{ always() && hashFiles('diagnostic-built/compiled-provenance.json') != '' }}
         with:

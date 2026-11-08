@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 env:
   PYTHONUTF8: '1'
   RESCUE_IME_TRACE: '1'
@@ -18,36 +19,45 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Parse the Windows fixture scripts before execution
+        shell: powershell
+        run: |
+          foreach ($name in 'gui_windows.ps1','windows_ime_profile.ps1','ime_wpf_baseline.ps1') {
+            $tokens=$null;$errors=$null
+            $null=[System.Management.Automation.Language.Parser]::ParseFile((Join-Path $pwd "scripts/$name"),[ref]$tokens,[ref]$errors)
+            if ($errors.Count) {throw ($errors|Out-String)}
+          }
       - name: Check the native UIA probe toolchain before the GUI build
         run: python -c "import sys,tempfile; from pathlib import Path; sys.path.insert(0,'scripts'); from windows_selection_probe import build; print(build(Path(tempfile.mkdtemp(prefix='rescue-uia-build-'))))"
       - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
-      - run: rustup toolchain install 1.99.1 --profile minimal
-      - uses: actions/cache/restore@v4
-        id: cargo-cache
+      - uses: actions/download-artifact@v4
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
-          restore-keys: windows-2022-x64-rust-1.99.1-
+          name: native-windows-x64
+          path: native-candidate
+          run-id: 42504672980
+          github-token: ${{ github.token }}
+      - name: Verify the previously tested immutable Windows GUI bytes
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import hashlib,json,zipfile
+          from pathlib import Path
+          source=Path('native-candidate'); portable=source/'rescue-1.2.2-windows-x64-portable.zip'
+          target=Path('target/x86_64-pc-windows-msvc/release'); target.mkdir(parents=True)
+          with zipfile.ZipFile(portable) as z:
+              data=z.read('rescue-gui.exe')
+          expected='3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed'
+          assert hashlib.sha256(data).hexdigest()==expected
+          assert json.loads((source/'gui-ime-windows-x64.json').read_text())['gui_binary_sha256']==expected
+          (target/'rescue-gui.exe').write_bytes(data)
+          Path('trace-binary-provenance.json').write_text(json.dumps({'native_run':42504672980,'native_commit':'3cb664fe8ef4ce2e460199c2fbc3ef7d07641153','gui_sha256':expected,'instrumented':False})+'\n')
+          PYTHON
       - name: Build the owned minidump reader with the installed Windows SDK
         shell: pwsh
         run: |
           $vs=& "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products '*' -property installationPath
           cmd /c "`"$vs\Common7\Tools\VsDevCmd.bat`" -arch=x64 && cl /nologo /EHsc /MT scripts\inspect_windows_dump.cpp /Fe:inspect-windows-dump.exe /link dbgeng.lib"
           if ($LASTEXITCODE -ne 0) {exit $LASTEXITCODE}
-      - name: Build uninstrumented release GUI
-        run: python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
-      - name: Preserve compiled dependencies for the final native release gate
-        if: steps.cargo-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ steps.cargo-cache.outputs.cache-primary-key }}
       - name: Reproduce the preceding native GUI sessions
         shell: bash
         run: |
@@ -60,6 +70,7 @@ jobs:
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
       - name: Trace eight IME cycles in each of four fresh GUI processes
         shell: bash
         run: |
@@ -69,6 +80,10 @@ jobs:
       - name: Compare a standard WPF TextBox after the product observation
         if: failure()
         run: python scripts/ci_command.py python scripts/ime_wpf_baseline.py
+      - name: Restore the original user language profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
       - name: Inspect owned GUI dumps after a failure
         if: always()
         shell: pwsh
@@ -84,6 +99,7 @@ jobs:
           name: windows-ime-event-trace
           path: |
             trace-*.json
+            ime-profile-state.json
             rescue-owned-uia-*/uia.json
             rescue-owned-uia-*/*.txt
             rescue-owned-uia-*/windows*.png

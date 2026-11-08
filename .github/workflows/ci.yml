@@ -138,6 +138,7 @@ jobs:
         run: |
           $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
       - name: Non-elevated Windows GUI with native Japanese IME
         if: runner.os == 'Windows'
         timeout-minutes: 5
@@ -215,6 +216,10 @@ jobs:
         run: python -c "import shutil;shutil.copyfile('fuzz-results.json','dist/fuzz-results-${{ matrix.platform }}-${{ matrix.arch }}.json')"
       - name: Collect acquisition evidence
         run: python -c "import shutil;shutil.copyfile('imaging-results.json','dist/imaging-results-${{ matrix.platform }}-${{ matrix.arch }}.json');shutil.copyfile('imaging-native-results.json','dist/imaging-native-${{ matrix.platform }}-${{ matrix.arch }}.json')"
+      - name: Restore the original Japanese IME test profile
+        if: always() && runner.os == 'Windows'
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
       - uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.platform }}-${{ matrix.arch }}
@@ -265,6 +270,7 @@ jobs:
         with:
           name: windows-gui-screenshots
           path: |
+            ime-profile-state.json
             gui-*-results.json
             rescue-owned-uia-*/windows*.png
           if-no-files-found: error

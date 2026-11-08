@@ -291,52 +291,16 @@ function Wait-ImeState([string]$Expected,[string]$Phase,[bool]$Committed=$false)
     } while ($timer.Elapsed.TotalSeconds -lt 10)
     throw "Native IME state did not complete: phase=$Phase, expected=$Expected, actual=$value, selected=$selected"
 }
-function Owned-ImeWindows {
-    # Read only windows belonging to the owned process. Native IME candidate
-    # windows are separate top-level windows and are absent from the app tree.
-    $condition=[System.Windows.Automation.PropertyCondition]::new([System.Windows.Automation.AutomationElement]::ProcessIdProperty,[int]$script:owned.Id)
-    $windows=[System.Windows.Automation.AutomationElement]::RootElement.FindAll([System.Windows.Automation.TreeScope]::Children,$condition)
-    $records=@()
-    foreach ($window in $windows) {
-        if ($window.Current.NativeWindowHandle -eq $script:owned.MainWindowHandle.ToInt64()) {continue}
-        $nodes=$window.FindAll([System.Windows.Automation.TreeScope]::Subtree,[System.Windows.Automation.Condition]::TrueCondition)
-        foreach ($node in $nodes) {
-            $c=$node.Current
-            $records+=@{name=$c.Name;class=$c.ClassName;type=$c.ControlType.ProgrammaticName;offscreen=$c.IsOffscreen;hwnd=$c.NativeWindowHandle}
-        }
-    }
-    return $records
-}
-function Wait-ImePrediction([string]$Expected,[string]$Phase) {
-    # Roman keys can finish the app's preedit before the native prediction
-    # popup has caught up. Escape during that gap dismisses an old popup; a
-    # pending new popup can then consume the second Escape instead of cancelling.
-    # Wait for the current native candidate, without sending another key.
-    $timer=[System.Diagnostics.Stopwatch]::StartNew()
-    do {
-        Start-Sleep -Milliseconds 100
-        $windows=@(Owned-ImeWindows)
-        $names=@($windows|Where-Object {!$_.offscreen}|ForEach-Object {$_.name})
-        $matched=@($names|Where-Object {$_.Contains($Expected)}).Count -gt 0
-        $state=@{phase=$Phase;expected=$Expected;names=$names;matched=$matched;elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000;reader='owned-native-uia-windows'}
-        $script:imeDiagnostic.last_prediction=$state
-        if ($matched) {return $state}
-    } while ($timer.Elapsed.TotalSeconds -lt 10)
-    $script:imeDiagnostic.prediction_windows=$windows
-    throw "Native IME prediction did not catch up: phase=$Phase, expected=$Expected"
-}
 function Set-ImeQuery {
-    # Register an already-installed Microsoft IME in this disposable user's
-    # language list. Restore the original list in finally, even on failure.
-    $script:priorLanguages=Get-WinUserLanguageList
+    # The workflow registers Japanese before launching any IME GUI and restores
+    # it after all sessions. Re-registering/removing a TSF profile around every
+    # process can leave subsequent native controls with a stale IME service.
     $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
     $installed="HKLM:\SOFTWARE\Microsoft\CTF\TIP\$service\LanguageProfile\0x00000411\$profile"
     if (!(Test-Path -LiteralPath $installed)) {throw 'The installed Japanese Microsoft IME TSF registration is missing'}
-    $languages=New-WinUserLanguageList 'en-US';$languages.Add('ja-JP')
-    $languages[1].InputMethodTips.Clear();$languages[1].InputMethodTips.Add("0411:$service$profile")
-    Set-WinUserLanguageList $languages -Force
-    $tips=@((Get-WinUserLanguageList|Where-Object LanguageTag -eq 'ja-JP').InputMethodTips)
+    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -ceq 'ja-JP') {$language.InputMethodTips}})
     $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
+    if ($tips -notcontains "0411:$service$profile") {throw 'Prepare the Japanese user language profile before starting the GUI test'}
     $node=Await-Control 'Search results' 'Edit';Focus-Owned $node
     [RescueOwnedWindow]::Key(0x11,$false,$false);[RescueOwnedWindow]::Tap(0x41);[RescueOwnedWindow]::Key(0x11,$true,$false);[RescueOwnedWindow]::Tap(8)
     $description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)
@@ -361,9 +325,6 @@ function Set-ImeQuery {
         } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
         $script:imeDiagnostic.cancel_start_value=$preedit
         if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
-        if ($env:RESCUE_IME_TRACE -eq '1') {$script:imeDiagnostic.preedit_windows=@(Owned-ImeWindows)}
-        $cancelCandidate=-join [char[]](0x53d6,0x308a,0x6d88,0x3057)
-        $cancelPrediction=Wait-ImePrediction $cancelCandidate 'cancel-prediction'
         if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-preedit-{0}.png" -f $cycle)}
         $cancelTrace=@()
         for ($press=1;$press -le 2;$press++) {
@@ -392,7 +353,6 @@ function Set-ImeQuery {
                 $cancelTrace[-1].responding=[RescueOwnedWindow]::SendMessageTimeout($script:owned.MainWindowHandle,0,[UIntPtr]::Zero,[IntPtr]::Zero,2,200,[ref]$reply) -ne [IntPtr]::Zero
                 $cancelTrace[-1].foreground=[RescueOwnedWindow]::GetForegroundWindow().ToInt64()
                 $cancelTrace[-1].owned_hwnd=$script:owned.MainWindowHandle.ToInt64()
-                $cancelTrace[-1].ime_windows=@(Owned-ImeWindows)
             }
             if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-escape-{0}-{1}.png" -f $cycle,$press)}
         }
@@ -407,7 +367,6 @@ function Set-ImeQuery {
         [RescueOwnedWindow]::RomanKeys('genbunn')
         $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
         $conversionPreedit=Wait-ImeState $kana 'conversion-preedit'
-        $conversionPrediction=Wait-ImePrediction $cfg.query 'conversion-prediction'
         [RescueOwnedWindow]::Tap(0x20)
         $convertedPreedit=Wait-ImeState $cfg.query 'converted-preedit'
         [RescueOwnedWindow]::Tap(13)
@@ -415,7 +374,7 @@ function Set-ImeQuery {
         # text selection proves Enter has actually completed the composition.
         $committed=Wait-ImeState $cfg.query 'committed' $true
         $value=$committed.value
-        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;cancel_prediction=$cancelPrediction;conversion_prediction=$conversionPrediction;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
         $script:steps.Add('native-ime: cancel prediction and composition / convert genbunn / commit '+$cfg.query)
         $cycles+=,$cycleProof
         Start-Sleep -Milliseconds 100
@@ -581,8 +540,7 @@ try {
     throw $failure
 } finally {
     try {
-        if ($script:priorLanguages) {
-            Set-WinUserLanguageList $script:priorLanguages -Force
+        if ($cfg.ime) {
             if ($null -ne $script:owned -and !$script:owned.HasExited) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
         }
     } finally {
