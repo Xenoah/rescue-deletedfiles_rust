@@ -88,3 +88,7 @@ v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格し�
 終了時に共有IMEサービスを巻き込む仮説も検証したが、[実行42506839758](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42506839758)は最初のIME起動で取消に失敗し、先行するGUI試験の終了時に残存プロセスはなかった。サービス保持処理は使用されておらず、この仮説は支持されないため変更を取り除いた。10秒の期限後さらに15秒観測しても未確定文字が残り、メインスレッドは通常のメッセージ待機中だった。標準WPF入力欄で同じ操作を行う比較診断を追加し、製品と環境の切り分けを続けている。全記録と実画面は[診断台帳](verification/v1.2.2-ime-diagnostics/manifest.json)に保持する。
 
 [候補コミット3cb664fの4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42504672980)は成功し、9点の配布候補を組み立てた。Windowsでは8回の取消・変換・確定と2ファイルのバイト一致を確認し、[元のJSONと9画面のハッシュ](verification/v1.2.2-native-ime-candidate.json)を照合した。別ホストの連続起動試験には上記失敗が残るため、この結果だけでv1.2.2を公開せず、追加診断を続ける。
+
+[実行42508798006](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42508798006)では、同じ通常権限の標準WPF TextBoxでも「げんぶん」から「原文」への変換に失敗した。取消は4,708ミリ秒で完了したが、Space後10秒もひらがなのままで、Enter後も「げんぶん」が確定した。Rescue/egui固有の描画だけでは説明できない。なお、この実行の製品試験は候補一覧を対象PIDのUIAで取得できず停止しており、候補待機の成功証跡ではない。その待機処理は取り除いた。[標準WPFの実画面と両方の記録](verification/v1.2.2-ime-diagnostics/native-wpf-conversion/wpf-uia.json)。
+
+次の検証では、日本語入力のユーザー設定をGUI起動前に一度だけ登録し、全セッション終了後に元へ戻す。各GUIの入力レイアウトの復元は維持する。毎回の登録・解除が共有IME状態へ与える影響を調べるための修正であり、結果が出るまでは解決済みとは扱わない。

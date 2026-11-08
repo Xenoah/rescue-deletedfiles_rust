@@ -175,6 +175,31 @@
           "sha256": "e08d8400740d4ab7309fe9149f5db20734439e26d189d04cccfe24b3efbc91a8"
         }
       ]
+    },
+    {
+      "case": "native-wpf-conversion",
+      "run": 42508798006,
+      "status": "failed",
+      "artifact_zip_sha256": "4a7228eeeff689b593349dc8adbe4602a3cc34bd72d7a648849e0a391138dbc7",
+      "finding": "Product candidate-readiness probe failed before sending Escape: prediction popup was visibly current but not exposed under the owned PID in UIA. That unusable gate was removed. The standard WPF TextBox then reproduced the same kana-only conversion: cancelled after4708ms, completedげんぶん, oneSpace and10s remainedげんぶん, Enter and10s committedげんぶん. Thus conversion failure is not specific to Rescue/egui. New hypothesis under test: changing the user language profile around every GUI session disrupts shared TSF/IME state. Prepare once before GUI launch and restore once after all sessions; per-GUI active layout still restored.",
+      "files": [
+        {
+          "file": "native-wpf-conversion/product-uia.json",
+          "sha256": "65a5de9bb5fdfa0386fdbe8a086f0b2a2dabcde27809b3472904617f2ac12c5f"
+        },
+        {
+          "file": "native-wpf-conversion/product-candidate-visible.png",
+          "sha256": "a4a21eed72795b97aa0131526f0fdde65ca448a831eca313fdbb89806d19e2f3"
+        },
+        {
+          "file": "native-wpf-conversion/wpf-uia.json",
+          "sha256": "4d5505542f320a9c624da6a1db4983c0e817b2583e2a24a55d8fa2a1af6bc735"
+        },
+        {
+          "file": "native-wpf-conversion/wpf-kana-committed.png",
+          "sha256": "e97e107ffb624c76d3b17670ee7571f83dbeeca3595037df01eea174dcf89fc6"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {
