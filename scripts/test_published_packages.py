@@ -14,6 +14,7 @@ import urllib.request
 import zipfile
 from e2e_release_fixes import main as release_fixes
 from e2e_acquisition import main as acquisition
+from e2e_cp932 import main as cp932
 from e2e_reports import main as reports
 from e2e_classic_fat import main as classic_fat
 from e2e_estimated_fat import main as estimated_fat
@@ -129,6 +130,7 @@ def main():
                        ('preview',preview),('allocation_scope',allocation_scope),('job_contract',job_contract),
                        ('naming',naming),('source_contract',source_contract),('export_raw',export_raw),('damaged_fat',damaged_fat)]:
         result[suite_name+'_verification']=recorded_suite(binary,suite,(a.output/(suite_name+'-results.json')).resolve())
+    result['cp932_verification']=cp932(binary,a.output/'cp932-results.json')
     result['acquisition_verification']=acquisition(binary,a.output/'acquisition-results.json')
     result['release_fixes_verification']=release_fixes(binary,a.output/'release-fixes-results.json')
     result['reports_verification']=reports(binary,a.output/'reports-results.json')

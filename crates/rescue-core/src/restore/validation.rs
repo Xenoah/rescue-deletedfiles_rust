@@ -10,7 +10,7 @@ pub(crate) fn layout(session: &Session) -> Result<()> {
     if session.filesystem != FileSystem::Disk {
         return disk_scan::validate_region(session);
     }
-    if ![5, 8, 9].contains(&session.schema_version)
+    if ![5, 8, 9, 10].contains(&session.schema_version)
         || session.region.is_some()
         || session.volumes.is_empty()
         || session.volumes.len() > 256
@@ -45,6 +45,7 @@ pub(crate) fn fat_selection(
     image: &mut Image,
     ids: &BTreeSet<String>,
     estimate_fat_contiguous: bool,
+    fat_short_name_encoding: crate::FatShortNameEncoding,
     cancel: &AtomicBool,
 ) -> Result<fat::Scan> {
     let scan = fat::scan_selected(
@@ -56,6 +57,7 @@ pub(crate) fn fat_selection(
             max_candidates: usize::MAX,
             fragments: false,
             estimate_fat_contiguous,
+            fat_short_name_encoding,
         },
         Some(ids),
         cancel,

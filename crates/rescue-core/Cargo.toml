@@ -23,6 +23,7 @@ same-file = "1"
 zip = { version = "2.4", default-features = false }
 tempfile.workspace = true
 rusqlite = { version = "0.41", features = ["bundled", "limits", "hooks"] }
+encoding_rs = "=0.8.35"
 
 [dev-dependencies]
 tempfile.workspace = true

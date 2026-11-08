@@ -284,6 +284,14 @@ pub struct ScannedVolume {
     pub fingerprint: Fingerprint,
 }
 impl Session {
+    pub(crate) fn supported_version(&self) -> bool {
+        let cp932 = self
+            .search
+            .as_ref()
+            .is_some_and(|s| s.fat_short_name_encoding == FatShortNameEncoding::Cp932);
+        (1..=10).contains(&self.schema_version) && (self.schema_version == 10) == cp932
+    }
+
     pub fn candidate_filesystem(&self, candidate: &Candidate) -> FileSystem {
         self.volumes
             .iter()
@@ -316,7 +324,7 @@ impl Session {
             return Err(Error::Request("session is too large".into()));
         }
         let session: Self = serde_json::from_slice(&data)?;
-        if !(1..=9).contains(&session.schema_version) {
+        if !session.supported_version() {
             return Err(Error::Unsupported("session schema".into()));
         }
         Uuid::parse_str(&session.id).map_err(|_| Error::Request("invalid session ID".into()))?;
@@ -387,6 +395,14 @@ pub enum ProgressUnit {
     Bytes,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FatShortNameEncoding {
+    #[default]
+    Ascii,
+    Cp932,
+}
+
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct ScanOptions {
     pub max_records: u64,
@@ -394,6 +410,8 @@ pub struct ScanOptions {
     pub fragments: bool,
     #[serde(default)]
     pub estimate_fat_contiguous: bool,
+    #[serde(default)]
+    pub fat_short_name_encoding: FatShortNameEncoding,
 }
 impl Default for ScanOptions {
     fn default() -> Self {
@@ -402,6 +420,7 @@ impl Default for ScanOptions {
             max_candidates: 100_000,
             fragments: false,
             estimate_fat_contiguous: false,
+            fat_short_name_encoding: FatShortNameEncoding::Ascii,
         }
     }
 }
@@ -432,18 +451,24 @@ fn scan_volume(
 ) -> Result<Session> {
     let mut image = Image::open_region(path, region)?;
     let fingerprint = image.fingerprint()?;
-    let schema_version = if options.fragments || region.is_some_and(|r| r.recovery_boot.is_some()) {
+    let schema_version = if options.fat_short_name_encoding == FatShortNameEncoding::Cp932 {
+        10
+    } else if options.fragments || region.is_some_and(|r| r.recovery_boot.is_some()) {
         8
     } else if region.is_some() {
         5
     } else {
         3
     };
-    let search = (options.fragments || options.estimate_fat_contiguous).then(|| SearchSettings {
-        fragments: options.fragments,
-        estimate_fat_contiguous: options.estimate_fat_contiguous,
-        ..Default::default()
-    });
+    let search = (options.fragments
+        || options.estimate_fat_contiguous
+        || options.fat_short_name_encoding != FatShortNameEncoding::Ascii)
+        .then(|| SearchSettings {
+            fragments: options.fragments,
+            estimate_fat_contiguous: options.estimate_fat_contiguous,
+            fat_short_name_encoding: options.fat_short_name_encoding,
+            ..Default::default()
+        });
     if &image.boot_read(512)?[3..11] != b"NTFS    " {
         let result = fat::scan(&mut image, options, cancel, &mut progress)?;
         if image.fingerprint()? != fingerprint {
@@ -888,7 +913,7 @@ pub fn recover_to(
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
     session.guard_output(&destination.path)?;
-    if !(1..=9).contains(&session.schema_version) {
+    if !session.supported_version() {
         return Err(Error::Unsupported("session schema".into()));
     }
     if session.filesystem == FileSystem::Disk {
@@ -935,6 +960,12 @@ pub fn recover_to(
                 .search
                 .as_ref()
                 .is_some_and(|s| s.estimate_fat_contiguous),
+            session
+                .search
+                .as_ref()
+                .map_or(crate::FatShortNameEncoding::Ascii, |s| {
+                    s.fat_short_name_encoding
+                }),
             cancel,
         )?;
         if fresh.cancelled {

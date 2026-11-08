@@ -131,6 +131,7 @@ struct App {
     carve_all: bool,
     fragments: bool,
     estimate_fat_contiguous: bool,
+    fat_short_name_encoding: rescue_core::FatShortNameEncoding,
     extensions: String,
     path_prefix: String,
     depth: String,
@@ -275,6 +276,7 @@ impl App {
             carve_all: false,
             fragments: false,
             estimate_fat_contiguous: false,
+            fat_short_name_encoding: rescue_core::FatShortNameEncoding::Ascii,
             extensions: String::new(),
             path_prefix: String::new(),
             depth: String::new(),
@@ -339,6 +341,11 @@ impl App {
             },
             fragments: !self.carve && self.fragments,
             estimate_fat_contiguous: !self.carve && self.estimate_fat_contiguous,
+            fat_short_name_encoding: if self.carve {
+                rescue_core::FatShortNameEncoding::Ascii
+            } else {
+                self.fat_short_name_encoding
+            },
             recovered_volume: if self.carve || self.discovery_source != self.source {
                 None
             } else {
@@ -420,6 +427,7 @@ impl App {
         self.carve_all = settings.carve_scope == rescue_core::CarveScope::All;
         self.fragments = settings.fragments;
         self.estimate_fat_contiguous = settings.estimate_fat_contiguous;
+        self.fat_short_name_encoding = settings.fat_short_name_encoding;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
         self.extensions = settings.extensions.join(", ");
@@ -546,6 +554,7 @@ impl App {
                         max_candidates: 10_000_000,
                         fragments: settings.fragments,
                         estimate_fat_contiguous: settings.estimate_fat_contiguous,
+                        fat_short_name_encoding: settings.fat_short_name_encoding,
                     },
                     &settings,
                     &cancel,
@@ -1174,6 +1183,20 @@ impl App {
                     text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"));
                 } else {
                     ui.checkbox(&mut self.estimate_fat_contiguous, tr!("FATの連続配置を推定する（元の内容との一致は未確認）", "Estimate contiguous FAT files (original content unverified)"));
+                    ui.horizontal_wrapped(|ui| {
+                        ui.label(tr!("FATの短い名前の文字コード", "FAT short-name encoding"));
+                        egui::ComboBox::from_id_salt("fat-short-name-encoding")
+                            .selected_text(match self.fat_short_name_encoding {
+                                rescue_core::FatShortNameEncoding::Ascii => tr!("ASCII（従来どおり）", "ASCII (legacy behavior)"),
+                                rescue_core::FatShortNameEncoding::Cp932 => tr!("日本語 CP932", "Japanese CP932"),
+                            }).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut self.fat_short_name_encoding, rescue_core::FatShortNameEncoding::Ascii, tr!("ASCII（従来どおり）", "ASCII (legacy behavior)"));
+                                ui.selectable_value(&mut self.fat_short_name_encoding, rescue_core::FatShortNameEncoding::Cp932, tr!("日本語 CP932", "Japanese CP932"));
+                            });
+                    });
+                    if self.fat_short_name_encoding == rescue_core::FatShortNameEncoding::Cp932 {
+                        ui.small(tr!("FATの8.3名だけに適用します。消えた先頭文字は補わず、曖昧なバイトは {16進数} で示します。", "Applies only to FAT 8.3 names. Missing leading characters are not invented; ambiguous bytes appear as {hex}."));
+                    }
                     ui.checkbox(&mut self.fragments,tr!("残存するMFTレコードも探索（クイックフォーマット後など）", "Also search for remnant MFT records (for example, after a quick format)"));
                     text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"));
                     text_row(ui, tr!("検索深度", "Search depth"), &mut self.depth, tr!("空欄: 上限なし / 0: 直下 / 最大256", "Blank: unlimited / 0: direct children / Maximum: 256"));

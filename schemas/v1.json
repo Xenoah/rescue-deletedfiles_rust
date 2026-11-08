@@ -504,6 +504,15 @@
         "estimate_fat_contiguous": {
           "type": "boolean",
           "default": false
+        },
+        "fat_short_name_encoding": {
+          "type": "string",
+          "enum": [
+            "ascii",
+            "cp932"
+          ],
+          "default": "ascii",
+          "description": "Explicit OEM interpretation of FAT 8.3 names; missing field preserves legacy ASCII behavior."
         }
       },
       "required": [
@@ -689,7 +698,7 @@
         "schema_version": {
           "type": "integer",
           "minimum": 1,
-          "maximum": 9
+          "maximum": 10
         },
         "filesystem": {
           "$ref": "#/$defs/FileSystem"
@@ -790,7 +799,66 @@
         "warnings"
       ],
       "additionalProperties": false,
-      "description": "Saved JSON session or the header inside a candidate index. SQLite schema version and engine checkpoint are separate and validated by the index reader."
+      "description": "Saved JSON session or the header inside a candidate index. SQLite schema version and engine checkpoint are separate and validated by the index reader.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schema_version": {
+                "const": 10
+              }
+            },
+            "required": [
+              "schema_version"
+            ]
+          },
+          "then": {
+            "properties": {
+              "search": {
+                "type": "object",
+                "properties": {
+                  "fat_short_name_encoding": {
+                    "const": "cp932"
+                  }
+                },
+                "required": [
+                  "fat_short_name_encoding"
+                ]
+              }
+            },
+            "required": [
+              "search"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "search": {
+                "type": "object",
+                "properties": {
+                  "fat_short_name_encoding": {
+                    "const": "cp932"
+                  }
+                },
+                "required": [
+                  "fat_short_name_encoding"
+                ]
+              }
+            },
+            "required": [
+              "search"
+            ]
+          },
+          "then": {
+            "properties": {
+              "schema_version": {
+                "const": 10
+              }
+            }
+          }
+        }
+      ]
     },
     "MissingRange": {
       "type": "object",

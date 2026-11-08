@@ -51,6 +51,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if suite=='estimated_fat':assert proof['known_incorrect_estimates_labelled_unverified']==1
     if a.tag.startswith('v1.2.'):
         proof=run['acquisition_verification'];assert proof['status']=='passed' and proof['checks']>=13 and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
+    if a.tag.startswith('v1.2.') and a.tag!='v1.2.0-alpha.1':
+        proof=run['cp932_verification'];assert proof['status']=='passed' and proof['checks']>=34 and proof['files_byte_exact']==168 and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
     if platform=='linux':
         proof=run['independent_classic_fat_verification'];assert proof['status']=='passed' and proof['files_byte_exact']==8 and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
     lines.append(f"| {platform} {arch} | 576 / 576 | 864 / 864 | {len(run['rows'])} | `{run['binary_sha256']}` |")

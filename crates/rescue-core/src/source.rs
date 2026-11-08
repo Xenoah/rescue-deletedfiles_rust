@@ -231,7 +231,7 @@ impl Image {
     pub fn annotate_coverage(&self, session: &mut crate::Session) -> Result<()> {
         session.source_info = Some(self.source_info()?);
         if let Some(raid) = &self.raid {
-            session.schema_version = 9;
+            session.schema_version = session.schema_version.max(9);
             session.raid = Some(raid.evidence.clone());
             session.warnings.extend(raid.evidence.warnings.clone());
         }

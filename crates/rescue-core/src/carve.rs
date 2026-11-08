@@ -566,6 +566,7 @@ mod tests {
             ScanOptions {
                 fragments: false,
                 estimate_fat_contiguous: false,
+                fat_short_name_encoding: crate::FatShortNameEncoding::Ascii,
                 max_records: 0,
                 max_candidates: 1,
             },

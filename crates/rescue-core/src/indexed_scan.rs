@@ -52,6 +52,7 @@ pub fn scan_indexed(
     settings.validate()?;
     options.fragments = settings.fragments;
     options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
+    options.fat_short_name_encoding = settings.fat_short_name_encoding;
     if options.max_candidates == 0
         || options.max_candidates > 10_000_000
         || options.max_records == 0
@@ -135,7 +136,9 @@ pub fn scan_indexed(
     let mut header = Session {
         source_info: None,
         raid: None,
-        schema_version: if settings.fragments {
+        schema_version: if settings.fat_short_name_encoding == crate::FatShortNameEncoding::Cp932 {
+            10
+        } else if settings.fragments {
             8
         } else if disk || settings.recovered_volume.is_some() {
             5
@@ -308,6 +311,7 @@ fn run(
     if settings.method != ScanMethod::Quick
         || settings.fragments != checkpoint.options.fragments
         || settings.estimate_fat_contiguous != checkpoint.options.estimate_fat_contiguous
+        || settings.fat_short_name_encoding != checkpoint.options.fat_short_name_encoding
     {
         return Err(Error::Request(
             "saved metadata scan settings changed".into(),

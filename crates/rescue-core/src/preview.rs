@@ -277,7 +277,7 @@ pub fn preview_worker_entry() -> Option<i32> {
 }
 
 fn render(mut session: Session) -> Result<Preview> {
-    if session.candidates.len() != 1 || !(1..=9).contains(&session.schema_version) {
+    if session.candidates.len() != 1 || !session.supported_version() {
         return Err(Error::Request("preview session".into()));
     }
     restore::validation::layout(&session)?;
@@ -418,6 +418,12 @@ fn render(mut session: Session) -> Result<Preview> {
                     .search
                     .as_ref()
                     .is_some_and(|s| s.estimate_fat_contiguous),
+                session
+                    .search
+                    .as_ref()
+                    .map_or(crate::FatShortNameEncoding::Ascii, |s| {
+                        s.fat_short_name_encoding
+                    }),
                 &cancel,
             )?;
             if fresh.filesystem != session.filesystem {

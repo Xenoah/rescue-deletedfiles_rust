@@ -1,0 +1,34 @@
+{
+  "status": "passed",
+  "old_version": "rescue 1.2.0-alpha.1",
+  "old_binary_sha256": "9113890ae02a40007bc73f042a59081a24c49f02e8374951e6bfe8d0646ea3d5",
+  "new_version": "1.2.0-alpha.2",
+  "checks": [
+    {
+      "mode": "json",
+      "exit": 4,
+      "error": {
+        "error": {
+          "affected_scope": "command",
+          "code": "UNSUPPORTED",
+          "message": "unsupported: session schema",
+          "retryable": false
+        },
+        "schema_version": 1
+      }
+    },
+    {
+      "mode": "index",
+      "exit": 2,
+      "error": {
+        "error": {
+          "affected_scope": "command",
+          "code": "INVALID_REQUEST",
+          "message": "invalid request: invalid index header",
+          "retryable": false
+        },
+        "schema_version": 1
+      }
+    }
+  ]
+}

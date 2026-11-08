@@ -75,7 +75,7 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Debug CLI and MCP integration (all thirty-one suites)
+      - name: Debug CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Independent NTFS metadata
         if: runner.os == 'Linux'
@@ -85,7 +85,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
-      - name: Release CLI and MCP integration (all thirty-one suites)
+      - name: Release CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --index-reports index-results
       - name: Independent FAT12 and FAT16 deletion
         if: runner.os == 'Linux'
@@ -253,6 +253,7 @@ jobs:
             dist/reports-results-*.json
             dist/release-fixes-results-*.json
             dist/acquisition-results-*.json
+            dist/cp932-results-*.json
             dist/independent-classic-fat-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error

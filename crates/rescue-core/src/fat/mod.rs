@@ -1092,7 +1092,7 @@ pub(crate) fn scan_selected(
                     live_complete = false;
                     continue;
                 }
-                let name = names::fat32_name(&slot.raw, &lfn);
+                let name = names::fat32_name(&slot.raw, &lfn, options.fat_short_name_encoding);
                 let size = u32_at(&slot.raw, 28)? as u64;
                 let first = directory_first(scan.filesystem, &slot.raw)?;
                 let mut raw = lfn.iter().flatten().copied().collect::<Vec<_>>();
@@ -1596,12 +1596,14 @@ mod tests {
             ScanOptions {
                 fragments: false,
                 estimate_fat_contiguous: false,
+                fat_short_name_encoding: crate::FatShortNameEncoding::Ascii,
                 max_records: 1,
                 max_candidates: 100,
             },
             ScanOptions {
                 fragments: false,
                 estimate_fat_contiguous: false,
+                fat_short_name_encoding: crate::FatShortNameEncoding::Ascii,
                 max_records: 100,
                 max_candidates: 1,
             },

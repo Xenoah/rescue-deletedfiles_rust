@@ -1,11 +1,11 @@
 # v1.2 次段階の受入台帳
 
-2026-11-08 JST。v1.1.2後にユーザーから進行指示を受けた、破損USB/SDへの対応強化を扱います。APFS等の別フェーズは含めません。
+2026-11-08 UTC。v1.1.2後にユーザーから進行指示を受けた、破損USB/SDへの対応強化を扱います。APFS等の別フェーズは含めません。
 
 | 段階 | 範囲 | 状態 |
 | --- | --- | --- |
-| alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | ローカル合格、4環境CIと公開物検証待ち |
-| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 未着手 |
+| alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI合格・公開済み、公開実物の再検証中 |
+| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 79 Rustテスト・33統合群・実GUI・Linux配布物合格、ネイティブ/公開検証待ち |
 | alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 未着手 |
 | 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 未着手 |
 
@@ -31,3 +31,16 @@ Linux DEB/portableの内容検証と、同梱CLI/MCPの60項目が合格。
 [ローカル集計](verification/v1.2.0-alpha.1-local.json) · [取得試験](acquisition-v1.2.json) · [GUIと画面ハッシュ](gui-v1.2-results.json) · [画面](UI-v1.2.md)
 
 これらは合成障害/所有ファイルによる検証で、物理故障媒体の復旧率ではない。
+
+## alpha.2 ローカル結果
+
+CP932の34条件で168出力がバイト一致。FAT12/16/32、JSONセッション/索引/MCP、MBR/GPT、プレビュー、ZIP、HTML/CSV、強制終了後の再開を確認した。
+新しいCP932セッション/索引はスキーマ10を使い、v1.2.0-alpha.1の実CLIが拒否することを確認した。旧ASCIIセッションは新しい版でも復元できる。
+
+[CP932の条件と結果](cp932-v1.2.json) · [旧版との実物確認](verification/v1.2.0-alpha.2-compatibility.json) · [文字コードと名前の不確実性](CP932.md)
+
+実GUIでCP932の8ファイル・224バイトと、従来の36ファイル・152,325バイトが一致。取得の期限超過後に64 MiBを再開し、全バイトが元イメージと一致した。実画面18枚とハッシュを記録した。
+
+[alpha.2ローカル集計](verification/v1.2.0-alpha.2-local.json) · [実画面](UI-v1.2.md)
+
+alpha.1は[全4環境のCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42471633276)に合格し、[9添付で公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.1)済み。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474088556)は実行中。

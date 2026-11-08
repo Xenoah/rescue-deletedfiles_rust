@@ -21,7 +21,7 @@ impl IndexWriter {
         let source = CandidateIndex { db, path };
         let mut header = source.session()?;
         uuid::Uuid::parse_str(&header.id).map_err(|_| Error::Request("index session ID".into()))?;
-        if !(1..=9).contains(&header.schema_version) || !header.candidates.is_empty() {
+        if !header.supported_version() || !header.candidates.is_empty() {
             return Err(Error::Request("migration header".into()));
         }
         crate::source_scope::check(&header.source)?;

@@ -7,7 +7,11 @@ pub(super) struct Name {
     pub warnings: Vec<String>,
 }
 
-pub(super) fn fat32_name(short: &[u8; 32], long: &[[u8; 32]]) -> Name {
+pub(super) fn fat32_name(
+    short: &[u8; 32],
+    long: &[[u8; 32]],
+    encoding: crate::FatShortNameEncoding,
+) -> Name {
     let deleted = short[0] == 0xe5;
     let mut warnings = Vec::new();
     if !long.is_empty() {
@@ -27,6 +31,9 @@ pub(super) fn fat32_name(short: &[u8; 32], long: &[[u8; 32]]) -> Name {
     if deleted {
         warnings
             .push("The first short-name byte was deleted; '?' marks the unknown character".into());
+    }
+    if encoding == crate::FatShortNameEncoding::Cp932 {
+        return cp932_name(short, warnings);
     }
     if short[..11]
         .iter()
@@ -68,6 +75,120 @@ pub(super) fn fat32_name(short: &[u8; 32], long: &[[u8; 32]]) -> Name {
     Name {
         text,
         verified: !deleted && warnings.is_empty(),
+        warnings,
+    }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02X}")).collect()
+}
+fn cp932_trail(byte: u8) -> bool {
+    (0x40..=0xfc).contains(&byte) && byte != 0x7f
+}
+
+/// Decode at known byte boundaries. CP932's four Windows private-use singles
+/// are handled explicitly; they are not all accepted by WHATWG Shift_JIS.
+fn cp932(bytes: &[u8]) -> Option<(String, Vec<usize>)> {
+    let mut text = String::new();
+    let mut at = 0;
+    let mut boundaries = vec![0];
+    while at < bytes.len() {
+        let byte = bytes[at];
+        if (0x81..=0x9f).contains(&byte) || (0xe0..=0xfc).contains(&byte) {
+            let trail = *bytes.get(at + 1)?;
+            if !cp932_trail(trail) {
+                return None;
+            }
+            text.push_str(
+                &encoding_rs::SHIFT_JIS
+                    .decode_without_bom_handling_and_without_replacement(&bytes[at..at + 2])?,
+            );
+            at += 2;
+        } else {
+            let character = match byte {
+                0x20..=0x7e => char::from(byte),
+                0x80 => '\u{80}',
+                0xa0 => '\u{f8f0}',
+                0xa1..=0xdf => char::from_u32(0xff61 + u32::from(byte - 0xa1))?,
+                0xfd..=0xff => char::from_u32(0xf8f1 + u32::from(byte - 0xfd))?,
+                _ => return None,
+            };
+            text.push(character);
+            at += 1;
+        }
+        boundaries.push(at);
+    }
+    Some((text, boundaries))
+}
+
+fn cp932_part(bytes: &[u8], deleted: bool, lowercase: bool, warnings: &mut Vec<String>) -> String {
+    let end = bytes.iter().rposition(|b| *b != b' ').map_or(0, |n| n + 1);
+    let bytes = &bytes[..end];
+    let mut text = if deleted && !bytes.is_empty() {
+        let after_one = cp932(&bytes[1..]);
+        let after_two = bytes
+            .get(1)
+            .filter(|b| cp932_trail(**b))
+            .and_then(|_| cp932(&bytes[2..]));
+        match (after_one, after_two) {
+            (Some((one, first)), Some((two, second)))
+                if bytes.iter().skip(1).any(|b| *b >= 128) =>
+            {
+                // A removed byte could have been an ASCII byte or a DBCS lead.
+                // Keep undecidable bytes explicit until both alignments meet.
+                let boundary = first
+                    .iter()
+                    .map(|n| n + 1)
+                    .find(|n| second.iter().any(|m| m + 2 == *n))
+                    .unwrap_or(bytes.len());
+                let suffix = cp932(&bytes[boundary..]).unwrap().0;
+                warnings.push(format!("CP932_LEADING_BOUNDARY_AMBIGUOUS: suffix after one removed byte={one:?}; suffix after a removed DBCS lead and its surviving trail={two:?}. Bytes in braces are undecidable, not decoded characters."));
+                format!("?{{{}}}{suffix}", hex(&bytes[1..boundary]))
+            }
+            (Some((text, _)), _) => format!("?{text}"),
+            (None, Some((text, _))) => {
+                warnings.push("CP932_MISSING_DBCS_LEAD: the surviving trail cannot identify the deleted first character".into());
+                format!("?{text}")
+            }
+            (None, None) => {
+                warnings.push("CP932_INVALID_BYTES: undecodable short-name bytes are shown as hexadecimal in braces".into());
+                format!("?{{{}}}", hex(&bytes[1..]))
+            }
+        }
+    } else if let Some((text, _)) = cp932(bytes) {
+        text
+    } else {
+        warnings.push(
+            "CP932_INVALID_BYTES: undecodable short-name bytes are shown as hexadecimal in braces"
+                .into(),
+        );
+        format!("{{{}}}", hex(bytes))
+    };
+    if lowercase {
+        text.make_ascii_lowercase();
+    }
+    text
+}
+
+fn cp932_name(short: &[u8; 32], mut warnings: Vec<String>) -> Name {
+    let deleted = short[0] == 0xe5;
+    let verified_ascii =
+        !deleted && short[..11].iter().all(|b| (32..127).contains(b)) && warnings.is_empty();
+    warnings.push(format!("FAT_SHORT_NAME_BYTES: raw_hex={}; encoding=cp932; selection=explicit; deleted_first_byte={deleted}. FAT does not record its OEM code page; non-ASCII path spelling is not verified.", hex(&short[..11])));
+    let mut base: [u8; 8] = short[..8].try_into().unwrap();
+    if base[0] == 5 {
+        base[0] = 0xe5;
+        warnings.push("CP932_ESCAPED_LEAD: stored 05 represents E5, not a deletion marker".into());
+    }
+    let mut text = cp932_part(&base, deleted, short[12] & 8 != 0, &mut warnings);
+    let extension = cp932_part(&short[8..11], false, short[12] & 16 != 0, &mut warnings);
+    if !extension.is_empty() {
+        text.push('.');
+        text.push_str(&extension);
+    }
+    Name {
+        text,
+        verified: verified_ascii,
         warnings,
     }
 }
@@ -269,4 +390,104 @@ pub(super) fn upcase_table(bytes: &[u8], expected: u32) -> Result<Vec<u16>> {
         return Err(invalid("incomplete exFAT upcase table"));
     }
     Ok(table)
+}
+
+#[cfg(test)]
+mod codepage_tests {
+    use super::*;
+    use crate::FatShortNameEncoding::{Ascii, Cp932};
+    fn short(base: &[u8]) -> [u8; 32] {
+        let mut slot = [0; 32];
+        slot[..11].fill(b' ');
+        slot[..base.len()].copy_from_slice(base);
+        slot[8..11].copy_from_slice(b"TXT");
+        slot[11] = 0x20;
+        slot
+    }
+    #[test]
+    fn cp932_known_windows_mappings_and_raw_provenance() {
+        // Independent Windows CP932 examples, including both IBM extension encodings.
+        for (bytes, expected) in [
+            (&[0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea][..], "日本語"),
+            (&[0xfa, 0x40], "ⅰ"),
+            (&[0xee, 0xef], "ⅰ"),
+            (&[0x87, 0x90], "≒"),
+            (&[0x81, 0x60, 0x81, 0x61, 0x81, 0x7c], "～∥－"),
+            (&[0xb6, 0xc0, 0xb6, 0xc5], "ｶﾀｶﾅ"),
+            (
+                &[0xa0, 0xfd, 0xfe, 0xff],
+                "\u{f8f0}\u{f8f1}\u{f8f2}\u{f8f3}",
+            ),
+        ] {
+            let slot = short(bytes);
+            let name = fat32_name(&slot, &[], Cp932);
+            assert_eq!(name.text, format!("{expected}.TXT"));
+            assert!(
+                !name.verified,
+                "the volume never declared its OEM code page"
+            );
+            assert!(name.warnings.iter().any(|w| w.contains(&hex(&slot[..11]))));
+        }
+        let legacy = fat32_name(&short(&[0x93, 0xfa]), &[], Ascii);
+        assert!(legacy.text.contains('\u{fffd}'));
+        assert!(!legacy.warnings.iter().any(|w| w.contains("encoding=cp932")));
+    }
+    #[test]
+    fn deleted_lead_does_not_invent_a_character_or_choose_an_ambiguous_boundary() {
+        let mut slot = short(&[0x93, 0xfa, 0x96, 0x7b, 0x8c, 0xea]);
+        slot[0] = 0xe5;
+        let name = fat32_name(&slot, &[], Cp932);
+        assert_eq!(name.text, "?{FA967B}語.TXT");
+        assert!(!name.verified);
+        assert!(
+            name.warnings
+                .iter()
+                .any(|w| w.starts_with("CP932_LEADING_BOUNDARY_AMBIGUOUS:") && w.contains("本語"))
+        );
+        assert!(
+            name.warnings
+                .iter()
+                .any(|w| w.contains("E5FA967B8CEA2020545854"))
+        );
+    }
+    #[test]
+    fn escaped_e5_trail_backslash_and_invalid_lead_are_explicit() {
+        let mut slot = short(&[0x05, 0x5c]);
+        assert_eq!(fat32_name(&slot, &[], Cp932).text, "藹.TXT");
+        slot = short(&[b'A', 0x81]);
+        let invalid = fat32_name(&slot, &[], Cp932);
+        assert_eq!(invalid.text, "{4181}.TXT");
+        assert!(
+            invalid
+                .warnings
+                .iter()
+                .any(|w| w.starts_with("CP932_INVALID_BYTES:"))
+        );
+        let mut ascii = short(b"NAME");
+        ascii[12] = 0x18;
+        let name = fat32_name(&ascii, &[], Cp932);
+        assert_eq!(name.text, "name.txt");
+        assert!(name.verified);
+    }
+    #[test]
+    fn valid_unicode_lfn_takes_precedence_over_the_selected_oem_code_page() {
+        let slot = short(b"NAME");
+        let mut long = [0; 32];
+        long[0] = 0x41;
+        long[11] = 0x0f;
+        long[13] = short_checksum(&slot[..11]);
+        let mut codes = "日本語.txt".encode_utf16().collect::<Vec<_>>();
+        codes.push(0);
+        codes.resize(13, 0xffff);
+        for (offset, code) in [1, 3, 5, 7, 9, 14, 16, 18, 20, 22, 24, 28, 30]
+            .into_iter()
+            .zip(codes)
+        {
+            long[offset..offset + 2].copy_from_slice(&code.to_le_bytes());
+        }
+        let name = fat32_name(&slot, &[long], Cp932);
+        assert_eq!(name.text, "日本語.txt");
+        assert!(name.verified);
+        assert!(name.warnings.is_empty());
+    }
 }

@@ -186,6 +186,9 @@ enum Command {
         /// Estimate contiguous extents for deleted FAT files whose entire chain is free.
         #[arg(long)]
         estimate_fat_contiguous: bool,
+        /// Decode FAT 8.3 names with an explicitly selected OEM code page.
+        #[arg(long, default_value = "ascii", value_parser = ["ascii", "cp932"])]
+        fat_short_name_encoding: String,
         #[arg(long)]
         json: bool,
     },
@@ -660,6 +663,7 @@ fn run() -> Result<i32, Error> {
             volume_id,
             fragments,
             estimate_fat_contiguous,
+            fat_short_name_encoding,
         } => {
             rescue_core::guard_output_path(&source, &work_dir)?;
             let recovered_volume = if let Some(id) = volume_id {
@@ -685,6 +689,10 @@ fn run() -> Result<i32, Error> {
             } else {
                 None
             };
+            let fat_short_name_encoding = match fat_short_name_encoding.as_str() {
+                "cp932" => rescue_core::FatShortNameEncoding::Cp932,
+                _ => rescue_core::FatShortNameEncoding::Ascii,
+            };
             let settings = SearchSettings {
                 carve_scope: if carve_scope == "all" {
                     rescue_core::CarveScope::All
@@ -704,6 +712,7 @@ fn run() -> Result<i32, Error> {
                 recovered_volume,
                 fragments,
                 estimate_fat_contiguous,
+                fat_short_name_encoding,
             };
             if !indexed && (max_records.is_some() || max_candidates.is_some()) {
                 return Err(Error::Request(
@@ -719,6 +728,7 @@ fn run() -> Result<i32, Error> {
                 }),
                 fragments,
                 estimate_fat_contiguous,
+                fat_short_name_encoding,
             };
             if indexed {
                 let path = rescue_core::scan_indexed(

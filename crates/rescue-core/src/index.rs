@@ -333,7 +333,7 @@ impl CandidateIndex {
         let session = self.session()?;
         uuid::Uuid::parse_str(&session.id)
             .map_err(|_| Error::Request("index session ID".into()))?;
-        if !(1..=9).contains(&session.schema_version) || !session.candidates.is_empty() {
+        if !session.supported_version() || !session.candidates.is_empty() {
             return Err(Error::Request("invalid index header".into()));
         }
         Ok(())

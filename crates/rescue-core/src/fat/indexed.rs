@@ -340,7 +340,7 @@ fn traverse(
                 state.live_complete = false;
                 continue;
             }
-            let name = names::fat32_name(&slot.raw, &lfn);
+            let name = names::fat32_name(&slot.raw, &lfn, options.fat_short_name_encoding);
             let size = u32_at(&slot.raw, 28)? as u64;
             let first = directory_first(state.scan.filesystem, &slot.raw)?;
             let mut raw = lfn.iter().flatten().copied().collect::<Vec<_>>();
@@ -603,6 +603,7 @@ pub(crate) fn run_volume(
             .ok_or_else(|| Error::Request("FAT candidate budget".into()))?,
         fragments: false,
         estimate_fat_contiguous: checkpoint.options.estimate_fat_contiguous,
+        fat_short_name_encoding: checkpoint.options.fat_short_name_encoding,
     };
     if state.base_candidates > committed {
         return Err(Error::Request("FAT candidate baseline".into()));

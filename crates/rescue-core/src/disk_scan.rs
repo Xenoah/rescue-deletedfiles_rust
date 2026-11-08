@@ -29,7 +29,13 @@ pub fn scan_source(
     let mut session = Session {
         source_info: None,
         raid: None,
-        schema_version: if options.fragments { 8 } else { 5 },
+        schema_version: if options.fat_short_name_encoding == crate::FatShortNameEncoding::Cp932 {
+            10
+        } else if options.fragments {
+            8
+        } else {
+            5
+        },
         filesystem: FileSystem::Disk,
         id: uuid::Uuid::new_v4().to_string(),
         source: image.path.clone(),
@@ -41,13 +47,15 @@ pub fn scan_source(
         truncated: false,
         invalid_records: 0,
         warnings: layout.warnings,
-        search: (options.fragments || options.estimate_fat_contiguous).then(|| {
-            crate::SearchSettings {
+        search: (options.fragments
+            || options.estimate_fat_contiguous
+            || options.fat_short_name_encoding != crate::FatShortNameEncoding::Ascii)
+            .then(|| crate::SearchSettings {
                 fragments: options.fragments,
                 estimate_fat_contiguous: options.estimate_fat_contiguous,
+                fat_short_name_encoding: options.fat_short_name_encoding,
                 ..Default::default()
-            }
-        }),
+            }),
         region: None,
         volumes: Vec::new(),
     };
@@ -67,6 +75,7 @@ pub fn scan_source(
         let remaining = ScanOptions {
             fragments: options.fragments,
             estimate_fat_contiguous: options.estimate_fat_contiguous,
+            fat_short_name_encoding: options.fat_short_name_encoding,
             max_records: options.max_records.saturating_sub(session.scanned_records),
             max_candidates: options
                 .max_candidates
@@ -156,7 +165,7 @@ const LIVE_WARNING: &str = "Direct disk access is read-only. Mounted volumes may
 
 pub(crate) fn validate_region(session: &Session) -> Result<()> {
     if let Some(region) = &session.region {
-        if ![5, 8, 9].contains(&session.schema_version)
+        if ![5, 8, 9, 10].contains(&session.schema_version)
             || !session.volumes.is_empty()
             || region.filesystem != Some(session.filesystem)
         {
@@ -179,7 +188,7 @@ pub(crate) fn recover_disk(
     destination: &RecoveryDestination,
     cancel: &AtomicBool,
 ) -> Result<Vec<RecoveryResult>> {
-    if ![5, 8, 9].contains(&session.schema_version)
+    if ![5, 8, 9, 10].contains(&session.schema_version)
         || session.region.is_some()
         || session.volumes.is_empty()
         || session.volumes.len() > 256

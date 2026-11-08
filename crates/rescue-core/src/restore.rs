@@ -151,7 +151,7 @@ fn prepare_with(
     if ids.is_empty() {
         return Err(Error::Request("select at least one candidate".into()));
     }
-    if !(1..=9).contains(&session.schema_version) {
+    if !session.supported_version() {
         return Err(Error::Unsupported("session schema".into()));
     }
     if cancel.load(Ordering::Relaxed) {
@@ -273,6 +273,12 @@ fn read_volume(
                     .search
                     .as_ref()
                     .is_some_and(|s| s.estimate_fat_contiguous),
+                session
+                    .search
+                    .as_ref()
+                    .map_or(crate::FatShortNameEncoding::Ascii, |s| {
+                        s.fat_short_name_encoding
+                    }),
                 cancel,
             )?;
             if fresh.filesystem != session.filesystem {

@@ -44,6 +44,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     image=json.loads((dist/f'imaging-results-{platform}-{arch}.json').read_text());assert image['version']==f'rescue {VERSION}' and image['status']=='passed' and image['checks']>=15
     if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0):
         proof=json.loads((dist/f'acquisition-results-{platform}-{arch}.json').read_text());assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=13 and proof['source_unchanged']
+    if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) and VERSION!='1.2.0-alpha.1':
+        proof=json.loads((dist/f'cp932-results-{platform}-{arch}.json').read_text());assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=34 and proof['files_byte_exact']==168 and proof['source_unchanged']
     image_native=json.loads((dist/f'imaging-native-{platform}-{arch}.json').read_text());assert image_native['version']==f'rescue {VERSION}' and image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
     # Windows adds three native RtlCompressBuffer LZNT1 streams to the shared 13.
@@ -196,6 +198,8 @@ if modern:
     if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0):
         imaging=proof['imaging'];assert imaging['source_unchanged'] and imaging['resume_byte_exact'] and imaging['strategy']=='adaptive' and imaging['timeout_failed_bytes']>0 and imaging['timeout_unattempted_bytes']>0
         assert imaging['image_sha256']==imaging['source_sha256'] and imaging['acquired_bytes']>0
+        if VERSION!='1.2.0-alpha.1':
+            name_proof=proof['cp932'];assert name_proof['files_byte_exact']==8 and name_proof['raw_name_provenance']==7 and name_proof['source_unchanged']
     for shot in proof['screenshots']:
         path=ROOT/'docs'/shot['file']
         assert path.resolve().is_relative_to((ROOT/'docs').resolve())

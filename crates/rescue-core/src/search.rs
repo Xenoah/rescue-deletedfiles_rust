@@ -43,9 +43,18 @@ pub struct SearchSettings {
     /// Opt in to clearly labelled contiguous guesses when every FAT entry is free.
     #[serde(default)]
     pub estimate_fat_contiguous: bool,
+    #[serde(default)]
+    pub fat_short_name_encoding: crate::FatShortNameEncoding,
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.fat_short_name_encoding != crate::FatShortNameEncoding::Ascii
+            && self.method != ScanMethod::Quick
+        {
+            return Err(Error::Request(
+                "FAT short-name encoding requires a metadata scan".into(),
+            ));
+        }
         if self.estimate_fat_contiguous && self.method != ScanMethod::Quick {
             return Err(Error::Request(
                 "FAT contiguous estimation requires a metadata scan".into(),
@@ -171,6 +180,7 @@ pub fn scan_with_settings(
     settings.validate()?;
     options.fragments = settings.fragments;
     options.estimate_fat_contiguous = settings.estimate_fat_contiguous;
+    options.fat_short_name_encoding = settings.fat_short_name_encoding;
     let mut session = match settings.method {
         ScanMethod::Quick => {
             if let Some(region) = &settings.recovered_volume {
