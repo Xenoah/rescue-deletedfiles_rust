@@ -7,10 +7,6 @@ Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, Sys
 Add-Type -TypeDefinition @'
 using System;
 using System.Runtime.InteropServices;
-[ComImport,Guid("71C6E74C-0F28-11D8-A82A-00065B84435C"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-public interface RescueInputProfileManager {
-    void ActivateProfile(uint type,ushort language,ref Guid service,ref Guid profile,IntPtr layout,uint flags);
-}
 public static class RescueOwnedWindow {
     [DllImport("dbghelp.dll", SetLastError=true)]
     static extern bool MiniDumpWriteDump(IntPtr process, uint pid, IntPtr file, uint kind, IntPtr exception, IntPtr stream, IntPtr callback);
@@ -70,12 +66,11 @@ public static class RescueOwnedWindow {
     public static bool ImeRestored=false;
     public static void RestoreJapaneseIme(IntPtr hwnd) {
         if(previousImeLayout==IntPtr.Zero || ImeRestored)return;
-        Guid empty=Guid.Empty;
-        var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
-        try {manager.ActivateProfile(2,(ushort)(previousImeLayout.ToInt64()&65535),ref empty,ref empty,previousImeLayout,0x20000004);}
-        finally {Marshal.ReleaseComObject(manager);}
-        // TSF profile activation alone need not change an inactive window's
-        // thread HKL. Request the saved layout on this owned HWND as well.
+        if(GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero))==previousImeLayout) {ImeRestored=true;return;}
+        // Restore only the owned thread's input language. A session-wide TSF
+        // ActivateProfile also changes shared input-service processes and can
+        // block cleanup on their RPC calls. User profile restoration belongs
+        // to the outer fixture after all GUI sessions.
         SetForegroundWindow(hwnd);
         // Windows posts WM_INPUTLANGCHANGEREQUEST; a synchronous SendMessage
         // can deadlock TSF cross-thread callbacks while this driver is waiting.
@@ -89,25 +84,24 @@ public static class RescueOwnedWindow {
     }
     public static string EnableJapaneseIme(IntPtr hwnd,string serviceId,string profileId) {
         previousImeLayout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
-        // Modern Microsoft IME is a TSF profile; the old E0010411 HKL can
-        // silently return the English fallback even with Japanese FOD present.
-        Guid service=new Guid(serviceId),profile=new Guid(profileId);
-        var manager=(RescueInputProfileManager)Activator.CreateInstance(Type.GetTypeFromCLSID(new Guid("33C53A50-F456-4884-B049-85FD643ECFED")));
-        try {manager.ActivateProfile(1,0x411,ref service,ref profile,IntPtr.Zero,0x20000005);}
-        finally {Marshal.ReleaseComObject(manager);}
-        IntPtr layout=IntPtr.Zero;
-        for(int i=0;i<30;i++) {
+        // Select the already registered IME through the normal Windows input
+        // switcher, without forcing every process in the session through TSF.
+        // The hosted fixture has English and Microsoft Japanese input methods.
+        bool switched=(previousImeLayout.ToInt64()&65535)!=0x411;
+        if(switched) {Key(0x5b,false,false);Tap(0x20);Key(0x5b,true,false);}
+        IntPtr layout=previousImeLayout;
+        for(int i=0;i<50;i++) {
             System.Threading.Thread.Sleep(100);
             layout=GetKeyboardLayout(GetWindowThreadProcessId(hwnd,IntPtr.Zero));
             if((layout.ToInt64()&65535)==0x411)break;
         }
-        if((layout.ToInt64()&65535)!=0x411)throw new Exception("Japanese TSF profile did not activate for the owned GUI: "+layout.ToInt64());
+        if((layout.ToInt64()&65535)!=0x411)throw new Exception("Windows+Space did not select Japanese input for the owned GUI: "+layout.ToInt64());
         var description=new System.Text.StringBuilder(256);ImmGetDescription(layout,description,256);
         IntPtr ime=ImmGetDefaultIMEWnd(hwnd);UIntPtr result;
         if(ime==IntPtr.Zero)throw new Exception("Owned GUI has no native IME window");
         SendMessageTimeout(ime,0x283,new UIntPtr(6),new IntPtr(1),2,5000,out result);
         SendMessageTimeout(ime,0x283,new UIntPtr(2),new IntPtr(0x19),2,5000,out result);
-        return description.ToString()+" / TSF="+serviceId+"/"+profileId+" / HKL="+layout.ToInt64()+" / IMM="+ImmIsIME(layout);
+        return description.ToString()+" / activation="+(switched?"Windows+Space":"already-Japanese")+" / TSF="+serviceId+"/"+profileId+" / HKL="+layout.ToInt64()+" / IMM="+ImmIsIME(layout);
     }
     public static void RomanKeys(string value) {foreach(char c in value) Tap((ushort)Char.ToUpperInvariant(c));}
     [StructLayout(LayoutKind.Sequential)]
