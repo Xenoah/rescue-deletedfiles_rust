@@ -66,6 +66,85 @@
           "sha256": "05abf2d40dfb553ba5bda9bd66b8c84a3a73543aa29c8dd117387c93a33a9c82"
         }
       ]
+    },
+    {
+      "case": "complete-kana-conversion",
+      "run": 42504221859,
+      "status": "failed",
+      "artifact_zip_sha256": "599dd1bccbca1800285a617b6a363982455a4070d60d2314da243ca0dbc9d1a3",
+      "finding": "Explicit genbunn completes げんぶん but the second fresh process still does not receive 原文. This disproves pending terminal n as the sufficient cause.",
+      "files": [
+        {
+          "file": "complete-kana-conversion/uia.json",
+          "sha256": "f300ce7365f0cb975359d06d10fa09c6fc566568ba02011e13aac67c080c1831"
+        },
+        {
+          "file": "complete-kana-conversion/windows-gui-failed.png",
+          "sha256": "fa97ab8fd399cebb94730506735892132a426b98e21e05775e3adafeb4dbb3f2"
+        }
+      ]
+    },
+    {
+      "case": "native-conversion-events",
+      "run": 42505810350,
+      "status": "failed",
+      "artifact_zip_sha256": "a015cdbc67e4c2cf46ab9a4fff8cb1611bee6b1c2d7a6534a08d2ba6b29b5610",
+      "finding": "Foreground stays in the owned process. After Space, Windows emits only Preedit(げんぶん); no 原文 event. After preserving failure and 15s observation, one additional diagnostic Space also leaves kana. No Enter was sent; run remains failed.",
+      "files": [
+        {
+          "file": "native-conversion-events/uia.json",
+          "sha256": "3a710810904a4a6c95373c2ce44a25102a05e84449fd2451b078646f4fc13532"
+        },
+        {
+          "file": "native-conversion-events/stderr.txt",
+          "sha256": "e33f9ac31ae2340ebdfcb663eb0312da4be18faf52fca6cf1b2970f14d6d2fe8"
+        },
+        {
+          "file": "native-conversion-events/windows-gui-failed.png",
+          "sha256": "015b53cfb181d7226f548c48920d804c72fc45cbb2c5f8e3e005a78edebe9cd9"
+        },
+        {
+          "file": "native-conversion-events/windows-after-candidate-advance.png",
+          "sha256": "f268e69e8908b1931202f77871f4cfcd9ffa011e27a204137997d63e1db7f33b"
+        },
+        {
+          "file": "native-conversion-events/owned-gui-failed.dmp-stacks.txt",
+          "sha256": "21bb8f749a4dfbd2d8c296e10f6f0077c18f572cd2d333407b5b0026ec4e63f3"
+        }
+      ]
+    },
+    {
+      "case": "input-service-hypothesis",
+      "run": 42506839758,
+      "status": "failed",
+      "artifact_zip_sha256": "260834e7ab1b4c2475220c06d04fc3f66e88dece700c12c7a38672fe9406d8a6",
+      "finding": "Uninstrumented GUI fails cancellation in its first IME process. Preceding successful GUI jobs had no surviving processes; the input-service preservation branch was never used. After the 10s deadline and another 15s of observation the preedit remains. Main-thread dumps show normal winit message wait. The service-preservation hypothesis is not supported and the code was removed.",
+      "files": [
+        {
+          "file": "input-service-hypothesis/uia.json",
+          "sha256": "1172bb8759ac6f3b04cb1a150c7b67234d73e2be3e2ab7195c84be9465aa2767"
+        },
+        {
+          "file": "input-service-hypothesis/windows-ime-escape-1-2.png",
+          "sha256": "6ec0befa7aa084d8af2f87a00357d1f9172adf93102ced3d9d778b42aea6e591"
+        },
+        {
+          "file": "input-service-hypothesis/owned-gui-failed.dmp-stacks.txt",
+          "sha256": "533b291e4b0393984d917adaf18a607e8689544207ff778c7c8b68b0fe009a4c"
+        },
+        {
+          "file": "input-service-hypothesis/owned-gui-still-waiting.dmp-stacks.txt",
+          "sha256": "38523eee1e462899e232ef269b8a2833e36eaaaa182213ff3916b022378d7c0f"
+        },
+        {
+          "file": "input-service-hypothesis/trace-limited.json",
+          "sha256": "b1268e4454859d8a7853a3bc0bc35759d797d4e5ee0b34de2f0851f69c645e09"
+        },
+        {
+          "file": "input-service-hypothesis/trace-keyboard.json",
+          "sha256": "b33446e749a81cd5952ca2ff25a386fc70bd61a36b222c0307fd360cbbecc522"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {
@@ -73,5 +152,5 @@
     "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
     "result": "failed as expected with retained preedit; fixed normalizer passes"
   },
-  "interpretation": "Cancellation polling completed after 4413ms. A later fixed-time conversion asserted kana instead of kanji. New stage observation via .NET TextPattern.GetText crashed the test driver with AccessViolationException; a native COM client is being validated. No failed run is counted as passed."
+  "interpretation": "Several distinct failures are preserved. Fixed waits and unsafe .NET TextPattern observation were corrected, but explicit terminal nn and input-service teardown changes do not resolve all failures. Native COM confirms exact selected preedit/commit states. Conversion failures can reflect the OS sending kana instead of kanji; the latest uninstrumented cancellation failure persists without a blocked main thread. Native WPF comparison and raw event diagnosis are pending. No failed run is counted as passed."
 }
