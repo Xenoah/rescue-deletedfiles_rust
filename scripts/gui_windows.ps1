@@ -275,6 +275,21 @@ function Check-TabNavigation {
     if ($backward.Name -ne 'Search results') {throw "Shift+Tab did not return to search: forward=$($forward.Name), backward=$($backward.Name)"}
     $script:steps.Add("keyboard-tab-and-shift-tab: Search results / $($forward.Name)")
 }
+function Wait-ImeState([string]$Expected,[string]$Phase,[bool]$Committed=$false) {
+    $timer=[System.Diagnostics.Stopwatch]::StartNew()
+    do {
+        Start-Sleep -Milliseconds 100
+        $edit=Await-Control 'Search results' 'Edit'
+        $value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+        $ranges=@($edit.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern).GetSelection())
+        $selected=-join @($ranges | ForEach-Object {$_.GetText(-1)})
+        $selectionMatches=if ($Committed) {$ranges.Count -eq 1 -and $selected -ceq ''} else {$selected -ceq $Expected}
+        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$ranges.Count;elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
+        $script:imeDiagnostic.last_state=$state
+        if ($value -ceq $Expected -and $selectionMatches) {return $state}
+    } while ($timer.Elapsed.TotalSeconds -lt 10)
+    throw "Native IME state did not complete: phase=$Phase, expected=$Expected, actual=$value, selected=$selected"
+}
 function Set-ImeQuery {
     # Register an already-installed Microsoft IME in this disposable user's
     # language list. Restore the original list in finally, even on failure.
@@ -348,14 +363,17 @@ function Set-ImeQuery {
         # A second Escape can legitimately leave the edit after composition ends.
         # Check cancellation above before restoring focus for the next conversion.
         Focus-Owned (Await-Control 'Search results' 'Edit')
-        [RescueOwnedWindow]::RomanKeys('genbun');Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(0x20);Start-Sleep -Milliseconds 400;[RescueOwnedWindow]::Tap(13)
-        $until=[DateTime]::UtcNow.AddSeconds(5)
-        do {
-            Start-Sleep -Milliseconds 100
-            $value=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        } while ($value -cne $cfg.query -and [DateTime]::UtcNow -lt $until)
-        if ($value -cne $cfg.query) {throw "Native IME conversion differed: expected=$($cfg.query), actual=$value, IME=$description"}
-        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;os_version=[Environment]::OSVersion.Version.ToString()}
+        [RescueOwnedWindow]::RomanKeys('genbun')
+        $kana=-join [char[]](0x3052,0x3093,0x3076,0x3093)
+        $conversionPreedit=Wait-ImeState $kana 'conversion-preedit'
+        [RescueOwnedWindow]::Tap(0x20)
+        $convertedPreedit=Wait-ImeState $cfg.query 'converted-preedit'
+        [RescueOwnedWindow]::Tap(13)
+        # The displayed kanji alone can still be preedit. A collapsed native
+        # text selection proves Enter has actually completed the composition.
+        $committed=Wait-ImeState $cfg.query 'committed' $true
+        $value=$committed.value
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbun';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
         $script:steps.Add('native-ime: cancel prediction and composition / convert genbun / commit '+$cfg.query)
         $cycles+=,$cycleProof
         Start-Sleep -Milliseconds 100
