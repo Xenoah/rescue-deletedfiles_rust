@@ -6,7 +6,7 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v1.2.0
+        default: v1.2.1
         required: true
       native_run_id:
         description: Native release workflow run that produced the packages
@@ -102,7 +102,7 @@ jobs:
       - name: Public Windows GUI native Japanese IME
         if: runner.os == 'Windows' && startsWith(env.RELEASE_TAG, 'v1.')
         timeout-minutes: 5
-        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary public-results/rescue-gui.exe --output public-results/gui-ime.json --desktop-token --ime
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary public-results/rescue-gui.exe --output public-results/gui-ime.json --desktop-token --ime --ime-cycles 8
       - name: Collect every public Windows GUI proof
         if: runner.os == 'Windows' && startsWith(env.RELEASE_TAG, 'v1.')
         shell: bash
@@ -126,6 +126,15 @@ jobs:
         with:
           name: published-native-${{ matrix.platform }}-${{ matrix.arch }}
           path: published-format-*.json
+          if-no-files-found: error
+      - name: Preserve actual public Windows GUI screenshots
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-windows-gui-screenshots
+          path: |
+            public-results/gui-*.json
+            public-results/rescue-owned-uia-*/windows*.png
           if-no-files-found: error
   attach-evidence:
     needs: test

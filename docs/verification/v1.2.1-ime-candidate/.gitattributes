@@ -1,0 +1,2 @@
+# Preserve the original Windows artifact bytes for the recorded SHA-256 values.
+ime-* -text

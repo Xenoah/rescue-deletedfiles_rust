@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+from ime_evidence import require_repeated_ime
 p=argparse.ArgumentParser();p.add_argument('--input-dir',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--tag',required=True);p.add_argument('--body',type=Path,required=True);p.add_argument('--updated-body',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
 runs=[];lines=[f'# {a.tag}: actual public package verification','','All four native platforms downloaded and checksum-verified the published portable, then executed its exact CLI bytes after packaging and macOS ad-hoc signing.','','| Platform | Metadata byte-exact | Native disk exact | All observations | CLI SHA-256 |','| --- | --- | --- | --- | --- |']
 for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos','arm64')]:
@@ -36,6 +37,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
                 if kind=='ime':
                     ime=gui['uia']
                     assert ime['native_input_method_tested'] and ime['input_layout_restored'] and not ime['native_ime']['unicode_injection_used'] and ime['native_ime']['committed_value']=='原文' and ime['native_ime']['cancel_trace'][-1]['value']=='' and ime['native_ime']['cancel_escape_presses']==2
+                    if tuple(map(int,a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(gui)
     image=run['imaging_verification'];assert image['status']=='passed' and image['checks']>=15 and image['binary_sha256']==run['binary_sha256']
     image_native=run['imaging_native_verification'];assert image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged'] and image_native['binary_sha256']==run['binary_sha256']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
@@ -73,5 +75,6 @@ expected={f'published-format-{platform}-{arch}.json' for platform,arch in [('win
 files=sorted(a.output.glob('*'));assert {f.name for f in files}==expected, 'published evidence filenames differ';(a.output/'PUBLISHED-SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(f.read_bytes()).hexdigest()}  {f.name}\n' for f in files),encoding='ascii')
 marker='<!-- published-package-verification -->';body=a.body.read_text(encoding='utf-8').split(marker)[0].rstrip();append=f'''\n\n{marker}\n## 公開パッケージそのものの追加検証\n\nWindows・Linux・macOS Intel/Apple Siliconで、公開ポータブルを再取得・チェックサム確認後、同梱CLIそのものを実行しました。macOSはアドホック署名後のファイルです。35形式・36ファイルの8条件×CLI/MCPは各環境576/576バイト一致。MBR/GPTディスクイメージと新規読み取り専用のloop/VHD/hdiutil仮想ディスクでも各環境864/864が一致。ZIP・日時・検索等の60項目も各環境で成功しました。\n\n文書・動画carvingの69ケース（正常23変種、破損/未対応30条件、30出力の全バイト一致）も各環境で通過。JPEG carvingの追加58項目も各環境で通過。32枚と埋込サムネイルの33候補をCLI／MCPでバイト照合し、33件の破損入力を拒否しました。\n\nイメージ取得では、強制終了後の再開・欠損範囲・読取マップのページ取得を検証。実仮想ディスクから全バイト一致で取得し、取得後の108ファイルを復元しました。試験専用ボリュームの容量不足・空き解放後の再開・アクセス拒否も各OSで確認しています。\n\nalpha.16の追加7群（隔離プレビュー・割当範囲・ジョブ契約・名前の履歴・ソース識別・バイナリ書き出し・破損FAT）も、各環境の公開CLIで通過しました。破損FATは20出力、バイナリ書き出しは2出力をバイト照合し、読取不能範囲の記録も確認しています。\n\n追加結果とチェックサムは、この検証ワークフローの **published-verification** アーティファクトに保存しています。リリース添付は配布物と共通チェックサムだけです。署名前のformat-results JSONと、署名・梱包後のこの検証記録を区別します。実媒体での一般的な復元率を示す結果ではありません。\n''';
 if a.tag.startswith('v1.'):append+='\n公開Windows GUIそのものでも、非昇格・中整合性・管理者グループ無効を実プロセスで確認し、UIA操作・ネイティブキー入力・実Microsoft日本語IMEの3経路を実行し、日本語名2ファイルの選択ZIP復元と元媒体の不変を照合しました。IMEのローマ字変換・取消と入力設定の復元も確認しました。スクリーンリーダー製品の評価は未実施です。\n'
+if tuple(map(int,a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1,2,1):append+='\n公開Windows GUIの日本語IMEは同じ非昇格GUI内で取消・再変換を8回連続実行し、すべて成功しました。各回の実画面は、このワークフローの **public-windows-gui-screenshots** アーティファクトに保持しています。\n'
 append+='\n[検証ワークフローと結果](https://github.com/'+os.environ.get('GITHUB_REPOSITORY','Xenoah/rescue-deletedfiles_rust')+'/actions/runs/'+os.environ.get('GITHUB_RUN_ID','')+')\n'
 a.updated_body.write_text(body+append,encoding='utf-8');print('\n'.join(lines))

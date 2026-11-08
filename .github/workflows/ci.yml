@@ -141,7 +141,7 @@ jobs:
       - name: Non-elevated Windows GUI with native Japanese IME
         if: runner.os == 'Windows'
         timeout-minutes: 5
-        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-ime-results.json --desktop-token --ime
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/${{ matrix.target }}/release/rescue-gui.exe --output gui-ime-results.json --desktop-token --ime --ime-cycles 8
       - name: Unelevated Windows parent and read-only helper with restored UAC test policy
         if: runner.os == 'Windows'
         timeout-minutes: 5
@@ -258,6 +258,15 @@ jobs:
             dist/known-hashes-results-*.json
             dist/independent-classic-fat-*.json
             dist/SHA256SUMS-*.txt
+          if-no-files-found: error
+      - name: Preserve actual Windows GUI screenshots
+        if: always() && runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-gui-screenshots
+          path: |
+            gui-*-results.json
+            rescue-owned-uia-*/windows*.png
           if-no-files-found: error
       - name: Preserve compiled dependencies after test failures
         if: always() && steps.cargo-cache.outcome == 'success' && steps.cargo-cache.outputs.cache-hit != 'true'

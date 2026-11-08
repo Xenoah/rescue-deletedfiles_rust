@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "application_version": "1.2.1",
+  "time_utc": "2026-11-08T15:12:24.515481+00:00",
+  "scope": "Local Linux release build, Rust tests, release contracts and actual GUI. Four-platform packaged validation is a separate release gate.",
+  "rust_tests": 85,
+  "rust_test_profile": "release",
+  "rust_test_log_sha256": "471b67ffb22417bdf5b97b35a64aa7c6f2a989132dae96276b5020e54eadb135",
+  "release_contract_tests": 4,
+  "fmt": "passed",
+  "workflow_yaml": "parsed",
+  "fresh_gui_release_gate": "passed",
+  "gui_screenshots": 26,
+  "gui_proof_sha256": "2a9b558c15fe42103994129ef52717934b06f1a0c729194868dbc3fb5ccebb56",
+  "gui_binary_sha256": "f7aed9ae50a1c1ff27e4b7894a58caa3b5aae079d808e4f88195cbab80e91f63",
+  "cli_binary_sha256": "e7d323d2855e8cdd3a67f864b7593ca38fe5660ac9561abcb8e2300d99cd74b3",
+  "ime_gate_real_candidate_evidence": "accepted",
+  "ime_gate_injected_middle_cycle_failure": "rejected"
+}

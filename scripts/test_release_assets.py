@@ -1,10 +1,12 @@
 """Prevent evidence files, stale versions and partial matrices leaking into downloads."""
 import hashlib
+import copy
 from pathlib import Path
 import tempfile
 import unittest
 from release_assets import package_names, stage_downloads
 from installer_versions import versions
+from ime_evidence import require_repeated_ime
 
 
 class DownloadContract(unittest.TestCase):
@@ -43,6 +45,26 @@ class InstallerVersions(unittest.TestCase):
         self.assertEqual(versions('1.2.0-alpha.3')['linux'],'1.2.0~alpha.3')
         for invalid in ['1.2.0-rc.1','1.2.0-alpha.0','1.2.0-alpha.99','100.0.0','1.2.100']:
             with self.assertRaises(ValueError):versions(invalid)
+
+
+class RepeatedImeEvidence(unittest.TestCase):
+    def test_rejects_missing_or_failed_middle_cycle(self):
+        cycle={'cancel_start_value':'とりけし','cancelled_roman_keys':'torikeshi',
+               'committed_roman_keys':'genbun','committed_value':'原文',
+               'unicode_injection_used':False,'cancel_escape_presses':2,
+               'cancel_trace':[{'escape':1,'value':'とりけし'}, {'escape':2,'value':''}]}
+        proof={'uia':{'native_ime':{'cycles':[copy.deepcopy(cycle) for _ in range(8)]}},
+               'ime_cycle_screenshots':[{'cycle':i,'sha256':'a'*64} for i in range(1,9)]}
+        require_repeated_ime(proof)
+        for field,value in [('committed_value',''),('unicode_injection_used',True),
+                            ('cancel_trace',[{'escape':1,'value':''},{'escape':2,'value':'とりけし'}])]:
+            bad=copy.deepcopy(proof);bad['uia']['native_ime']['cycles'][3][field]=value
+            with self.subTest(field=field),self.assertRaises(ValueError):require_repeated_ime(bad)
+        for path in [('uia','native_ime','cycles'),('ime_cycle_screenshots',)]:
+            bad=copy.deepcopy(proof);items=bad
+            for key in path:items=items[key]
+            items.pop()
+            with self.subTest(path=path),self.assertRaises(ValueError):require_repeated_ime(bad)
 
 
 if __name__=='__main__':unittest.main()

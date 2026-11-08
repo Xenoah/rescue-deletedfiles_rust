@@ -1,0 +1,66 @@
+
+running 1 test
+test accessibility::windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed ... FAILED
+
+failures:
+
+failures:
+    accessibility::windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 27 filtered out; finished in 0.02s
+
+   Compiling syn v3.0.9
+   Compiling encoding_rs v0.8.35
+   Compiling synstructure v0.14.0
+   Compiling zerofrom-derive v0.1.8
+   Compiling yoke-derive v0.8.4
+   Compiling bytemuck_derive v1.12.1
+   Compiling zerovec-derive v0.11.7
+   Compiling zerofrom v0.1.8
+   Compiling displaydoc v0.2.7
+   Compiling thiserror-impl v2.0.21
+   Compiling bytemuck v1.25.2
+   Compiling yoke v0.8.4
+   Compiling zerovec v0.11.9
+   Compiling emath v0.33.3
+   Compiling ecolor v0.33.3
+   Compiling potential_utf v0.1.6
+   Compiling epaint v0.33.3
+   Compiling image v0.25.10
+   Compiling tinystr v0.8.5
+   Compiling icu_locale_core v2.4.0
+   Compiling thiserror v2.0.21
+   Compiling zerotrie v0.2.5
+   Compiling icu_provider v2.4.0
+   Compiling icu_collections v2.4.0
+   Compiling naga v27.0.3
+   Compiling icu_normalizer v2.4.0
+   Compiling icu_properties v2.4.0
+   Compiling wgpu-types v27.0.1
+   Compiling idna_adapter v1.2.2
+   Compiling idna v1.1.0
+   Compiling egui v0.33.3
+   Compiling url v2.5.8
+   Compiling webbrowser v1.2.6
+   Compiling arboard v3.7.0
+   Compiling serde_derive v1.0.229
+   Compiling wgpu-hal v27.0.4
+   Compiling wgpu-core-deps-windows-linux-android v27.0.0
+   Compiling wgpu-core v27.0.3
+   Compiling serde v1.0.229
+   Compiling egui-winit v0.33.3
+   Compiling rescue-core v1.2.0 (D:\a\rescue-deletedfiles_rust\rescue-deletedfiles_rust\crates\rescue-core)
+   Compiling wgpu v27.0.1
+   Compiling egui-wgpu v0.33.3
+   Compiling eframe v0.33.3
+   Compiling egui_extras v0.33.3
+   Compiling rescue-gui v1.2.0 (D:\a\rescue-deletedfiles_rust\rescue-deletedfiles_rust\crates\rescue-gui)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 51.15s
+     Running unittests src\main.rs (target\x86_64-pc-windows-msvc\debug\deps\rescue_gui-91f1fdad774015bc.exe)
+
+thread 'accessibility::windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed' (6860) panicked at crates\rescue-gui\src\accessibility.rs:516:9:
+assertion `left == right` failed: cancel ordering 0
+  left: "既存とりけし"
+ right: "既存"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p rescue-gui --bin rescue-gui`

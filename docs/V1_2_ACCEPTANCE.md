@@ -48,3 +48,15 @@ exFATのビットマップ欠損、変換表の欠落/重複/不正チェーン�
 追加FS・入力形式、断片化動画、カメラRAW、物理媒体での測定、署名/公証、人によるアクセシビリティ評価等は[後続課題台帳](BACKLOG_V1_1.md)に残す。
 
 alpha.3の公開Windows試験は初回に日本語IME取消で失敗した。同一配布バイナリの別ホスト診断を通し、失敗したWindows公開ゲート全体を変更せず再実行して合格した。原因の断定や修正済みとの主張はしない。[失敗内容と診断記録](verification/v1.2.0-alpha.3-windows-diagnostic.json) · [実IMEの全結果](verification/v1.2.0-alpha.3-windows-ime.json)。安定版自身の公開検証は上表の別記録で確認する。
+
+## v1.2.1: Windows IME取消の修正
+
+EscがIME取消より先にフォーカスを外す経路を実eguiフレームで再現し、変換中のEscを入力欄で処理するよう修正した。既存文字の保持、同一フレームの両順序、別フレーム、キーリピート、別入力欄、通常のEscを検証する。旧処理の回帰テスト失敗と修正後の成功をWindowsで確認した。
+
+[修正PR #4](https://github.com/Xenoah/rescue-deletedfiles_rust/pull/4)は[4環境CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42489397435)に合格し、[実IMEの8回連続試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42489393103)も再試行なしで成功した。6回目は最初のEscで取消完了し、2回目でフォーカスが外れたため、取消結果を検証してから次の変換に向けてフォーカスを戻す試験手順も確認できた。候補版の表示バージョンは1.2.0であり、v1.2.1配布物の証跡とは区別する。[ログ・画面・SHA-256](verification/v1.2.1-ime-candidate.json)。
+
+v1.2.1のネイティブCIと公開実物の両方に8回連続試験を要求し、中間回の失敗や不足した証跡を拒否する。各回のPNGはActionsの専用アーティファクトに保持し、リリース添付は9点を維持する。
+
+v1.2.1ローカルではRust 85テストと4契約テストが成功。GUIの26画面を新規撮影し、断片化NTFSの36ファイル、CP932の8ファイル、破損exFATの8ファイルを全バイト照合した。64 MiBの取得タイムアウト・再開、HTML/CSVの結果保持、既知ハッシュの2/6/0件・別JSON保存、日英切替・狭幅スクロールも確認した。[今回のGUI全記録](gui-v1.2-results.json)。従来のv1.2.0 GUI記録は[元タグ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/gui-v1.2-results.json)に固定している。
+
+過去の断続的失敗の正確な入力イベント列は採取していないため、単一原因と断定しない。今回の根拠は、旧処理で再現する取消経路の修正と実Microsoft日本語IMEの連続検証である。v1.2.1の公開完了と配布実物の結果は公開後に別記録へ追記する。

@@ -1,0 +1,227 @@
+{
+  "status": "passed",
+  "commit": "6fe9aa608a622e811b23baaa39e7e89ac185383a",
+  "gui_sha256": "25f5e21e3cdc0870416b1041eb37eccb390aa88cfb5bd8655935c6b8bba92240",
+  "native_ime_cycles": [
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": ""
+        },
+        {
+          "escape": 2,
+          "focus": "Rescue \u2014 File Recovery",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "description": " / TSF={03B5835F-F03C-411B-9CE2-AA23E1171E36}/{A76C93D9-5523-4E90-AAFA-4DB112F9AC76} / HKL=68224017 / IMM=True",
+      "os_version": "10.0.20348.0",
+      "cancelled_roman_keys": "torikeshi",
+      "unicode_injection_used": false,
+      "committed_value": "\u539f\u6587",
+      "committed_roman_keys": "genbun",
+      "cancel_start_value": "\u3068\u308a\u3051\u3057",
+      "cancel_escape_presses": 2,
+      "cancel_trace": [
+        {
+          "escape": 1,
+          "focus": "Search results",
+          "value": "\u3068\u308a\u3051\u3057"
+        },
+        {
+          "escape": 2,
+          "focus": "Search results",
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "cycle": 1,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-1.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 2,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-2.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 3,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-3.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 4,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-4.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 5,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-5.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 6,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-6.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 7,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-7.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "cycle": 8,
+      "file": "D:\\a\\rescue-deletedfiles_rust\\rescue-deletedfiles_rust\\rescue-owned-uia-yu5u6_6n\\windows-ime-cycle-8.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    }
+  ],
+  "retries": 0,
+  "scope": "Eight consecutive cancellation/conversion cycles in one actual non-elevated GUI, followed by byte-exact selected recovery."
+}

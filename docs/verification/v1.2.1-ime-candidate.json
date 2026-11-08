@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "scope": "Pre-release IME fix candidate, application version 1.2.0. Not a v1.2.1 packaged binary.",
+  "commit": "6fe9aa608a622e811b23baaa39e7e89ac185383a",
+  "merge_commit": "e1ad1b98a082f29afeae3bc22b7adda761e4d835",
+  "regression_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42489393103",
+  "four_platform_ci": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42489397435",
+  "native_cycles": 8,
+  "retries": 0,
+  "artifact_id": 13620898526,
+  "artifact_zip_sha256": "ec1cd7045a30a55c5e8076d98128096a211b3a010f1931c8f6d18fe7cf15f92b",
+  "files": [
+    {
+      "file": "verification/v1.2.1-ime-candidate/ime-baseline-red.json",
+      "sha256": "179586c3c7ef5ad3abebc96e247a607ad38d5e05ada4e725dcab877d92d7a731"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/ime-baseline-red.log",
+      "sha256": "a13cebf09441a73e52fe5576d1c4d4d7fb3a52181b361a1fd4e05af55086ba4d"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/ime-native-cycles.json",
+      "sha256": "3ac339d0240d84d8039ef83b4f53d1e78eee7b1a774849ff8023acc466986fa3"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/ime-regression-summary.json",
+      "sha256": "f6acb7c8f69f1ae22933df53736f4b9e8e316e884e3205f0bbc1289fe186e489"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-gui-complete.png",
+      "sha256": "bfcba9405a2bfee97cfd020ecb31bfe8d04f205405e6e1b05562d8a385c3f939"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-1.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-2.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-3.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-4.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-5.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-6.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-7.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    },
+    {
+      "file": "verification/v1.2.1-ime-candidate/windows-ime-cycle-8.png",
+      "sha256": "f8fe3ff377745ffc1a0b1d2ec012a7ccd74387a4432a7f6788ee258019de68b4"
+    }
+  ]
+}

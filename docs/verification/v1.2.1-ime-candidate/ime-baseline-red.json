@@ -1,0 +1,6 @@
+{
+  "baseline": "e753e6c78fd3e078d21447a63f7ee5c377ca511a",
+  "status": "expected-regression-confirmed",
+  "exit": 101,
+  "scope": "Actual egui frame with forwarded Escape and IME cancellation; no native input method is simulated by this test."
+}
