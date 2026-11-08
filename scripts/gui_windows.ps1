@@ -118,8 +118,8 @@ public static class RescueOwnedWindow {
     static extern IntPtr WindowFromPoint(Point point);
     [DllImport("user32.dll")]
     static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint process);
-    [DllImport("user32.dll", SetLastError=true)]
-    static extern bool SetCursorPos(int x,int y);
+    [DllImport("user32.dll")]
+    static extern int GetSystemMetrics(int index);
     public static uint ForegroundActivationClicks=0;
     public static void ActivateOwnedWindow(IntPtr hwnd,uint processId) {
         SetForegroundWindow(hwnd);
@@ -127,16 +127,19 @@ public static class RescueOwnedWindow {
         // Foreground-lock rules can reject a new test process after the prior
         // GUI closes. Activate by a normal click on this owned title bar only.
         Rect rect;
-        if(!GetWindowRect(hwnd,out rect))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        if(!GetWindowRect(hwnd,out rect))throw new Exception("GetWindowRect failed: "+Marshal.GetLastWin32Error());
         var point=new Point {x=rect.left+(rect.right-rect.left)/2,y=Math.Max(0,rect.top)+12};
         uint atPoint;
         GetWindowThreadProcessId(WindowFromPoint(point),out atPoint);
         if(atPoint!=processId)throw new Exception("Owned title bar is obscured; refusing to click another process");
-        if(!SetCursorPos(point.x,point.y))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
-        GetWindowThreadProcessId(WindowFromPoint(point),out atPoint);
-        if(atPoint!=processId)throw new Exception("Owned title bar moved before activation");
-        var input=new[]{new Input {type=0,mouse=new MouseInput {flags=2}},new Input {type=0,mouse=new MouseInput {flags=4}}};
-        if(SendInput(2,input,Marshal.SizeOf(typeof(Input)))!=2)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        // SendInput also moves the pointer. SetCursorPos additionally requires
+        // window-station write attributes that this restricted token lacks.
+        int left=GetSystemMetrics(76),top=GetSystemMetrics(77),width=GetSystemMetrics(78),height=GetSystemMetrics(79);
+        if(width<2 || height<2)throw new Exception("No virtual desktop bounds for owned activation");
+        var move=new MouseInput {x=(int)((long)(point.x-left)*65535/(width-1)),y=(int)((long)(point.y-top)*65535/(height-1)),flags=0xC001};
+        var input=new[]{new Input {type=0,mouse=move},new Input {type=0,mouse=new MouseInput {flags=2}},new Input {type=0,mouse=new MouseInput {flags=4}}};
+        uint sent=SendInput(3,input,Marshal.SizeOf(typeof(Input)));
+        if(sent!=3)throw new Exception("SendInput owned activation failed: sent="+sent+", error="+Marshal.GetLastWin32Error());
         ForegroundActivationClicks++;
         for(int i=0;i<40;i++) {
             if(GetForegroundWindow()==hwnd)return;
