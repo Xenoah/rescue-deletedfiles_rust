@@ -269,6 +269,17 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Export an existing recovery JSON report as an offline HTML or CSV file.
+    ExportReport {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, value_parser = ["html", "csv"])]
+        format: String,
+        #[arg(long)]
+        json: bool,
+    },
     Report {
         #[arg(long)]
         session: PathBuf,
@@ -980,6 +991,25 @@ fn run() -> Result<i32, Error> {
                 compact,
             );
             Ok(recovery_code(&results, &cancel))
+        }
+        Command::ExportReport {
+            input,
+            output,
+            format,
+            json: compact,
+        } => {
+            let report = rescue_core::read_recovery_report(&input)?;
+            let kind = if format == "html" {
+                rescue_core::ReportFormat::Html
+            } else {
+                rescue_core::ReportFormat::Csv
+            };
+            rescue_core::export_recovery_report(&report, kind, &output)?;
+            print(
+                json!({"event":"report_exported","format":format,"output":output,"results":report["results"].as_array().map(Vec::len)}),
+                compact,
+            );
+            Ok(0)
         }
         Command::Report {
             session,

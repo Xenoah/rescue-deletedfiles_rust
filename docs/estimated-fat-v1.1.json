@@ -1,8 +1,8 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.0-alpha.2",
-  "binary_sha256": "c7c77aa97c9cb85d110d6f31c2e25adc876a033c2b95cd6030374c4533a44dfa",
-  "checks": 19,
+  "version": "rescue 1.1.0",
+  "binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
+  "checks": 20,
   "cases": [
     "fat12_explicit_opt_in_only",
     "fat12_legacy_index_mcp_bytes_and_evidence",
@@ -22,6 +22,7 @@
     "ownership_incomplete",
     "outside_heap",
     "unverifiable_fragment_is_estimated_and_not_counted_exact",
+    "restore_revalidates_explicit_policy",
     "carving_policy_refused"
   ],
   "files_byte_exact": 10,

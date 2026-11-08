@@ -65,6 +65,9 @@ def main(binary,output=None):
         root=Path(temporary)
         for bits in [12,16]:
             source=root/f'fat{bits}.raw';truth,unsupported,meta=make(source,bits);before=file_hash(source)
+            discovered=run(binary,'discover','--source',source,'--json')
+            check(len(discovered['volumes'])==1 and discovered['volumes'][0]['region']['filesystem']==f'fat{bits}' and not discovered['truncated'],'classic FAT discovery')
+            checks.append(f'fat{bits}_validated_primary_discovery')
             old=run(binary,'scan','--source',source,'--work-dir',root/f'old-{bits}','--json')
             indexed=run(binary,'scan','--indexed','--source',source,'--work-dir',root/f'index-{bits}','--json')
             check(old['filesystem']==f'fat{bits}' and run(binary,'report','--session',indexed['session'],'--json')['session']['filesystem']==f'fat{bits}','BPB detection independent of label')

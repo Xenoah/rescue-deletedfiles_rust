@@ -1,0 +1,96 @@
+{
+  "release_tag": "v1.1.0-alpha.1",
+  "release_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.1",
+  "tag_commit": "188f8de67f6cc6f904ffef51d58877127d1522f2",
+  "native": {
+    "run_id": 42432442112,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42432442112",
+    "conclusion": "success"
+  },
+  "public": {
+    "run_id": 42434454146,
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42434454146",
+    "conclusion": "success",
+    "head_sha": "188f8de67f6cc6f904ffef51d58877127d1522f2",
+    "jobs": [
+      {
+        "name": "test (windows-2022, windows, x64)",
+        "conclusion": "success",
+        "started_at": "2026-11-08T01:29:23Z",
+        "completed_at": "2026-11-08T01:38:32Z"
+      },
+      {
+        "name": "test (ubuntu-22.04, linux, x64)",
+        "conclusion": "success",
+        "started_at": "2026-11-08T01:29:23Z",
+        "completed_at": "2026-11-08T01:31:11Z"
+      },
+      {
+        "name": "test (macos-26-intel, macos, x64)",
+        "conclusion": "success",
+        "started_at": "2026-11-08T01:29:25Z",
+        "completed_at": "2026-11-08T01:35:54Z"
+      },
+      {
+        "name": "test (macos-26, macos, arm64)",
+        "conclusion": "success",
+        "started_at": "2026-11-08T01:29:23Z",
+        "completed_at": "2026-11-08T01:31:59Z"
+      },
+      {
+        "name": "attach-evidence",
+        "conclusion": "success",
+        "started_at": "2026-11-08T01:38:34Z",
+        "completed_at": "2026-11-08T01:38:49Z"
+      }
+    ]
+  },
+  "assets": [
+    {
+      "name": "rescue-1.1.0-alpha.1-linux-x64-portable.tar.gz",
+      "bytes": 12567940,
+      "digest": "sha256:b2f52f1508d1ec06e19290e52a6b1849c80220f62dfa43a23998f2b0ac15aabd"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-linux-x64.deb",
+      "bytes": 9470798,
+      "digest": "sha256:6040e3e33a9f18d8c705bc7dea994bf7a54651b9d975aaf7ff46b77f4a4a8b71"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-macos-arm64-portable.zip",
+      "bytes": 8718545,
+      "digest": "sha256:6639aaa2698f3ad61015a8aad6d16c3df1b2a694bb0902ad6e66bdf173aac0cc"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-macos-arm64.pkg",
+      "bytes": 8712641,
+      "digest": "sha256:70fae20c5f7d3e67302942affe65971902cfdab912beb70bca6449f9261d6001"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-macos-x64-portable.zip",
+      "bytes": 9429436,
+      "digest": "sha256:407ba4b7fca938b85d29b0b84fc161906d5b106938d2d64f03ad0724dec230a6"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-macos-x64.pkg",
+      "bytes": 9428896,
+      "digest": "sha256:67af619fdf58998ba2c42be0473c62fe7ca418574a3b2ad7bdca5d87a591b63c"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-windows-x64-portable.zip",
+      "bytes": 10677561,
+      "digest": "sha256:bf9a02b9f5f64ad475c31eeaceb8632648c39889b671c291d6f568e349900ab1"
+    },
+    {
+      "name": "rescue-1.1.0-alpha.1-windows-x64-setup.exe",
+      "bytes": 9392076,
+      "digest": "sha256:038a29efe2de9a3ab20ccb0cbaeb1023479e3690b38ca8aaba86addf3cce6dbe"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "bytes": 861,
+      "digest": "sha256:b25c0bc9d699b07ec00fcc7078f4e8b0e16b7597d6b5a0496b64a49772876abf"
+    }
+  ],
+  "scope": "GitHub API observations of successful native and exact public package workflows and released asset metadata. Full test records remain in the linked Actions artifacts; this is a durable status summary, not a copy of the complete artifact."
+}

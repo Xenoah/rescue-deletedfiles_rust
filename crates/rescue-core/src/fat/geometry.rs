@@ -102,9 +102,7 @@ impl Geometry {
             || u16_at(boot, 19)? != 0
             || u16_at(boot, 22)? != 0
         {
-            return Err(Error::Unsupported(
-                "expected FAT32 (FAT12/16 are not supported)".into(),
-            ));
+            return Err(Error::Unsupported("invalid FAT32 BPB geometry".into()));
         }
         let data_sector = reserved + fat_sectors * u64::from(copies);
         if data_sector >= total || total * sector > image.length {

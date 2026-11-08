@@ -1,9 +1,10 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.0-alpha.2",
-  "binary_sha256": "c7c77aa97c9cb85d110d6f31c2e25adc876a033c2b95cd6030374c4533a44dfa",
-  "checks": 18,
+  "version": "rescue 1.1.0",
+  "binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
+  "checks": 20,
   "cases": [
+    "fat12_validated_primary_discovery",
     "fat12_fixed_root_lfn_subdirectory_and_packed_boundary",
     "fat12_legacy_index_mcp_bytes",
     "fat12_cleared_loop_live_overlap_refused",
@@ -13,6 +14,7 @@
     "fat12_conflicting_totals_refused",
     "fat12_mbr_bounded_volume",
     "fat12_gpt_bounded_volume",
+    "fat16_validated_primary_discovery",
     "fat16_fixed_root_lfn_subdirectory_and_packed_boundary",
     "fat16_legacy_index_mcp_bytes",
     "fat16_cleared_loop_live_overlap_refused",

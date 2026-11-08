@@ -106,6 +106,10 @@ def main(binary,output=None):
         check(Path(row['path']).read_bytes()!=b'A'*512+b'B'*388 and row['extent_evidence']=='estimated_contiguous','unknown format estimate misclassified')
         check(any('No structural validator' in w and 'unverified' in w for w in row['warnings']),'unknown format uncertainty missing')
         mismatches+=1;check(file_hash(source)==before,'unknown source modified');checks.append('unverifiable_fragment_is_estimated_and_not_counted_exact')
+        changed=json.loads(Path(scan['session']).read_text(encoding='utf-8'));changed['search']['estimate_fat_contiguous']=False
+        tampered=root/'policy-off.json';tampered.write_text(json.dumps(changed),encoding='utf-8')
+        refused=run(binary,'recover','--session',tampered,'--id',key,'--destination',root/'policy-off-out','--json',expected=5)['results'][0]
+        check(refused['status']=='failed' and refused['path'] is None,'restore ignored disabled estimation policy');checks.append('restore_revalidates_explicit_policy')
         denied=subprocess.run([str(binary),'scan','--source',str(original),'--work-dir',str(root/'invalid-policy'),'--mode','carve','--estimate-fat-contiguous','--json'],capture_output=True)
         check(denied.returncode!=0,'estimate enabled for carving');checks.append('carving_policy_refused')
     report={'status':'passed','version':subprocess.check_output([str(binary),'--version'],text=True).strip(),'binary_sha256':file_hash(binary),'checks':len(checks),'cases':checks,'files_byte_exact':exact,'known_incorrect_estimates_labelled_unverified':mismatches,'source_unchanged':True,'scope':__doc__.strip()}

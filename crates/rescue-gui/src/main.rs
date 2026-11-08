@@ -154,6 +154,7 @@ struct App {
     status: Text,
     report: Text,
     show_report: bool,
+    report_export: Option<(rescue_core::ReportFormat, String, String)>,
     focus_report: bool,
     results: Vec<RecoveryResult>,
     primary_rect: Option<egui::Rect>,
@@ -297,6 +298,7 @@ impl App {
             ),
             report: Text::default(),
             show_report: false,
+            report_export: None,
             focus_report: false,
             results: Vec::new(),
             primary_rect: None,
@@ -1263,7 +1265,7 @@ impl App {
                 "Progress and cancellation controls are at the bottom of the window."
             ));
         }
-        if !self.report.is_empty() {
+        if !self.report.is_empty() && self.stage != Stage::Settings {
             // Keep the report after the main actions in both visual and Tab
             // order. Use the reserved height for this frame; resize next frame.
             let was_open = self.show_report;
@@ -1283,9 +1285,73 @@ impl App {
                     .id_salt("saved-report-body")
                     .max_height(96.0)
                     .show_accessible(ui, tr!("保存レポート", "Saved reports"), |ui| {
+                        if !self.results.is_empty() && !self.busy() {
+                            ui.horizontal_wrapped(|ui| {
+                                if ui
+                                    .button(tr!("HTMLレポートを保存", "Save HTML report"))
+                                    .clicked()
+                                {
+                                    self.export_report(rescue_core::ReportFormat::Html);
+                                }
+                                if ui
+                                    .button(tr!("CSVレポートを保存", "Save CSV report"))
+                                    .clicked()
+                                {
+                                    self.export_report(rescue_core::ReportFormat::Csv);
+                                }
+                            });
+                        }
                         ui.add(egui::Label::new(&self.report).wrap());
                     });
             }
+        }
+    }
+    fn export_report(&mut self, format: rescue_core::ReportFormat) {
+        let destination = PathBuf::from(&self.destination);
+        let folder = if self.save_mode == SaveMode::Zip {
+            destination.parent().unwrap_or(Path::new(".")).to_owned()
+        } else if self.destination.is_empty() {
+            PathBuf::from(".")
+        } else {
+            destination
+        };
+        self.report_export = Some((
+            format,
+            folder
+                .join(format!("rescue-report.{}", format.extension()))
+                .display()
+                .to_string(),
+            String::new(),
+        ));
+    }
+    fn report_export_ui(&mut self, ctx: &egui::Context) {
+        let Some((format, mut path, mut error)) = self.report_export.take() else {
+            return;
+        };
+        let mut close = false;
+        let response = responsive_modal(ctx, "export-recovery-report", 640.0).show(ctx, |ui| {
+            ui.heading(tr!("復元レポートを保存", "Save recovery report"));
+            ui.label(tr!("保存結果・警告・元データとの一致が未確認であることを含めます。既存ファイルは上書きしません。", "Includes saved results, warnings and unverified content. Existing files are never replaced."));
+            let label = ui.label(tr!("レポートの保存先", "Report output path"));
+            text_input::singleline(ui, &mut path, egui::Id::new("report-output-path"), label.id, ui.available_width(), "");
+            if !error.is_empty() { ui.colored_label(theme::WARNING, &error); }
+            ui.horizontal(|ui| {
+                if ui.button(tr!("参照", "Browse")).clicked()
+                    && let Some(chosen) = rfd::FileDialog::new().set_file_name(format!("rescue-report.{}", format.extension())).add_filter(format.extension(), &[format.extension()]).save_file() {
+                        path = chosen.display().to_string();
+                    }
+                if ui.button(tr!("保存", "Save")).clicked() && let Some(session) = self.session.as_ref() {
+                    let report = rescue_core::recovery_report(session, &self.results);
+                    match rescue_core::export_recovery_report(&report, format, Path::new(&path)) {
+                        Ok(()) => { self.status = message!("レポートを保存: {path}", "Report saved: {path}"); close = true; }
+                        Err(e) => error = e.to_string(),
+                    }
+                }
+                if ui.button(tr!("取消", "Cancel")).clicked() { close = true; }
+            });
+        });
+        if !close && !response.should_close() {
+            self.report_export = Some((format, path, error));
         }
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
@@ -2418,7 +2484,7 @@ impl App {
                 });
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            let report_height = if self.report.is_empty() { 0.0 } else {
+            let report_height = if self.report.is_empty() || self.stage == Stage::Settings { 0.0 } else {
                 36.0 + if self.show_report {104.0} else {0.0}
             };
             let height = (ui.available_height() - 100.0 - report_height).max(32.0);
@@ -2485,6 +2551,9 @@ impl App {
             }
         }
         self.preview.show(ctx);
+        if self.report_export.is_some() && !self.busy() {
+            self.report_export_ui(ctx);
+        }
     }
 }
 impl eframe::App for App {

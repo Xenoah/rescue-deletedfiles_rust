@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "version": "rescue 1.1.0",
+  "binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
+  "checks": 14,
+  "cases": [
+    "actual_recovered_bytes",
+    "html_full_evidence_and_source",
+    "csv_full_evidence_and_source",
+    "csv_bom_and_rows",
+    "html_injection_escaped",
+    "csv_formula_neutralized",
+    "unicode_quotes_newlines_preserved",
+    "estimated_saved_remains_unverified",
+    "missing_ranges_and_naming_preserved",
+    "invalid_schema_session_and_row_refused",
+    "existing_output_preserved",
+    "bounded_input_refused",
+    "zip_embedded_report_supported",
+    "source_and_json_unchanged"
+  ],
+  "files_byte_exact": 6,
+  "source_unchanged": true,
+  "scope": "Export real recovery JSON, preserving evidence and escaping hostile file names."
+}

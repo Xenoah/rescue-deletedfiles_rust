@@ -58,7 +58,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if platform=='linux':ok=ok and proof['checks']>=checks and (files is None or proof['files_byte_exact']==files)
         if not ok:contract_failures.append(f"{prefix}/{platform}/{arch}: observed {{'version':{proof.get('version')!r},'status':{proof.get('status')!r},'checks':{proof.get('checks')!r},'files':{proof.get('files_byte_exact')!r}}}")
     if modern:
-        for prefix,checks,files in [('classic-fat',18,60),('estimated-fat',19,10)]:
+        for prefix,checks,files in [('classic-fat',20,60),('estimated-fat',20,10),('reports',14,6)]:
             proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
             assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=checks and proof['files_byte_exact']==files and proof['source_unchanged']
             if prefix=='estimated-fat':assert proof['known_incorrect_estimates_labelled_unverified']==1
@@ -188,6 +188,8 @@ if modern:
     proof=json.loads((ROOT/'docs/gui-v1.1-results.json').read_text())
     assert proof['status']=='passed' and proof['application_version']==VERSION
     assert proof['source_unchanged'] and proof['files_byte_exact']>=2
+    assert proof['readable_reports']['files_exactly_match_json']==proof['files_byte_exact']
+    assert proof['readable_reports']['browser']['external_requests']==0
     assert proof['settings_to_scan_to_selected_recovery'] and proof['screenshots']
     for shot in proof['screenshots']:
         path=ROOT/'docs'/shot['file']

@@ -2730,7 +2730,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.1.0-alpha.2"
+version = "1.1.0"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2741,7 +2741,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.1.0-alpha.2"
+version = "1.1.0"
 dependencies = [
  "cap-std",
  "crc32fast",
@@ -2765,7 +2765,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.1.0-alpha.2"
+version = "1.1.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2776,7 +2776,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "1.1.0-alpha.2"
+version = "1.1.0"
 dependencies = [
  "rescue-core",
  "serde_json",

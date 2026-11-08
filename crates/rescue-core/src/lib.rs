@@ -19,6 +19,7 @@ mod preview;
 mod raid;
 mod read_access;
 mod read_map;
+mod report;
 mod restore;
 mod search;
 mod source;
@@ -62,6 +63,10 @@ pub use raid::{RaidAlternative, RaidSearchOptions, RaidSearchResult, search_raid
 pub use raid::{RaidReadRange, RaidReadTrace};
 pub use read_access::{ReadAccess, read_broker_entry, request_read_access};
 pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
+pub use report::{
+    ReportFormat, export_recovery_report, read_recovery_report, recovery_report,
+    render_recovery_report,
+};
 pub use restore::{
     CollisionPolicy, MAX_RESTORE_MEMORY, RawExport, RestoreOptions, RestoreTarget, VolumeRoot,
     ZeroFilled, export_unrecovered, restore_files, restore_files_with_roots, restore_zip,

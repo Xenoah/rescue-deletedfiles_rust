@@ -12,6 +12,7 @@ import time
 import urllib.error
 import urllib.request
 import zipfile
+from e2e_reports import main as reports
 from e2e_classic_fat import main as classic_fat
 from e2e_estimated_fat import main as estimated_fat
 from independent_classic_fat import main as independent_classic_fat
@@ -126,6 +127,7 @@ def main():
                        ('preview',preview),('allocation_scope',allocation_scope),('job_contract',job_contract),
                        ('naming',naming),('source_contract',source_contract),('export_raw',export_raw),('damaged_fat',damaged_fat)]:
         result[suite_name+'_verification']=recorded_suite(binary,suite,(a.output/(suite_name+'-results.json')).resolve())
+    result['reports_verification']=reports(binary,a.output/'reports-results.json')
     result['classic_fat_verification']=classic_fat(binary,a.output/'classic-fat-results.json')
     result['estimated_fat_verification']=estimated_fat(binary,a.output/'estimated-fat-results.json')
     if a.platform=='linux':result['independent_classic_fat_verification']=independent_classic_fat(binary,a.output/'independent-classic-fat-results.json')

@@ -1,27 +1,41 @@
-# Rescue v1.1.0-alpha.2
+# Rescue v1.1.0
 
-USB・SDなどのFAT復元を拡張した、v1.1へ向けた先行版です。
+設定から復元までの画面を整理し、USB・SD向けのFAT復元と、読める復元レポートを追加しました。`v1.1.0-alpha.1`、`alpha.2`を経た安定版です。
 
 ## 変更
 
-- FAT12/16の固定ルート・長い日本語名・サブディレクトリー・残存する断片化チェーンを解析。
-- チェーンが消えたFAT12/16/32は、詳細設定で明示的に有効化した場合だけ連続配置を推定。割当競合、読み取れないFAT、形式検証で不正な推定を拒否します。
-- 推定したファイルには、選択画面から保存結果まで「推定・内容未確認」の表示を保持。
-- アイコンに形式ごとの色と拡張子を追加。前版の設定カード、レスポンシブ配置、現在のステップ表示も継続。
-- 添付はインストーラー/ポータブル8点とSHA256SUMS.txtの計9点だけです。GitHubの自動ソースコード表示は別枠です。
+- 読み取る場所と保存先をカードで分離。現在のステップ・主操作・選択件数を強調し、狭い画面は縦配置に。形式ごとの色と拡張子をアイコンに表示します。
+- FAT12/16の固定ルート、長い日本語名、サブディレクトリー、残存する断片化チェーンに対応。
+- チェーンが消えたFAT12/16/32は、明示的に有効化した場合だけ連続配置を推定。割当競合や不正な構造を拒否し、保存後も推定・内容未確認と表示します。
+- GUIからHTML/CSVレポートを保存。CLIは `export-report` で既存の復元JSONを変換できます。警告・欠損・名前・出力ハッシュを保持し、既存ファイルは上書きしません。
+- 添付をインストーラー/ポータブル8点と共通 `SHA256SUMS.txt` の9点に整理。画像や検証JSONの添付、過去資料のパッケージ一括同梱を終了しました。
 
-## 実測と実画面
+## ダウンロード
 
-同じFAT32比較イメージで、標準14/36件、推定有効時36/36件が元のSHA-256と一致しました。GUIでも36件をZIPへ復元して照合しました。FAT12/16のCLI・索引・MCPで60件、独立した実削除で8件を照合しています。断片化した未知形式が誤った推定になる試験も残し、内容一致数へ算入しません。
+Windows x64はsetup.exe、Linux x64はDEB、macOSはCPUに合うPKGを選んでください。インストール不要なら対応するportableを1つ選びます。GitHubの自動生成ソースコードは添付9点とは別枠です。
 
-![推定を明示的に有効化](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0-alpha.2/docs/images/v1.1-alpha.2/settings-ja.png)
+[インストール手順](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/INSTALL.md) · [使い方と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/README.md)
 
-![推定を区別した保存結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0-alpha.2/docs/images/v1.1-alpha.2/recovered-ja.png)
+## 実画面
 
-[対応範囲・制限と検証](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0-alpha.2/docs/FAT-v1.1.md) · [実操作記録](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0-alpha.2/docs/gui-v1.1-results.json)。各OSの検証資料はActionsのnative-*、公開後の再検証はpublished-verificationへ保存します。公開後の結果リンクを追記します。
+![設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/settings-ja.png)
+
+![推定を区別した保存結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/recovered-ja.png)
+
+![実GUIが保存したHTMLレポート](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/html-report.png)
+
+## 検証
+
+Rust 73テスト、30統合群、Clippy。Windows・Linux・macOS Intel/ARMの全ネイティブ検証を公開条件とします。Windowsは通常権限でUIA・実キー・Microsoft日本語IMEを検証。公開後には実際の配布物を再取得して再検証し、結果リンクを追記します。
+
+最終GUIで新規スキャン・検索・選択保持・ZIP復元・HTML/CSV保存・日英切替・720×520表示を実施。36件・152,325バイトが元SHA-256と一致し、推定22件の表示と全入力の不変を確認しました。同じ固定FAT32比較イメージは標準14/36件、推定有効36/36件でした。
+
+FAT12/16は20項目・60ファイル、独立したmkfs/mtoolsの実削除は8ファイル一致。推定の20項目では10件一致に加え、意図的な未知形式の断片化1件が誤った推定として未確認表示を保つことも検証しました。HTML/CSVは14項目で全情報保持、HTML埋め込み文字・CSV数式の対処、無効入力と上書き拒否を検証しました。
+
+[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/V1_1_ACCEPTANCE.md) · [実操作と画面ハッシュ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/gui-v1.1-results.json) · [FATの範囲・実測](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/FAT-v1.1.md)
 
 ## 制限
 
-推定は初期状態で無効です。構造が正しくても元の内容との一致は保証されず、保存完了は内容の正しさを意味しません。1ファイル64 MiBまで。HTML/CSVレポートは安定版へ向けた次の段階です。APFS/ext4直接解析は未対応です。
+推定は初期状態で無効、1ファイル64 MiBまでです。構造の正しさ・保存完了・出力ハッシュは元内容との一致を証明しません。固定イメージの値を一般的な復元率とは扱いません。APFS/ext4/ReFS直接解析、実媒体の広範な性能・復元率は対象外です。
 
-Windowsは発行元署名なし、macOSはアドホック署名でApple公証なしです。
+Windowsは発行元署名なし、macOSはアドホック署名・Apple公証なしです。

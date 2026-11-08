@@ -1,278 +1,61 @@
 # Rescue
 
-Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
-復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
+Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**v1.1.0-alpha.2: FAT12/16と明示的なFAT推定復元を追加した先行版。**
-読み取る場所と保存先を分け、現在のステップと次の操作を見つけやすくしました。形式ごとの色と拡張子をアイコンに表示し、推定したファイルには内容未確認の表示を残します。
-[先行版をダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.2) · [変更と実画面](docs/UI-v1.1.md) · [リリースノート](docs/RELEASE-v1.1.md)
+**v1.1.0**ではUIを整理し、FAT12/16、明示的なFAT推定復元、HTML/CSVレポートを追加しました。
 
-![v1.1で推定したファイルを保存した実画面](docs/images/v1.1-alpha.2/recovered-ja.png)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0) · [変更内容](docs/RELEASE-v1.1.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_1_ACCEPTANCE.md)
 
-同じFAT32比較イメージでは標準設定14/36件、推定を有効にすると36/36件が元のハッシュに一致しました。推定は初期状態で無効です。[対応範囲・制限と検証](docs/FAT-v1.1.md)
-
-添付は各OSのインストーラー・ポータブル版と共通チェックサムだけです。検証資料はリポジトリとActionsに保存します。
-安定版は引き続き[v1.0.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.0.0)です。
-以下のv1.0およびalpha.15/alpha.16の記録は当時の画面・測定値です。
-
-**v1.0.0: NTFS・FAT32・exFAT、消失領域、イメージ取得、RAID、再開可能な索引を備えた初回安定版。**
-GUI・CLI・MCPの共通エンジン、8配布パッケージ、対応範囲と制限を公開しています。
-[リリースノート](docs/RELEASE-v1.0.md) · [受入台帳](docs/V1_ACCEPTANCE.md) ·
-[1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md)
-
-商用比較ではNTFS/exFATが各36/36件一致、FATチェーン消失は14/36件でした。
-同じ入力でUFS ExplorerとDMDEは各36/36件です。「有料製品を超えた」とは主張していません。
-取消後にエラーへ戻っていたGUIを修正し、保存済み候補・選択・再開操作を保持します。
-Windowsの日本語IMEで、取消後に未確定文字が残る問題も修正しました。
-
-![v1.0で1,000万候補から選んだ3件を復元](docs/images/v1-gui-restored.png)
-
-GUI・CLI・MCPにPNG/JPEG/テキストの隔離プレビューを追加しました。
-27統合群をWindows・Linux・macOS Intel/ARMの4ネイティブVMで検証することを公開条件にしています。
-画面の候補をクリックして「プレビュー」を選択します。
-
-![1024×512画像を512×256に縮小した実GUI](docs/images/preview-large.png)
-
-PNG/JPEGは入力8 MiB・1,677万画素、テキストは先頭64 KiB、1回の表示は5秒・読取64 MiBを上限とします。
-実際の子プロセスで再検証とデコードを行い、プレビュー用の変換結果と元バイトの復元を区別します。
-[プレビューの仕組みと制限](docs/PREVIEW.md) · [実画面の検証記録](docs/gui-preview-results.json)
-
-ソースの種類・ID・容量・読取範囲と、セッションを明示する候補参照を追加しました。
-[共通の識別モデル](docs/SOURCE_CONTRACT.md) · [実GUIの検証](docs/gui-source-results.json)
-
-![ソースの識別とPDFの復元結果](docs/images/source-identity.png)
-
-画面上部のLanguageから日本語と英語を切り替えられます。日本語の元名と選択を保持し、
-実GUIでPDFとテキストの2件1,428バイトを復元して照合しました。[言語と検証範囲](docs/LANGUAGE.md)
-
-![日本語の名前を保持した英語の復元結果](docs/images/i18n-restored-en.png)
-
-Tab・Spaceによる選択と復元、列見出しの左右キーによる幅変更、狭い画面のキーボードスクロールを改善しました。
-復元完了後は保存レポートへフォーカスを移します。[操作基準と実GUIの検証](docs/UI_GUIDELINES.md)
-
-![キーボードでPDFを復元し、保存レポートへ移動した実GUI](docs/images/keyboard-finished.png)
-
-Windowsでは、通常権限の画面から選択ディスクの読取だけを補助プロセスに許可できます（GUI「ディスクの読取を許可」、CLI `--request-read-access`）。
-受け取ったハンドルに書込・削除・ACL変更権限がないことを確認します。
-Windows実VMでは、画面読み上げ等が使うUI Automationから設定・検索・選択・ZIP復元までを操作し、2件1,428バイトの一致をリリース条件にしています。人が操作するUAC画面の評価は未実施です。[権限分離の設計と検証範囲](docs/READ_ACCESS.md)
-
-Carvingの既定範囲を未割当領域に変更しました。NTFS/FAT32/exFATの割当情報を照合し、
-割当情報を読めない範囲の全領域検索は一覧上に理由を表示します。
-GUIから2候補を復元して内容一致を確認しました。[範囲判定と実画面](docs/ALLOCATION_SCOPE.md)
-
-![未割当／全領域を選択する詳細設定](docs/images/allocation-settings.png)
-
-イメージ取得を「一時停止して保存」から再開でき、旧セッションを元の記録を残してコピー移行できます。
-MCPのジョブには種類・工程・構造化エラーを追加し、再開時は新しいジョブIDで履歴を保持します。
-実GUIの移行後に36ファイルを復元して正解と照合しました。[共通契約と検証記録](docs/JOB_CONTRACT.md)
-
-![セッションをコピー移行する実GUI](docs/images/jobs-migration-settings.png)
-
-元媒体の名前と保存時の変更履歴を、GUI・CLI・MCP・ZIP内レポートへ追加しました。
-同名PDFを残して復元する実操作で、1,367バイトの内容一致と既存ファイルの保持を確認しました。
-[名前の根拠と変更理由](docs/NAMING.md)
-
-![同名PDFを両方保持した実GUIの名前変更履歴](docs/images/naming-history.png)
-
-![名前・日時・種類・サイズ・状態を並べて表示する実GUI](docs/images/details-view.png)
-
-列見出しで並べ替え、境界で列幅を変更し、元フォルダー・種類・日付・サイズ等でグループ化できます。
-画像はLinuxの実GUIと人工生成のディスクです。日時や元のフォルダーは試験用の値です。
+![v1.1の設定画面](docs/images/v1.1/settings-ja.png)
 
 ## ダウンロード
 
-[v1.0.0のリリースとSHA-256一覧](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.0.0)
+通常はインストーラーを1つ選んでください。インストールせず使う場合はポータブル版を選べます。
 
-| OS / CPU | インストール版 | ポータブル版 |
+| 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [setup.exe](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-windows-x64-setup.exe) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-windows-x64-portable.zip) |
-| Linux x64 | [.deb](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-linux-x64.deb) | [portable.tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-arm64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-arm64-portable.zip) |
-| macOS Intel | [.pkg](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-x64.pkg) | [portable.zip](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/rescue-1.0.0-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/rescue-1.1.0-macos-x64-portable.zip) |
 
-Linuxはglibc 2.35以降、macOSは13以降。macOSはアドホック署名で、Developer ID署名・公証はありません。
-OS対応とファイルシステムの解析対応は別です。APFS/ext4の直接解析は未対応です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.1.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
-## 操作の流れ
+Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
-1. ディスク全体・ボリューム、または保存したRAWイメージを選択。
-2. 元の場所・任意フォルダー・ZIPと、同名ファイルの処理を設定。
-3. 必要なら詳細設定で検索方式・範囲・深度・拡張子を指定してスキャン。
-4. 復元するファイルを選択し、復元結果と保存先を確認。
+## できること
 
-![保存方法を先に設定する実画面](docs/images/settings-view.png)
+- NTFS・FAT12/16/32・exFATの削除管理情報を解析。MBR/EBR/GPT、長い名前、対応する断片化チェーンを扱います。
+- 入力と保存先をカードで分離し、現在のステップ、選択件数、推定・不完全な結果を表示。狭い画面では縦配置になります。
+- 取消・再開可能な索引、検索、隔離プレビュー、フォルダー/ZIP/元の場所への復元。
+- 読取マップ付きイメージ取得、消失領域探索、残存MFT、対応するRAID構成、PNG/JPEG/PDF/ZIP/Office/MP4/MOVのCarving。
+- 復元結果のHTML/CSV保存。元のJSONと同じ警告・欠損・名前・出力ハッシュを保持します。
 
-同じディスクにも保存できます。選択データをすべて先に読み出します（合計512 MiBまで）。
-同名ファイルは `資料 (復元 1).pdf` のように別名で残すか、スキップ。同名フォルダーは統合します。
-元の場所が確認できない候補はフォルダーかZIPへ保存してください。
-同じディスクへの保存は、未選択の削除データへ影響する可能性があります。
+![保存完了と推定を区別](docs/images/v1.1/recovered-ja.png)
 
-主要操作はスクロール領域の下に固定し、入力ラベルを常に表示します。
-Ctrl+F（macOSはCommand+F）で結果検索へ移動。最小720×520と100%/150%/200%の配置を検査しています。
-配置の判断根拠は [Microsoft/W3Cの公式資料と採用ルール](docs/UI_GUIDELINES.md) を参照。
+FATのチェーンが消えた複数クラスターは標準では推定しません。詳細設定で有効にした場合だけ連続配置を推定し、割当競合や構造不正を拒否します。同じ固定FAT32イメージでは標準14/36件、推定有効36/36件が元のSHA-256と一致しました。一般的な復元率ではありません。未知形式の断片化では誤った推定があり得るため、保存後も「内容未確認」と表示します。[対応範囲と実測](docs/FAT-v1.1.md)。
 
-## 破損したUSB・SDからの復元
+![ブラウザーで読む復元レポート](docs/images/v1.1/html-report.png)
 
-FAT32の2つのFATコピーが食い違ったり片方が読めなかったりしても、条件を満たすコピーが1つだけならそのチェーンで復元します（推測はしません）。
-通常の復元で不完全になったファイルは「復元できなかった N 件をバイナリで書き出す」で、読めた部分を取り出せます。
-読めない部分は0で埋めて範囲をJSONに記録し、未検証のデータとして扱います。[手順と制限](docs/DAMAGED_MEDIA.md)
+[UIの実操作](docs/UI-v1.1.md) · [レポート](docs/REPORTS.md) · [現行の制限](docs/ALPHA.md) · [索引](docs/INDEX.md) · [同じ場所への保存](docs/SAME-LOCATION.md)
 
-![復元できなかったデータをバイナリで書き出した実GUI](docs/images/raw-export-done.png)
-
-## 大量の候補とスキャンの再開
-
-NTFS・FAT32・exFAT・署名探索・残存MFTをSQLiteの索引へ保存し、GUIは1ページ500件ずつ表示します。
-名前・日時・種類・サイズ・状態で並べ替え、グループやページを変えても選択したIDを保持します。
-
-![ページをまたぐ選択を保持し、元フォルダーとサイズで並べ替える実GUI](docs/images/index-grouped.png)
-
-「中断して保存」から、ソースの識別を照合して再開できます。旧JSONや旧索引はコピーして移行します。
-復元直前は選択した管理情報を再検証するため、旧上限の10万候補・200万レコードより後のファイルも対象です。
-各FSの後方のファイルをCLI/MCPでバイト照合しました。[仕組み・上限・検証状況](docs/INDEX.md)。
-
-![途中で保存したスキャンをGUIから再開](docs/images/index-paused.png)
-
-1,000万候補を実GUIで開き、先頭・2ページ目・末尾検索から選んだ3ファイルをZIPへ復元しました。
-138バイトを正解と照合し、検索をキーボードから取り消す操作も確認しています。
-
-![1,000万候補からページをまたいで選んだファイルを復元](docs/images/index-large-restored.png)
-
-[実GUIの検証記録](docs/gui-index-large-results.json)・[大規模測定](docs/index-benchmark-results.json)。
-1 TiBは疎な合成イメージの論理容量です。物理ディスク1 TiBの全読取性能を示す値ではありません。
-
-## RAIDのメンバーから復元する
-
-「RAIDを構成」でRAWイメージを追加し、順序・欠損位置・開始バイト・使用長を指定します。
-JBOD、RAID 0/1/5/6/10の[明示した配置](docs/RAID.md)に対応。元メンバーへ書き戻しません。
-
-![RAID6のメンバーと欠損位置を設定する実GUI](docs/images/raid-members.png)
-
-自動探索はMFT/FAT等の内部構造を照合した複数候補を示します。使用する構成を選び、通常のスキャンへ進みます。
-読めるミラー同士やパリティの不一致は利用不能として扱います。復元レポートには各ファイルの読取りに使った
-メンバー・欠損位置・P/Qの位置と論理範囲を記録します。
-
-![2台欠損のRAID6から実GUIで36ファイルを復元](docs/images/raid-restored.png)
-
-## 消失した領域と残存MFTを探す
-
-「失われた領域・破損ブートを探す」で、ディスク内のNTFS/FAT32/exFAT候補を比較して選択できます。
-バックアップブートは解析にだけ利用し、元ディスクへ書き戻しません。
-
-![消失領域の候補とブートの根拠](docs/images/volume-discovery.png)
-
-詳細設定の「残存するMFTレコードも探索」で、現行MFTの外や論理末尾に残るレコードを調べます。
-旧クラスタ構成や元の階層は未確認と表示し、元の場所への自動復元には使いません。
-
-![残存MFTの不確実性を表示する実GUI](docs/images/remnant-files.png)
-
-[対応プロファイル・根拠・上限](docs/DISCOVERY.md)。独立したntfs-3gによる同一構成の実クイックフォーマット後に、
-旧100ファイルをCLI/MCPでそれぞれ全バイト一致で復元しました。Windows format.exeやSSD TRIMの実績とは区別します。
-
-## NTFSの追加領域と別名
-
-追加のMFTレコードを属性リストからたどり、シーケンス番号・属性ID・VCN・重複範囲を照合します。
-MFT自体の分割、ADS、圧縮・疎領域にも適用し、壊れた参照から別ファイルのデータを結合しません。
-
-![NTFS追加レコードと割当の根拠](docs/images/ntfs-extents.png)
-
-`$Bitmap` の割当状況と、保存できた内容を分けて表示します。未割当は削除前の内容との一致保証ではありません。
-複数の名前は同じ候補にまとめ、別名・元のフォルダーからも検索できます。復元するデータは1件です。
-
-![同じデータの別名と検索](docs/images/ntfs-aliases.png)
-
-[対応範囲・照合方法・上限](docs/NTFS-EXTENTS.md)
-
-## イメージを取得して解析する
-
-「ディスクのイメージを作成・再開」から、RAWと読取マップを保存します。
-読めた範囲を同期してから記録し、失敗範囲だけセクター単位で再試行。取消・強制終了後は
-ソースの識別と保存済みSHA-256を確認して再開します。
-
-![イメージ取得の設定](docs/images/imaging-settings.png)
-
-取得したRAWと `.rmap` を一緒に保管してください。未読・失敗範囲を含むファイルは不完全とし、
-元媒体とファイル内の欠損位置をレポートへ記録します。マップは範囲・状態・UTC時刻・試行回数・エラーを表示します。
-
-![取得範囲と読取状態](docs/images/read-map.png)
-
-物理元ディスクからの取得には別媒体を使用します。選択ファイルの同一場所復元とは別の設定です。
-[取得・再開・欠損の扱いと上限](docs/IMAGING.md)
-
-## 復元の根拠
-
-| 方式 | 確認する内容 | 限界 |
-| --- | --- | --- |
-| Quick | NTFSのMFT/runlist、FAT32/exFATの削除エントリーと配置 | 拡張子を問わずバイトを保存。一般の内容の形式検証は未実施 |
-| PNG / JPEG | PNGのCRC・zlib・画素、JPEGの全MCU・係数・画素 | 連続配置、元名・日時・削除状態は不明 |
-| PDF | classic xref・間接参照・ページ階層・streamの長さ | 描画未検証、EOFによる範囲推定、xref stream/暗号化は未対応 |
-| ZIP / Office | 全エントリーのCRC・展開長・管理情報、OfficeのXML分類 | stored/DEFLATE。Office描画・マクロの安全性は未検証 |
-| MP4 / MOV | moov/mdat・トラック・全サンプル位置 | 非fragmented、ftyp必須。映像/音声の全フレーム復号は未実施 |
-
-![文書・Office・動画の7形式を選択した実GUI](docs/images/document-carving.png)
-
-[文書・動画の具体的な対応と上限](docs/DOCUMENT-CARVING.md) · [JPEGの検証](docs/JPEG-CARVING.md) · [全対応表](docs/ALPHA.md)
-
-[操作できる技術説明UIをダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.0.0/intelligence.html)。画像を内蔵した単一HTMLで、通信せずに画面と探索方式を切り替えられます。
-
-![各方式の検証根拠と制限を説明するインテリジェンスUI](docs/images/technical-ui-v15.png)
-
-## 画面記録の版
-
-v1.0の新規記録は大容量スキャン・取消と再開・操作応答・設定と復元の画面です。
-以前の専門機能の画面はalpha.15/alpha.16の記録で、実際の版表示とハッシュを保持しています。
-[持ち越し台帳](docs/gui-evidence-carryover.json)で区別し、v1.0で撮り直したようには表示しません。
-各CLI/MCP回帰試験と配布物検証はv1.0の実行ファイルでも実施します。
-
-## 検証
-
-- LinuxのRust 53項目、20統合群。新しい文書/動画の69ケースでは正常23変種、破損/未対応30条件、CLI/MCPの30出力のバイト一致を確認。
-- 35形式36ファイルの管理情報復元は8条件×CLI/MCPで576件一致。管理情報を失った連続配置は11/36、512B単位の断片配置は2/36。全900観測中755件が正解一致。上書き済み36件は元データとの一致0件で、管理情報から保存できても内容の同一性を保証しないことも確認。
-- NTFS追加27条件で不正参照、分割MFT、圧縮単位、割当3状態、別名検索を確認。独立ntfs-3gの4レコード・21ストリームも全バイト一致し、実GUIから同じ21件と別名の1データをZIP復元しました。
-- イメージ取得の15条件では強制終了・再開、マップ破損、元ソース変更、欠損位置、MCP取消・出力制限・ページ取得を検証。
-- Linux実GUIで512 MiBを全バイト一致で取得し、128範囲のマップ・再開照合・取得後の36ファイル復元を確認。
-- Linux実GUIで、元の場所36件・ZIP36件・JPEG33件・文書/動画7件の出力、既存PDFの保持、入力不変を照合。
-- Windows・Linux・macOS Intel/ARMの実VMで同じ試験を実行。各VM内にこの試験専用のVHD/loop/hdiutilディスクを作り、読取専用ディスクと実際のPDF削除・元の場所への復元を確認しました。
-
-alpha.15の[リリースCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42140624631)と[公開実物の4環境試験](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42144218890)が通過しました。8パッケージを含む153の一次資産と6の追加レポートを照合し、公開Linux GUIでも3ページと検索結果から選んだ4ファイル121バイトを正解と照合しました。[配布物の記録](docs/public-release-v0.2.0-alpha.15.json)・[実GUIの記録](docs/public-gui-v0.2.0-alpha.15.json)・[単一HTMLの30画面/12方式の操作確認](docs/public-browser-v0.2.0-alpha.15.json)。
-
-![公開GUIで選択したファイルをZIPへ復元](docs/images/public-index-restored-v15.png)
-
-alpha.14のRAID試験は22条件、44論理像と73ファイルがバイト一致しました。
-RAID6のGUIではデータメンバー2台が欠損した構成から36ファイルを復元し、読取り記録も照合しています。
-[全4ネイティブVMのCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42013561650)を通過。Linuxカーネルmdadmの5配列・12論理像・72ファイルも照合しました。公開後も[全4環境で実行検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42019897888)し、123資産を照合しました。[公開配布物](docs/public-release-v0.2.0-alpha.14.json)・[公開GUIの36ファイル復元](docs/public-gui-v0.2.0-alpha.14.json)。
-
-alpha.13のローカル試験では、消失領域20条件・64出力、残存MFT12条件・52出力、実クイックフォーマット100件×CLI/MCPを照合しました。
-実GUIでは消失領域6件・残存レコード14件をZIP復元し、720×520の候補ダイアログとキーボードで閉じる操作も確認しました。
-[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42004653478)でRust42項目・13統合群・8パッケージの組立を通過しました。公開後も[全4環境で実行検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42010127782)し、計111資産を照合しました。[alpha.13公開実物の記録](docs/public-release-v0.2.0-alpha.13.json)。
-前版alpha.12は[公開パッケージを4環境で実行](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/41999924773)し、計93資産を照合済みです。[公開実物の記録](docs/public-release-v0.2.0-alpha.12.json)。
-GUIの自動配置試験・起動試験と、Windows/macOSの手動アクセシビリティ評価は区別します。
-人工コーパスの件数は、実SSDのTRIM・上書き・物理故障や、一般的な復元率を示しません。
-
-[従来の索引GUIの実操作](docs/gui-index-results.json)と、[v1.0の大容量測定](docs/PERFORMANCE-v1.md)は版を分けて記録しています。
+APFS/ext4/ReFSの直接解析、実SSD/HDDでの一般的な復元率、第三者スクリーンリーダーによる人の評価は未対応・未評価です。読み取りは元媒体を変更しませんが、復元先は別媒体を推奨します。推定・保存完了・出力ハッシュは削除前との内容一致を証明しません。
 
 ## CLI / MCP
 
 ```sh
-rescue export-raw --session work/SESSION.rescue-session.json --id ID --destination raw-out --json
-rescue sources --json
-rescue image --source disk.raw --destination acquired --progress --json
-rescue read-map --image acquired/image.rescue.raw --limit 100 --json
-rescue discover --source disk.raw --json
-rescue scan --source disk.raw --volume-id DISCOVERED_ID --work-dir work --json
-rescue scan --source volume.raw --fragments --work-dir work --json
-rescue scan --source disk.raw --mode carve --extension pdf,docx,mp4 --work-dir work --json
-rescue results --session work/SESSION.rescue-session.json --json
-rescue recover --session work/SESSION.rescue-session.json --all --destination recovered --json
-rescue restore --source C: --name report.pdf --original --json
-rescue mcp --stdio --allow-source volume.raw --work-dir work --allow-output-root recovered
+rescue scan --source disk.raw --indexed --work-dir work --json
+rescue results --session work/SESSION.rescue-index/session.sqlite --json
+rescue recover --session work/SESSION.rescue-index/session.sqlite --all --destination recovered --json
+rescue export-report --input recovered/rescue-report-ID.json --format html --output report.html --json
+rescue mcp --stdio --allow-source disk.raw --work-dir work --allow-output-root recovered
 ```
 
-MCPは許可した入力・出力先を固定し、長時間処理の開始・進行取得・取消と候補検索・復元を提供します。
-詳細は `rescue --help`、[仕様](docs/SPEC.md)、[クラウドセットアップ](docs/CLOUD-TESTS.md) を参照。
+MCPは許可した入力と出力範囲を固定し、ジョブの進行・取消・再開と候補検索・復元を提供します。詳細は `rescue --help`、[仕様](docs/SPEC.md)、[クラウドセットアップ](docs/CLOUD-TESTS.md)を参照してください。
 
-## 開発
+## 開発と検証
 
-Rust 1.99.1を固定しています。MITライセンス。
+Rust 1.99.1、MITライセンス。4ネイティブ環境の全検証に成功してからリリースを公開し、公開した実物も再ダウンロードしてテストします。
 
 ```sh
 cargo build --workspace --locked
@@ -281,5 +64,6 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
 ```
 
-v1.0は [受入台帳](docs/V1_ACCEPTANCE.md) の必須項目を満たしてから公開します。
-未実装を既知の制限へ移して安定版と呼ぶことはしません。
+現行は30統合群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。検証内容と限界は[受入台帳](docs/V1_1_ACCEPTANCE.md)に記録します。
+
+過去の記録: [v1.0リリース](docs/RELEASE-v1.0.md) · [v1.0受入](docs/V1_ACCEPTANCE.md) · [1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md) · [v1.1以降のバックログ](docs/BACKLOG_V1_1.md)。過去の画像や計測を現行版の実績として数えません。

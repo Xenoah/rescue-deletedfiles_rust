@@ -1,46 +1,82 @@
 {
   "status": "passed",
-  "application_version": "1.1.0-alpha.2",
-  "time_utc": "2026-11-08T01:23:03.394921+00:00",
+  "application_version": "1.1.0",
+  "time_utc": "2026-11-08T01:43:33.082736+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
-  "scope": "Owned Linux Xvfb/Openbox actual mouse/keyboard: choose saved FAT32 image and ZIP destination, explicitly check contiguous estimation, new scan, select 36, switch colored icons/details, restore, switch Japanese to English. No mock screenshot or simulated recovery.",
+  "scope": "Owned Linux Xvfb/Openbox actual mouse/keyboard: choose saved FAT32 image and ZIP destination, explicitly check contiguous estimation, new scan, Ctrl+F PDF search, selection retained after clearing filter, select 36, switch colored icons/details, restore, export HTML/CSV through actual GUI, switch Japanese to English, return to settings and resize to 720x520. No mock screenshot or simulated recovery.",
   "settings_to_scan_to_selected_recovery": true,
   "source_unchanged": true,
   "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
-  "gui_binary_sha256": "6a525b9605e2609033df2f81459e5703e6ff89d3c7484dde73c6bb8c0c8ece08",
-  "cli_binary_sha256": "c7c77aa97c9cb85d110d6f31c2e25adc876a033c2b95cd6030374c4533a44dfa",
+  "gui_binary_sha256": "3d3028d0adb8ec789893d4ab6feba3616898e7093d294df4f7a7f1bd6e2f4e40",
+  "cli_binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
   "files_byte_exact": 36,
   "estimated_files_byte_exact": 22,
   "bytes_exact": 152325,
-  "archive_sha256": "540177bb3231da8c02284e5cdc0cda18ca2430607852fe6ea6dcb5924cf40412",
+  "archive_sha256": "2e48a56848653c5edf0ac47c33ce9738cad8b60c845bbc8853bac6cf389d4a0b",
   "screenshots": [
     {
-      "file": "images/v1.1-alpha.2/icons-ja.png",
-      "sha256": "98e5e8711f603663ca888e3f1b6f77295ddee8ea872d89446495f7d42f7a8335",
+      "file": "images/v1.1/html-report.png",
+      "sha256": "c466b1edf8744c9a4421fb1c71b451c144f4de65615a9486065f369e25ba76e5",
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/icons-ja.png",
+      "sha256": "aebfa3f1c889803d98ae3b31928dc5de1e96ced4cedd82b14213927914995328",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.1-alpha.2/recovered-en.png",
-      "sha256": "d6529b793199a40507e43caf48ecd3764dc898525e91155f039d50707c3fce98",
+      "file": "images/v1.1/narrow-en.png",
+      "sha256": "27d0fc0cb9fe17188e7e1d2dcd49411c210207c4d6326d8be58ed4e01cad94b1",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.1-alpha.2/recovered-ja.png",
-      "sha256": "8fb2ab6de066616b822a71891f2b660f057d40c4cb65a82785271a8762ebaf53",
+      "file": "images/v1.1/recovered-en.png",
+      "sha256": "e30ca301ea5cc0763e1234f60e524a66ba576d42e1c69af5c7ae1e01f7f9d839",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.1-alpha.2/results-ja.png",
-      "sha256": "bb69f6572dab62acb6e5db796740b6da8d6e17c9f609a43795142a2b4fcc2833",
+      "file": "images/v1.1/recovered-ja.png",
+      "sha256": "334a5f58191c69c3ec7fb225e2f6849d7550cec95c2e0ee836fe28605e89c04f",
       "width": 1440,
       "height": 1000
     },
     {
-      "file": "images/v1.1-alpha.2/settings-ja.png",
-      "sha256": "8a02c7873e9917416192ed98ae13456c02c056a4481da9ce398e681701ca2d36",
+      "file": "images/v1.1/report-actions-ja.png",
+      "sha256": "47556b0af5c6eb450ac0afd9c796843b2c22d110dd5bbfe8a31c6933900b5816",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/report-dialog-ja.png",
+      "sha256": "30ff7b1a8478105e211bd1653c81e0d4cd3adac28e5c41fe52eb1017eb09f6ca",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/report-saved-ja.png",
+      "sha256": "b90f0a4afdfdfec90359e036f2888b18369e51f23f8c652b3a898e3f558112b8",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/search-ja.png",
+      "sha256": "24aacf55105add14e6f5f888e01d5985192fda73136b0e4ca9fc19659226b72f",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/selection-retained-ja.png",
+      "sha256": "bae22aa9f28dfb169e32e79bc07e577d07827f2a0e0f59e1833522870a9cf6c3",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.1/settings-ja.png",
+      "sha256": "87f4049d121cc326e2c3c5e2116da5d5c13c8c35311422a60d758c9ace71d081",
       "width": 1440,
       "height": 1000
     }
@@ -303,8 +339,24 @@
     [
       1260,
       820
+    ],
+    [
+      720,
+      520
     ]
   ],
   "native_windows_gui": "Required separately in tag CI: UIA, keyboard and actual Japanese IME",
-  "historical_gui_records": "alpha.1 responsive/narrow and NTFS GUI flow remains recorded at its original tag, not recounted here."
+  "historical_gui_records": "alpha.1 responsive/narrow and NTFS GUI flow remains recorded at its original tag, not recounted here.",
+  "readable_reports": {
+    "html_sha256": "218b6547f47f3b27a944c5b42fb70bdf4ffaa48345c08c8dc0cf478763dc6475",
+    "csv_sha256": "0c4ee7fc8494cea42cc74e503a44df4f710179a15a58674aa80aff26d6a1e2e4",
+    "files_exactly_match_json": 36,
+    "estimated_labelled": 22,
+    "browser": {
+      "rows": 36,
+      "estimated": 22,
+      "external_requests": 0,
+      "renderer": "156.0.8078.79"
+    }
+  }
 }
