@@ -1,5 +1,5 @@
 # Diagnostic only: compare the same Microsoft IME and key sequence against a
-# standard WPF TextBox on the same disposable host, after the product test.
+# standard WPF TextBox on an owned disposable host.
 param([Parameter(Mandatory=$true)][string]$Config)
 . (Join-Path $PSScriptRoot 'gui_windows.ps1') -Config $Config -DefinitionsOnly
 Add-Type -ReferencedAssemblies PresentationFramework,PresentationCore,WindowsBase,System.Xaml -TypeDefinition @'
@@ -32,7 +32,11 @@ public static class RescueImeBaseline {
     }
 }
 '@
-$record=@{scope='Diagnostic standard WPF TextBox, same token and IME setup; never release proof';status='failed';cycles=@()}
+$record=@{scope='Diagnostic standard WPF TextBox, same token and IME setup; never release proof';status='failed';cycles=@();shutdown=@();restore_layout=$cfg.restore_layout}
+function Record-Shutdown([string]$Phase) {
+    $record.shutdown+=,@{phase=$Phase;utc=[DateTime]::UtcNow.ToString('o')}
+    $record|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+}
 function Observe-Baseline([string]$Stage,[string]$Expected) {
     $timer=[System.Diagnostics.Stopwatch]::StartNew()
     do {
@@ -81,8 +85,15 @@ try {
 finally {
     $record|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
     try {
-        if ($null -ne $script:owned) {
+        if ($cfg.restore_layout -and $null -ne $script:owned) {
+            Record-Shutdown 'before-layout-restore'
             [RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)
+            Record-Shutdown 'after-layout-restore'
         }
-    } finally {[RescueImeBaseline]::Stop()}
+    } finally {
+        Record-Shutdown 'before-window-close'
+        [RescueImeBaseline]::Stop()
+        Record-Shutdown 'after-window-close'
+    }
+    Record-Shutdown 'cleanup-complete'
 }

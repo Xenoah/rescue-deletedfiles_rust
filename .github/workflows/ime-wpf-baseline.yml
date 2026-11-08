@@ -12,8 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, windows-2025]
-    runs-on: ${{ matrix.os }}
+        teardown: [restore-layout, close-only]
+    runs-on: windows-2022
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
           if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
           ./scripts/windows_ime_profile.ps1 -Action Prepare
       - name: Compare two independent standard WPF processes without running Rescue
-        run: python scripts/ci_command.py python scripts/ime_wpf_fresh_sessions.py
+        run: python scripts/ci_command.py python scripts/ime_wpf_fresh_sessions.py ${{ matrix.teardown == 'close-only' && '--close-only' || '' }}
       - name: Restore the original user language profile
         if: always()
         shell: powershell
@@ -44,11 +44,12 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: standard-ime-${{ matrix.os }}
+          name: standard-ime-${{ matrix.teardown }}
           path: |
             wpf-fresh-sessions.json
             ime-profile-state.json
             rescue-owned-uia-wpf-*/uia.json
+            rescue-owned-uia-wpf-*/launch.json
             rescue-owned-uia-wpf-*/*.txt
             rescue-owned-uia-wpf-*/windows*.png
           if-no-files-found: error
