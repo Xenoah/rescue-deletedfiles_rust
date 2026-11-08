@@ -27,7 +27,7 @@ try:
                 if name.startswith('ime-'):
                     # Observe the standard control while the same desktop
                     # permission boundary remains in force; never retry Rescue.
-                    baseline=subprocess.run([sys.executable,'scripts/ci_command.py',sys.executable,'scripts/ime_wpf_baseline.py'])
+                    baseline=subprocess.run([sys.executable,'scripts/ci_command.py',sys.executable,'scripts/ime_wpf_baseline.py','--close-only'])
                     record['wpf_baseline_returncode']=baseline.returncode
                 raise RuntimeError('Fresh native GUI session failed: '+name)
         record['status']='passed';result=0

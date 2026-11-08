@@ -488,8 +488,7 @@ try {
     if ($null -eq $saved) { throw 'No two-file completion status in the accessibility tree' }
     if (!(Test-Path -LiteralPath $cfg.destination)) { throw 'The GUI reported completion without a ZIP' }
     Save-OwnedScreenshot 'windows-gui-complete.png'
-    if ($cfg.ime) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-    @{status='passed';input_layout_restored=[RescueOwnedWindow]::ImeRestored;process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='passed';input_profile_cleanup='outer-language-profile';process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
     $evidence = @{status='failed';gui_token=$script:guiToken;native_ime_debug=$script:imeDiagnostic;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
@@ -533,14 +532,38 @@ try {
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure
 } finally {
-    try {
-        if ($cfg.ime) {
-            if ($null -ne $script:owned -and !$script:owned.HasExited) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-        }
-    } finally {
+    # Close normally before the outer fixture restores the language profile.
+    # Forcing an HKL change during teardown stalled standard WPF controls too,
+    # and left the next process unable to convert. Never count forced exit as
+    # success merely because the UI assertions completed first.
         if ($null -ne $script:owned) {
             $script:owned.Refresh()
-            if (!$script:owned.HasExited) { $null = $script:owned.CloseMainWindow(); if (!$script:owned.WaitForExit(5000)) {$script:owned.Kill();$script:owned.WaitForExit()} }
+            $shutdown=@{graceful=$false;forced=$false;phase='before-window-close'}
+            $resultRecord=if (Test-Path -LiteralPath $cfg.result) {Get-Content -LiteralPath $cfg.result -Raw -Encoding UTF8|ConvertFrom-Json} else {[pscustomobject]@{status='failed'}}
+            $resultRecord|Add-Member -NotePropertyName shutdown -NotePropertyValue $shutdown -Force
+            $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+            try {
+                if (!$script:owned.HasExited) {
+                    $shutdown.close_requested=$script:owned.CloseMainWindow()
+                    $timer=[System.Diagnostics.Stopwatch]::StartNew()
+                    $shutdown.graceful=$script:owned.WaitForExit(5000)
+                    $shutdown.elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds
+                    if (!$shutdown.graceful) {
+                        if ($env:RESCUE_IME_TRACE -eq '1') {
+                            [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-close-timeout.dmp'))
+                        }
+                        $shutdown.forced=$true
+                        $script:owned.Kill();$script:owned.WaitForExit()
+                    }
+                } else {$shutdown.graceful=$true}
+                $shutdown.exit_code=$script:owned.ExitCode
+                $shutdown.phase='process-exited'
+                if (!$shutdown.graceful -or $shutdown.exit_code -ne 0) {
+                    $resultRecord.status='failed'
+                    throw 'Owned GUI did not exit normally; UI success cannot hide a forced shutdown or crash'
+                }
+            } finally {
+                $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+            }
         }
-    }
 }
