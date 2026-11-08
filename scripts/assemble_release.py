@@ -58,7 +58,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if platform=='linux':ok=ok and proof['checks']>=checks and (files is None or proof['files_byte_exact']==files)
         if not ok:contract_failures.append(f"{prefix}/{platform}/{arch}: observed {{'version':{proof.get('version')!r},'status':{proof.get('status')!r},'checks':{proof.get('checks')!r},'files':{proof.get('files_byte_exact')!r}}}")
     if modern:
-        for prefix,checks,files in [('classic-fat',20,60),('estimated-fat',20,10),('reports',14,6)]:
+        for prefix,checks,files in [('classic-fat',20,60),('estimated-fat',20,10),('reports',14,6),('release-fixes',9,9)]:
             proof=json.loads((dist/f'{prefix}-results-{platform}-{arch}.json').read_text())
             assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=checks and proof['files_byte_exact']==files and proof['source_unchanged']
             if prefix=='estimated-fat':assert proof['known_incorrect_estimates_labelled_unverified']==1

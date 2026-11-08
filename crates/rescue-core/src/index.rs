@@ -828,12 +828,8 @@ CREATE VIRTUAL TABLE candidate_search USING fts5(search_text,content='candidate'
             }
             let (created_rank, created_key) = date_key(&candidate.created);
             let (modified_rank, modified_key) = date_key(&candidate.modified);
-            let base = candidate.name.split(':').next().unwrap_or(&candidate.name);
-            let kind = base
-                .rsplit_once('.')
-                .filter(|(name, ext)| !name.is_empty() && !ext.is_empty())
-                .map(|(_, ext)| ext.to_uppercase())
-                .unwrap_or_default();
+            let kind = crate::file_extension(&candidate.name, candidate.stream_name.as_deref())
+                .to_uppercase();
             let state = if !candidate.supported {
                 "2"
             } else if candidate.warnings.is_empty() {

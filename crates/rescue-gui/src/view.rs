@@ -63,11 +63,12 @@ pub enum Row {
 }
 
 pub fn file_type(c: &Candidate) -> String {
-    let name = c.name.split(':').next().unwrap_or(&c.name);
-    name.rsplit_once('.')
-        .filter(|(base, ext)| !base.is_empty() && !ext.is_empty())
-        .map(|(_, ext)| tr_format!("{} ファイル", "{} file", ext.to_uppercase()))
-        .unwrap_or_else(|| tr!("ファイル", "File").into())
+    let extension = rescue_core::file_extension(&c.name, c.stream_name.as_deref());
+    if extension.is_empty() {
+        tr!("ファイル", "File").into()
+    } else {
+        tr_format!("{} ファイル", "{} file", extension.to_uppercase())
+    }
 }
 pub fn state(c: &Candidate) -> &'static str {
     if !c.supported {

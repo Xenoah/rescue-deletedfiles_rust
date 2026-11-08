@@ -1634,7 +1634,7 @@ impl App {
                                     });
                                     row.col(|ui| {
                                         ui.horizontal(|ui| {
-                                            file_icon(ui, 16.0, &c.name);
+                                            file_icon(ui, 16.0, c);
                                             let label = ui
                                                 .add(
                                                     egui::Label::new(&c.name)
@@ -1804,7 +1804,7 @@ impl App {
                                                 .show(ui, |ui| {
                                                     ui.set_width(108.0);
                                                     ui.vertical_centered(|ui| {
-                                                        file_icon(ui, 40.0, &c.name);
+                                                        file_icon(ui, 40.0, c);
                                                         let label = ui
                                                             .add(
                                                                 egui::Label::new(&c.name)
@@ -2304,10 +2304,11 @@ fn folder_icon(ui: &mut egui::Ui, size: f32) {
         egui::Color32::from_rgb(255, 207, 81),
     );
 }
-fn file_icon(ui: &mut egui::Ui, size: f32, name: &str) {
+fn file_icon(ui: &mut egui::Ui, size: f32, candidate: &Candidate) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(size * 0.78, size), egui::Sense::hover());
     let p = ui.painter();
-    let extension = name.rsplit('.').next().unwrap_or("").to_ascii_uppercase();
+    let extension = rescue_core::file_extension(&candidate.name, candidate.stream_name.as_deref())
+        .to_ascii_uppercase();
     let color = match extension.as_str() {
         "PNG" | "JPG" | "JPEG" | "GIF" | "BMP" | "WEBP" | "TIFF" => {
             egui::Color32::from_rgb(114, 74, 157)

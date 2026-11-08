@@ -34,6 +34,8 @@ pub(crate) struct State {
     visits: u64,
     #[serde(default = "estimate_budget")]
     estimate_validation_remaining: u64,
+    #[serde(default)]
+    copy_choices: Vec<String>,
     staged: u64,
     next_entry: u64,
     base_candidates: usize,
@@ -76,6 +78,7 @@ impl State {
             folders_seen: 0,
             visits: volume.visits,
             estimate_validation_remaining: volume.estimate_validation_remaining,
+            copy_choices: volume.copy_choices.clone(),
             staged: 0,
             next_entry: 0,
             base_candidates,
@@ -88,6 +91,8 @@ impl State {
             || self.scan.scanned_records > options.max_records
             || self.staged > options.max_candidates as u64
             || self.next_entry > self.staged
+            || self.copy_choices.len() > 1000
+            || self.copy_choices.iter().any(|choice| choice.len() > 1024)
             || self.visits > MAX_CLUSTER_VISITS
             || self.estimate_validation_remaining > ESTIMATE_VALIDATION_BUDGET
             || self.parents.len() > MAX_DIRECTORIES
@@ -604,6 +609,7 @@ pub(crate) fn run_volume(
     }
     state.validate(&volume, options, header)?;
     volume.visits = state.visits;
+    volume.copy_choices = state.copy_choices.clone();
     volume.estimate_validation_remaining = state.estimate_validation_remaining;
     let settings = header.search.clone().unwrap_or_default();
     loop {
@@ -679,11 +685,15 @@ pub(crate) fn run_volume(
             }
         }
         state.visits = volume.visits;
+        state.copy_choices = volume.copy_choices.clone();
         state.estimate_validation_remaining = volume.estimate_validation_remaining;
         header.scanned_records = checkpoint.previous_records + state.scan.scanned_records;
         header.invalid_records = state.base_invalid + state.scan.invalid_records;
         header.truncated |= state.scan.truncated;
         header.warnings.truncate(state.base_warnings);
+        if !state.copy_choices.is_empty() && header.warnings.len() < 100 {
+            header.warnings.push(format!("Damaged FAT mirror: {} chain(s) were taken from the single FAT copy that is consistent; see first: {}", state.copy_choices.len(), state.copy_choices[0]));
+        }
         header.warnings.extend(
             state
                 .scan

@@ -49,7 +49,7 @@ pub use index::{
     IndexWriter,
 };
 pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
-pub use naming::{NameBasis, NameChange, NameChangeReason, RecoveryNaming};
+pub use naming::{NameBasis, NameChange, NameChangeReason, RecoveryNaming, file_extension};
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};
 pub use preview::{

@@ -1,6 +1,6 @@
 # v1.1のUI改善と実操作
 
-2026-11-08 JST、安定版 `1.1.0` の実画面です。入力と保存先をカードで分け、現在のステップと主操作を強調。形式ごとの色と拡張子をアイコンに表示し、推定は文字と色で区別します。
+2026-11-08 JST、安定版 `1.1.1` の実画面です。入力と保存先をカードで分け、現在のステップと主操作を強調。形式ごとの色と拡張子をアイコンに表示し、推定は文字と色で区別します。
 
 ![設定](images/v1.1/settings-ja.png)
 
@@ -22,6 +22,14 @@ Linuxの実GUIをXvfb/Openbox上で起動し、実際のマウスとキー入力
 
 [機械可読記録](gui-v1.1-results.json)に画面・実行ファイル・入出力のハッシュがあります。以前の画面を最終版の画面として再利用していません。設定に戻った際のレポート余白も修正し、狭幅で主操作が見えることを確認しました。
 
-ローカルのRust 73テスト、CLI/MCPの30統合群、Clippyに加え、WindowsのUIA・実キー・Microsoft日本語IMEと4環境のネイティブ/公開実物テストをCIで必須としています。第三者スクリーンリーダー製品による人の評価は別の未実施項目です。
+ローカルのRust 74テスト、CLI/MCPの31統合群、Clippyに加え、WindowsのUIA・実キー・Microsoft日本語IMEと4環境のネイティブ/公開実物テストをCIで必須としています。第三者スクリーンリーダー製品による人の評価は別の未実施項目です。
 
 過去の先行版の画像・検証は[alpha.1](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0-alpha.1/docs/UI-v1.1.md)、[alpha.2](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0-alpha.2/docs/UI-v1.1.md)に残します。添付は8配布物とチェックサムだけにし、検証資料はリポジトリとActions（90日保存）に配置します。
+
+## 名前にコロンを含む候補の修正
+
+`../../CON:escape.txt`を実GUIでTXTとして表示し、その1件を選択してZIPへ保存、元の32バイトと照合しました。元イメージも不変です。
+
+![コロンを含む通常名をTXTと表示](images/v1.1/issue3-type-ja.png)
+
+![選択した1件を復元](images/v1.1/issue3-recovered-ja.png)

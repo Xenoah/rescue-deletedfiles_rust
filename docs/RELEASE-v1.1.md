@@ -1,6 +1,16 @@
-# Rescue v1.1.0
+# Rescue v1.1.1
 
 設定から復元までの画面を整理し、USB・SD向けのFAT復元と、読める復元レポートを追加しました。`v1.1.0-alpha.1`、`alpha.2`を経た安定版です。
+
+`v1.1.0`は公開前のIssue確認で処理を停止しました。push済みタグは変更せず、修正版を`v1.1.1`として公開します。
+
+## 追加修正（Issue #1–#3）
+
+- 長い名前のバイナリ書き出しを、接尾辞込み255バイト以内に収めます。1件の失敗後も前後の結果を返し、書けたファイルと部分的な出力を記録します。元の名前全体もJSONに残します。
+- 索引スキャンのFATミラー選択理由をチェックポイントへ保存し、強制終了・再開後も警告を保持します。
+- 通常の「:」入り名とADSを区別し、GUI・アイコン・新規索引で同じ種類判定を使います。古い索引の種類キーは新規スキャンで再生成してください。
+
+[再現・回帰試験](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/docs/release-fixes-v1.1.json)では9項目・9出力のバイト一致を確認しています。
 
 ## 変更
 
@@ -14,25 +24,25 @@
 
 Windows x64はsetup.exe、Linux x64はDEB、macOSはCPUに合うPKGを選んでください。インストール不要なら対応するportableを1つ選びます。GitHubの自動生成ソースコードは添付9点とは別枠です。
 
-[インストール手順](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/INSTALL.md) · [使い方と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/README.md)
+[インストール手順](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/docs/INSTALL.md) · [使い方と制限](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/README.md)
 
 ## 実画面
 
-![設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/settings-ja.png)
+![設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.1/docs/images/v1.1/settings-ja.png)
 
-![推定を区別した保存結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/recovered-ja.png)
+![推定を区別した保存結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.1/docs/images/v1.1/recovered-ja.png)
 
-![実GUIが保存したHTMLレポート](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.0/docs/images/v1.1/html-report.png)
+![実GUIが保存したHTMLレポート](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.1.1/docs/images/v1.1/html-report.png)
 
 ## 検証
 
-Rust 73テスト、30統合群、Clippy。Windows・Linux・macOS Intel/ARMの全ネイティブ検証を公開条件とします。Windowsは通常権限でUIA・実キー・Microsoft日本語IMEを検証。公開後には実際の配布物を再取得して再検証し、結果リンクを追記します。
+Rust 74テスト、31統合群、Clippy。Windows・Linux・macOS Intel/ARMの全ネイティブ検証を公開条件とします。Windowsは通常権限でUIA・実キー・Microsoft日本語IMEを検証。公開後には実際の配布物を再取得して再検証し、結果リンクを追記します。
 
 最終GUIで新規スキャン・検索・選択保持・ZIP復元・HTML/CSV保存・日英切替・720×520表示を実施。36件・152,325バイトが元SHA-256と一致し、推定22件の表示と全入力の不変を確認しました。同じ固定FAT32比較イメージは標準14/36件、推定有効36/36件でした。
 
 FAT12/16は20項目・60ファイル、独立したmkfs/mtoolsの実削除は8ファイル一致。推定の20項目では10件一致に加え、意図的な未知形式の断片化1件が誤った推定として未確認表示を保つことも検証しました。HTML/CSVは14項目で全情報保持、HTML埋め込み文字・CSV数式の対処、無効入力と上書き拒否を検証しました。
 
-[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/V1_1_ACCEPTANCE.md) · [実操作と画面ハッシュ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/gui-v1.1-results.json) · [FATの範囲・実測](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.0/docs/FAT-v1.1.md)
+[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/docs/V1_1_ACCEPTANCE.md) · [実操作と画面ハッシュ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/docs/gui-v1.1-results.json) · [FATの範囲・実測](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.1.1/docs/FAT-v1.1.md)
 
 ## 制限
 

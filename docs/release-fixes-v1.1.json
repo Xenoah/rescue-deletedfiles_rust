@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "version": "rescue 1.1.1",
+  "binary_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
+  "checks": 9,
+  "cases": [
+    "literal_colon_and_last_component_type",
+    "explicit_ads_uses_base_extension",
+    "suffix_included_in_ascii_utf8_filename_budget",
+    "original_name_preserved_in_raw_map",
+    "per_file_failure_preserves_earlier_and_later_exports",
+    "map_failure_reports_owned_bytes_and_preserves_existing_map",
+    "mcp_long_name_exports_byte_exact",
+    "indexed_mirror_decision_in_checkpoint",
+    "crash_resume_preserves_count_first_target_and_copy"
+  ],
+  "files_byte_exact": 9,
+  "source_unchanged": true,
+  "scope": "Regressions for GitHub issues 1-3: raw batches, FAT provenance, file types."
+}

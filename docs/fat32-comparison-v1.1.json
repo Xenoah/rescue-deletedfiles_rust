@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.0",
-  "binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
+  "version": "rescue 1.1.1",
+  "binary_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
   "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
   "source_unchanged": true,
   "cases": [
@@ -12,7 +12,7 @@
       "denominator": 36,
       "estimated_saved": 0,
       "unmatched_hashes": 0,
-      "session": "/workspace/work/v1.1/comparison-release-False/2697e84f-12fb-4bd2-a11a-176b5368c9fa.rescue-index/session.sqlite"
+      "session": "/workspace/work/v1.1/comparison-patch-False/9527c248-cff2-479b-8d92-9e6138304fbf.rescue-index/session.sqlite"
     },
     {
       "explicit_estimation": true,
@@ -21,7 +21,7 @@
       "denominator": 36,
       "estimated_saved": 22,
       "unmatched_hashes": 0,
-      "session": "/workspace/work/v1.1/comparison-release-True/f912c2fa-8560-4cd1-a921-13a8610a0e03.rescue-index/session.sqlite"
+      "session": "/workspace/work/v1.1/comparison-patch-True/37daabab-f6a4-4a4f-a5c5-ad2236973d15.rescue-index/session.sqlite"
     }
   ],
   "scope": "Same preserved 64 MiB actual mtools-deletion FAT32 image as v1.0 comparison; exactness judged only by original SHA-256. UFS/DMDE historical scores are not rerun here. These files were contiguous; this is not a general recovery rate."

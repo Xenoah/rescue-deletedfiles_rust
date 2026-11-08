@@ -1,7 +1,7 @@
 {
   "status": "passed",
-  "version": "rescue 1.1.0",
-  "binary_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
+  "version": "rescue 1.1.1",
+  "binary_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
   "checks": 20,
   "cases": [
     "fat12_explicit_opt_in_only",

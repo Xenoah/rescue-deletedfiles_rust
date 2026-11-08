@@ -55,6 +55,9 @@ def main(binary, output=None):
             for key, data in truth.items():
                 check(recovered.get(key) == data, f'{name}: {key} not byte-exact')
             check(any('Damaged FAT mirror' in w for w in report['warnings']), f'{name}: copy choice not reported {report["warnings"]}')
+            indexed=run(binary,'scan','--indexed','--source',source,'--work-dir',root/f'indexed-{index}','--json')
+            header=run(binary,'report','--session',indexed['session'],'--json')['session']
+            check([w for w in header['warnings'] if 'Damaged FAT mirror:' in w]==[w for w in report['warnings'] if 'Damaged FAT mirror:' in w],f'{name}: indexed mirror warning lost')
             check(sha(source) == before, f'{name}: source changed')
             cases.append(name)
         # Both copies valid but different: refuse rather than guess.

@@ -68,3 +68,35 @@ impl RecoveryNaming {
         }
     }
 }
+
+/// Extension of the final path component; strip only an explicitly known ADS suffix.
+pub fn file_extension<'a>(name: &'a str, stream_name: Option<&str>) -> &'a str {
+    let base = stream_name
+        .and_then(|stream| name.strip_suffix(stream))
+        .and_then(|base| base.strip_suffix(':'))
+        .unwrap_or(name);
+    let component = base.rsplit(['/', '\\']).next().unwrap_or(base);
+    component
+        .rsplit_once('.')
+        .filter(|(stem, extension)| !stem.is_empty() && !extension.is_empty())
+        .map_or("", |(_, extension)| extension)
+}
+
+#[cfg(test)]
+mod extension_tests {
+    use super::file_extension;
+    #[test]
+    fn literal_colons_path_components_and_explicit_streams() {
+        for (name, stream, expected) in [
+            ("../../CON:escape.txt", None, "txt"),
+            ("dir.with.dot/plain", None, ""),
+            ("dir.with.dot\\file.bin", None, "bin"),
+            ("original:colon.txt:stream.dat", Some("stream.dat"), "txt"),
+            ("file.txt:stream.dat", None, "dat"),
+            (".hidden", None, ""),
+            ("file.", None, ""),
+        ] {
+            assert_eq!(file_extension(name, stream), expected, "{name}");
+        }
+    }
+}

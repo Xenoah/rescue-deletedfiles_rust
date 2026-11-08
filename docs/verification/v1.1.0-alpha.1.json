@@ -43,7 +43,14 @@
         "started_at": "2026-11-08T01:38:34Z",
         "completed_at": "2026-11-08T01:38:49Z"
       }
-    ]
+    ],
+    "evidence_artifact": {
+      "id": 13599456685,
+      "sha256": "76451847332a54789af5615fc943ae474a3e23ae113637a61a410af06e582356",
+      "bytes": 233401,
+      "summary": "v1.1.0-alpha.1-public.md",
+      "aggregate_json_sha256": "8718dff0b4dbf60350e14f56d0f7e84731b43922f28d4a98a56eb89922bb8a21"
+    }
   },
   "assets": [
     {
@@ -92,5 +99,5 @@
       "digest": "sha256:b25c0bc9d699b07ec00fcc7078f4e8b0e16b7597d6b5a0496b64a49772876abf"
     }
   ],
-  "scope": "GitHub API observations of successful native and exact public package workflows and released asset metadata. Full test records remain in the linked Actions artifacts; this is a durable status summary, not a copy of the complete artifact."
+  "scope": "Native/public workflow outcomes and asset metadata observed through GitHub API. The public-verification artifact was also downloaded, its GitHub digest and ZIP CRC verified, and its generated summary retained here."
 }

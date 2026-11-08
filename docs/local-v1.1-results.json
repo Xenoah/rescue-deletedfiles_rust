@@ -1,9 +1,9 @@
 {
   "status": "passed",
-  "version": "1.1.0",
-  "cli_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
-  "gui_sha256": "3d3028d0adb8ec789893d4ab6feba3616898e7093d294df4f7a7f1bd6e2f4e40",
-  "rust_tests": 73,
+  "version": "1.1.1",
+  "cli_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
+  "gui_sha256": "7a3a3331130952547e7e1e5370615751453942537ce5effaa45fca0f9bca17ed",
+  "rust_tests": 74,
   "integration_suites": [
     "e2e.py",
     "e2e_streams.py",
@@ -34,21 +34,22 @@
     "e2e_damaged_fat.py",
     "e2e_classic_fat.py",
     "e2e_estimated_fat.py",
-    "e2e_reports.py"
+    "e2e_reports.py",
+    "e2e_release_fixes.py"
   ],
   "clippy": "all targets, warnings denied",
   "logs_sha256": {
-    "tests-release.log": "ff5704845019f5863adbf06f987e0f9d025cfb07f1d8518f26ade7599ebdad65",
-    "clippy-release.log": "bb93e4cd71163abf0845ff3d284cf94b4bfa13c16085ba125f72bad66025c9d4",
-    "integration-release.log": "ac47c5bb46e043b5677f8152c8902c6baf2f10435a65e1163e5845a5e1b7e59a"
+    "tests-patch.log": "1631a2c00ef74ee0516587f90f584b0145428a34ee1990707537447ea3f31b3f",
+    "clippy-patch.log": "a0fb458db896ea0002fcf01e5f1ddbe7744999c76487a61c708e5c9a318c5c83",
+    "integration-patch.log": "61ee806620edc8d512e90af604ed938b46b8fed80753a872a6cbcb51f5f880dc"
   },
   "local_package": {
     "status": "passed",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "platform": "linux",
     "arch": "x64",
-    "portable_cli_sha256": "36d30eabbe27844422461a8f833cb6aae7af17a7f337f14bb499c96b8888761d",
-    "portable_gui_sha256": "3d3028d0adb8ec789893d4ab6feba3616898e7093d294df4f7a7f1bd6e2f4e40",
+    "portable_cli_sha256": "abdd6c04df238f8f0acbdaa443cf26f098180f83b3fcda191ab887bca5b98b8a",
+    "portable_gui_sha256": "7a3a3331130952547e7e1e5370615751453942537ce5effaa45fca0f9bca17ed",
     "installer_validation": "deb_extracted_version_payload_and_shortcuts_verified",
     "packaged_cli_mcp_features": "passed: 35 formats, ZIP bytes/CRC/SHA, date and scope",
     "gui_startup": "renderer_initialized_then_alive_3_seconds",

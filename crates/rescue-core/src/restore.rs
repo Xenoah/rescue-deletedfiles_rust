@@ -67,6 +67,9 @@ fn result_for(id: &str) -> RecoveryResult {
     }
 }
 fn component(value: &str) -> String {
+    component_limit(value, 255)
+}
+fn component_limit(value: &str, limit: usize) -> String {
     let mut value = value
         .chars()
         .map(|c| {
@@ -77,20 +80,20 @@ fn component(value: &str) -> String {
             }
         })
         .collect::<String>();
-    if value.len() > 255 {
+    if value.len() > limit {
         let extension = Path::new(&value)
             .extension()
             .and_then(|e| e.to_str())
-            .filter(|e| e.len() <= 128)
+            .filter(|e| e.len() < limit && e.len() <= 128)
             .map(|e| format!(".{e}"));
         if let Some(extension) = extension {
             let mut stem = value[..value.len() - extension.len()].to_owned();
-            while stem.len() + extension.len() > 255 {
+            while stem.len() + extension.len() > limit {
                 stem.pop();
             }
             value = format!("{stem}{extension}");
         } else {
-            while value.len() > 255 {
+            while value.len() > limit {
                 value.pop();
             }
         }
@@ -111,7 +114,7 @@ fn component(value: &str) -> String {
     } else {
         value
     };
-    while value.len() > 255 {
+    while value.len() > limit {
         value.pop();
     }
     value
@@ -967,10 +970,12 @@ pub fn export_unrecovered(
     let mut exports = Vec::new();
     for file in batch.files {
         let id = file.result.candidate_id.clone();
-        let stem = component(&format!("{}.{}", id.replace(':', "_"), file.name));
+        let prefix = component(&id.replace(':', "_"));
+        let budget = 255usize.saturating_sub(prefix.len() + 1 + ".rescue-raw.json".len());
+        let stem = format!("{prefix}.{}", component_limit(&file.name, budget.max(1)));
         let bin = destination.join(format!("{stem}.rescue-raw.bin"));
         let map = destination.join(format!("{stem}.rescue-raw.json"));
-        let export = RawExport {
+        let mut export = RawExport {
             candidate_id: id,
             status: if file.unread.is_empty() {
                 "exported"
@@ -981,9 +986,9 @@ pub fn export_unrecovered(
             name: Some(file.name.clone()),
             original_path: Some(file.relative.to_string_lossy().replace('\\', "/")),
             size: file.bytes.len() as u64,
-            bin_path: Some(bin.clone()),
-            map_path: Some(map.clone()),
-            sha256: Some(format!("{:x}", Sha256::digest(&file.bytes))),
+            bin_path: None,
+            map_path: None,
+            sha256: None,
             zero_filled: file
                 .unread
                 .iter()
@@ -994,20 +999,40 @@ pub fn export_unrecovered(
                 .collect(),
             error: None,
         };
-        let write = |path: &Path, bytes: &[u8]| -> Result<()> {
+        let attempt = (|| -> Result<()> {
+            if budget == 0 {
+                return Err(Error::Request("raw export candidate ID is too long".into()));
+            }
             let mut out = std::fs::OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(path)?;
-            out.write_all(bytes)?;
+                .open(&bin)?;
+            export.bin_path = Some(bin.clone());
+            out.write_all(&file.bytes)?;
             out.sync_all()?;
+            export.sha256 = Some(format!("{:x}", Sha256::digest(&file.bytes)));
+            let mut map_file = std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&map)?;
+            export.map_path = Some(map.clone());
+            let record = serde_json::json!({"schema_version":1,"notice":RAW_NOTICE,"export":&export,
+                "naming":file.result.naming,
+                "warnings":file.result.warnings,"extent_evidence":file.result.extent_evidence,
+                "allocation_status":file.result.allocation_status,"partition":file.partition});
+            map_file.write_all(&serde_json::to_vec_pretty(&record)?)?;
+            map_file.sync_all()?;
             Ok(())
-        };
-        write(&bin, &file.bytes)?;
-        let record = serde_json::json!({"schema_version":1,"notice":RAW_NOTICE,"export":&export,
-            "warnings":file.result.warnings,"extent_evidence":file.result.extent_evidence,
-            "allocation_status":file.result.allocation_status,"partition":file.partition});
-        write(&map, &serde_json::to_vec_pretty(&record)?)?;
+        })();
+        if let Err(error) = attempt {
+            export.status = "not_exportable".into();
+            export.error = Some(error.to_string());
+            export.size = export
+                .bin_path
+                .as_ref()
+                .and_then(|p| std::fs::metadata(p).ok())
+                .map_or(0, |m| m.len());
+        }
         exports.push(export);
     }
     for failure in batch.failures {
