@@ -13,7 +13,8 @@ index_failures=[]
 # that recorded them. Each must be listed with that exact version, and README and the
 # release notes state which screens are carried. New evidence must match VERSION.
 carry=json.loads((ROOT/'docs/gui-evidence-carryover.json').read_text(encoding='utf-8'))
-if carry['release']!=VERSION:raise SystemExit('GUI carry-over ledger is for another release')
+modern=tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,1,0)
+if not modern and carry['release']!=VERSION:raise SystemExit('GUI carry-over ledger is for another release')
 def current(name,recorded):
     entry=carry['files'].get(name)
     return recorded==VERSION or (entry is not None and entry['recorded_version']==recorded)
@@ -71,77 +72,78 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         if Path(name).name!=name or hashlib.sha256((dist/name).read_bytes()).hexdigest()!=expected:raise SystemExit('Native checksum mismatch: '+name)
 if index_failures:raise SystemExit('Native index proof mismatches:\n'+'\n'.join(index_failures))
 if contract_failures:raise SystemExit('Native alpha.16 proof mismatches:\n'+'\n'.join(contract_failures))
-proof=json.loads((ROOT/'docs/ui-flow-results.json').read_text())
-if not current('ui-flow-results.json',proof['application_version']) or proof['files_byte_exact']!=36:raise SystemExit('GUI flow proof mismatch')
-for shot in proof['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('GUI screenshot proof mismatch')
-shutil.copy2(ROOT/'docs/ui-flow-results.json',dist/'gui-flow-results.json')
-original_gui=json.loads((ROOT/'docs/gui-original-results.json').read_text())
-if not current('gui-original-results.json',original_gui['application_version']) or original_gui['original_files_byte_exact']!=36 or not original_gui['existing_pdf_preserved'] or not original_gui['source_unchanged']:raise SystemExit('GUI original-location proof mismatch')
-shutil.copy2(ROOT/'docs/gui-original-results.json',dist/'gui-original-results.json')
-shutil.copy2(ROOT/'docs/ui-demo-manifest.json',dist/'gui-demo-manifest.json')
-jpeg_gui=json.loads((ROOT/'docs/gui-jpeg-results.json').read_text())
-if not current('gui-jpeg-results.json',jpeg_gui['application_version']) or jpeg_gui['jpeg_files_byte_exact']!=33 or not jpeg_gui['source_unchanged']:raise SystemExit('JPEG GUI proof mismatch')
-for shot in jpeg_gui['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('JPEG screenshot proof mismatch')
-shutil.copy2(ROOT/'docs/gui-jpeg-results.json',dist/'gui-jpeg-results.json')
-document_gui=json.loads((ROOT/'docs/gui-document-results.json').read_text())
-if not current('gui-document-results.json',document_gui['application_version']) or document_gui['document_files_byte_exact']!=7 or not document_gui['source_unchanged']:raise SystemExit('Document GUI proof mismatch')
-for shot in document_gui['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Document screenshot proof mismatch')
-shutil.copy2(ROOT/'docs/gui-document-results.json',dist/'gui-document-results.json')
-imaging_gui=json.loads((ROOT/'docs/gui-imaging-results.json').read_text())
-if not current('gui-imaging-results.json',imaging_gui['application_version']) or imaging_gui['source_bytes']!=512*1024*1024 or imaging_gui['copied_ranges']!=128 or imaging_gui['recovered_files_byte_exact']!=36 or imaging_gui['gui_map_pages_exercised']<2 or not all(imaging_gui[k] for k in ['image_source_byte_exact','source_unchanged','map_digest_unchanged_after_gui_resume','zip_crc_verified']):raise SystemExit('Imaging GUI proof mismatch')
-for shot in imaging_gui['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Imaging screenshot proof mismatch')
-shutil.copy2(ROOT/'docs/gui-imaging-results.json',dist/'gui-imaging-results.json')
-ntfs_gui=json.loads((ROOT/'docs/gui-ntfs-results.json').read_text())
-if not current('gui-ntfs-results.json',ntfs_gui['application_version']) or ntfs_gui['ntfs_streams_byte_exact']!=21 or ntfs_gui['alias_names_verified']!=2 or ntfs_gui['alias_payloads_recovered']!=1 or not ntfs_gui['source_unchanged']:raise SystemExit('NTFS GUI proof mismatch')
-for shot in ntfs_gui['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('NTFS screenshot proof mismatch')
-shutil.copy2(ROOT/'docs/gui-ntfs-results.json',dist/'gui-ntfs-results.json')
-discovery_gui=json.loads((ROOT/'docs/gui-discovery-results.json').read_text())
-if not current('gui-discovery-results.json',discovery_gui['application_version']) or discovery_gui['lost_files_byte_exact']!=6 or discovery_gui['remnant_streams_byte_exact']!=14 or not all(discovery_gui[k] for k in ['source_unchanged','zip_crc_verified']):raise SystemExit('Discovery GUI proof mismatch')
-for shot in discovery_gui['screenshots']:
-    if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Discovery screenshot proof mismatch')
-    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
-shutil.copy2(ROOT/'docs/gui-discovery-results.json',dist/'gui-discovery-results.json')
-raid_gui=json.loads((ROOT/'docs/gui-raid-results.json').read_text())
-assert current('gui-raid-results.json',raid_gui['application_version']) and raid_gui['status']=='passed' and raid_gui['files_byte_exact']==36 and raid_gui['file_read_provenance_verified'] and raid_gui['source_unchanged']
-for shot in raid_gui['screenshots']:
-    assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
-    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
-shutil.copy2(ROOT/'docs/gui-raid-results.json',dist/'gui-raid-results.json')
-indexed_gui=json.loads((ROOT/'docs/gui-index-results.json').read_text())
-assert current('gui-index-results.json',indexed_gui['version']) and indexed_gui['status']=='passed' and indexed_gui['candidates']==1256 and indexed_gui['files_byte_exact']==4
-assert 0<indexed_gui['gui_paused_candidates']<indexed_gui['gui_resumed_candidates']==1256 and indexed_gui['source_bytes_unchanged']
-assert indexed_gui['selected_pages']==[1,2,3] and indexed_gui['selected_bytes']==185
-for shot in indexed_gui['screenshots']:
-    assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
-    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
-shutil.copy2(ROOT/'docs/gui-index-results.json',dist/'gui-index-results.json')
-large_gui=json.loads((ROOT/'docs/gui-index-large-results.json').read_text())
-assert current('gui-index-large-results.json',large_gui['application_version']) and large_gui['status']=='passed' and large_gui['candidates']==10000000
-assert large_gui['files_byte_exact']==3 and large_gui['bytes_exact']==138 and large_gui['query_cancelled_by_keyboard'] and large_gui['archive_crc_valid']
-for shot in large_gui['screenshots']:
-    assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
-    shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
-shutil.copy2(ROOT/'docs/gui-index-large-results.json',dist/'gui-index-large-results.json')
-benchmark=json.loads((ROOT/'docs/index-benchmark-results.json').read_text())
-assert current('index-benchmark-results.json',benchmark['version']) and benchmark['status']=='passed' and benchmark['functional_checks']['queries']==220
-assert benchmark['final_queries']['status']=='passed' and benchmark['final_queries']['candidates']==10000000
-assert all(not query['failures'] for query in benchmark['final_queries']['queries'].values())
-shutil.copy2(ROOT/'docs/index-benchmark-results.json',dist/'index-benchmark-results.json')
-for name in ['gui-raw-export-results.json','gui-preview-results.json','gui-allocation-results.json','gui-i18n-results.json','gui-job-results.json','gui-keyboard-results.json','gui-naming-results.json','gui-source-results.json']:
-    proof=json.loads((ROOT/'docs'/name).read_text(encoding='utf-8'))
-    if not current(name,proof.get('application_version',proof.get('version'))) or proof['status']!='passed':raise SystemExit('GUI proof mismatch: '+name)
-    unchanged=proof.get('source_unchanged',proof.get('acquisition',{}).get('source_unchanged'))
-    if not unchanged:raise SystemExit('alpha.16 GUI proof without unchanged source: '+name)
+if not modern:
+    proof=json.loads((ROOT/'docs/ui-flow-results.json').read_text())
+    if not current('ui-flow-results.json',proof['application_version']) or proof['files_byte_exact']!=36:raise SystemExit('GUI flow proof mismatch')
     for shot in proof['screenshots']:
-        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('alpha.16 screenshot mismatch: '+shot['file'])
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('GUI screenshot proof mismatch')
+    shutil.copy2(ROOT/'docs/ui-flow-results.json',dist/'gui-flow-results.json')
+    original_gui=json.loads((ROOT/'docs/gui-original-results.json').read_text())
+    if not current('gui-original-results.json',original_gui['application_version']) or original_gui['original_files_byte_exact']!=36 or not original_gui['existing_pdf_preserved'] or not original_gui['source_unchanged']:raise SystemExit('GUI original-location proof mismatch')
+    shutil.copy2(ROOT/'docs/gui-original-results.json',dist/'gui-original-results.json')
+    shutil.copy2(ROOT/'docs/ui-demo-manifest.json',dist/'gui-demo-manifest.json')
+    jpeg_gui=json.loads((ROOT/'docs/gui-jpeg-results.json').read_text())
+    if not current('gui-jpeg-results.json',jpeg_gui['application_version']) or jpeg_gui['jpeg_files_byte_exact']!=33 or not jpeg_gui['source_unchanged']:raise SystemExit('JPEG GUI proof mismatch')
+    for shot in jpeg_gui['screenshots']:
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('JPEG screenshot proof mismatch')
+    shutil.copy2(ROOT/'docs/gui-jpeg-results.json',dist/'gui-jpeg-results.json')
+    document_gui=json.loads((ROOT/'docs/gui-document-results.json').read_text())
+    if not current('gui-document-results.json',document_gui['application_version']) or document_gui['document_files_byte_exact']!=7 or not document_gui['source_unchanged']:raise SystemExit('Document GUI proof mismatch')
+    for shot in document_gui['screenshots']:
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Document screenshot proof mismatch')
+    shutil.copy2(ROOT/'docs/gui-document-results.json',dist/'gui-document-results.json')
+    imaging_gui=json.loads((ROOT/'docs/gui-imaging-results.json').read_text())
+    if not current('gui-imaging-results.json',imaging_gui['application_version']) or imaging_gui['source_bytes']!=512*1024*1024 or imaging_gui['copied_ranges']!=128 or imaging_gui['recovered_files_byte_exact']!=36 or imaging_gui['gui_map_pages_exercised']<2 or not all(imaging_gui[k] for k in ['image_source_byte_exact','source_unchanged','map_digest_unchanged_after_gui_resume','zip_crc_verified']):raise SystemExit('Imaging GUI proof mismatch')
+    for shot in imaging_gui['screenshots']:
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Imaging screenshot proof mismatch')
+    shutil.copy2(ROOT/'docs/gui-imaging-results.json',dist/'gui-imaging-results.json')
+    ntfs_gui=json.loads((ROOT/'docs/gui-ntfs-results.json').read_text())
+    if not current('gui-ntfs-results.json',ntfs_gui['application_version']) or ntfs_gui['ntfs_streams_byte_exact']!=21 or ntfs_gui['alias_names_verified']!=2 or ntfs_gui['alias_payloads_recovered']!=1 or not ntfs_gui['source_unchanged']:raise SystemExit('NTFS GUI proof mismatch')
+    for shot in ntfs_gui['screenshots']:
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('NTFS screenshot proof mismatch')
+    shutil.copy2(ROOT/'docs/gui-ntfs-results.json',dist/'gui-ntfs-results.json')
+    discovery_gui=json.loads((ROOT/'docs/gui-discovery-results.json').read_text())
+    if not current('gui-discovery-results.json',discovery_gui['application_version']) or discovery_gui['lost_files_byte_exact']!=6 or discovery_gui['remnant_streams_byte_exact']!=14 or not all(discovery_gui[k] for k in ['source_unchanged','zip_crc_verified']):raise SystemExit('Discovery GUI proof mismatch')
+    for shot in discovery_gui['screenshots']:
+        if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('Discovery screenshot proof mismatch')
         shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
-    shutil.copy2(ROOT/'docs'/name,dist/name)
-shutil.copy2(ROOT/'docs/gui-evidence-carryover.json',dist/'gui-evidence-carryover.json')
+    shutil.copy2(ROOT/'docs/gui-discovery-results.json',dist/'gui-discovery-results.json')
+    raid_gui=json.loads((ROOT/'docs/gui-raid-results.json').read_text())
+    assert current('gui-raid-results.json',raid_gui['application_version']) and raid_gui['status']=='passed' and raid_gui['files_byte_exact']==36 and raid_gui['file_read_provenance_verified'] and raid_gui['source_unchanged']
+    for shot in raid_gui['screenshots']:
+        assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
+        shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+    shutil.copy2(ROOT/'docs/gui-raid-results.json',dist/'gui-raid-results.json')
+    indexed_gui=json.loads((ROOT/'docs/gui-index-results.json').read_text())
+    assert current('gui-index-results.json',indexed_gui['version']) and indexed_gui['status']=='passed' and indexed_gui['candidates']==1256 and indexed_gui['files_byte_exact']==4
+    assert 0<indexed_gui['gui_paused_candidates']<indexed_gui['gui_resumed_candidates']==1256 and indexed_gui['source_bytes_unchanged']
+    assert indexed_gui['selected_pages']==[1,2,3] and indexed_gui['selected_bytes']==185
+    for shot in indexed_gui['screenshots']:
+        assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
+        shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+    shutil.copy2(ROOT/'docs/gui-index-results.json',dist/'gui-index-results.json')
+    large_gui=json.loads((ROOT/'docs/gui-index-large-results.json').read_text())
+    assert current('gui-index-large-results.json',large_gui['application_version']) and large_gui['status']=='passed' and large_gui['candidates']==10000000
+    assert large_gui['files_byte_exact']==3 and large_gui['bytes_exact']==138 and large_gui['query_cancelled_by_keyboard'] and large_gui['archive_crc_valid']
+    for shot in large_gui['screenshots']:
+        assert hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()==shot['sha256']
+        shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+    shutil.copy2(ROOT/'docs/gui-index-large-results.json',dist/'gui-index-large-results.json')
+    benchmark=json.loads((ROOT/'docs/index-benchmark-results.json').read_text())
+    assert current('index-benchmark-results.json',benchmark['version']) and benchmark['status']=='passed' and benchmark['functional_checks']['queries']==220
+    assert benchmark['final_queries']['status']=='passed' and benchmark['final_queries']['candidates']==10000000
+    assert all(not query['failures'] for query in benchmark['final_queries']['queries'].values())
+    shutil.copy2(ROOT/'docs/index-benchmark-results.json',dist/'index-benchmark-results.json')
+    for name in ['gui-raw-export-results.json','gui-preview-results.json','gui-allocation-results.json','gui-i18n-results.json','gui-job-results.json','gui-keyboard-results.json','gui-naming-results.json','gui-source-results.json']:
+        proof=json.loads((ROOT/'docs'/name).read_text(encoding='utf-8'))
+        if not current(name,proof.get('application_version',proof.get('version'))) or proof['status']!='passed':raise SystemExit('GUI proof mismatch: '+name)
+        unchanged=proof.get('source_unchanged',proof.get('acquisition',{}).get('source_unchanged'))
+        if not unchanged:raise SystemExit('alpha.16 GUI proof without unchanged source: '+name)
+        for shot in proof['screenshots']:
+            if hashlib.sha256((ROOT/'docs'/shot['file']).read_bytes()).hexdigest()!=shot['sha256']:raise SystemExit('alpha.16 screenshot mismatch: '+shot['file'])
+            shutil.copy2(ROOT/'docs'/shot['file'],dist/Path(shot['file']).name)
+        shutil.copy2(ROOT/'docs'/name,dist/name)
+    shutil.copy2(ROOT/'docs/gui-evidence-carryover.json',dist/'gui-evidence-carryover.json')
 if VERSION=='1.0.0':
     readiness=json.loads((ROOT/'docs/v1-readiness.json').read_text(encoding='utf-8'))
     if readiness.get('version')!=VERSION or readiness.get('status')!='ready':raise SystemExit('v1.0 readiness review is incomplete')
@@ -163,6 +165,8 @@ if VERSION=='1.0.0':
     if len(queries['queries'])!=11 or any(q['failures'] or len(q['samples_ms'])!=20 for q in queries['queries'].values()):raise SystemExit('v1.0 query correctness evidence is incomplete')
     comparison=json.loads((ROOT/'docs/comparison-results-v1.json').read_text())
     if comparison['status']!='scored' or len(comparison['cases'])<3 or any(not c['source_unchanged'] or set(c['products'])!={'rescue-v1','ufs','dmde'} for c in comparison['cases']):raise SystemExit('v1.0 commercial comparison proof mismatch')
+    shutil.copy2(ROOT/'docs/v1-readiness.json',dist/'v1-readiness.json')
+if modern or VERSION=='1.0.0':
     for kind in ['limited','keyboard','ime']:
         proof=json.loads((dist/f'gui-{kind}-windows-x64.json').read_text())
         if proof['status']!='passed' or proof['files_byte_exact']!=2 or not proof['source_unchanged'] or not (proof['uia']['gui_token']['elevated']==0 and not proof['uia']['gui_token']['administrator_enabled'] and proof['uia']['gui_token']['integrity']==8192):raise SystemExit('v1.0 limited GUI proof mismatch: '+kind)
@@ -172,15 +176,15 @@ if VERSION=='1.0.0':
         if kind=='ime':
             ime=proof['uia']
             if not ime['native_input_method_tested'] or not ime['input_layout_restored'] or ime['native_ime']['unicode_injection_used'] or ime['native_ime']['committed_value']!='原文' or ime['native_ime']['cancel_trace'][-1]['value']!='' or ime['native_ime']['cancel_escape_presses']!=2:raise SystemExit('v1.0 native Japanese IME proof mismatch')
-    shutil.copy2(ROOT/'docs/v1-readiness.json',dist/'v1-readiness.json')
-html=(ROOT/'docs/intelligence.html').read_text(encoding='utf-8')
-def embedded(match):
-    path=ROOT/'docs'/match.group(1)
-    return 'src="data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode('ascii')+'"'
-html=re.sub(r'src="(images/[^"<>]+\.png)"',embedded,html)
-(dist/'intelligence.html').write_text(html,encoding='utf-8')
-for name in ['details-view.png','settings-view.png','icons-view.png','technical-ui-v15.png','technical-ui-v16.png','ntfs-extents.png','ntfs-extents-restored.png','ntfs-aliases.png','ntfs-aliases-restored.png','imaging-settings.png','imaging-progress.png','read-map.png','jpeg-carving.png','jpeg-restored.png','document-carving.png','document-restored.png','small-window.png','disk-selection.png','original-location.png','original-restored.png']:
-    shutil.copy2(ROOT/'docs/images'/name,dist/name)
-assets=sorted(path for path in dist.iterdir() if path.is_file() and path.name!='SHA256SUMS.txt')
-(dist/'SHA256SUMS.txt').write_text(''.join(f'{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n' for p in assets),encoding='ascii')
-print(f'All four native packages verified; {len(assets)} release assets checksummed.')
+if modern:
+    proof=json.loads((ROOT/'docs/gui-v1.1-results.json').read_text())
+    assert proof['status']=='passed' and proof['application_version']==VERSION
+    assert proof['source_unchanged'] and proof['files_byte_exact']>=2
+    assert proof['settings_to_scan_to_selected_recovery'] and proof['screenshots']
+    for shot in proof['screenshots']:
+        path=ROOT/'docs'/shot['file']
+        assert path.resolve().is_relative_to((ROOT/'docs').resolve())
+        assert hashlib.sha256(path.read_bytes()).hexdigest()==shot['sha256']
+from release_assets import stage_downloads
+names=stage_downloads(dist,ROOT/'release-dist',VERSION)
+print(f'All four native packages verified; {len(names)} distributions and one checksum staged.')

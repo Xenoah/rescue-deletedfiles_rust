@@ -71,6 +71,7 @@ jobs:
             ${{ matrix.os }}-${{ matrix.arch }}-rust-1.99.1-
       - run: cargo fetch --locked
       - run: cargo fmt --all -- --check
+      - run: python scripts/test_release_assets.py
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
@@ -277,14 +278,14 @@ jobs:
       - name: Validate and assemble every native distribution
         run: |
           python scripts/ci_command.py python scripts/assemble_release.py
-          cd dist
+          cd release-dist
           sha256sum --check SHA256SUMS.txt
       - name: Upload fully assembled preview
         if: "!startsWith(github.ref, 'refs/tags/v')"
         uses: actions/upload-artifact@v4
         with:
           name: verified-all-platforms
-          path: dist/*
+          path: release-dist/*
           if-no-files-found: error
       - name: Publish verified installer and portable distributions
         if: startsWith(github.ref, 'refs/tags/v')
@@ -294,9 +295,9 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if [[ "$RELEASE_TAG" == *-* ]]; then
-            gh release create "$RELEASE_TAG" dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v0.2.md
+            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.1.md
           else
-            gh release create "$RELEASE_TAG" dist/* --verify-tag --latest --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.0.md
+            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --latest --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.1.md
           fi
       - name: Verify exact public packages after publishing
         if: startsWith(github.ref, 'refs/tags/v')
@@ -304,4 +305,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: gh workflow run published-packages.yml --ref main -f release_tag="$RELEASE_TAG"
+        run: gh workflow run published-packages.yml --ref "$RELEASE_TAG" -f release_tag="$RELEASE_TAG" -f native_run_id="${{ github.run_id }}"

@@ -3,6 +3,16 @@
 Rust製のファイル復元ソフト。Windows・Linux・macOSでGUI・CLI・MCPが同じ復元エンジンを使います。
 復元できるファイルの数と、元データの内容を保つことを優先して開発しています。
 
+**v1.1.0-alpha.1: UIとダウンロード一覧を整理した先行版。**
+読み取る場所と保存先を分け、現在のステップと次の操作を見つけやすくしました。
+[先行版をダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.1.0-alpha.1) · [変更と実画面](docs/UI-v1.1.md) · [リリースノート](docs/RELEASE-v1.1.md)
+
+![v1.1の新しい設定画面](docs/images/v1.1-alpha.1/settings-en.png)
+
+添付は各OSのインストーラー・ポータブル版と共通チェックサムだけです。検証資料はリポジトリとActionsに保存します。
+安定版は引き続き[v1.0.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.0.0)です。
+以下のv1.0およびalpha.15/alpha.16の記録は当時の画面・測定値です。
+
 **v1.0.0: NTFS・FAT32・exFAT、消失領域、イメージ取得、RAID、再開可能な索引を備えた初回安定版。**
 GUI・CLI・MCPの共通エンジン、8配布パッケージ、対応範囲と制限を公開しています。
 [リリースノート](docs/RELEASE-v1.0.md) · [受入台帳](docs/V1_ACCEPTANCE.md) ·

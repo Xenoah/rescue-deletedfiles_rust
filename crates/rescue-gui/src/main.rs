@@ -16,6 +16,7 @@ mod read_access_ui;
 mod scrolling;
 mod session_ui;
 mod text_input;
+mod theme;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -157,16 +158,7 @@ struct App {
     primary_rect: Option<egui::Rect>,
 }
 fn configure_style(ctx: &egui::Context) {
-    ctx.set_visuals(egui::Visuals::dark());
-    ctx.style_mut(|s| {
-        s.spacing.item_spacing = egui::vec2(8.0, 8.0);
-        s.spacing.interact_size.y = 28.0;
-        s.spacing.button_padding = egui::vec2(8.0, 4.0);
-        s.visuals.panel_fill = egui::Color32::from_rgb(25, 25, 25);
-        s.visuals.extreme_bg_color = egui::Color32::from_rgb(20, 20, 20);
-        s.visuals.override_text_color = Some(egui::Color32::from_gray(224));
-        s.visuals.selection.bg_fill = egui::Color32::from_rgb(38, 80, 110);
-    });
+    theme::configure(ctx);
 }
 impl App {
     fn new(cc: &eframe::CreationContext<'_>, session: Option<PathBuf>, language: Language) -> Self {
@@ -953,7 +945,15 @@ impl App {
         });
     }
     fn source_ui(&mut self, ui: &mut egui::Ui) {
-        ui.strong(tr!("1  スキャンするディスク", "1  Disk to scan"));
+        theme::section(
+            ui,
+            "01",
+            tr!("スキャンするディスク", "Disk to scan"),
+            tr!(
+                "削除したファイルがあった場所を選びます。",
+                "Choose where the deleted files were stored."
+            ),
+        );
         ui.horizontal_wrapped(|ui| {
             let previous = self.source_mode;
             ui.selectable_value(
@@ -1050,19 +1050,44 @@ impl App {
             ));
         }
     }
-    fn setup_ui(&mut self, ui: &mut egui::Ui) {
-        egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show_accessible(ui, tr!("設定", "Settings"), |ui| {
-            ui.set_max_width(ui.available_width().min(960.0));
-            ui.add_space(8.0);
-            ui.heading(tr!("保存方法と検索条件", "Save options and search settings"));
-            ui.label(tr!("ディスクをスキャンしてから、復元するファイルを選択します。", "Scan the disk, then select files to recover."));
-            ui.add_space(16.0);
+    fn source_card_ui(&mut self, ui: &mut egui::Ui) {
+        theme::card().show(ui, |ui| {
+            ui.set_width(ui.available_width());
             self.source_ui(ui);
-            if ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new(tr!("ディスクのイメージを作成・再開", "Create or resume a disk image"))).clicked(){self.image_dialog=true;}
-            if self.source_mode==SourceMode::Image && ui.add_enabled(!self.source.trim().is_empty(),egui::Button::new(tr!("読取マップを確認", "View read map"))).clicked(){self.map_source=PathBuf::from(&self.source);self.map_page=None;self.map_dialog=true;self.load_map_page(0,None);}
-            self.discovery_controls(ui);
-            ui.add_space(16.0);
-            ui.strong(tr!("2  保存方法", "2  Save options"));
+            ui.collapsing(tr!("ディスクのツール", "Disk tools"), |ui| {
+                if ui
+                    .add_enabled(
+                        !self.source.trim().is_empty(),
+                        egui::Button::new(tr!(
+                            "ディスクのイメージを作成・再開",
+                            "Create or resume a disk image"
+                        )),
+                    )
+                    .clicked()
+                {
+                    self.image_dialog = true;
+                }
+                if self.source_mode == SourceMode::Image
+                    && ui
+                        .add_enabled(
+                            !self.source.trim().is_empty(),
+                            egui::Button::new(tr!("読取マップを確認", "View read map")),
+                        )
+                        .clicked()
+                {
+                    self.map_source = PathBuf::from(&self.source);
+                    self.map_page = None;
+                    self.map_dialog = true;
+                    self.load_map_page(0, None);
+                }
+                self.discovery_controls(ui);
+            });
+        });
+    }
+    fn save_card_ui(&mut self, ui: &mut egui::Ui) {
+        theme::card().show(ui, |ui| {
+            ui.set_width(ui.available_width());
+            theme::section(ui, "02", tr!("復元したファイルの保存先", "Where to save recovered files"), tr!("別のディスクへの保存をおすすめします。", "A destination on another disk is recommended."));
             ui.horizontal_wrapped(|ui| {
                 ui.selectable_value(&mut self.save_mode, SaveMode::Original, tr!("元の場所へ戻す", "Original locations"));
                 ui.selectable_value(&mut self.save_mode, SaveMode::Directory, tr!("フォルダーに保存", "Save to folder"));
@@ -1081,7 +1106,28 @@ impl App {
                 ui.selectable_value(&mut self.collision, CollisionPolicy::Skip, tr!("スキップ", "Skip"));
             });
             ui.small(tr!("既存ファイルは上書きしません。同名フォルダーは統合します。", "Existing files are kept. Folders with the same name are merged."));
+            });
+    }
+    fn setup_ui(&mut self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show_accessible(ui, tr!("設定", "Settings"), |ui| {
+            ui.set_max_width(ui.available_width());
+            ui.add_space(8.0);
+            ui.heading(tr!("ファイルを取り戻しましょう", "Recover your files"));
+            ui.label(tr!("対象と保存先を選んでスキャン。見つかったファイルを確認してから復元します。", "Choose a source and destination. Scan, review the results, then recover."));
             ui.add_space(16.0);
+            if ui.available_width() >= 960.0 {
+                ui.columns(2, |columns| {
+                    self.source_card_ui(&mut columns[0]);
+                    self.save_card_ui(&mut columns[1]);
+                });
+            } else {
+                self.source_card_ui(ui);
+                ui.add_space(12.0);
+                self.save_card_ui(ui);
+            }
+            ui.add_space(12.0);
+            theme::card().show(ui, |ui| {
+            ui.set_width(ui.available_width());
             ui.collapsing(tr!("詳細設定 · 検索方式・範囲・深度・拡張子", "Advanced · Method, range, depth and extensions"), |ui| {
                 ui.horizontal_wrapped(|ui| {
                     ui.label(tr!("検索方式", "Search method"));
@@ -1111,6 +1157,7 @@ impl App {
                     path_row(ui, tr!("元ボリュームのルート（任意）", "Original volume root (optional)"), &mut self.original_root, Picker::Folder);
                     ui.small(tr!("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。", "Usually detected automatically. Specify the original volume root for images or when detection fails. Use the CLI to map multiple partitions individually."));
                 }
+            });
             });
             self.invalidate_changed_source();
             ui.add_space(16.0);
@@ -1142,8 +1189,7 @@ impl App {
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let response = ui.add_enabled(
                     !self.source.trim().is_empty(),
-                    egui::Button::new(tr!("スキャン開始", "Start scan"))
-                        .min_size(egui::vec2(176.0, 36.0)),
+                    theme::primary(tr!("スキャン開始", "Start scan"), 176.0),
                 );
                 self.primary_rect = Some(response.rect);
                 if response.clicked() {
@@ -1197,8 +1243,7 @@ impl App {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let response = ui.add_enabled(
                         !self.selected.is_empty() && !self.index.loading(),
-                        egui::Button::new(tr!("選択したファイルを復元", "Recover selected files"))
-                            .min_size(egui::vec2(224.0, 36.0)),
+                        theme::primary(tr!("選択したファイルを復元", "Recover selected files"), 224.0),
                     );
                     self.primary_rect = Some(response.rect);
                     if response.clicked() {
@@ -1238,12 +1283,35 @@ impl App {
         }
     }
     fn results_ui(&mut self, ui: &mut egui::Ui) {
+        ui.horizontal_wrapped(|ui| {
+            ui.label(
+                egui::RichText::new(if self.stage == Stage::Finished {
+                    tr!("復元結果", "Recovery results")
+                } else {
+                    tr!("見つかったファイル", "Discovered files")
+                })
+                .size(21.0)
+                .strong(),
+            );
+            theme::badge(
+                ui,
+                tr_format!("{} 件選択", "{} selected", self.selected.len()),
+                false,
+            );
+            if self
+                .session
+                .as_ref()
+                .is_some_and(|s| s.cancelled || s.truncated)
+            {
+                theme::badge(ui, tr!("一部の結果", "Partial results"), true);
+            }
+        });
         if self.session.as_ref().is_some_and(|s| {
             s.warnings
                 .iter()
                 .any(|w| w.starts_with("ALLOCATION_FALLBACK:"))
         }) {
-            ui.colored_label(egui::Color32::YELLOW, tr!("一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。", "Some regions have no verifiable allocation data and are being searched in full. See the evidence for details."));
+            ui.colored_label(theme::WARNING, tr!("一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。", "Some regions have no verifiable allocation data and are being searched in full. See the evidence for details."));
         }
         let busy = self.busy();
         ui.add_enabled_ui(!busy, |ui| {
@@ -1772,7 +1840,7 @@ impl App {
         }
         if s.cancelled || s.truncated {
             ui.colored_label(
-                egui::Color32::YELLOW,
+                theme::WARNING,
                 tr!(
                     "未探索の領域が残っています。",
                     "Some regions remain unscanned."
@@ -2176,7 +2244,12 @@ impl App {
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
             ui.add_space(8.0);
             ui.horizontal(|ui| {
-                ui.heading("Rescue");
+                ui.label(
+                    egui::RichText::new("Rescue")
+                        .size(25.0)
+                        .strong()
+                        .color(theme::ACCENT),
+                );
                 ui.weak(rescue_core::VERSION);
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let before = self.language;
@@ -2196,39 +2269,20 @@ impl App {
                 });
             });
             let _language = self.language.enter();
+            let current_step = match self.stage {
+                Stage::Settings | Stage::Imaging | Stage::Migrating => 1,
+                Stage::Scanning => 2,
+                Stage::Selecting => 3,
+                Stage::Recovering | Stage::Finished => 4,
+            };
             ui.horizontal_wrapped(|ui| {
-                for (n, label, active) in [
-                    (
-                        1,
-                        tr!("設定", "Settings"),
-                        matches!(
-                            self.stage,
-                            Stage::Settings | Stage::Imaging | Stage::Migrating
-                        ),
-                    ),
-                    (2, tr!("スキャン", "Scan"), self.stage == Stage::Scanning),
-                    (
-                        3,
-                        tr!("ファイル選択", "Select files"),
-                        self.stage == Stage::Selecting,
-                    ),
-                    (
-                        4,
-                        tr!("復元", "Recover"),
-                        matches!(self.stage, Stage::Recovering | Stage::Finished),
-                    ),
+                for (n, label) in [
+                    (1, tr!("設定", "Settings")),
+                    (2, tr!("スキャン", "Scan")),
+                    (3, tr!("ファイル選択", "Select files")),
+                    (4, tr!("復元", "Recover")),
                 ] {
-                    if n > 1 {
-                        ui.weak("›");
-                    }
-                    ui.colored_label(
-                        if active {
-                            egui::Color32::from_rgb(112, 199, 255)
-                        } else {
-                            egui::Color32::GRAY
-                        },
-                        format!("{n}  {label}"),
-                    );
+                    theme::step(ui, n, label, n == current_step, n < current_step);
                 }
             });
             ui.add_space(7.0);

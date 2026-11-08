@@ -26,10 +26,19 @@ def command(*args):
 
 def copy_docs(target,notices):
     target.mkdir(parents=True,exist_ok=True)
-    for name in ['README.md','LICENSE']:
+    for name in ['LICENSE']:
         shutil.copy2(ROOT/name,target/name)
+    (target/'README.md').write_text(f'# Rescue {VERSION}\n\nStart rescue-gui (Windows: rescue-gui.exe). CLI: rescue --help.\n\nSee docs/INSTALL.md for installation and docs/ALPHA.md for supported formats and limitations.\n\nFull documentation, screenshots and verification: https://github.com/Xenoah/rescue-deletedfiles_rust/tree/v{VERSION}\n',encoding='utf-8')
     shutil.copy2(notices,target/'THIRD_PARTY_NOTICES.txt')
-    shutil.copytree(ROOT/'docs',target/'docs')
+    # Offline installation/usage help only. Test corpora, research reports and
+    # historical screenshots stay in the repository and CI artifacts.
+    docs=target/'docs';docs.mkdir()
+    for name in ['INSTALL.md','ALPHA.md','READ_ACCESS.md','INDEX.md','LANGUAGE.md']:
+        shutil.copy2(ROOT/'docs'/name,docs/name)
+    (docs/'ONLINE.md').write_text(
+        '# Documentation and verification\n\n'
+        f'https://github.com/Xenoah/rescue-deletedfiles_rust/tree/v{VERSION}/docs\n',
+        encoding='utf-8')
 
 
 def permissions(root,executables):

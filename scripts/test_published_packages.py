@@ -55,7 +55,7 @@ def recorded_suite(binary, suite, report):
 
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');p.add_argument('--defer-windows-gui',action='store_true',help='Run the unchanged Windows GUI suites as separate CI steps, then collect their proofs');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('--tag',required=True);p.add_argument('--platform',required=True,choices=['windows','linux','macos']);p.add_argument('--arch',required=True,choices=['x64','arm64']);p.add_argument('--output',type=Path,required=True);p.add_argument('--independent',action='store_true');p.add_argument('--native-proof-dir',type=Path);p.add_argument('--defer-windows-gui',action='store_true',help='Run the unchanged Windows GUI suites as separate CI steps, then collect their proofs');a=p.parse_args()
     if not re.fullmatch(r'v\d+\.\d+\.\d+(?:-alpha\.\d+)?',a.tag):raise ValueError('invalid release tag')
     base=f'https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/{a.tag}/'
     def download(name,limit):
@@ -78,7 +78,14 @@ def main():
     version=a.tag.removeprefix('v');stem=f'rescue-{version}-{a.platform}-{a.arch}'
     name=stem+('-portable.tar.gz' if a.platform=='linux' else '-portable.zip')
     archive=verified(name,192*1024*1024)
-    proof=json.loads(verified(f'verification-{a.platform}-{a.arch}.json',128*1024))
+    if a.native_proof_dir:
+        proof=json.loads((a.native_proof_dir/f'verification-{a.platform}-{a.arch}.json').read_text(encoding='utf-8'))
+        native=json.loads((a.native_proof_dir/f'package-{a.platform}-{a.arch}.json').read_text(encoding='utf-8'))
+        expected=next(item['sha256'] for item in native['assets'] if item['file']==name)
+        if native['version']!=version or hashlib.sha256(archive).hexdigest()!=expected:
+            raise RuntimeError('Public portable differs from the release workflow artifact')
+    else:
+        proof=json.loads(verified(f'verification-{a.platform}-{a.arch}.json',128*1024))
     if proof['status']!='passed' or proof['version']!=version:raise RuntimeError('package verification mismatch')
     if a.platform=='linux':
         with tarfile.open(fileobj=io.BytesIO(archive),mode='r:gz') as tar:data=tar.extractfile(stem+'/rescue').read()
@@ -117,7 +124,7 @@ def main():
     result['original_location_verification']=json.loads((a.output/'restore-native.json').read_text(encoding='utf-8'))
     result['original_path_cases']=json.loads((a.output/'restore-paths.json').read_text(encoding='utf-8'))
     result['disk_verification']=json.loads((a.output/'native-disk-proof/results.json').read_text(encoding='utf-8'))
-    if a.platform=='windows' and version=='1.0.0':
+    if a.platform=='windows':
         from e2e_gui_windows import main as gui_test
         gui=(a.output/'rescue-gui.exe').resolve();gui.write_bytes(gui_data)
         if hashlib.sha256(gui_data).hexdigest()!=proof['portable_gui_sha256']:raise RuntimeError('GUI differs from verified portable')

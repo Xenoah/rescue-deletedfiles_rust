@@ -324,7 +324,7 @@ impl App {
                         search = ui.button(tr!("構成の候補を探す", "Find configuration candidates")).clicked();
                     });
                     if !self.raid.error.is_empty() {
-                        ui.colored_label(egui::Color32::YELLOW, &self.raid.error);
+                        ui.colored_label(crate::theme::WARNING, &self.raid.error);
                     }
                 });
             ui.separator();
