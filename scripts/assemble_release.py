@@ -42,6 +42,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     if platform=='windows':
         native=json.loads((dist/'ntfs-native-windows-x64.json').read_text());assert native['version']==f'rescue {VERSION}' and native['status']=='passed' and native['actual_deletion'] and native['cli_streams_byte_exact']==21 and native['mcp_streams_byte_exact']==21 and native['resident_stream_profile'] and len(native['nonresident_profiles'])==2 and all(p['policy']['restored'] and (p['erased_metadata_not_fabricated'] or p['retained_streams_byte_exact']==21) for p in native['nonresident_profiles'])
     image=json.loads((dist/f'imaging-results-{platform}-{arch}.json').read_text());assert image['version']==f'rescue {VERSION}' and image['status']=='passed' and image['checks']>=15
+    if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0):
+        proof=json.loads((dist/f'acquisition-results-{platform}-{arch}.json').read_text());assert proof['version']==f'rescue {VERSION}' and proof['status']=='passed' and proof['checks']>=13 and proof['source_unchanged']
     image_native=json.loads((dist/f'imaging-native-{platform}-{arch}.json').read_text());assert image_native['version']==f'rescue {VERSION}' and image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108
     # Windows adds three native RtlCompressBuffer LZNT1 streams to the shared 13.
@@ -185,12 +187,15 @@ if modern or VERSION=='1.0.0':
             ime=proof['uia']
             if not ime['native_input_method_tested'] or not ime['input_layout_restored'] or ime['native_ime']['unicode_injection_used'] or ime['native_ime']['committed_value']!='原文' or ime['native_ime']['cancel_trace'][-1]['value']!='' or ime['native_ime']['cancel_escape_presses']!=2:raise SystemExit('v1.0 native Japanese IME proof mismatch')
 if modern:
-    proof=json.loads((ROOT/'docs/gui-v1.1-results.json').read_text())
+    proof=json.loads((ROOT/('docs/gui-v1.2-results.json' if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) else 'docs/gui-v1.1-results.json')).read_text())
     assert proof['status']=='passed' and proof['application_version']==VERSION
     assert proof['source_unchanged'] and proof['files_byte_exact']>=2
     assert proof['readable_reports']['files_exactly_match_json']==proof['files_byte_exact']
     assert proof['readable_reports']['browser']['external_requests']==0
     assert proof['settings_to_scan_to_selected_recovery'] and proof['screenshots']
+    if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0):
+        imaging=proof['imaging'];assert imaging['source_unchanged'] and imaging['resume_byte_exact'] and imaging['strategy']=='adaptive' and imaging['timeout_failed_bytes']>0 and imaging['timeout_unattempted_bytes']>0
+        assert imaging['image_sha256']==imaging['source_sha256'] and imaging['acquired_bytes']>0
     for shot in proof['screenshots']:
         path=ROOT/'docs'/shot['file']
         assert path.resolve().is_relative_to((ROOT/'docs').resolve())

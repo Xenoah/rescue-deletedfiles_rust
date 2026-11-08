@@ -1,4 +1,6 @@
 mod acquisition;
+mod acquisition_reader;
+mod acquisition_worker;
 mod archive;
 mod carve;
 mod contract;
@@ -31,6 +33,7 @@ pub use acquisition::{
     AcquisitionOptions, AcquisitionProgress, AcquisitionResult, ReadMapPage, ReadMapRange,
     acquire_image, acquire_image_with_roots, inspect_read_map, read_map_page,
 };
+pub use acquisition_worker::acquisition_worker_entry;
 pub use archive::{ArchiveRecovery, recover_zip, recover_zip_to};
 use cap_std::{
     ambient_authority,
@@ -62,7 +65,9 @@ pub use raid::{
 pub use raid::{RaidAlternative, RaidSearchOptions, RaidSearchResult, search_raid};
 pub use raid::{RaidReadRange, RaidReadTrace};
 pub use read_access::{ReadAccess, read_broker_entry, request_read_access};
-pub use read_map::{AcquisitionIdentity, MissingRange, ReadMapSummary, ReadState};
+pub use read_map::{
+    AcquisitionIdentity, AcquisitionStrategy, MissingRange, ReadMapSummary, ReadState,
+};
 pub use report::{
     ReportFormat, export_recovery_report, read_recovery_report, recovery_report,
     render_recovery_report,

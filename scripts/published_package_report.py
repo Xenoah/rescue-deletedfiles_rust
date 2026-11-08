@@ -49,6 +49,8 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     for suite,checks,files in [('classic_fat',20,60),('estimated_fat',20,10),('reports',14,6),('release_fixes',9,9)]:
         proof=run[suite+'_verification'];assert proof['status']=='passed' and proof['checks']>=checks and proof['files_byte_exact']==files and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
         if suite=='estimated_fat':assert proof['known_incorrect_estimates_labelled_unverified']==1
+    if a.tag.startswith('v1.2.'):
+        proof=run['acquisition_verification'];assert proof['status']=='passed' and proof['checks']>=13 and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
     if platform=='linux':
         proof=run['independent_classic_fat_verification'];assert proof['status']=='passed' and proof['files_byte_exact']==8 and proof['source_unchanged'] and proof['binary_sha256']==run['binary_sha256']
     lines.append(f"| {platform} {arch} | 576 / 576 | 864 / 864 | {len(run['rows'])} | `{run['binary_sha256']}` |")

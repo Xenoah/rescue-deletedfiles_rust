@@ -112,7 +112,11 @@ struct App {
     image_pause_requested: bool,
     image_retries: u8,
     image_block_size: u32,
+    image_strategy: Option<rescue_core::AcquisitionStrategy>,
+    image_read_timeout_seconds: u32,
+    image_reconnect_seconds: u32,
     image_progress: Option<rescue_core::AcquisitionProgress>,
+    image_stop_reason: Option<String>,
     source: String,
     source_mode: SourceMode,
     disks: Vec<DiskSource>,
@@ -252,7 +256,11 @@ impl App {
             image_pause_requested: false,
             image_retries: 2,
             image_block_size: 4 * 1024 * 1024,
+            image_strategy: None,
+            image_read_timeout_seconds: 30,
+            image_reconnect_seconds: 15,
             image_progress: None,
+            image_stop_reason: None,
             source: String::new(),
             source_mode: SourceMode::Disk,
             disks: Vec::new(),
@@ -849,6 +857,18 @@ impl App {
                         view::size_text(Some(result.summary.failed_bytes)),
                         view::size_text(Some(result.summary.unattempted_bytes))
                     );
+                    self.image_resume = result.state != "completed";
+                    self.image_stop_reason = result.stop_reason.clone();
+                    if let Some(reason) = &result.stop_reason {
+                        self.image_dialog = true;
+                        self.report = message!(
+                            "イメージ: {}\n読取マップ: {}\n停止理由: {}\n元媒体を確認して取得を再開できます。",
+                            "Image: {}\nRead map: {}\nStopped: {}\nCheck the original source, then resume acquisition.",
+                            result.image.display(),
+                            result.read_map.display(),
+                            reason
+                        );
+                    }
                     if result.state == "cancelled" && self.image_pause_requested {
                         self.image_resume = true;
                         self.image_dialog = true;
@@ -2600,6 +2620,9 @@ fn launch_options(
     Ok((session, language))
 }
 fn main() -> eframe::Result {
+    if let Some(code) = rescue_core::acquisition_worker_entry() {
+        std::process::exit(code);
+    }
     if let Some(code) = rescue_core::read_broker_entry() {
         std::process::exit(code);
     }

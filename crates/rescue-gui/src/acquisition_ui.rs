@@ -140,6 +140,8 @@ impl App {
                     "Verifying saved blocks against their SHA-256 hashes"
                 )
                 .into()
+            } else if p.phase == "reconnect" {
+                tr!("元の媒体への再接続を待っています。別の媒体では再開しません。", "Waiting for the original source to reconnect. A different source will be rejected.").into()
             } else {
                 tr_format!(
                     "読取パス {} · {}",
@@ -152,6 +154,18 @@ impl App {
                     }
                 )
             });
+            if p.phase != "verify_resume" {
+                ui.label(tr_format!(
+                    "方向: {} · 読取単位: {}",
+                    "Direction: {} · Read size: {}",
+                    if p.direction == "reverse" {
+                        tr!("末尾から先頭へ", "End to start")
+                    } else {
+                        tr!("先頭から末尾へ", "Start to end")
+                    },
+                    view::size_text(Some(u64::from(p.block_size)))
+                ));
+            }
             ui.label(tr_format!(
                 "読取済み {} / 読取失敗 {} / 未読 {}",
                 "Read {} / Failed {} / Unread {}",
@@ -164,8 +178,8 @@ impl App {
             tr!("取消後も読取マップを保持します。同じ元ディスクと保存先を指定すると再開できます。", "The read map is kept after cancellation. Select the same source disk and destination to resume."),
         );
         ui.small(tr!(
-            "OSがディスクの応答を待っている場合、取消は読み取りが戻ってから反映されます。",
-            "If the OS is waiting for the disk, cancellation takes effect when the read returns."
+            "読み取りの待機時間を制限し、取消後のデータは保存しません。OS内部で停止した読み取り自体を即時終了できるとは限りません。",
+            "Read waits are limited and data arriving after cancellation is discarded. A read blocked inside the OS may take longer to terminate."
         ));
     }
     pub(super) fn imaging_dialog(&mut self, ctx: &egui::Context) {
@@ -177,6 +191,14 @@ impl App {
             ui.label(tr_format!("取得元: {}", "Source: {}",self.imaging_source()));
             egui::ScrollArea::vertical().max_height((ctx.content_rect().height()-160.0).max(100.0)).show_accessible(ui, tr!("読取マップ", "Read map"), |ui|{
             ui.label(tr!("元ディスクを読み取り専用で取得し、後からイメージをスキャンできます。", "Read the source disk without writing to it, then scan the acquired image."));
+            if let Some(reason) = &self.image_stop_reason {
+                ui.group(|ui| {
+                    ui.strong(tr!("取得を停止しました。保存済みの範囲は保持しています。", "Acquisition stopped. Saved ranges are retained."));
+                    ui.label(tr!("元媒体の接続と待機時間を確認し、下のボタンから再開できます。", "Check the source connection and wait limits, then resume below."));
+                    ui.collapsing(tr!("停止の詳細", "Why it stopped"), |ui| { ui.label(reason); });
+                });
+                ui.add_space(8.0);
+            }
             path_row(ui,tr!("イメージ保存フォルダー", "Image destination folder"),&mut self.image_destination,Picker::Folder);
             ui.small(tr!("新規取得では空のフォルダーを指定します。物理ディスクからの取得は別の媒体へ保存します。", "Use an empty folder for a new acquisition. Save an image of a physical disk to a separate medium."));
             ui.checkbox(&mut self.image_resume,tr!("このフォルダーにある取得を再開する", "Resume the acquisition in this folder"));
@@ -187,6 +209,27 @@ impl App {
                 });
                 ui.label(tr!("失敗セクターの追加試行", "Additional attempts for failed sectors"));ui.add(egui::DragValue::new(&mut self.image_retries).range(0..=3));
             });
+            ui.add_space(8.0);
+            ui.strong(tr!("不安定な媒体の読み取り", "Reading an unstable source"));
+            egui::ComboBox::from_id_salt("image-strategy").selected_text(match self.image_strategy {
+                None => tr!("自動（新規は方向・サイズを切り替え）", "Auto (adaptive for new images)"),
+                Some(rescue_core::AcquisitionStrategy::Adaptive) => tr!("方向・サイズを切り替えて再試行", "Adaptive direction and read size"),
+                Some(rescue_core::AcquisitionStrategy::Linear) => tr!("従来の順方向読み取り", "Legacy forward reading"),
+            }).show_ui(ui, |ui| {
+                ui.selectable_value(&mut self.image_strategy, None, tr!("自動・保存済みの方法で再開", "Auto / preserve saved strategy"));
+                ui.selectable_value(&mut self.image_strategy, Some(rescue_core::AcquisitionStrategy::Adaptive), tr!("方向・サイズを切り替え", "Adaptive passes"));
+                ui.selectable_value(&mut self.image_strategy, Some(rescue_core::AcquisitionStrategy::Linear), tr!("従来の順方向", "Legacy forward"));
+            });
+            ui.small(tr!("最初は大きく順方向、失敗範囲は小さく逆方向、その後はセクター単位で再試行します。", "Read large blocks forward first, then smaller failed ranges in reverse, then sector-sized retries."));
+            ui.horizontal_wrapped(|ui| {
+                ui.label(tr!("1回の読み取りを待つ秒数", "Seconds to wait for one read"));
+                ui.add(egui::DragValue::new(&mut self.image_read_timeout_seconds).range(1..=300));
+            });
+            ui.horizontal_wrapped(|ui| {
+                ui.label(tr!("再接続を待つ秒数（0で無効）", "Reconnect wait in seconds (0 disables)"));
+                ui.add(egui::DragValue::new(&mut self.image_reconnect_seconds).range(0..=300));
+            });
+            ui.add_space(8.0);
             ui.label(tr!("RAW本体と .rmap を一緒に保管してください。読めなかった範囲を含むファイルは完全復元と表示しません。", "Keep the RAW file and .rmap together. Files that overlap unreadable ranges are not reported as fully recovered."));
             });
             ui.separator();ui.with_layout(egui::Layout::right_to_left(egui::Align::Center),|ui|{
@@ -211,10 +254,14 @@ impl App {
                 .into_owned(),
         ));
         self.image_pause_requested = false;
+        self.image_stop_reason = None;
         let options = rescue_core::AcquisitionOptions {
             block_size: self.image_block_size,
             retries: self.image_retries,
             resume: self.image_resume,
+            strategy: self.image_strategy,
+            read_timeout_ms: self.image_read_timeout_seconds * 1000,
+            reconnect_wait_ms: self.image_reconnect_seconds * 1000,
         };
         self.cancel = Arc::new(AtomicBool::new(false));
         let cancel = self.cancel.clone();

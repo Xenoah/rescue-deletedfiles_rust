@@ -892,6 +892,15 @@ pub(crate) fn transfer_to(session: &Session, child: &std::process::Child) -> Res
     } else {
         vec![&session.source]
     };
+    transfer_sources(&paths, child)
+}
+pub(crate) fn transfer_sources(
+    paths: &[&PathBuf],
+    child: &std::process::Child,
+) -> Result<Vec<Transfer>> {
+    if paths.len() > 16 {
+        return Err(Error::Limit("read-only device grants".into()));
+    }
     let mut transfers = Vec::new();
     for path in paths {
         let source = crate::device::canonical_source_path(path)?;

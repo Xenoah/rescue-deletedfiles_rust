@@ -36,4 +36,4 @@ pub fn read_broker_entry() -> Option<i32> {
     }
 }
 #[cfg(windows)]
-pub(crate) use windows::{Transfer, granted, install_transferred, transfer_to};
+pub(crate) use windows::{Transfer, granted, install_transferred, transfer_sources, transfer_to};

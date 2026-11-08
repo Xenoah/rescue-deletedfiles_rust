@@ -18,6 +18,16 @@ const MAX_SEGMENTS: usize = 1_048_576;
 pub(crate) const IMAGE_NAME: &str = "image.rescue.raw";
 pub(crate) const MAP_NAME: &str = "image.rescue.raw.rmap";
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AcquisitionStrategy {
+    /// v1 maps: large forward pass followed by forward sector retries.
+    #[default]
+    Linear,
+    /// Large forward pass, smaller reverse pass, then alternating sector passes.
+    Adaptive,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AcquisitionIdentity {
     pub path: PathBuf,
@@ -35,12 +45,15 @@ pub(crate) struct Header {
     pub block_size: u32,
     pub image_name: String,
     pub created_unix_ms: u64,
+    #[serde(default)]
+    pub strategy: AcquisitionStrategy,
 }
 impl Header {
     fn validate(&self) -> Result<()> {
         uuid::Uuid::parse_str(&self.id).map_err(|_| invalid("image identifier"))?;
         let sector = self.source.sector_size;
-        if self.schema_version != 1
+        if !matches!(self.schema_version, 1 | 2)
+            || (self.schema_version == 1 && self.strategy != AcquisitionStrategy::Linear)
             || self.created_unix_ms == 0
             || self.image_name != IMAGE_NAME
             || !(512..=65536).contains(&sector)
@@ -155,6 +168,8 @@ pub struct ReadMapSummary {
     pub records: u64,
     pub ignored_incomplete_tail: bool,
     pub created_unix_ms: u64,
+    #[serde(default)]
+    pub strategy: AcquisitionStrategy,
 }
 pub(crate) struct ReadMap {
     pub header: Header,
@@ -258,7 +273,7 @@ impl ReadMap {
     pub fn summary(&self) -> ReadMapSummary {
         let [pending, copied, failed] = self.counts;
         ReadMapSummary {
-            schema_version: 1,
+            schema_version: self.header.schema_version,
             image_id: self.header.id.clone(),
             length: self.header.source.length,
             copied_bytes: copied,
@@ -267,6 +282,7 @@ impl ReadMap {
             records: self.records,
             ignored_incomplete_tail: self.ignored_tail,
             created_unix_ms: self.header.created_unix_ms,
+            strategy: self.header.strategy,
         }
     }
     pub fn digest(&self) -> String {
@@ -360,8 +376,39 @@ impl ReadMap {
             })
             .collect())
     }
-    /// Return the next bounded attempt without materializing a second interval index.
-    pub fn next_attempt(&self, at: u64, pass: u8) -> Option<Segment> {
+    /// Cursor is an inclusive start forward, or an exclusive end in reverse.
+    /// Successful intervals and attempts from a different pass are never read.
+    pub fn next_attempt_in_direction(
+        &self,
+        at: u64,
+        pass: u8,
+        block: u32,
+        reverse: bool,
+    ) -> Option<Segment> {
+        let block = u64::from(block);
+        let sector = u64::from(self.header.source.sector_size);
+        debug_assert!(block >= sector && block.is_multiple_of(sector));
+        if reverse {
+            let before = at.min(self.header.source.length);
+            for (_, s) in self.segments.range(..before).rev() {
+                if s.state == ReadState::Copied || s.attempts != pass {
+                    continue;
+                }
+                let end = s.end().min(before);
+                let lower = end.saturating_sub(block);
+                let offset = s.offset.max(lower.div_ceil(sector) * sector);
+                return Some(Segment {
+                    offset,
+                    length: end - offset,
+                    state: ReadState::Failed,
+                    attempts: pass + 1,
+                    sha256: [0; 32],
+                    error_code: 0,
+                    read_unix_ms: 0,
+                });
+            }
+            return None;
+        }
         let start = self
             .segments
             .range(..=at)
@@ -373,11 +420,6 @@ impl ReadMap {
                 continue;
             }
             let offset = s.offset.max(at);
-            let block = if pass == 0 {
-                u64::from(self.header.block_size)
-            } else {
-                u64::from(self.header.source.sector_size)
-            };
             return Some(Segment {
                 offset,
                 length: (s.end() - offset).min(block),

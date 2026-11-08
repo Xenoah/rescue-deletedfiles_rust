@@ -68,6 +68,15 @@ enum Command {
         block_size: u32,
         #[arg(long, default_value_t = 2)]
         retries: u8,
+        /// Auto uses adaptive passes for new images and the saved strategy on resume.
+        #[arg(long, default_value = "auto", value_parser = ["auto", "adaptive", "linear"])]
+        strategy: String,
+        /// Read-helper wait limit in milliseconds; 0 uses direct, unbounded OS reads.
+        #[arg(long, default_value_t = 30000)]
+        read_timeout_ms: u32,
+        /// Wait for the identical source to reconnect; 0 disables automatic reconnect.
+        #[arg(long, default_value_t = 15000)]
+        reconnect_wait_ms: u32,
         #[arg(long)]
         resume: bool,
         /// Emit durable progress as JSON lines on stderr, while the final result remains on stdout.
@@ -434,6 +443,9 @@ fn run() -> Result<i32, Error> {
             destination,
             block_size,
             retries,
+            strategy,
+            read_timeout_ms,
+            reconnect_wait_ms,
             resume,
             progress,
             json: compact,
@@ -444,6 +456,13 @@ fn run() -> Result<i32, Error> {
                 rescue_core::AcquisitionOptions {
                     block_size,
                     retries,
+                    strategy: match strategy.as_str() {
+                        "adaptive" => Some(rescue_core::AcquisitionStrategy::Adaptive),
+                        "linear" => Some(rescue_core::AcquisitionStrategy::Linear),
+                        _ => None,
+                    },
+                    read_timeout_ms,
+                    reconnect_wait_ms,
                     resume,
                 },
                 &cancel,
@@ -1052,6 +1071,9 @@ fn run() -> Result<i32, Error> {
     }
 }
 fn main() {
+    if let Some(code) = rescue_core::acquisition_worker_entry() {
+        std::process::exit(code);
+    }
     if let Some(code) = rescue_core::read_broker_entry() {
         std::process::exit(code);
     }

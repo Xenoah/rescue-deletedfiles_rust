@@ -1066,8 +1066,10 @@
       "properties": {
         "schema_version": {
           "type": "integer",
-          "minimum": 0,
-          "maximum": 18446744073709551615
+          "enum": [
+            1,
+            2
+          ]
         },
         "length": {
           "type": "integer",
@@ -1105,6 +1107,15 @@
         },
         "ignored_incomplete_tail": {
           "type": "boolean"
+        },
+        "strategy": {
+          "type": "string",
+          "enum": [
+            "linear",
+            "adaptive"
+          ],
+          "default": "linear",
+          "description": "Absent on legacy v1 maps; adaptive maps use schema_version 2."
         }
       },
       "required": [

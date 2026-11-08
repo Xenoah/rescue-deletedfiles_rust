@@ -33,6 +33,30 @@ impl Server {
             .map(|v| v.as_bool().ok_or("invalid resume"))
             .transpose()?
             .unwrap_or(false);
+        let strategy = match args.get("strategy").map(Value::as_str) {
+            None | Some(Some("auto")) => None,
+            Some(Some("adaptive")) => Some(rescue_core::AcquisitionStrategy::Adaptive),
+            Some(Some("linear")) => Some(rescue_core::AcquisitionStrategy::Linear),
+            _ => return Err("invalid acquisition strategy".into()),
+        };
+        let read_timeout_ms = args
+            .get("read_timeout_ms")
+            .map(|v| {
+                v.as_u64()
+                    .filter(|n| *n == 0 || (100..=300_000).contains(n))
+                    .ok_or("invalid read_timeout_ms")
+            })
+            .transpose()?
+            .unwrap_or(30_000) as u32;
+        let reconnect_wait_ms = args
+            .get("reconnect_wait_ms")
+            .map(|v| {
+                v.as_u64()
+                    .filter(|n| *n <= 300_000)
+                    .ok_or("invalid reconnect_wait_ms")
+            })
+            .transpose()?
+            .unwrap_or(15_000) as u32;
         self.start_image_job(Task {
             source,
             destination,
@@ -40,6 +64,9 @@ impl Server {
                 block_size,
                 retries,
                 resume,
+                strategy,
+                read_timeout_ms,
+                reconnect_wait_ms,
             },
         })
     }

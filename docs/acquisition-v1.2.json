@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "schema_version": 1,
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "version": "rescue 1.2.0-alpha.1",
+  "binary_sha256": "9113890ae02a40007bc73f042a59081a24c49f02e8374951e6bfe8d0646ea3d5",
+  "checks": 13,
+  "cases": [
+    "actual reader wait deadline",
+    "late data excluded from durable map",
+    "timed-out helper reaped",
+    "strategy mismatch refused without mutation",
+    "adaptive reverse retry and byte-exact resume",
+    "disconnect waiting progress",
+    "identical source reconnect",
+    "reconnected image byte exact",
+    "replacement identity refused",
+    "legacy header without strategy resumes unchanged",
+    "MCP option bounds",
+    "MCP cancellation interrupts blocked read",
+    "original source unchanged"
+  ],
+  "source_unchanged": true,
+  "scope": "Actual CLI/MCP helper suspension and disposable regular-file renames. No physical media fault claim."
+}

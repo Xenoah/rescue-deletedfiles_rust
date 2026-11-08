@@ -1,0 +1,404 @@
+{
+  "status": "passed",
+  "application_version": "1.2.0-alpha.1",
+  "time_utc": "2026-11-08T10:28:08.456940+00:00",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "scope": "Owned Linux Xvfb/Openbox actual mouse/keyboard: choose saved FAT32 image and ZIP destination, explicitly check contiguous estimation, new scan, Ctrl+F PDF search, selection retained after clearing filter, select 36, switch colored icons/details, restore, export HTML/CSV through actual GUI, switch Japanese to English, return to settings and resize to 720x520. No mock screenshot or simulated recovery.",
+  "settings_to_scan_to_selected_recovery": true,
+  "source_unchanged": true,
+  "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
+  "gui_binary_sha256": "45e0ca14c46d5be50232d505f131311ad63ea1fa8c5f6991f2c2e54a86f92514",
+  "cli_binary_sha256": "9113890ae02a40007bc73f042a59081a24c49f02e8374951e6bfe8d0646ea3d5",
+  "files_byte_exact": 36,
+  "estimated_files_byte_exact": 22,
+  "bytes_exact": 152325,
+  "archive_sha256": "323ff4cd42ff30a72436bdf23cf829b09cef6960c25864e746794be98760e086",
+  "screenshots": [
+    {
+      "file": "images/v1.2-alpha.1/html-report.png",
+      "sha256": "d15ffe70711d183525580ac21cf7f09096ec3fe62da05ae156b2da8091e3b5e4",
+      "width": 1400,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/icons-ja.png",
+      "sha256": "fdc2f074c4e82a1b080ec3767bfb679fad67dda537cf9c73c0443c5024a31752",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/imaging-map-ja.png",
+      "sha256": "f4c160fd1b52636369b3e9372a4c64f6ebd1da171c8aec15aea5cece5842286c",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/imaging-resumed-ja.png",
+      "sha256": "a008b7cef725245ce5a92042d8afc3119c5a77f2aa6c01e0ee40bc1fa32f3ebc",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/imaging-settings-ja.png",
+      "sha256": "c6ea60c64aba52837469c9251ba9e74a5a6cf40d064edf6d421984ebbd153c74",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/imaging-timeout-ja.png",
+      "sha256": "60a47d70cea324dec17dd676cd93b74bcaaca67f64b6659ab035e20e9d1ba9f8",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/imaging-wait-ja.png",
+      "sha256": "a3982beab1e843a7156c64be3182e6db110adbc2823461521e5e32ea4de206d0",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/narrow-en.png",
+      "sha256": "0679c601aedea63e37369e4e3c68badd7221a007ccf33fc1261379c93811897c",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/recovered-en.png",
+      "sha256": "8cd2e4773eb3b17bfc282990f174592619df76e5121f3e989b3c460703cc6f55",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/recovered-ja.png",
+      "sha256": "688a0a684839db2b0f1541888e400e9fa8b70e90829e1d683b77c9153b6da6c0",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/report-actions-ja.png",
+      "sha256": "b9a0be6ccdfd5e0d95e3aecba261983c27338560b55a7855acbad116a76af889",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/report-dialog-ja.png",
+      "sha256": "91891f02ec3d7985659b92dfc0187acace8a379013d7249f42a760d2e3667dfb",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/report-saved-ja.png",
+      "sha256": "3d125635b12ca69e4089b9089369b556c7c78f7eb4e26e2233227d275650442c",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/search-ja.png",
+      "sha256": "06d03ac7f019729fa16844245fabb92aef26725f5f34ac7d6809c76bc9557b81",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/selection-retained-ja.png",
+      "sha256": "e0ca0e49168a08a0a8f088c7fcdd7c33ef7e58c88d850c10e6606b5c06f07771",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "images/v1.2-alpha.1/settings-ja.png",
+      "sha256": "27b0c0a671453c9cbc5fd6708f0480156c439fff74960edc23e446ab093c15cc",
+      "width": 1440,
+      "height": 1000
+    }
+  ],
+  "files": [
+    {
+      "candidate_id": "fat32-1049664",
+      "bytes": 767,
+      "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "archive_entry": "fixture-000.jpg",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1049760",
+      "bytes": 102,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "archive_entry": "fixture-001.png",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1049856",
+      "bytes": 1731,
+      "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "archive_entry": "fixture-002.gif",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1049952",
+      "bytes": 3126,
+      "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "archive_entry": "fixture-003.bmp",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1050048",
+      "bytes": 3212,
+      "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+      "archive_entry": "fixture-004.tif",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1061408",
+      "bytes": 184,
+      "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "archive_entry": "fixture-005.webp",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1061504",
+      "bytes": 124,
+      "sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+      "archive_entry": "fixture-006.ico",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1061600",
+      "bytes": 310,
+      "sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6",
+      "archive_entry": "fixture-007.apng",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1061696",
+      "bytes": 1367,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "archive_entry": "fixture-008.pdf",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1061792",
+      "bytes": 36642,
+      "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "archive_entry": "fixture-009.docx",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1106432",
+      "bytes": 4880,
+      "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+      "archive_entry": "fixture-010.xlsx",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1106528",
+      "bytes": 28268,
+      "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "archive_entry": "fixture-011.pptx",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1106624",
+      "bytes": 61,
+      "sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "archive_entry": "fixture-012.txt",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1106720",
+      "bytes": 33,
+      "sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "archive_entry": "fixture-013.csv",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1106816",
+      "bytes": 78,
+      "sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "archive_entry": "fixture-014.json",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1106912",
+      "bytes": 80,
+      "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "archive_entry": "fixture-015.html",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1138240",
+      "bytes": 70,
+      "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "archive_entry": "fixture-016.xml",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1138336",
+      "bytes": 55,
+      "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "archive_entry": "fixture-017.rtf",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1138432",
+      "bytes": 2162,
+      "sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+      "archive_entry": "fixture-018.mp4",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1138528",
+      "bytes": 2109,
+      "sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+      "archive_entry": "fixture-019.mov",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1138624",
+      "bytes": 7356,
+      "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+      "archive_entry": "fixture-020.avi",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1154080",
+      "bytes": 1915,
+      "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
+      "archive_entry": "fixture-021.mkv",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1154176",
+      "bytes": 1175,
+      "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
+      "archive_entry": "fixture-022.webm",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1154272",
+      "bytes": 1088,
+      "sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+      "archive_entry": "fixture-023.mp3",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1154368",
+      "bytes": 6478,
+      "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "archive_entry": "fixture-024.wav",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1154464",
+      "bytes": 9478,
+      "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+      "archive_entry": "fixture-025.flac",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1178112",
+      "bytes": 3717,
+      "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+      "archive_entry": "fixture-026.ogg",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1178208",
+      "bytes": 1812,
+      "sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
+      "archive_entry": "fixture-027.aac",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1178304",
+      "bytes": 2603,
+      "sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
+      "archive_entry": "fixture-028.m4a",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1178400",
+      "bytes": 179,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+      "archive_entry": "fixture-029.zip",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1178496",
+      "bytes": 10240,
+      "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+      "archive_entry": "fixture-030.tar",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1178592",
+      "bytes": 81,
+      "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "archive_entry": "fixture-031.gz",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1195584",
+      "bytes": 120,
+      "sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd",
+      "archive_entry": "fixture-032.xz",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1195680",
+      "bytes": 110,
+      "sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816",
+      "archive_entry": "fixture-033.bz2",
+      "extent_evidence": "single_cluster"
+    },
+    {
+      "candidate_id": "fat32-1195776",
+      "bytes": 8192,
+      "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "archive_entry": "fixture-034.sqlite",
+      "extent_evidence": "estimated_contiguous"
+    },
+    {
+      "candidate_id": "fat32-1195872",
+      "bytes": 12420,
+      "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+      "archive_entry": "fixture-035.png",
+      "extent_evidence": "estimated_contiguous"
+    }
+  ],
+  "gui_window_sizes": [
+    [
+      1260,
+      820
+    ],
+    [
+      720,
+      520
+    ]
+  ],
+  "native_windows_gui": "Required separately in tag CI: UIA, keyboard and actual Japanese IME",
+  "historical_gui_records": "alpha.1 responsive/narrow and NTFS GUI flow remains recorded at its original tag, not recounted here.",
+  "readable_reports": {
+    "html_sha256": "4ccb3484fc24695bf3c48759ba066114e4eb52a9ff220d79201c0b4adfe2edc5",
+    "csv_sha256": "ace527ef93bde0f5f4d4e62ee9c01289583ceb0e191f4644ec048976993fdb6f",
+    "files_exactly_match_json": 36,
+    "estimated_labelled": 22,
+    "browser": {
+      "rows": 36,
+      "estimated": 22,
+      "external_requests": 0,
+      "renderer": "156.0.8078.79"
+    }
+  },
+  "imaging": {
+    "source_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
+    "image_sha256": "7dad9851d3a47c638346c8496027222975847fbebf557d18f5450c40ce7ee3d6",
+    "read_map_sha256": "e27ad90065d63337020fdef5774010cd57302c5aec84f7895424d3990159b3a5",
+    "acquired_bytes": 67108864,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "scope": "Actual GUI actions; one owned helper suspended with SIGSTOP, timeout retained failed/unread ranges, same original source resumed from the displayed dialog. All acquired bytes match."
+  }
+}

@@ -252,6 +252,7 @@ jobs:
             dist/estimated-fat-*.json
             dist/reports-results-*.json
             dist/release-fixes-results-*.json
+            dist/acquisition-results-*.json
             dist/independent-classic-fat-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error
@@ -306,9 +307,9 @@ jobs:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           if [[ "$RELEASE_TAG" == *-* ]]; then
-            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.1.md
+            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.2.md
           else
-            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --latest --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.1.md
+            gh release create "$RELEASE_TAG" release-dist/* --verify-tag --latest --title "Rescue $RELEASE_TAG" --notes-file docs/RELEASE-v1.2.md
           fi
       - name: Verify exact public packages after publishing
         if: startsWith(github.ref, 'refs/tags/v')

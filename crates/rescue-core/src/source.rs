@@ -341,6 +341,19 @@ impl Image {
     pub fn is_device(&self) -> bool {
         self.device.is_some()
     }
+    #[cfg(windows)]
+    pub(crate) fn read_grant_paths(&self) -> Vec<PathBuf> {
+        if let Some(raid) = &self.raid {
+            raid.evidence
+                .config
+                .members
+                .iter()
+                .filter_map(|member| member.path.clone())
+                .collect()
+        } else {
+            vec![self.path.clone()]
+        }
+    }
     pub fn absolute_offset(&self, offset: u64) -> u64 {
         self.base + offset
     }

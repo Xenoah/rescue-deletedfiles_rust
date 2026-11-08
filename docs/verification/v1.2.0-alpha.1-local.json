@@ -1,0 +1,53 @@
+{
+  "version": "1.2.0-alpha.1",
+  "status": "passed",
+  "rust_tests": 75,
+  "integration_suites": 32,
+  "integration_log_sha256": "899cf28268e12fc47370fac1163fec7f2898c4519b0e50effbac0e90b7559e16",
+  "clippy": "--release --workspace --all-targets -- -D warnings passed",
+  "format": "cargo fmt --all -- --check passed",
+  "release_asset_contract_tests": 2,
+  "acquisition": {
+    "status": "passed",
+    "schema_version": 1,
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+    "version": "rescue 1.2.0-alpha.1",
+    "binary_sha256": "9113890ae02a40007bc73f042a59081a24c49f02e8374951e6bfe8d0646ea3d5",
+    "checks": 13,
+    "cases": [
+      "actual reader wait deadline",
+      "late data excluded from durable map",
+      "timed-out helper reaped",
+      "strategy mismatch refused without mutation",
+      "adaptive reverse retry and byte-exact resume",
+      "disconnect waiting progress",
+      "identical source reconnect",
+      "reconnected image byte exact",
+      "replacement identity refused",
+      "legacy header without strategy resumes unchanged",
+      "MCP option bounds",
+      "MCP cancellation interrupts blocked read",
+      "original source unchanged"
+    ],
+    "source_unchanged": true,
+    "scope": "Actual CLI/MCP helper suspension and disposable regular-file renames. No physical media fault claim."
+  },
+  "package": {
+    "status": "passed",
+    "version": "1.2.0-alpha.1",
+    "platform": "linux",
+    "arch": "x64",
+    "portable_cli_sha256": "9113890ae02a40007bc73f042a59081a24c49f02e8374951e6bfe8d0646ea3d5",
+    "portable_gui_sha256": "45e0ca14c46d5be50232d505f131311ad63ea1fa8c5f6991f2c2e54a86f92514",
+    "installer_validation": "deb_extracted_version_payload_and_shortcuts_verified",
+    "packaged_cli_mcp_features": "passed: 35 formats, ZIP bytes/CRC/SHA, date and scope",
+    "gui_startup": "not_run",
+    "gui_renderer_log": null,
+    "gui_startup_seconds": null,
+    "manual_gui_test": false
+  },
+  "gui_proof_sha256": "c1ee2830250917a700f9e3e2dc7ef0e0a3797a8ac36d618d4e9512f766b01304",
+  "gui_screenshots": 16,
+  "native_ci": "required before release; pending",
+  "public_packages": "required after publication; pending"
+}

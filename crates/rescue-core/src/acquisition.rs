@@ -1,6 +1,6 @@
 //! Durable, resumable acquisition. Every map commit follows data sync.
 use crate::{
-    Error, OutputRoot, RecoveryDestination, Result,
+    AcquisitionStrategy, Error, OutputRoot, RecoveryDestination, Result,
     read_map::{Header, IMAGE_NAME, MAP_NAME, ReadMap, ReadMapSummary, ReadState},
     source::Image,
 };
@@ -12,15 +12,23 @@ use std::{
     io::{Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
+    time::Instant,
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(default)]
 pub struct AcquisitionOptions {
     /// Must be a multiple of the source sector size, at most 16 MiB.
     pub block_size: u32,
-    /// Additional sector-sized attempts after the first large-block pass (0..=3).
+    /// Additional passes after the first large-block pass (0..=3).
     pub retries: u8,
     pub resume: bool,
+    /// None selects adaptive for new acquisitions, or the saved strategy on resume.
+    pub strategy: Option<AcquisitionStrategy>,
+    /// Per-request helper wait limit (100..=300000 ms); zero opts into direct OS reads.
+    pub read_timeout_ms: u32,
+    /// Maximum time to wait for the identical source to reconnect (0..=300000 ms).
+    pub reconnect_wait_ms: u32,
 }
 impl Default for AcquisitionOptions {
     fn default() -> Self {
@@ -28,6 +36,9 @@ impl Default for AcquisitionOptions {
             block_size: 4 * 1024 * 1024,
             retries: 2,
             resume: false,
+            strategy: None,
+            read_timeout_ms: 30_000,
+            reconnect_wait_ms: 15_000,
         }
     }
 }
@@ -38,6 +49,22 @@ pub struct AcquisitionProgress {
     pub completed_bytes: u64,
     pub total_bytes: u64,
     pub map: ReadMapSummary,
+    pub direction: String,
+    pub block_size: u32,
+    pub detail: Option<String>,
+}
+/// Statistics cover this invocation only, including a resumed invocation.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AcquisitionPass {
+    pub pass: u8,
+    pub direction: String,
+    pub block_size: u32,
+    pub attempts: u64,
+    pub copied_bytes: u64,
+    pub failed_bytes: u64,
+    pub timeouts: u64,
+    pub reconnects: u64,
+    pub elapsed_ms: u64,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AcquisitionResult {
@@ -47,6 +74,8 @@ pub struct AcquisitionResult {
     pub read_map: PathBuf,
     pub summary: ReadMapSummary,
     pub warnings: Vec<String>,
+    pub passes: Vec<AcquisitionPass>,
+    pub stop_reason: Option<String>,
 }
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ReadMapRange {
@@ -182,6 +211,8 @@ pub fn read_map_page(
     })
 }
 
+/// Executables using timed reads must dispatch `acquisition_worker_entry` before argument parsing.
+/// Library embedders can opt into direct reads with `read_timeout_ms = 0`.
 pub fn acquire_image(
     source: &Path,
     destination: &Path,
@@ -207,12 +238,14 @@ pub fn acquire_image_with_roots(
         ));
     }
     if options.retries > 3
+        || (options.read_timeout_ms != 0 && !(100..=300_000).contains(&options.read_timeout_ms))
+        || options.reconnect_wait_ms > 300_000
         || options.block_size > 16 * 1024 * 1024
         || options.block_size < source.sector_size()
         || !options.block_size.is_multiple_of(source.sector_size())
     {
         return Err(Error::Request(
-            "block size must be sector aligned and <=16 MiB; retries must be 0..3".into(),
+            "block size must be sector aligned and <=16 MiB; retries must be 0..3; read timeout must be 0 or 100..300000 ms; reconnect wait must be 0..300000 ms".into(),
         ));
     }
     crate::guard_output_path(&source.path, destination)?;
@@ -260,12 +293,25 @@ fn acquire_to(
                 "resume block size must match the existing read map".into(),
             ));
         }
+        if options
+            .strategy
+            .is_some_and(|strategy| strategy != map.header.strategy)
+        {
+            return Err(Error::Request(
+                "resume strategy must match the existing read map; use auto to preserve it".into(),
+            ));
+        }
         map
     } else {
         ReadMap::create(
             &mut map_file,
             Header {
-                schema_version: 1,
+                schema_version: if options.strategy == Some(AcquisitionStrategy::Linear) {
+                    1
+                } else {
+                    2
+                },
+                strategy: options.strategy.unwrap_or(AcquisitionStrategy::Adaptive),
                 id: uuid::Uuid::new_v4().to_string(),
                 source: identity.clone(),
                 block_size: options.block_size,
@@ -329,37 +375,70 @@ fn acquire_to(
             completed_bytes: verified,
             total_bytes: copied,
             map: map.summary(),
+            direction: "forward".into(),
+            block_size: options.block_size,
+            detail: None,
         });
     }
     let pinned_image = image.try_clone()?;
     let pinned_map = map_file.try_clone()?;
-    run_passes(
+    let mut reader = crate::acquisition_reader::Reader::new(source, identity.clone(), &options);
+    let mut outcome = run_passes(
         &mut map,
         &mut map_file,
         &mut image,
         options.retries,
         cancel,
         &mut progress,
-        |offset, length| source.read(offset, length),
+        &mut reader,
         || {
             verify_named(destination, IMAGE_NAME, &pinned_image)?;
             verify_named(destination, MAP_NAME, &pinned_map)
         },
     )?;
-    if source.acquisition_identity()? != identity {
-        return Err(Error::SourceChanged);
+    if !cancel.load(Ordering::Relaxed) && outcome.stop_reason.is_none() {
+        match reader.verify(cancel) {
+            Ok(()) => {}
+            Err(Error::Cancelled) => {}
+            Err(Error::Io(error)) => {
+                outcome.stop_reason = Some(format!("final source verification failed: {error}"))
+            }
+            Err(error) => return Err(error),
+        }
     }
     verify_named(destination, IMAGE_NAME, &image)?;
     verify_named(destination, MAP_NAME, &map_file)?;
     let summary = map.summary();
     let state = if cancel.load(Ordering::Relaxed) {
         "cancelled"
-    } else if summary.failed_bytes == 0 && summary.unattempted_bytes == 0 {
+    } else if outcome.stop_reason.is_none()
+        && summary.failed_bytes == 0
+        && summary.unattempted_bytes == 0
+    {
         "completed"
     } else {
         "partial"
     };
-    Ok(AcquisitionResult{schema_version:1,state:state.into(),image:destination.path.join(IMAGE_NAME),read_map:destination.path.join(MAP_NAME),summary,warnings:vec!["Keep the RAW image together with its .rmap. Missing ranges are unavailable, never verified zero bytes. Mounted source media can change externally; native identity/geometry do not establish a point-in-time snapshot.".into()]})
+    Ok(AcquisitionResult{schema_version:2,state:state.into(),image:destination.path.join(IMAGE_NAME),read_map:destination.path.join(MAP_NAME),summary,passes:outcome.passes,stop_reason:outcome.stop_reason,warnings:vec!["Keep the RAW image together with its .rmap. Missing ranges are unavailable, never verified zero bytes. Mounted source media can change externally; native identity/geometry do not establish a point-in-time snapshot.".into(), "Read deadlines bound the application's wait for its helper, not kernel I/O cancellation or initial device discovery. Pass statistics describe this invocation only.".into()]})
+}
+
+#[derive(Default)]
+struct RunOutcome {
+    passes: Vec<AcquisitionPass>,
+    stop_reason: Option<String>,
+}
+
+fn pass_plan(map: &ReadMap, pass: u8) -> (u32, bool) {
+    let sector = map.header.source.sector_size;
+    match (map.header.strategy, pass) {
+        (_, 0) => (map.header.block_size, false),
+        (AcquisitionStrategy::Adaptive, 1) => (
+            ((map.header.block_size / 16).min(65536) / sector * sector).max(sector),
+            true,
+        ),
+        (AcquisitionStrategy::Adaptive, 3) => (sector, true),
+        _ => (sector, false),
+    }
 }
 
 /// Separated I/O allows deterministic bad-sector, interruption and failed-write tests.
@@ -371,18 +450,37 @@ fn run_passes(
     retries: u8,
     cancel: &AtomicBool,
     progress: &mut impl FnMut(AcquisitionProgress),
-    mut read: impl FnMut(u64, usize) -> Result<Vec<u8>>,
+    read: &mut impl crate::acquisition_reader::ReadSource,
     mut verify: impl FnMut() -> Result<()>,
-) -> Result<()> {
+) -> Result<RunOutcome> {
+    let mut outcome = RunOutcome::default();
     for pass in 0..=retries {
-        let mut at = 0;
-        while let Some(mut segment) = map.next_attempt(at, pass) {
+        let started = Instant::now();
+        let (block_size, reverse) = pass_plan(map, pass);
+        let direction = if reverse { "reverse" } else { "forward" };
+        let mut stats = AcquisitionPass {
+            pass: pass + 1,
+            direction: direction.into(),
+            block_size,
+            attempts: 0,
+            copied_bytes: 0,
+            failed_bytes: 0,
+            timeouts: 0,
+            reconnects: 0,
+            elapsed_ms: 0,
+        };
+        let mut at = if reverse { map.header.source.length } else { 0 };
+        while let Some(mut segment) = map.next_attempt_in_direction(at, pass, block_size, reverse) {
             if cancel.load(Ordering::Relaxed) {
-                return Ok(());
+                break;
             }
             verify()?;
-            match read(segment.offset, segment.length as usize) {
+            let mut failure = None;
+            match read.read(segment.offset, segment.length as usize, cancel) {
                 Ok(bytes) => {
+                    if cancel.load(Ordering::Relaxed) {
+                        break;
+                    }
                     if bytes.len() != segment.length as usize {
                         return Err(Error::Invalid("short source read".into()));
                     }
@@ -391,20 +489,36 @@ fn run_passes(
                     image.seek(SeekFrom::Start(segment.offset))?;
                     image.write_all(&bytes)?;
                     image.sync_data()?;
+                    stats.copied_bytes += segment.length;
                 }
-                Err(Error::MissingRanges(_)) => {
+                Err(error @ Error::MissingRanges(_)) => {
                     segment.error_code = -2;
+                    failure = Some(error);
                 }
                 Err(Error::Io(error)) => {
                     segment.error_code = error.raw_os_error().unwrap_or(-1);
+                    if error.kind() == std::io::ErrorKind::TimedOut {
+                        segment.error_code = -3;
+                        stats.timeouts += 1;
+                    }
+                    failure = Some(Error::Io(error));
                 }
+                Err(Error::Cancelled) => break,
                 Err(error) => return Err(error),
             }
             // A full write and data sync must succeed before successful bytes enter the journal.
             segment.read_unix_ms = now_ms()?;
             verify()?;
             map.append(map_file, segment.clone())?;
-            at = segment.end();
+            stats.attempts += 1;
+            if failure.is_some() {
+                stats.failed_bytes += segment.length;
+            }
+            at = if reverse {
+                segment.offset
+            } else {
+                segment.end()
+            };
             let summary = map.summary();
             progress(AcquisitionProgress {
                 phase: if pass == 0 { "acquire" } else { "retry" }.into(),
@@ -412,10 +526,45 @@ fn run_passes(
                 completed_bytes: summary.copied_bytes,
                 total_bytes: summary.length,
                 map: summary,
+                direction: direction.into(),
+                block_size,
+                detail: None,
             });
+            if let Some(error) = failure {
+                let recovery = read.recover(&error, cancel, &mut |detail| {
+                    progress(AcquisitionProgress {
+                        phase: "reconnect".into(),
+                        pass: pass + 1,
+                        completed_bytes: map.summary().copied_bytes,
+                        total_bytes: map.header.source.length,
+                        map: map.summary(),
+                        direction: direction.into(),
+                        block_size,
+                        detail: Some(detail.into()),
+                    })
+                });
+                match recovery {
+                    Ok(crate::acquisition_reader::Recovery::Continue { reconnects }) => {
+                        stats.reconnects += reconnects
+                    }
+                    Ok(crate::acquisition_reader::Recovery::Stop(reason)) => {
+                        outcome.stop_reason = Some(reason);
+                        break;
+                    }
+                    Err(Error::Cancelled) => break,
+                    Err(error) => return Err(error),
+                }
+            }
+        }
+        stats.elapsed_ms = started.elapsed().as_millis().min(u64::MAX as u128) as u64;
+        if stats.attempts != 0 {
+            outcome.passes.push(stats);
+        }
+        if cancel.load(Ordering::Relaxed) || outcome.stop_reason.is_some() {
+            break;
         }
     }
-    Ok(())
+    Ok(outcome)
 }
 
 #[cfg(test)]
@@ -423,6 +572,13 @@ mod tests {
     use super::*;
     use crate::{AcquisitionIdentity, read_map::Segment};
     fn fixture(length: u64, block_size: u32) -> (tempfile::TempDir, File, File, ReadMap) {
+        fixture_strategy(length, block_size, AcquisitionStrategy::Linear)
+    }
+    fn fixture_strategy(
+        length: u64,
+        block_size: u32,
+        strategy: AcquisitionStrategy,
+    ) -> (tempfile::TempDir, File, File, ReadMap) {
         let dir = tempfile::tempdir().unwrap();
         let mut journal = std::fs::OpenOptions::new()
             .read(true)
@@ -437,7 +593,12 @@ mod tests {
             .open(dir.path().join(IMAGE_NAME))
             .unwrap();
         let header = Header {
-            schema_version: 1,
+            schema_version: if strategy == AcquisitionStrategy::Linear {
+                1
+            } else {
+                2
+            },
+            strategy,
             id: uuid::Uuid::new_v4().to_string(),
             source: AcquisitionIdentity {
                 path: "synthetic".into(),
@@ -454,6 +615,79 @@ mod tests {
         (dir, journal, image, map)
     }
     #[test]
+    fn adaptive_passes_reverse_subdivide_and_preserve_successful_ranges() {
+        let (_dir, mut journal, mut image, mut map) =
+            fixture_strategy(131073, 65536, AcquisitionStrategy::Adaptive);
+        let data = (0..131073).map(|n| (n % 251) as u8).collect::<Vec<_>>();
+        let mut calls = Vec::new();
+        let mut tail_failed = false;
+        let outcome = run_passes(
+            &mut map,
+            &mut journal,
+            &mut image,
+            3,
+            &AtomicBool::new(false),
+            &mut |_| {},
+            &mut |at, len| {
+                calls.push((at, len));
+                if len > 512
+                    || at == 512
+                    || (at == 131072 && !std::mem::replace(&mut tail_failed, true))
+                {
+                    return Err(std::io::Error::other("injected unreadable range").into());
+                }
+                Ok(data[at as usize..at as usize + len].to_vec())
+            },
+            || Ok(()),
+        )
+        .unwrap();
+        assert_eq!(
+            outcome
+                .passes
+                .iter()
+                .map(|p| (p.direction.as_str(), p.block_size))
+                .collect::<Vec<_>>(),
+            vec![
+                ("forward", 65536),
+                ("reverse", 4096),
+                ("forward", 512),
+                ("reverse", 512)
+            ]
+        );
+        let reverse = &calls[3..36];
+        assert!(reverse.windows(2).all(|p| p[0].0 > p[1].0));
+        assert_eq!(reverse[0], (131072, 1));
+        assert_eq!(reverse[1], (126976, 4096));
+        // Every request is bounded and starts on a sector boundary, including the one-byte tail.
+        assert!(calls.iter().all(|(at, _)| at % 512 == 0));
+        assert_eq!(map.summary().copied_bytes, 131073 - 512);
+        assert_eq!(map.summary().failed_bytes, 512);
+        assert_eq!(map.summary().unattempted_bytes, 0);
+        assert_eq!(map.segments[&512].attempts, 4);
+        let saved = ReadMap::load(&mut journal).unwrap();
+        assert_eq!(saved.header.strategy, AcquisitionStrategy::Adaptive);
+        let mut rereads = 0;
+        run_passes(
+            &mut map,
+            &mut journal,
+            &mut image,
+            3,
+            &AtomicBool::new(false),
+            &mut |_| {},
+            &mut |_, _| {
+                rereads += 1;
+                unreachable!()
+            },
+            || Ok(()),
+        )
+        .unwrap();
+        assert_eq!(rereads, 0);
+        image.seek(SeekFrom::Start(1024)).unwrap();
+        let mut actual = Vec::new();
+        image.read_to_end(&mut actual).unwrap();
+        assert_eq!(actual, data[1024..]);
+    }
+    #[test]
     fn retries_preserve_permanent_gaps_and_recover_transient_sectors() {
         let (dir, mut journal, mut image, mut map) = fixture(8192, 2048);
         let data = (0..8192).map(|n| (n % 251) as u8).collect::<Vec<_>>();
@@ -465,7 +699,7 @@ mod tests {
             2,
             &AtomicBool::new(false),
             &mut |_| {},
-            |at, len| {
+            &mut |at, len| {
                 let count = calls.entry(at).or_insert(0);
                 *count += 1;
                 if (at <= 512 && at + len as u64 > 512) || (at == 1024 && *count == 1) {
@@ -542,7 +776,7 @@ mod tests {
                     cancel.store(true, Ordering::Relaxed);
                 }
             },
-            |at, len| Ok((at..at + len as u64).map(|v| (v % 251) as u8).collect()),
+            &mut |at, len| Ok((at..at + len as u64).map(|v| (v % 251) as u8).collect()),
             || Ok(()),
         )
         .unwrap();
@@ -561,7 +795,7 @@ mod tests {
             0,
             &cancel,
             &mut |_| {},
-            |at, len| {
+            &mut |at, len| {
                 assert!(at >= 1024);
                 Ok((at..at + len as u64).map(|v| (v % 251) as u8).collect())
             },
@@ -595,7 +829,7 @@ mod tests {
                 0,
                 &AtomicBool::new(false),
                 &mut |_| {},
-                |_, len| Ok(vec![3; len]),
+                &mut |_, len| Ok(vec![3; len]),
                 || Ok(())
             )
             .is_err()
@@ -646,7 +880,10 @@ mod tests {
         let result = acquire_image(
             &source,
             &destination,
-            AcquisitionOptions::default(),
+            AcquisitionOptions {
+                read_timeout_ms: 0,
+                ..Default::default()
+            },
             &AtomicBool::new(false),
             |_| {},
         )

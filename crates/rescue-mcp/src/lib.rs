@@ -170,7 +170,7 @@ fn tools() -> Value {
         tool(
             "start_image",
             "Acquire an allowed disk to an empty directory inside an output root. RAW + read map preserve failed/unread ranges. Durable multi-pass retries, cancel and resume. Physical source and destination must differ. Generated images become scan sources for this server session.",
-            json!({"source":string,"destination":string,"request_id":string,"block_size":{"type":"integer","minimum":512,"maximum":16777216,"default":4194304},"retries":{"type":"integer","minimum":0,"maximum":3,"default":2},"resume":{"type":"boolean","default":false}}),
+            json!({"source":string,"destination":string,"request_id":string,"block_size":{"type":"integer","minimum":512,"maximum":16777216,"default":4194304},"retries":{"type":"integer","minimum":0,"maximum":3,"default":2},"strategy":{"type":"string","enum":["auto","adaptive","linear"],"default":"auto"},"read_timeout_ms":{"type":"integer","anyOf":[{"const":0},{"minimum":100,"maximum":300000}],"default":30000},"reconnect_wait_ms":{"type":"integer","minimum":0,"maximum":300000,"default":15000},"resume":{"type":"boolean","default":false}}),
             &["source", "destination", "request_id"],
             false
         ),
