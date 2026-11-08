@@ -470,7 +470,20 @@ try {
         $evidence.tree=@(Snapshot)
         $evidence.provider.late_accesskit_property=[RescueOwnedWindow]::GetProp($script:owned.MainWindowHandle,'AccessKitAdapter').ToInt64()
         Save-OwnedScreenshot 'windows-gui-failed.png'
-        if ($env:RESCUE_IME_TRACE -eq '1') {[RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-failed.dmp'))}
+        if ($env:RESCUE_IME_TRACE -eq '1') {
+            [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-failed.dmp'))
+            # Diagnose delayed native processing without sending another key,
+            # retrying the action, or changing this run's failed result.
+            $observation=[System.Diagnostics.Stopwatch]::StartNew()
+            $evidence.native_wait_observation=@()
+            do {
+                Start-Sleep -Milliseconds 100
+                $remaining=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
+                $evidence.native_wait_observation+=@{elapsed_ms=[int]$observation.Elapsed.TotalMilliseconds;value=$remaining}
+            } while ($remaining -ne '' -and $observation.Elapsed.TotalSeconds -lt 15)
+            Save-OwnedScreenshot 'windows-after-native-wait.png'
+            if ($remaining -ne '') {[RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-still-waiting.dmp'))}
+        }
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
     throw $failure

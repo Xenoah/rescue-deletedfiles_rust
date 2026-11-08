@@ -62,8 +62,8 @@ jobs:
         timeout-minutes: 5
         run: |
           $symbols="srv*$env:RUNNER_TEMP\rescue-symbols*https://msdl.microsoft.com/download/symbols;$env:GITHUB_WORKSPACE\target\x86_64-pc-windows-msvc\release"
-          Get-ChildItem rescue-owned-uia-*/owned-gui-failed.dmp | ForEach-Object {
-            & ./inspect-windows-dump.exe $_.FullName $symbols 2>&1 | Out-File (Join-Path $_.DirectoryName 'native-stacks.txt') -Encoding utf8
+          Get-ChildItem rescue-owned-uia-*/*.dmp | ForEach-Object {
+            & ./inspect-windows-dump.exe $_.FullName $symbols 2>&1 | Out-File ($_.FullName + '-stacks.txt') -Encoding utf8
           }
       - uses: actions/upload-artifact@v4
         if: always()
