@@ -50,7 +50,7 @@ try {
     $script:owned=[pscustomobject]@{Id=$PID;MainWindowHandle=[RescueImeBaseline]::Handle;HasExited=$false}
     $script:owned|Add-Member -MemberType ScriptMethod -Name Refresh -Value {}
     $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
-    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -ceq 'ja-JP') {$language.InputMethodTips}})
+    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -match '^ja($|-)') {$language.InputMethodTips}})
     if ($tips -notcontains "0411:$service$profile") {throw 'Prepare the Japanese user language profile before the WPF comparison'}
     Focus-Owned (Await-Control 'Search results' 'Edit')
     $record.description=[RescueOwnedWindow]::EnableJapaneseIme($script:owned.MainWindowHandle,$service,$profile)

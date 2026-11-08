@@ -298,7 +298,7 @@ function Set-ImeQuery {
     $service='{03B5835F-F03C-411B-9CE2-AA23E1171E36}';$profile='{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}'
     $installed="HKLM:\SOFTWARE\Microsoft\CTF\TIP\$service\LanguageProfile\0x00000411\$profile"
     if (!(Test-Path -LiteralPath $installed)) {throw 'The installed Japanese Microsoft IME TSF registration is missing'}
-    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -ceq 'ja-JP') {$language.InputMethodTips}})
+    $tips=@(foreach ($language in (Get-WinUserLanguageList)) {if ($language.LanguageTag -match '^ja($|-)') {$language.InputMethodTips}})
     $script:imeDiagnostic=@{tips=$tips;installed_profile=$installed;requested_tip="0411:$service$profile"}
     if ($tips -notcontains "0411:$service$profile") {throw 'Prepare the Japanese user language profile before starting the GUI test'}
     $node=Await-Control 'Search results' 'Edit';Focus-Owned $node

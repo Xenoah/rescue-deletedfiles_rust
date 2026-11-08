@@ -28,7 +28,7 @@ if ($Action -eq 'Prepare') {
     $record|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $State -Encoding UTF8
     $languages=Get-WinUserLanguageList
     $japanese=$null
-    foreach ($language in $languages) {if ($language.LanguageTag -ceq 'ja-JP') {$japanese=$language}}
+    foreach ($language in $languages) {if ($language.LanguageTag -match '^ja($|-)') {$japanese=$language}}
     if ($null -eq $japanese) {$languages.Add('ja-JP');$japanese=$languages[$languages.Count-1]}
     if (!$japanese.InputMethodTips.Contains($tip)) {$japanese.InputMethodTips.Add($tip)}
     Set-WinUserLanguageList $languages -Force
@@ -36,7 +36,7 @@ if ($Action -eq 'Prepare') {
     do {
         Start-Sleep -Milliseconds 100
         $record.configured=@(Read-Languages)
-        $record.prepared=@($record.configured|Where-Object {$_.tag -eq 'ja-JP' -and $_.tips -contains $tip}).Count -eq 1
+        $record.prepared=@($record.configured|Where-Object {$_.tag -match '^ja($|-)' -and $_.tips -contains $tip}).Count -eq 1
     } while (!$record.prepared -and $timer.Elapsed.TotalSeconds -lt 10)
     $record.prepare_ms=[int]$timer.Elapsed.TotalMilliseconds
     $record|ConvertTo-Json -Depth 8|Set-Content -LiteralPath $State -Encoding UTF8
