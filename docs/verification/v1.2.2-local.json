@@ -6,7 +6,7 @@
   "rust_tests": 86,
   "rust_test_profile": "release",
   "rust_test_log_sha256": "9eef85d13809d0a46db9c520e7c8d4011585bea079c73d6f9dd8493f5798bd27",
-  "release_contract_tests": 5,
+  "release_contract_tests": 6,
   "fmt": "passed",
   "fresh_gui_release_gate": "passed",
   "gui_screenshots": 26,
@@ -19,5 +19,7 @@
   "integration_suites": 35,
   "integration_profile": "release",
   "integration_status": "passed",
-  "integration_log_sha256": "7ed10e6adc5b53cc1fbd5987890eeffb66d18214ce42a99c02e795e13a9b90ec"
+  "integration_log_sha256": "7ed10e6adc5b53cc1fbd5987890eeffb66d18214ce42a99c02e795e13a9b90ec",
+  "release_contract_verified_at": "2026-11-08T19:21:00.160239+00:00",
+  "release_contract_scope": "Includes rejection of forced/crashed GUI exit and missing or incomplete original input-profile restoration"
 }

@@ -296,6 +296,217 @@
           "sha256": "d5186958a9c7ed1bf8880d1de0aa56dacafd6dcefdc1ebf4b8268ed28675baf8"
         }
       ]
+    },
+    {
+      "case": "fresh-wpf-before-rescue",
+      "run": 42513472603,
+      "status": "failed",
+      "artifact_zip_sha256": "0c37cc8ef7edcc1464abc241b8b71361e4a81a9ca974c5a02a48da729ac29366",
+      "finding": "Rescue never ran. First standard WPF control converted correctly but its driver did not exit within75s; second failed conversion. Both launch return codes were1, so the first UI passed record is not an overall pass.",
+      "files": [
+        {
+          "file": "fresh-wpf-before-rescue/ime-profile-state.json",
+          "sha256": "b1eb7b4ac1bdf04a663c2e5dfd156e5f7da579b7eb2a7897c05538d10b38786c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/uia.json",
+          "sha256": "e8a2dd775983178d57652d140147972acab9ffa88c33b1b1ea645c1a939730eb"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-cancel-preedit.png",
+          "sha256": "cdc2b8dc42c8c6bfcca8235bed76a5b65c5838acdbf7169bbbf9d3534faa2d59"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-cancelled.png",
+          "sha256": "90005aa64f8983bb94055364b69cd26d4f6e37a63e5f5088eba0766498832864"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-committed.png",
+          "sha256": "ee4766ab8293c44f23cc8207268fdd503c37ee6cfbae2455497404be6688672e"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-converted.png",
+          "sha256": "f0cd16f8438e63f754232df3cbfb138c049c766613529ad6b0be6f114982383f"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-vtc9c97u/windows-wpf-1-kana.png",
+          "sha256": "0ffd2b45369c04dec3c9070839fca5059b36d72bd655f9ff19fc8f996eaad949"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/uia.json",
+          "sha256": "5b350c906513a05bca9f5f9cae0ab468b2bf10d99a641991075ea360375ec401"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-cancel-preedit.png",
+          "sha256": "6ffddf84ab6f6af12c5536b919b317ae5f93c4d7005ca2d22e77c3622656bf2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-cancelled.png",
+          "sha256": "6ffddf84ab6f6af12c5536b919b317ae5f93c4d7005ca2d22e77c3622656bf2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-committed.png",
+          "sha256": "39d9fe8028b21ca5dfd492e9909dfdd48f3362ae1ddc23cc65092bd75b448b2c"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-converted.png",
+          "sha256": "e6455be71ef0aa235c315b881e6d0b34a9cc4290d415b5815dd2cc44aeec3c17"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/rescue-owned-uia-wpf-yv84m1s4/windows-wpf-1-kana.png",
+          "sha256": "c810841618451e5b58c610b7dd16ecfb20d04f9b535708cfbbc88b88c4301f30"
+        },
+        {
+          "file": "fresh-wpf-before-rescue/wpf-fresh-sessions.json",
+          "sha256": "2fb88c213de8b39b5ef5718b853b8c4d9a2613173d535e6e5a00f4edf3779f7e"
+        }
+      ]
+    },
+    {
+      "case": "wpf-layout-restore",
+      "run": 42513969720,
+      "status": "failed",
+      "artifact_zip_sha256": "bf5a1c250389f8505e478af6351348b6f34edcb02357d6b0be6a69bd9a7254b5",
+      "finding": "Explicit input-layout restore completed, then window.Close blocked. First WPF conversion passed but process required timeout termination; second conversion failed. Both75s launcher timeouts remain failures.",
+      "files": [
+        {
+          "file": "wpf-layout-restore/ime-profile-state.json",
+          "sha256": "34b01e92112dd8f1a93c0183e8df1d1d69138dade7679f7eb61d381834a0b76e"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/launch.json",
+          "sha256": "b3408771df8fb9c27ec348896e13b37ed29261badaf4cc5fda72b078bdc35cd1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/uia.json",
+          "sha256": "39f735a7b53b0aee3a1770315cff74c8739e924926120423784239a3d5e16a9a"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-cancel-preedit.png",
+          "sha256": "a345f5cbcb580e39f8ede922a34a6637e303dc342ce5878cfaa60d2cd4b87591"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-cancelled.png",
+          "sha256": "9f25e3ee44d5757793287c916de7d339b95175507fdb0cc826a05c0448bc96d6"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-committed.png",
+          "sha256": "c70ae51cca9c06ba315bbb4cd5843ada20781e777817f6e443252a4168f6b50d"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-converted.png",
+          "sha256": "2ef6df67273b0be3f46e23d086051ce347c830251f34775c7e1b359490b3e918"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-13ju9k2r/windows-wpf-1-kana.png",
+          "sha256": "0f249f193336f62e6670d2fa8b61a40c90f8d5399cc54b26a09129f8d902d761"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/launch.json",
+          "sha256": "6b57b12c74220493dc4e2bee65cae0c071fd91847ec0dcfa6b0c066fe4f8a266"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/uia.json",
+          "sha256": "37a56ba84f17076c5aaea43ad5cd4934f5c9c2aa59a386ab170194dc9fac02b9"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-cancel-preedit.png",
+          "sha256": "7ca741317a15473184f10f7d9ae08edf8ba00fb97a4b858156d46bc829da5acd"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-cancelled.png",
+          "sha256": "ba1b6c9ed20d5d94fb3100b6a9f9ff78dff39bfe38fbf88d13fa2ba21b80b6a1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-committed.png",
+          "sha256": "55e3d4f45e07f4c81882659f7220974ae0aa2d61377a5f61fbe9d5d3640ddac1"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-converted.png",
+          "sha256": "db8b8091bc60d4e7826844958bdba862ccfd900a7a648fc046009c1ba69dfdaf"
+        },
+        {
+          "file": "wpf-layout-restore/rescue-owned-uia-wpf-n9fsw_ln/windows-wpf-1-kana.png",
+          "sha256": "44cdb97b3b840ae4ee40651697b261d8493483b3fbed357289e1c3b48691f9d0"
+        },
+        {
+          "file": "wpf-layout-restore/wpf-fresh-sessions.json",
+          "sha256": "debeacd2f26e6cfe46a6f3a2409b991f1b044af201c1491d7060d8359b04f629"
+        }
+      ]
+    },
+    {
+      "case": "wpf-normal-close",
+      "run": 42513969720,
+      "status": "passed",
+      "artifact_zip_sha256": "32f4241749ae8afdf0a631c5292d77c1f224ead9564ab02ae529065fe1f6287f",
+      "finding": "With the same Windows2022 token and keys, normal closure without a per-window HKL reset passed both fresh WPF sessions; window close completed in38ms and30ms. Full original language profile and desktop ACLs were restored by the outer fixture. This supports removing the fixture teardown reset, while keeping actual input and exit checks.",
+      "files": [
+        {
+          "file": "wpf-normal-close/ime-profile-state.json",
+          "sha256": "dfd66eb147f1ff9705fafaa6f619bda8ee62c5dffa260db1c2f1bc9f1990ec28"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/launch.json",
+          "sha256": "aa45abc6433335bc83b4b9a1e8a7bdd1a9e6f47824a6eff043f653baf309259d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/uia.json",
+          "sha256": "91ca0b768af61d335977364171d5fcd2ec3b47de9f560b40365eaa602c44c25d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-cancel-preedit.png",
+          "sha256": "7c2ee8c8baaf959496214ec966bcf569d810f2ef7e65684941f7b405433aec75"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-cancelled.png",
+          "sha256": "c5c15c1c95e426490f8b77899f966e117cc21a0f99f2c7ab703c218a42a37000"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-committed.png",
+          "sha256": "74cc6096191c4b737fa6ed63b48ad9a4db9ae4034b0a7652293110c34cf71514"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-converted.png",
+          "sha256": "5e9b57aaa74945435cb712e5d6060cda42d3afc58047942ea8e482f231c076e7"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-2xc3u05p/windows-wpf-1-kana.png",
+          "sha256": "2b4b034bec4849848c7a738571521ef1d54e4add59ba2a55caf0e91028658313"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/launch.json",
+          "sha256": "aa45abc6433335bc83b4b9a1e8a7bdd1a9e6f47824a6eff043f653baf309259d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/uia.json",
+          "sha256": "090090415385bbf3ff27a84e65a49bd716fda153cdf975b8b059ee6eeb2cfe3d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-cancel-preedit.png",
+          "sha256": "93a109eebbe061a8bb2a6d5e2c9400fca48b3d030e230d55baaf4abc27f52aaf"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-cancelled.png",
+          "sha256": "c1eb5f127a4ae90eac64035617f61c93836a60e0b1b7b31976f8d32cefc53fdb"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-committed.png",
+          "sha256": "5f174ee37a0957afedfa8f659c8b504f15e6702af1792f7e09aedefcefed1402"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-converted.png",
+          "sha256": "253652766d62ae282d917326a25759ed763dfa5923295812ac6f304d6d11dd5d"
+        },
+        {
+          "file": "wpf-normal-close/rescue-owned-uia-wpf-zanqa_0_/windows-wpf-1-kana.png",
+          "sha256": "bd0b01b9a041749199c4bdefddac36ff446bd3cdc3fce4df437205883167041b"
+        },
+        {
+          "file": "wpf-normal-close/wpf-fresh-sessions.json",
+          "sha256": "e873cc798df5692f1e9ca1094fc93cafd5f6236c664764e06d89bf79050500a1"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {
@@ -303,5 +514,5 @@
     "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
     "result": "failed as expected with retained preedit; fixed normalizer passes"
   },
-  "interpretation": "All failures remain failed. The delayed cancellation regression is fixed and the first native process can pass eight staged cycles, but conversion failures remain after restarting on hosted Windows 2022. WPF also fails after Rescue; independent fresh-host controls are being compared before attributing shared state failure to the OS or fixture."
+  "interpretation": "Fresh standard WPF controls reproduce the restart failure without any Rescue process. A controlled teardown comparison isolates per-window HKL restoration: that mode stalls subsequent close and the next control fails conversion; normal closure completes twice, with the full original language profile and desktop permissions restored after the batch. Product fixture now closes normally, rejects forced shutdown, and requires outer restoration evidence. Identical native GUI32cycle verification is pending. No failed run is counted as passed."
 }

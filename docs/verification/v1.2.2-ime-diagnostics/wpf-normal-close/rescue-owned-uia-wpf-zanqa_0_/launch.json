@@ -1,0 +1,44 @@
+{
+  "status": "completed",
+  "restore_layout": false,
+  "returncode": 0,
+  "token_profile": {
+    "method": "restricted_desktop_token",
+    "launcher": "CreateProcessAsUserW",
+    "elevated": false,
+    "administrator_sid_enabled": false,
+    "integrity": "medium",
+    "elevation_type": 1,
+    "desktop": "winsta0\\default",
+    "desktop_permissions": {
+      "scope": "full desktop/window-station access for the owned disposable account only; exact original ACLs restored",
+      "objects": [
+        {
+          "name": "window_station",
+          "permissions": 983935,
+          "integrity": {
+            "sddl": "S:"
+          },
+          "original_acl_sha256": "5699ca510acfcdbaf30e82cb3a6b431c5e684627add694090fd8395772d3f4e8",
+          "changed": true,
+          "restored": true
+        },
+        {
+          "name": "desktop",
+          "permissions": 983551,
+          "integrity": {
+            "sddl": "S:"
+          },
+          "original_acl_sha256": "4c4c44fd17dbbecf6a207d78203e1e23d0935d4ba1baa272c5c406ba7a7efed4",
+          "changed": true,
+          "restored": true
+        }
+      ],
+      "restored": true
+    },
+    "owned_tree_job": true,
+    "remaining_job_processes": {
+      "processes": []
+    }
+  }
+}

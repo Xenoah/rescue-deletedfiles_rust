@@ -1,0 +1,46 @@
+{
+  "scope": "Observe two standard WPF processes on a host that has never run Rescue.\n\nDiagnostic only: a baseline failure is preserved, and the second independent\ncontrol still runs to distinguish startup from process-restart behavior.",
+  "status": "failed",
+  "sessions": [
+    {
+      "session": 1,
+      "returncode": 1,
+      "evidence_directories": [
+        "rescue-owned-uia-wpf-vtc9c97u"
+      ]
+    },
+    {
+      "session": 2,
+      "returncode": 1,
+      "evidence_directories": [
+        "rescue-owned-uia-wpf-yv84m1s4"
+      ]
+    }
+  ],
+  "desktop_permissions": {
+    "scope": "full desktop/window-station access for the owned disposable account only; exact original ACLs restored",
+    "objects": [
+      {
+        "name": "window_station",
+        "permissions": 983935,
+        "integrity": {
+          "sddl": "S:"
+        },
+        "original_acl_sha256": "2b924623fa5be7dd02b368b80f72b57975877916f5e2a16aca7f29f68794a1c8",
+        "changed": true,
+        "restored": true
+      },
+      {
+        "name": "desktop",
+        "permissions": 983551,
+        "integrity": {
+          "sddl": "S:"
+        },
+        "original_acl_sha256": "13b9b3170d1fd2ebfe89d39dfb76d96f4880ee2fccd875af5cb95e2946572ba2",
+        "changed": true,
+        "restored": true
+      }
+    ],
+    "restored": true
+  }
+}
