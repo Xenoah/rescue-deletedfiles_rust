@@ -37,6 +37,35 @@
           "sha256": "ab6c7beaee80e6c44d9e9fc47080d1b35fab6b055d5d97c4645847aab616b069"
         }
       ]
+    },
+    {
+      "case": "pending-roman-n",
+      "run": 42502824894,
+      "status": "failed",
+      "files": [
+        {
+          "file": "pending-roman-n/uia.json",
+          "sha256": "879d08fafef521664c3e9eaabc52a10719e04942bcd6138b6e8c5b22f5387e1c"
+        }
+      ],
+      "finding": "Native COM GetText and CompareEndpoints succeeded. genbun produces pending げんぶｎ, not げんぶん, before Space. Corrected exact expected preedit; no extra input keys."
+    },
+    {
+      "case": "pending-n-conversion",
+      "run": 42503381529,
+      "status": "failed",
+      "first_process_cycles_passed": 8,
+      "second_process_failure": "First cycle: after a single Space pending げんぶｎ became selected げんぶん and remained kana at the 10s deadline; no Enter was sent.",
+      "files": [
+        {
+          "file": "pending-n-conversion/uia.json",
+          "sha256": "5027f8772d3af952ada0d8865bd6d4aac083a4253c6883a45a717da3933533fb"
+        },
+        {
+          "file": "pending-n-conversion/windows-gui-failed.png",
+          "sha256": "05abf2d40dfb553ba5bda9bd66b8c84a3a73543aa29c8dd117387c93a33a9c82"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {

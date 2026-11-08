@@ -12,5 +12,12 @@
   "gui_screenshots": 26,
   "gui_proof_sha256": "9aa69d7d24fa36282007bbdb8a787f81ae525097c27a2993c1a9d1575a23bfd3",
   "gui_binary_sha256": "50f7f6e0d3b1a35e3764acaeb970418a3fcefa34bc8fb122054833fc418cf03c",
-  "cli_binary_sha256": "287790dc4ef50b81fe53beb6549568038f815d016768694df41eadacb9097c8d"
+  "cli_binary_sha256": "287790dc4ef50b81fe53beb6549568038f815d016768694df41eadacb9097c8d",
+  "clippy": "passed with -D warnings",
+  "clippy_log_sha256": "9dd270cb51c6493e0d1a8ededdcfa9676e0406bdc8f0beb9d711ed8762e9ad3d",
+  "workflow_yaml": "all parsed",
+  "integration_suites": 35,
+  "integration_profile": "release",
+  "integration_status": "passed",
+  "integration_log_sha256": "7ed10e6adc5b53cc1fbd5987890eeffb66d18214ce42a99c02e795e13a9b90ec"
 }

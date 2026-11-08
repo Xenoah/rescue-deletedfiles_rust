@@ -6,7 +6,7 @@ on:
     inputs:
       release_tag:
         description: Published release to verify after packaging and signing
-        default: v1.2.1
+        default: v1.2.2
         required: true
       native_run_id:
         description: Native release workflow run that produced the packages
