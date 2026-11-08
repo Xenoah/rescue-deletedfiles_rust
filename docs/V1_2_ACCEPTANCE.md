@@ -2,6 +2,16 @@
 
 2026-11-08 UTC。ユーザーの進行指示を受けた、破損USB/SDへの対応強化と既知ハッシュ照合を実装・公開・検証した。APFS等の別フェーズは含めない。
 
+## v1.2.2の完了状態
+
+v1.2.2を安定版として公開した。最終コミット `33261891be5ffc830a909d253e1a3da733bd8e2d` のネイティブCIと、公開したポータブルを再ダウンロードした実物検証は、Windows x64・Linux x64・macOS Intel/Apple Siliconの全4環境で合格した。ネイティブは実行1回、公開実物は実行1回で合格している。
+
+Windowsは公開前・公開後とも実Microsoft日本語IMEの取消・変換・確定を8回ずつ検証し、使用したGUIのSHA-256が一致した。GUIの通常終了と、元の言語設定の完全復元も確認した。追加の候補試験では4回の新規起動・計32回に成功している。過去の失敗はそのまま保存し、合格へ置き換えていない。
+
+ローカルはRust86テスト・35統合群・6配布契約テスト、Clippy、fmt、26枚の新規GUI画面と復元バイト一致を確認した。公開添付は8配布物と共通SHA256SUMSの9点で、実際に9点を取得して全配布物のチェックサムを照合した。
+
+[公開確認](verification/v1.2.2-release.json) · [公開実物の全記録](verification/v1.2.2-published.json) · [ネイティブIME](verification/v1.2.2-native-ime.json) · [32回の連続起動](verification/v1.2.2-ime-stress.json) · [実画面](UI-v1.2.md)。以下の失敗・診断の記述は、この完了までの経緯である。
+
 ## 公開状態
 
 4段階すべてを個別にpush・リリースし、各タグでWindows x64・Linux x64・macOS Intel/Apple SiliconのネイティブCIと公開実物の再検証に合格した。各リリースの添付は8インストーラー/ポータブルとSHA256SUMSの9点。既存タグや配布済みバイナリは変更していない。
@@ -12,6 +22,7 @@
 | [v1.2.0-alpha.2](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2) | CP932短名・元バイト保持 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895) | [全記録](verification/v1.2.0-alpha.2-published.json) · [公開確認](verification/v1.2.0-alpha.2-release.json) |
 | [v1.2.0-alpha.3](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.3) | exFAT破損変換表の限定的継続 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42475953647) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42478332375) | [全記録](verification/v1.2.0-alpha.3-published.json) · [公開確認](verification/v1.2.0-alpha.3-release.json) |
 | [v1.2.0](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0) | 既知SHA-256照合・統合・インストーラー版番号 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477916390) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42480695687) | [全記録](verification/v1.2.0-published.json) · [公開確認](verification/v1.2.0-release.json) |
+| [v1.2.2](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.2) | Windows IME取消・正常終了・設定復元 | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514904244) | [4環境合格](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42518348653) | [全記録](verification/v1.2.2-published.json) · [公開確認](verification/v1.2.2-release.json) |
 
 公開後のJSONは署名・梱包後の実CLIを再ダウンロードして得た全記録。ActionsアーティファクトZIP内の全メンバーをPUBLISHED-SHA256SUMSで照合し、集約JSONをそのまま保存した。ZIPとJSONのSHA-256、公開9資産、タグのコミット、両ワークフローを公開確認JSONに記録している。
 
@@ -79,7 +90,7 @@ v1.2.1タグの全体検証はLinux・Intel Mac・Apple Silicon Macに合格し�
 
 続く変換試験にも固定400ミリ秒の待機があり、Spaceの後に表示状態を確認せずEnterを送り、「げんぶん」のまま確定していた。取消の待機修正が有効だった[実行42500970262](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42500970262)で確認した。末尾をnnで明示するgenbunn入力に統一し、変換前の「げんぶん」、変換後の「原文」、確定後の選択範囲の縮退を順番に確認する。ただし、末尾nを完成させても2回目の新規起動で変換に失敗したため、これを原因解決とは扱わない。
 
-ローカルのv1.2.2はRust 86テスト、35統合テスト群、Clippy（警告をエラーとして扱う）、fmt、配布・版番号・IMEの6契約テストに合格。新規撮影した26画面でNTFS 36件、CP932 8件、破損exFAT 8件の全バイト一致、64 MiBの取得タイムアウトと再開、HTML/CSV、既知ハッシュの2/6/0件を確認した。[実画面](UI-v1.2.md) · [GUI全記録](gui-v1.2-results.json)。連続起動試験は下記の32回に合格した。v1.2.2は最終コミットの4環境CIと公開実物の検証を完了してから安定版とする。
+ローカルのv1.2.2はRust 86テスト、35統合テスト群、Clippy（警告をエラーとして扱う）、fmt、配布・版番号・IMEの6契約テストに合格。新規撮影した26画面でNTFS 36件、CP932 8件、破損exFAT 8件の全バイト一致、64 MiBの取得タイムアウトと再開、HTML/CSV、既知ハッシュの2/6/0件を確認した。[実画面](UI-v1.2.md) · [GUI全記録](gui-v1.2-results.json)。連続起動試験は下記の32回に合格した。最終コミットの4環境CIと公開実物の検証も完了し、v1.2.2を安定版にした。
 
 状態確認を追加した初回試験では、テスト用PowerShellの.NET TextPattern.GetTextでAccessViolationExceptionが発生した。検証成功とは扱わず、Windows標準のCOM APIを直接使い、対象GUIのPIDと検索欄の名前を確認して選択文字・選択範囲を読む試験用クライアントを追加した。[変換タイミング失敗・読み取り失敗・旧処理の回帰ログ](verification/v1.2.2-ime-diagnostics/manifest.json)。このクライアントは製品や配布パッケージには含めない。
 

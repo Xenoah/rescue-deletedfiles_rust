@@ -1,0 +1,232 @@
+{
+  "public_user_language_profile": {
+    "configured": [
+      {
+        "spellchecking": true,
+        "tips": [
+          "0409:00000409"
+        ],
+        "tag": "en-US",
+        "handwriting": false
+      },
+      {
+        "spellchecking": true,
+        "tips": [
+          "0411:{03B5835F-F03C-411B-9CE2-AA23E1171E36}{A76C93D9-5523-4E90-AAFA-4DB112F9AC76}"
+        ],
+        "tag": "ja",
+        "handwriting": true
+      }
+    ],
+    "before": [
+      {
+        "spellchecking": true,
+        "tips": [
+          "0409:00000409"
+        ],
+        "tag": "en-US",
+        "handwriting": false
+      }
+    ],
+    "prepare_ms": 149,
+    "restored": true,
+    "prepared": true,
+    "after": [
+      {
+        "spellchecking": true,
+        "tips": [
+          "0409:00000409"
+        ],
+        "tag": "en-US",
+        "handwriting": false
+      }
+    ]
+  },
+  "tag": "v1.2.2",
+  "commit": "33261891be5ffc830a909d253e1a3da733bd8e2d",
+  "status": "passed",
+  "release": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.2",
+  "published_at": "2026-11-08T20:05:54Z",
+  "latest_release": true,
+  "native_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514904244",
+  "public_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42518348653",
+  "native_platforms": 4,
+  "public_platforms": 4,
+  "native_attempt": 1,
+  "public_attempt": 1,
+  "release_assets": 9,
+  "assets": [
+    {
+      "name": "rescue-1.2.2-linux-x64-portable.tar.gz",
+      "size": 13307419,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-linux-x64-portable.tar.gz",
+      "sha256": "0d8c7930fb5c6413f9e860096c9d334df51fdbf15aad256ac5b7881b4af21bdd"
+    },
+    {
+      "name": "rescue-1.2.2-linux-x64.deb",
+      "size": 10076766,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-linux-x64.deb",
+      "sha256": "afed49c0df97e35a0b69e4059d52cfd502ce84fe7a6e51a5b1c2cfeb549dd268"
+    },
+    {
+      "name": "rescue-1.2.2-macos-arm64-portable.zip",
+      "size": 9393973,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-arm64-portable.zip",
+      "sha256": "4a948d351c906dd36d3f04a2bbd5efc6e746880aa14f5b65faf8cba64163c3f0"
+    },
+    {
+      "name": "rescue-1.2.2-macos-arm64.pkg",
+      "size": 9387324,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-arm64.pkg",
+      "sha256": "46153ff000c7188dfa13f8aad0721da6007d52c4a7014e8f651e5cbbc24a0832"
+    },
+    {
+      "name": "rescue-1.2.2-macos-x64-portable.zip",
+      "size": 10146699,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-x64-portable.zip",
+      "sha256": "a68e7d0c48870292c4652f21b7986bc028e192fbe248bf2e9055112d2356b9ca"
+    },
+    {
+      "name": "rescue-1.2.2-macos-x64.pkg",
+      "size": 10137623,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-macos-x64.pkg",
+      "sha256": "92b9199099e9bce917dd27d27ee6598fe9b089f6b3b3779c0b9a0c6381e61366"
+    },
+    {
+      "name": "rescue-1.2.2-windows-x64-portable.zip",
+      "size": 11391280,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-windows-x64-portable.zip",
+      "sha256": "26951e138edf52d01d32c3695869bc988dfbff3bdbb0985f650519ddae4b821f"
+    },
+    {
+      "name": "rescue-1.2.2-windows-x64-setup.exe",
+      "size": 9892215,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/rescue-1.2.2-windows-x64-setup.exe",
+      "sha256": "812ea10ace11aeda866cd88cb81aea0bd3016a69edc3c7a83bac729a22d401bf"
+    },
+    {
+      "name": "SHA256SUMS.txt",
+      "size": 797,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.2/SHA256SUMS.txt",
+      "sha256": "df632452d9d9739d7bd4a1ded4337a744eceaf8d827e91222ebea5d9fca5a495"
+    }
+  ],
+  "all_download_checksums_verified": true,
+  "artifact_id": 13632222825,
+  "artifact_zip_sha256": "ff7cad8ebd273acdf4b470e56e8061ca7d28fed5459f0bd8d8cf2041e528183c",
+  "all_artifact_member_checksums_verified": true,
+  "published_proof_sha256": "5457c0a8c097e6f4f75ac63d26bfcd1d17ab11b4ec95f01241f58a2f07fac99b",
+  "public_ime_cycles": 8,
+  "public_windows_gui_sha256": "c50df0e9a56b35ddeee92951da6bfedf8f47c5073ffbacdc5ed2b00d337c23b7",
+  "public_screenshot_artifact_id": 13632293756,
+  "public_screenshot_zip_sha256": "0929e1169ff8458eb276c631d3e509a2e0ada8e91ea9363a3a3731f5a9d9a2b4",
+  "screenshots": [
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-1.png",
+      "sha256": "f4217dfd7397888083cb1aa4c3e2631e05d53f9fb6736321279e5ca4ad2c1724"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-2.png",
+      "sha256": "f4217dfd7397888083cb1aa4c3e2631e05d53f9fb6736321279e5ca4ad2c1724"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-3.png",
+      "sha256": "f4217dfd7397888083cb1aa4c3e2631e05d53f9fb6736321279e5ca4ad2c1724"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-4.png",
+      "sha256": "27074c370614deb9fdf96d6580099d62b9c4be88a10ef8b7cefa979386eebfb3"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-5.png",
+      "sha256": "27074c370614deb9fdf96d6580099d62b9c4be88a10ef8b7cefa979386eebfb3"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-6.png",
+      "sha256": "27074c370614deb9fdf96d6580099d62b9c4be88a10ef8b7cefa979386eebfb3"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-7.png",
+      "sha256": "27074c370614deb9fdf96d6580099d62b9c4be88a10ef8b7cefa979386eebfb3"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-ime-cycle-8.png",
+      "sha256": "27074c370614deb9fdf96d6580099d62b9c4be88a10ef8b7cefa979386eebfb3"
+    },
+    {
+      "file": "images/v1.2.2-windows/windows-gui-complete.png",
+      "sha256": "1f932668615b7bcb71a51fdf79628db43565d59b6f10a814c60fcc4ed1e01318"
+    }
+  ],
+  "workflow_jobs": [
+    {
+      "run_id": 42514904244,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42514904244",
+      "attempt": 1,
+      "jobs": [
+        {
+          "id": 128835678041,
+          "name": "verify (macos-26-intel, macos, x64, x86_64-apple-darwin, rescue)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128835678095,
+          "name": "verify (windows-2022, windows, x64, x86_64-pc-windows-msvc, rescue.exe)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128835678182,
+          "name": "verify (ubuntu-22.04, linux, x64, x86_64-unknown-linux-gnu, rescue)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128835678293,
+          "name": "verify (macos-26, macos, arm64, aarch64-apple-darwin, rescue)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128845989833,
+          "name": "release",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "run_id": 42518348653,
+      "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42518348653",
+      "attempt": 1,
+      "jobs": [
+        {
+          "id": 128846192583,
+          "name": "test (windows-2022, windows, x64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128846192708,
+          "name": "test (macos-26, macos, arm64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128846192807,
+          "name": "test (ubuntu-22.04, linux, x64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128846192869,
+          "name": "test (macos-26-intel, macos, x64)",
+          "conclusion": "success"
+        },
+        {
+          "id": 128848792299,
+          "name": "attach-evidence",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "native_ime_cycles": 8,
+  "native_ime_artifact_id": 13631488737,
+  "native_and_public_windows_gui_bytes_identical": true,
+  "stress_gui_sha256": "3deff90f03f67078468a1ab731a33a17392fb36d49812f1d54d54215185675ed",
+  "stress_and_release_windows_gui_bytes_identical": false
+}

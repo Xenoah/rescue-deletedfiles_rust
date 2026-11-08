@@ -57,3 +57,13 @@ alpha.1の画面と検証記録は[元タグ](https://github.com/Xenoah/rescue-d
 ![英語の照合結果](images/v1.2.2/known-hashes-result-en.png)
 
 [照合方法と範囲](KNOWN-HASHES.md)。先行版の画面・結果は各タグに保持する。
+
+## 公開Windows GUIの実画面
+
+公開済みv1.2.2ポータブルを再取得し、同梱GUIを非昇格・中整合性・管理者グループ無効のプロセスで操作した。実Microsoft日本語IMEのローマ字入力で取消・再変換・確定を8回連続実行し、日本語名2ファイル・1,428バイトのZIP復元と元ソースの不変を確認した。正常終了と元の入力設定の完全復元も確認済み。
+
+![公開Windows GUIの復元完了](images/v1.2.2-windows/windows-gui-complete.png)
+
+![8回目の取消後の再変換と確定](images/v1.2.2-windows/windows-ime-cycle-8.png)
+
+各回と復元完了の9枚を新規撮影し、実行時JSONのSHA-256と照合した。公開前後でGUIバイト列が一致している。[配布物・実行・画像のハッシュ](verification/v1.2.2-release.json) · [公開実物の全記録](verification/v1.2.2-published.json)。第三者スクリーンリーダーを用いた人の評価は別課題である。

@@ -2,7 +2,7 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**v1.2.2ではWindows日本語IMEの取消処理と、実操作テストの終了手順を修正しました。** v1.2.1は公開前の試験で停止し、既存タグを保持しています。[修正と検証の記録](docs/V1_2_ACCEPTANCE.md)。
+**最新公開版はv1.2.2です。** Windows日本語IMEの取消処理と、実操作テストの終了手順を修正しました。 v1.2.1は公開前の試験で停止し、既存タグを保持しています。[修正と検証の記録](docs/V1_2_ACCEPTANCE.md)。
 
 [リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.2) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.2/docs/RELEASE-v1.2.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_2_ACCEPTANCE.md)
 

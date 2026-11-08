@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "release_tag": "v1.2.2",
+  "release_commit": "33261891be5ffc830a909d253e1a3da733bd8e2d",
+  "native_run": 42514904244,
+  "public_run": 42518348653,
+  "release_assets": 9,
+  "all_downloads_byte_identical_to_verified_native_packages": true,
+  "latest": true
+}
