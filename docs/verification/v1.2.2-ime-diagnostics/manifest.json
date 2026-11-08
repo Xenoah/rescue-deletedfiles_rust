@@ -238,6 +238,64 @@
           "sha256": "cf66ac884b7fb5684c61cfd69e93341c832bdc0032392287252b50d842feb80e"
         }
       ]
+    },
+    {
+      "case": "stable-desktop-access",
+      "run": 42511059930,
+      "status": "failed",
+      "artifact_zip_sha256": "47b2ebcd1ef2ebc510d2af74406ce25c8dd8b3334c541245afd411a83da2be5e",
+      "finding": "Stable outer desktop/window-station access does not resolve first8pass/secondprocessconversionfailure. Both original ACLs restored exactly. Read-only Job process queries show no remaining processes after the first successful IME GUI, nor after preceding limited/keyboard sessions. Therefore normal Job close did not kill a surviving input host in this run. Next fixture avoids session-wide ITfInputProcessorProfileMgr activation/restoration: select Japanese with actual Windows+Space and restore only the owned HWND language with bounded PostMessage observation.",
+      "files": [
+        {
+          "file": "stable-desktop-access/trace-desktop-lifetime.json",
+          "sha256": "d972ee18e058b80404e9d773413af6335106c661c838c2397c7f806de6b0f140"
+        },
+        {
+          "file": "stable-desktop-access/trace-ime-1.json",
+          "sha256": "0848849f855727cfee01d3ecbede44e21a3991fd2e9a351773e273fa52f1fe7a"
+        },
+        {
+          "file": "stable-desktop-access/trace-ime-2.json",
+          "sha256": "e5c2c2c681c636883661310d69220bf2947e1977bfa8f5054cf4e32b88d6790a"
+        }
+      ]
+    },
+    {
+      "case": "native-input-switch",
+      "run": 42512064340,
+      "status": "failed",
+      "artifact_zip_sha256": "737e1bf6a655c6d2d7c60101a2453f40880bde4b2859e9601316c901d533d575",
+      "finding": "Selecting Japanese with native Windows+Space and restoring only the owned HWND layout still gives first8pass/secondprocessconversionfailure. Standard WPF subsequently also fails conversion. No Job survivors were observed. These WPF checks follow Rescue, so they do not yet distinguish an independent OS/fixture defect from shared state affected by a prior Rescue process. Fresh-host WPF-first comparison is required.",
+      "files": [
+        {
+          "file": "native-input-switch/trace-desktop-lifetime.json",
+          "sha256": "b76907d151a61bc7c76ded5d404f0bf803569b0c28fccb382735e3db0f63240a"
+        },
+        {
+          "file": "native-input-switch/ime-profile-state.json",
+          "sha256": "dfd66eb147f1ff9705fafaa6f619bda8ee62c5dffa260db1c2f1bc9f1990ec28"
+        },
+        {
+          "file": "native-input-switch/trace-ime-1.json",
+          "sha256": "7c76b0d0b26784700ee4978c643158cd56cb20f7075f40bac8f51f6e9f0e4330"
+        },
+        {
+          "file": "native-input-switch/product-uia.json",
+          "sha256": "4a9ef47e75fa79f564362996553b783f78edf209b8c53cdce019cc4be9c0ae34"
+        },
+        {
+          "file": "native-input-switch/product-failed.png",
+          "sha256": "e9f44df5d09acc5145180b4c7668aab5e55725198face0b4788a7d1d5fd9b717"
+        },
+        {
+          "file": "native-input-switch/wpf-uia.json",
+          "sha256": "947e4316a7de1a7cf9d6a4eba6a32a396a7cb53bddd9e03ecdb51ca00c2be0e5"
+        },
+        {
+          "file": "native-input-switch/wpf-kana-committed.png",
+          "sha256": "d5186958a9c7ed1bf8880d1de0aa56dacafd6dcefdc1ebf4b8268ed28675baf8"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {
@@ -245,5 +303,5 @@
     "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
     "result": "failed as expected with retained preedit; fixed normalizer passes"
   },
-  "interpretation": "The product cancellation ordering regression is fixed and covered by Rust/egui tests. Native COM stage observation is reliable. Repeated-process conversion failures also reproduce in a standard WPF TextBox. Keeping Japanese language registration stable still yields first8pass/secondprocessfailure, so that alone is not the cause. Candidate UIA polling was unusable because the popup is outside the owned PID. The current diagnostic holds the same owned desktop grant across all GUI sessions and records remaining job processes before unchanged kill-on-close cleanup. No failed run is counted as passed."
+  "interpretation": "All failures remain failed. The delayed cancellation regression is fixed and the first native process can pass eight staged cycles, but conversion failures remain after restarting on hosted Windows 2022. WPF also fails after Rescue; independent fresh-host controls are being compared before attributing shared state failure to the OS or fixture."
 }

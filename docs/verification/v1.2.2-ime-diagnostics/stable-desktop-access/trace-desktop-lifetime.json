@@ -1,0 +1,54 @@
+{
+  "status": "failed",
+  "scope": "Keep a normal desktop permission boundary across fresh native GUI processes.\n\nThe hosted service desktop initially grants access through Administrators only.\nKeep the existing fixture's own-user grant for the full batch so shared Windows\ninput services do not lose desktop access between app exits. Restore both exact\noriginal ACLs once at the end, including after failure. Each GUI still receives\nits own restricted medium token, process job and independent recovery fixture.",
+  "sessions": [
+    {
+      "name": "native",
+      "returncode": 0
+    },
+    {
+      "name": "limited",
+      "returncode": 0
+    },
+    {
+      "name": "keyboard",
+      "returncode": 0
+    },
+    {
+      "name": "ime-1",
+      "returncode": 0
+    },
+    {
+      "name": "ime-2",
+      "returncode": 1
+    }
+  ],
+  "desktop_permissions": {
+    "scope": "full desktop/window-station access for the owned disposable account only; exact original ACLs restored",
+    "objects": [
+      {
+        "name": "window_station",
+        "permissions": 983935,
+        "integrity": {
+          "sddl": "S:"
+        },
+        "original_acl_sha256": "c371424a81014e71c2fddf02f13babcdf50501c43546e264c33750ba82150bcc",
+        "changed": true,
+        "restored": true
+      },
+      {
+        "name": "desktop",
+        "permissions": 983551,
+        "integrity": {
+          "sddl": "S:"
+        },
+        "original_acl_sha256": "787bc35f68b28732a65f00b64a5d0dba19db37b0bb013c14ecfc930cfc799bd7",
+        "changed": true,
+        "restored": true
+      }
+    ],
+    "restored": true
+  },
+  "wpf_baseline_returncode": 1,
+  "error": "Fresh native GUI session failed: ime-2"
+}
