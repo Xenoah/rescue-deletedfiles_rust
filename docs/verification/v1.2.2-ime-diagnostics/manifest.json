@@ -200,6 +200,44 @@
           "sha256": "e97e107ffb624c76d3b17670ee7571f83dbeeca3595037df01eea174dcf89fc6"
         }
       ]
+    },
+    {
+      "case": "canonical-language-tag",
+      "run": 42509885835,
+      "status": "failed-before-ime",
+      "artifact_zip_sha256": "af0eebfbaa650b9ad00da0e94b8666414426d0a976a326b906ea6bf18115ab81",
+      "finding": "Profile preparation succeeded in registering MicrosoftJapaneseTIP, but Windows canonicalized LanguageTag to ja, while the readiness guard required ja-JP. The GUI IME test never ran. Exact original language list restoration passed. The guard now accepts Japanese language tags beginning with ja or ja-.",
+      "files": [
+        {
+          "file": "canonical-language-tag/ime-profile-state.json",
+          "sha256": "e51aaeed5ace1ccddd257a486f00b7a999cd7935f532107c523cf7772deacc7b"
+        }
+      ]
+    },
+    {
+      "case": "stable-language-profile",
+      "run": 42510204521,
+      "status": "failed",
+      "artifact_zip_sha256": "7c5b97abd3795d3202b682009ed38ef39705b6448bb8e9cbcd609624eae63c1a",
+      "finding": "Japanese language profile preparation and exact restoration both passed. Using the actual native portable GUI (sha3deff...), first process8cycles passed; second processfirstcycle still failed conversion. WPF also committedげんぶん instead of原文. Stable language registration alone does not solve this. Next check holds the owned desktop/window-station grant across the entire GUI batch and records job survivors before normal cleanup.",
+      "files": [
+        {
+          "file": "stable-language-profile/ime-profile-state.json",
+          "sha256": "e02590f5adcb19d837485881d54b51858896a4b71d79c172e6c11812e17a6d39"
+        },
+        {
+          "file": "stable-language-profile/first-ime-passed.json",
+          "sha256": "231cd586ca3af048ba04a67cc76491843c6fa4a877c7b7d3ec2a2758d5948a01"
+        },
+        {
+          "file": "stable-language-profile/second-ime-failed.json",
+          "sha256": "02b5dc6dca76de50ca098758ce65d0ed9c01be6db6d3787ba56fdb931949e41a"
+        },
+        {
+          "file": "stable-language-profile/wpf-uia.json",
+          "sha256": "cf66ac884b7fb5684c61cfd69e93341c832bdc0032392287252b50d842feb80e"
+        }
+      ]
     }
   ],
   "old_normalizer_regression": {
@@ -207,5 +245,5 @@
     "sha256": "51edc04277edab9a6118ef855db35e85b799a62e67325fb06360a8820331fa03",
     "result": "failed as expected with retained preedit; fixed normalizer passes"
   },
-  "interpretation": "Several distinct failures are preserved. Fixed waits and unsafe .NET TextPattern observation were corrected, but explicit terminal nn and input-service teardown changes do not resolve all failures. Native COM confirms exact selected preedit/commit states. Conversion failures can reflect the OS sending kana instead of kanji; the latest uninstrumented cancellation failure persists without a blocked main thread. Native WPF comparison and raw event diagnosis are pending. No failed run is counted as passed."
+  "interpretation": "The product cancellation ordering regression is fixed and covered by Rust/egui tests. Native COM stage observation is reliable. Repeated-process conversion failures also reproduce in a standard WPF TextBox. Keeping Japanese language registration stable still yields first8pass/secondprocessfailure, so that alone is not the cause. Candidate UIA polling was unusable because the popup is outside the owned PID. The current diagnostic holds the same owned desktop grant across all GUI sessions and records remaining job processes before unchanged kill-on-close cleanup. No failed run is counted as passed."
 }
