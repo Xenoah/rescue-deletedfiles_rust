@@ -2,6 +2,24 @@
 import re
 
 
+def require_ime_cleanup(proof, profile):
+    """Require normal GUI exit and exact restoration after the entire batch."""
+    uia = proof.get('uia', {})
+    shutdown = uia.get('shutdown', {})
+    if not (
+        uia.get('input_profile_cleanup') == 'outer-language-profile'
+        and shutdown.get('graceful') is True
+        and shutdown.get('forced') is False
+        and shutdown.get('phase') == 'process-exited'
+        and shutdown.get('exit_code') == 0
+        and profile.get('prepared') is True
+        and profile.get('restored') is True
+        and profile.get('before')
+        and profile.get('before') == profile.get('after')
+    ):
+        raise ValueError('Native IME cleanup is incomplete or GUI did not exit normally')
+
+
 def require_repeated_ime(proof, count=8, require_stages=False):
     cycles = proof['uia']['native_ime']['cycles']
     screenshots = proof['ime_cycle_screenshots']

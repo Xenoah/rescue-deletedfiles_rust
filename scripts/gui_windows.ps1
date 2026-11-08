@@ -536,34 +536,34 @@ try {
     # Forcing an HKL change during teardown stalled standard WPF controls too,
     # and left the next process unable to convert. Never count forced exit as
     # success merely because the UI assertions completed first.
-        if ($null -ne $script:owned) {
-            $script:owned.Refresh()
-            $shutdown=@{graceful=$false;forced=$false;phase='before-window-close'}
-            $resultRecord=if (Test-Path -LiteralPath $cfg.result) {Get-Content -LiteralPath $cfg.result -Raw -Encoding UTF8|ConvertFrom-Json} else {[pscustomobject]@{status='failed'}}
-            $resultRecord|Add-Member -NotePropertyName shutdown -NotePropertyValue $shutdown -Force
-            $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
-            try {
-                if (!$script:owned.HasExited) {
-                    $shutdown.close_requested=$script:owned.CloseMainWindow()
-                    $timer=[System.Diagnostics.Stopwatch]::StartNew()
-                    $shutdown.graceful=$script:owned.WaitForExit(5000)
-                    $shutdown.elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds
-                    if (!$shutdown.graceful) {
-                        if ($env:RESCUE_IME_TRACE -eq '1') {
-                            [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-close-timeout.dmp'))
-                        }
-                        $shutdown.forced=$true
-                        $script:owned.Kill();$script:owned.WaitForExit()
+    if ($null -ne $script:owned) {
+        $script:owned.Refresh()
+        $shutdown=@{graceful=$false;forced=$false;phase='before-window-close'}
+        $resultRecord=if (Test-Path -LiteralPath $cfg.result) {Get-Content -LiteralPath $cfg.result -Raw -Encoding UTF8|ConvertFrom-Json} else {[pscustomobject]@{status='failed'}}
+        $resultRecord|Add-Member -NotePropertyName shutdown -NotePropertyValue $shutdown -Force
+        $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+        try {
+            if (!$script:owned.HasExited) {
+                $shutdown.close_requested=$script:owned.CloseMainWindow()
+                $timer=[System.Diagnostics.Stopwatch]::StartNew()
+                $shutdown.graceful=$script:owned.WaitForExit(5000)
+                $shutdown.elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds
+                if (!$shutdown.graceful) {
+                    if ($env:RESCUE_IME_TRACE -eq '1') {
+                        [RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-close-timeout.dmp'))
                     }
-                } else {$shutdown.graceful=$true}
-                $shutdown.exit_code=$script:owned.ExitCode
-                $shutdown.phase='process-exited'
-                if (!$shutdown.graceful -or $shutdown.exit_code -ne 0) {
-                    $resultRecord.status='failed'
-                    throw 'Owned GUI did not exit normally; UI success cannot hide a forced shutdown or crash'
+                    $shutdown.forced=$true
+                    $script:owned.Kill();$script:owned.WaitForExit()
                 }
-            } finally {
-                $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
+            } else {$shutdown.graceful=$true}
+            $shutdown.exit_code=$script:owned.ExitCode
+            $shutdown.phase='process-exited'
+            if (!$shutdown.graceful -or $shutdown.exit_code -ne 0) {
+                $resultRecord.status='failed'
+                throw 'Owned GUI did not exit normally; UI success cannot hide a forced shutdown or crash'
             }
+        } finally {
+            $resultRecord|ConvertTo-Json -Depth 10|Set-Content -LiteralPath $cfg.result -Encoding UTF8
         }
+    }
 }

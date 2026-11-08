@@ -127,6 +127,21 @@ jobs:
         if: always() && runner.os == 'Windows'
         shell: powershell
         run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Require normal GUI exit and restored Windows input settings
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ime_evidence import require_ime_cleanup
+          profile=json.loads(Path('ime-profile-state.json').read_text(encoding='utf-8-sig'))
+          path=Path('published-format-windows-x64.json'); result=json.loads(path.read_text())
+          require_ime_cleanup(result['gui_verification']['ime'],profile)
+          result['ime_profile_cleanup']=profile
+          path.write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          PYTHON
       - uses: actions/upload-artifact@v4
         with:
           name: published-native-${{ matrix.platform }}-${{ matrix.arch }}

@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from release_assets import package_names, stage_downloads
 from installer_versions import versions
-from ime_evidence import require_repeated_ime
+from ime_evidence import require_ime_cleanup, require_repeated_ime
 
 
 class DownloadContract(unittest.TestCase):
@@ -48,6 +48,19 @@ class InstallerVersions(unittest.TestCase):
 
 
 class RepeatedImeEvidence(unittest.TestCase):
+    def test_rejects_success_before_forced_exit_or_unrestored_profile(self):
+        proof={'status':'passed','uia':{'input_profile_cleanup':'outer-language-profile',
+               'shutdown':{'graceful':True,'forced':False,'phase':'process-exited','exit_code':0}}}
+        original=[{'tag':'en-US','tips':['0409:00000409'],'handwriting':False,'spellchecking':True}]
+        profile={'prepared':True,'restored':True,'before':original,'after':copy.deepcopy(original)}
+        require_ime_cleanup(proof,profile)
+        for key,value in [('graceful',False),('forced',True),('exit_code',-1),('phase','before-window-close')]:
+            bad=copy.deepcopy(proof);bad['uia']['shutdown'][key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):require_ime_cleanup(bad,profile)
+        for key,value in [('prepared',False),('restored',False),('after',[]),('before',[])]:
+            bad=copy.deepcopy(profile);bad[key]=value
+            with self.subTest(key=key),self.assertRaises(ValueError):require_ime_cleanup(proof,bad)
+
     def test_rejects_visible_but_uncommitted_conversion(self):
         cycle={'cancel_start_value':'とりけし','cancelled_roman_keys':'torikeshi',
                'committed_roman_keys':'genbunn','committed_value':'原文',
