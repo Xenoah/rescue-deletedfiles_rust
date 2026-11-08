@@ -1,0 +1,144 @@
+name: Publish verified v1.2.2 and verify downloads
+on:
+  push:
+    branches: ['release/publish-v1.2.2']
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: publish-verified-v1.2.2
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+  RELEASE_COMMIT: 33261891be5ffc830a909d253e1a3da733bd8e2d
+  NATIVE_RUN: '42514904244'
+  RELEASE_TAG: v1.2.2
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 33261891be5ffc830a909d253e1a3da733bd8e2d
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require the exact native commit and all five successful jobs
+        run: |
+          gh run watch "$NATIVE_RUN" --exit-status --interval 30
+          python - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          root=Path('publication-proof');root.mkdir()
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path],text=True))
+          run=api('actions/runs/'+os.environ['NATIVE_RUN']);jobs=api('actions/runs/'+os.environ['NATIVE_RUN']+'/jobs?per_page=100')
+          assert run['head_sha']==os.environ['RELEASE_COMMIT'] and run['conclusion']=='success' and run['run_attempt']==1 and run['path']=='.github/workflows/ci.yml'
+          assert len(jobs['jobs'])==5 and all(j['conclusion']=='success' for j in jobs['jobs'])
+          assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==os.environ['RELEASE_COMMIT']
+          for name,value in [('native-run',run),('native-jobs',jobs),('native-artifacts',api('actions/runs/'+os.environ['NATIVE_RUN']+'/artifacts'))]:
+              (root/(name+'.json')).write_text(json.dumps(value,indent=2)+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: dist
+          run-id: 42514904244
+          github-token: ${{ github.token }}
+      - name: Assemble exactly eight packages and one checksum file
+        run: |
+          python scripts/assemble_release.py
+          cd release-dist
+          sha256sum --check SHA256SUMS.txt
+      - name: Create an immutable tag and publish as a prerelease
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from release_assets import package_names
+          expected=set(package_names('1.2.2'))|{'SHA256SUMS.txt'}
+          assert {p.name for p in Path('release-dist').iterdir()}==expected
+          repo=os.environ['GH_REPO'];tag=os.environ['RELEASE_TAG'];commit=os.environ['RELEASE_COMMIT']
+          def probe(path):
+              r=subprocess.run(['gh','api','repos/'+repo+'/'+path],capture_output=True,text=True)
+              if r.returncode:
+                  assert json.loads(r.stdout)['status']=='404', 'Unexpected GitHub API error'
+                  return None
+              return json.loads(r.stdout)
+          assert probe('releases/tags/'+tag) is None, 'Release already exists; no automatic replacement'
+          existing=probe('git/ref/tags/'+tag)
+          if existing is None:
+              subprocess.run(['gh','api','--method','POST','repos/'+repo+'/git/refs','-f','ref=refs/tags/'+tag,'-f','sha='+commit],check=True,stdout=subprocess.DEVNULL)
+          else:
+              assert existing['object']['type']=='commit' and existing['object']['sha']==commit, 'Existing tag differs'
+          subprocess.run(['gh','release','create',tag,*[str(Path('release-dist')/name) for name in sorted(expected)],'--verify-tag','--prerelease','--latest=false','--title','Rescue '+tag,'--notes-file','docs/RELEASE-v1.2.md'],check=True)
+          PY
+      - name: Dispatch public verification against this exact tag
+        id: public
+        run: |
+          python - <<'PY'
+          import datetime,json,os,subprocess,time
+          from pathlib import Path
+          since=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+          subprocess.run(['gh','workflow','run','published-packages.yml','--ref',os.environ['RELEASE_TAG'],'-f','release_tag='+os.environ['RELEASE_TAG'],'-f','native_run_id='+os.environ['NATIVE_RUN']],check=True)
+          for _ in range(30):
+              path='repos/'+os.environ['GH_REPO']+'/actions/workflows/published-packages.yml/runs?event=workflow_dispatch&head_sha='+os.environ['RELEASE_COMMIT']+'&per_page=100'
+              runs=json.loads(subprocess.check_output(['gh','api',path],text=True))['workflow_runs']
+              matches=[r for r in runs if r['head_branch']==os.environ['RELEASE_TAG'] and r['created_at']>=since]
+              assert len(matches)<=1,'Ambiguous public verification run'
+              if matches:
+                  run=matches[0]
+                  with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('run_id='+str(run['id'])+'\n')
+                  Path('publication-proof/public-dispatch.json').write_text(json.dumps({'run_id':run['id'],'url':run['html_url'],'commit':run['head_sha'],'dispatched_after':since},indent=2)+'\n')
+                  print(run['html_url']);break
+              time.sleep(10)
+          else:raise RuntimeError('Public verification was not scheduled')
+          PY
+      - name: Require successful public verification without retries
+        run: gh run watch '${{ steps.public.outputs.run_id }}' --exit-status --interval 30
+      - name: Verify all downloads and promote only after every public gate passes
+        env:
+          PUBLIC_RUN: ${{ steps.public.outputs.run_id }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from release_assets import package_names
+          root=Path('publication-proof');tag=os.environ['RELEASE_TAG'];commit=os.environ['RELEASE_COMMIT'];rid=os.environ['PUBLIC_RUN']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path],text=True))
+          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+          run=api('actions/runs/'+rid);jobs=api('actions/runs/'+rid+'/jobs?per_page=100')
+          assert run['head_sha']==commit and run['conclusion']=='success' and run['run_attempt']==1 and run['path']=='.github/workflows/published-packages.yml'
+          assert len(jobs['jobs'])==5 and all(j['conclusion']=='success' for j in jobs['jobs'])
+          ref=api('git/ref/tags/'+tag);assert ref['object']['type']=='commit' and ref['object']['sha']==commit
+          release=api('releases/tags/'+tag);expected=set(package_names('1.2.2'))|{'SHA256SUMS.txt'}
+          assert not release['draft'] and release['prerelease'] and {a['name'] for a in release['assets']}==expected
+          out=Path('public-downloads');out.mkdir()
+          subprocess.run(['gh','release','download',tag,'--dir',str(out)],check=True)
+          assert {p.name for p in out.iterdir()}==expected
+          sums={name:digest for digest,name in (line.split('  ',1) for line in (out/'SHA256SUMS.txt').read_text().splitlines())}
+          assert set(sums)==expected-{'SHA256SUMS.txt'}
+          for asset in release['assets']:
+              path=out/asset['name'];digest=sha(path)
+              assert path.stat().st_size==asset['size'] and asset['digest']=='sha256:'+digest
+              assert digest==sha(Path('release-dist')/asset['name'])
+              if asset['name'] in sums:assert digest==sums[asset['name']]
+          subprocess.run(['gh','release','edit',tag,'--prerelease=false','--latest'],check=True)
+          release=api('releases/tags/'+tag);latest=api('releases/latest')
+          assert not release['draft'] and not release['prerelease'] and latest['tag_name']==tag
+          for name,value in [('public-run',run),('public-jobs',jobs),('public-artifacts',api('actions/runs/'+rid+'/artifacts')),('release',release),('release-latest',latest)]:
+              (root/(name+'.json')).write_text(json.dumps(value,indent=2)+'\n')
+          (root/'publication.json').write_text(json.dumps({'status':'passed','release_tag':tag,'release_commit':commit,'native_run':int(os.environ['NATIVE_RUN']),'public_run':int(rid),'release_assets':9,'all_downloads_byte_identical_to_verified_native_packages':True,'latest':True},indent=2)+'\n')
+          print(release['html_url'])
+          PY
+      - name: Preserve publication provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-publication-proof
+          path: publication-proof/*.json
+          if-no-files-found: error
