@@ -127,5 +127,4 @@ mod tests {
         composition.normalize(Some(Id::new("second")), &mut events);
         assert_eq!(events, expected);
     }
-
 }
