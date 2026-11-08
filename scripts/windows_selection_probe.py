@@ -15,7 +15,7 @@ def build(root):
     # A batch file preserves Windows command-line quoting through cmd /c.
     command=root/'build-selection.cmd'
     command.write_text('@echo off\ncall "'+str(setup)+'" -arch=x64\nif errorlevel 1 exit /b %errorlevel%\n'+
-        subprocess.list2cmdline(['cl','/nologo','/EHsc','/MT',str(source),'/Fe:'+str(output),'/link','ole32.lib','oleaut32.lib','uiautomationcore.lib','uuid.lib'])+'\n',encoding='utf-8')
+        subprocess.list2cmdline(['cl','/nologo','/EHsc','/MT',str(source),'/Fe:'+str(output),'/link','ole32.lib','oleaut32.lib','uiautomationcore.lib','uuid.lib','user32.lib'])+'\n',encoding='utf-8')
     result=subprocess.run(['cmd','/d','/c',str(command)],cwd=root,capture_output=True,text=True)
     if result.returncode:raise RuntimeError('Native UIA probe build failed: '+result.stdout+result.stderr)
     return output

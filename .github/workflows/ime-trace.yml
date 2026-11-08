@@ -18,6 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Check the native UIA probe toolchain before the GUI build
+        run: python -c "import sys,tempfile; from pathlib import Path; sys.path.insert(0,'scripts'); from windows_selection_probe import build; print(build(Path(tempfile.mkdtemp(prefix='rescue-uia-build-'))))"
       - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
       - run: rustup toolchain install 1.99.1 --profile minimal
       - uses: actions/cache/restore@v4
