@@ -32,11 +32,10 @@ impl Composition {
                 pressed,
                 ..
             } = &event
+                && (ime_owns_escape || self.escape_held)
             {
-                if ime_owns_escape || self.escape_held {
-                    self.escape_held = *pressed;
-                    continue;
-                }
+                self.escape_held = *pressed;
+                continue;
             }
             if matches!(event, Event::WindowFocused(false)) {
                 self.escape_held = false;
