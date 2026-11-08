@@ -104,8 +104,46 @@ public static class RescueOwnedWindow {
     public static void RomanKeys(string value) {foreach(char c in value) Tap((ushort)Char.ToUpperInvariant(c));}
     [StructLayout(LayoutKind.Sequential)]
     public struct KeyboardInput { public ushort key, scan; public uint flags, time; public UIntPtr extra; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MouseInput { public int x,y; public uint data,flags,time; public UIntPtr extra; }
     [StructLayout(LayoutKind.Explicit, Size=40)]
-    public struct Input { [FieldOffset(0)] public uint type; [FieldOffset(8)] public KeyboardInput keyboard; }
+    public struct Input { [FieldOffset(0)] public uint type; [FieldOffset(8)] public KeyboardInput keyboard; [FieldOffset(8)] public MouseInput mouse; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Point { public int x,y; }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Rect { public int left,top,right,bottom; }
+    [DllImport("user32.dll", SetLastError=true)]
+    static extern bool GetWindowRect(IntPtr hwnd,out Rect rect);
+    [DllImport("user32.dll")]
+    static extern IntPtr WindowFromPoint(Point point);
+    [DllImport("user32.dll")]
+    static extern uint GetWindowThreadProcessId(IntPtr hwnd,out uint process);
+    [DllImport("user32.dll", SetLastError=true)]
+    static extern bool SetCursorPos(int x,int y);
+    public static uint ForegroundActivationClicks=0;
+    public static void ActivateOwnedWindow(IntPtr hwnd,uint processId) {
+        SetForegroundWindow(hwnd);
+        if(GetForegroundWindow()==hwnd)return;
+        // Foreground-lock rules can reject a new test process after the prior
+        // GUI closes. Activate by a normal click on this owned title bar only.
+        Rect rect;
+        if(!GetWindowRect(hwnd,out rect))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        var point=new Point {x=rect.left+(rect.right-rect.left)/2,y=Math.Max(0,rect.top)+12};
+        uint atPoint;
+        GetWindowThreadProcessId(WindowFromPoint(point),out atPoint);
+        if(atPoint!=processId)throw new Exception("Owned title bar is obscured; refusing to click another process");
+        if(!SetCursorPos(point.x,point.y))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        GetWindowThreadProcessId(WindowFromPoint(point),out atPoint);
+        if(atPoint!=processId)throw new Exception("Owned title bar moved before activation");
+        var input=new[]{new Input {type=0,mouse=new MouseInput {flags=2}},new Input {type=0,mouse=new MouseInput {flags=4}}};
+        if(SendInput(2,input,Marshal.SizeOf(typeof(Input)))!=2)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());
+        ForegroundActivationClicks++;
+        for(int i=0;i<40;i++) {
+            if(GetForegroundWindow()==hwnd)return;
+            System.Threading.Thread.Sleep(50);
+        }
+        throw new Exception("Owned GUI did not acquire foreground after title-bar activation");
+    }
     [DllImport("user32.dll", SetLastError=true)]
     static extern uint SendInput(uint count, Input[] input, int size);
     [DllImport("user32.dll")]
@@ -235,7 +273,8 @@ function Set-Field([string]$Name, [string]$Value) {
     throw "Edit did not preserve supplied Unicode value: $Name"
 }
 function Focus-Owned($Node) {
-    $null = [RescueOwnedWindow]::SetForegroundWindow($script:owned.MainWindowHandle)
+    if ($Node.Current.ProcessId -ne $script:owned.Id) {throw 'Requested focus is not an owned control'}
+    [RescueOwnedWindow]::ActivateOwnedWindow($script:owned.MainWindowHandle,[uint32]$script:owned.Id)
     $Node.SetFocus()
     $until=[DateTime]::UtcNow.AddSeconds(3)
     do {
@@ -425,7 +464,7 @@ try {
         $bitmap.Save((Join-Path $cfg.root 'windows-gui-complete.png'),[System.Drawing.Imaging.ImageFormat]::Png)
     } finally {$graphics.Dispose();$bitmap.Dispose()}
     if ($cfg.ime) {[RescueOwnedWindow]::RestoreJapaneseIme($script:owned.MainWindowHandle)}
-    @{status='passed';input_layout_restored=[RescueOwnedWindow]::ImeRestored;process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
+    @{status='passed';foreground_activation_clicks=[RescueOwnedWindow]::ForegroundActivationClicks;input_layout_restored=[RescueOwnedWindow]::ImeRestored;process_id=$script:owned.Id;gui_token=$script:guiToken;steps=@($script:steps);selection_tree=$script:selection;final_tree=(Snapshot);native_input_method_tested=[bool]$script:imeProof;native_ime=$script:imeProof;native_keyboard_input_tested=[bool]$cfg.keyboard;scope='Native Windows UIA and Invoke/Value or SendInput keyboard actions. native_ime records actual Roman-key conversion only when requested; Unicode injection alone is not an IME test.'} | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
 } catch {
     $failure = $_
     $evidence = @{status='failed';gui_token=$script:guiToken;native_ime_debug=$script:imeDiagnostic;error=$failure.Exception.ToString();steps=@($script:steps);provider=$script:provider}
