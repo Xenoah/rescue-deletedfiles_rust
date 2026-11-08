@@ -295,6 +295,18 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Compare SHA-256 recorded in a recovery report with a supplied known list.
+    MatchHashes {
+        #[arg(long)]
+        report: PathBuf,
+        #[arg(long)]
+        checksums: PathBuf,
+        /// Save a separate JSON record; existing files are never replaced.
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     Report {
         #[arg(long)]
         session: PathBuf,
@@ -1042,6 +1054,24 @@ fn run() -> Result<i32, Error> {
             rescue_core::export_recovery_report(&report, kind, &output)?;
             print(
                 json!({"event":"report_exported","format":format,"output":output,"results":report["results"].as_array().map(Vec::len)}),
+                compact,
+            );
+            Ok(0)
+        }
+        Command::MatchHashes {
+            report,
+            checksums,
+            output,
+            json: compact,
+        } => {
+            let report = rescue_core::read_recovery_report(&report)?;
+            let manifest = rescue_core::read_known_hashes(&checksums)?;
+            let comparison = rescue_core::compare_known_hashes(&report, &manifest)?;
+            if let Some(path) = &output {
+                rescue_core::save_known_hash_comparison(&comparison, path)?;
+            }
+            print(
+                json!({"event":"known_hashes_compared", "output":output, "comparison":comparison}),
                 compact,
             );
             Ok(0)

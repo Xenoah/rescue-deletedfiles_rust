@@ -6,6 +6,7 @@ mod accessibility;
 mod acquisition_ui;
 mod columns;
 mod discovery_ui;
+mod hash_ui;
 #[cfg(any(windows, test))]
 mod ime;
 mod index_ui;
@@ -161,6 +162,7 @@ struct App {
     report: Text,
     show_report: bool,
     report_export: Option<(rescue_core::ReportFormat, String, String)>,
+    hashes: hash_ui::State,
     focus_report: bool,
     results: Vec<RecoveryResult>,
     primary_rect: Option<egui::Rect>,
@@ -311,6 +313,7 @@ impl App {
             report: Text::default(),
             show_report: false,
             report_export: None,
+            hashes: hash_ui::State::default(),
             focus_report: false,
             results: Vec::new(),
             primary_rect: None,
@@ -457,6 +460,7 @@ impl App {
         self.session = Some(s);
         self.selected.clear();
         self.results.clear();
+        self.hashes = hash_ui::State::default();
         self.filter.clear();
         self.closed.clear();
         self.rows.clear();
@@ -490,6 +494,7 @@ impl App {
             self.selected.clear();
             self.focused = None;
             self.results.clear();
+            self.hashes = hash_ui::State::default();
             self.rows.clear();
             self.report.clear();
             self.view_dirty = true;
@@ -543,6 +548,7 @@ impl App {
         self.selected.clear();
         self.focused = None;
         self.results.clear();
+        self.hashes = hash_ui::State::default();
         self.rows.clear();
         self.report.clear();
         self.view_dirty = true;
@@ -949,6 +955,7 @@ impl App {
                     status,
                     detail,
                 } => {
+                    self.hashes = hash_ui::State::default();
                     self.results = results;
                     self.status = status;
                     self.report = detail;
@@ -1350,6 +1357,24 @@ impl App {
                                     .clicked()
                                 {
                                     self.export_report(rescue_core::ReportFormat::Csv);
+                                }
+                                if ui
+                                    .button(tr!("既知ハッシュと照合", "Compare known hashes"))
+                                    .clicked()
+                                    && let Some(session) = self.session.as_ref()
+                                {
+                                    let destination = PathBuf::from(&self.destination);
+                                    let folder = if self.save_mode == SaveMode::Zip {
+                                        destination.parent().unwrap_or(Path::new(".")).to_owned()
+                                    } else if self.destination.is_empty() {
+                                        PathBuf::from(".")
+                                    } else {
+                                        destination
+                                    };
+                                    self.hashes.start(
+                                        rescue_core::recovery_report(session, &self.results),
+                                        &folder,
+                                    );
                                 }
                             });
                         }
@@ -2604,6 +2629,9 @@ impl App {
             }
         }
         self.preview.show(ctx);
+        if !self.busy() {
+            self.hashes.show(ctx, self.session.as_ref());
+        }
         if self.report_export.is_some() && !self.busy() {
             self.report_export_ui(ctx);
         }

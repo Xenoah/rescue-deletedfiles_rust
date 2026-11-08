@@ -3,6 +3,8 @@ import argparse
 import hashlib
 import json
 import os
+import plistlib
+from installer_versions import versions
 from pathlib import Path
 import shutil
 import struct
@@ -11,6 +13,7 @@ import tarfile
 import tempfile
 import time
 import zipfile
+import xml.etree.ElementTree as ET
 from e2e import check
 from e2e_features import main as features
 from package import ROOT, VERSION
@@ -97,6 +100,9 @@ def main():
             gui_status='renderer_initialized_then_alive_3_seconds'
         installed=root/'installed'
         if a.platform=='windows':
+            setup=a.dist/(stem+'-setup.exe')
+            setup_version=subprocess.check_output(['powershell','-NoProfile','-Command',"$version=(Get-Item -LiteralPath $env:RESCUE_SETUP_TEST_PATH).VersionInfo; '{0}.{1}.{2}.{3}' -f $version.FileMajorPart,$version.FileMinorPart,$version.FileBuildPart,$version.FilePrivatePart"],env={**os.environ,'RESCUE_SETUP_TEST_PATH':str(setup.resolve())},text=True).strip()
+            check(setup_version==versions(VERSION)['windows'],'Windows installer numeric version mismatch')
             subprocess.run([str(a.dist/(stem+'-setup.exe')),'/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CURRENTUSER','/DIR='+str(installed)],check=True,timeout=120)
             try:
                 version(installed/'rescue.exe')
@@ -105,6 +111,7 @@ def main():
             finally:subprocess.run([str(installed/'unins000.exe'),'/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART'],check=True,timeout=120)
             installer_status='installed_version_and_bytes_verified_then_uninstalled'
         elif a.platform=='linux':
+            check(subprocess.check_output(['dpkg-deb','--field',str(a.dist/(stem+'.deb')),'Version'],text=True).strip()==versions(VERSION)['linux'],'DEB version mismatch')
             subprocess.run(['dpkg-deb','--extract',str(a.dist/(stem+'.deb')),str(installed)],check=True)
             version(installed/'opt/rescue/rescue')
             for name in ['rescue','rescue-gui','THIRD_PARTY_NOTICES.txt']:check((installed/'opt/rescue'/name).read_bytes()==(binroot/name).read_bytes(),'deb payload differs')
@@ -113,6 +120,11 @@ def main():
             installer_status='deb_extracted_version_payload_and_shortcuts_verified'
         else:
             subprocess.run(['pkgutil','--expand-full',str(a.dist/(stem+'.pkg')),str(installed)],check=True)
+            plist=plistlib.loads((portable/'Rescue.app/Contents/Info.plist').read_bytes())
+            check(plist['CFBundleVersion']==versions(VERSION)['macos'] and plist['CFBundleShortVersionString']==VERSION.split('-')[0],'macOS numeric/display version mismatch')
+            receipts=[ET.parse(p).getroot() for p in installed.rglob('PackageInfo')]
+            receipts=[p for p in receipts if p.get('identifier')=='org.xenoah.rescue']
+            check(len(receipts)==1 and receipts[0].get('version')==versions(VERSION)['macos'],'PKG receipt version mismatch')
             packaged=list(installed.rglob('Rescue.app/Contents/MacOS/rescue'))
             check(len(packaged)==1,'pkg payload missing or duplicated');version(packaged[0])
             check(packaged[0].read_bytes()==binary.read_bytes(),'pkg and portable CLI differ')

@@ -1,0 +1,29 @@
+{
+  "status": "passed",
+  "version": "rescue 1.2.0",
+  "binary_sha256": "4229f09bd675454d13309066c1b82bc8eb5d27ddf368af0ba9fda268878e8c5f",
+  "checks": 18,
+  "cases": [
+    "real_cli_recovery_byte_exact",
+    "unicode_bom_crlf_text_binary_and_bare_hash_lines",
+    "known_matches_and_not_listed_are_distinct",
+    "duplicate_content_labels_do_not_choose_an_original_name",
+    "manifest_digest_and_full_original_evidence_retained",
+    "separate_saved_comparison_matches_json_schema",
+    "existing_output_never_overwritten",
+    "report_paths_and_manifest_labels_never_followed",
+    "recorded_digest_scope_remains_explicit_after_saved_file_change",
+    "partial_missing_ranges_errors_and_missing_hashes_not_compared",
+    "malformed_duplicate_conflicting_and_escaped_lists_refused",
+    "manifest_byte_and_entry_limits_enforced",
+    "report_schema_digest_unique_ids_and_size_validated",
+    "zip_embedded_report_comparison_and_real_bytes",
+    "mcp_finished_directory_recovery_job_compared",
+    "mcp_finished_zip_recovery_job_compared",
+    "mcp_non_recovery_and_invalid_manifest_refused",
+    "source_manifest_and_recovery_report_unchanged"
+  ],
+  "files_byte_exact": 32,
+  "source_unchanged": true,
+  "scope": "Known SHA-256 comparison of real recovery records, with honest recorded-digest scope.\n\nContent matches never certify an original name, remove uncertainty, or imply that\nsaved files were re-read. Manifest labels are never used as filesystem paths."
+}

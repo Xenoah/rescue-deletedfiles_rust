@@ -11,6 +11,7 @@ mod disk_scan;
 mod fat;
 mod index;
 mod indexed_scan;
+mod known_hashes;
 mod lznt1;
 mod mapped_source;
 mod naming;
@@ -52,6 +53,10 @@ pub use index::{
     IndexWriter,
 };
 pub use indexed_scan::{IndexedProgress, resume_indexed_scan, scan_indexed};
+pub use known_hashes::{
+    KnownHashComparison, KnownHashCounts, KnownHashOutcome, KnownHashRow, MAX_KNOWN_HASH_BYTES,
+    compare_known_hashes, read_known_hashes, save_known_hash_comparison,
+};
 pub use naming::{NameBasis, NameChange, NameChangeReason, RecoveryNaming, file_extension};
 use ntfs::Ntfs;
 pub use partitions::{SourceLayout, SourceRegion, inspect_source};

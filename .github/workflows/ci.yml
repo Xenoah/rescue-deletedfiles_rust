@@ -255,6 +255,7 @@ jobs:
             dist/acquisition-results-*.json
             dist/cp932-results-*.json
             dist/exfat-damage-results-*.json
+            dist/known-hashes-results-*.json
             dist/independent-classic-fat-*.json
             dist/SHA256SUMS-*.txt
           if-no-files-found: error

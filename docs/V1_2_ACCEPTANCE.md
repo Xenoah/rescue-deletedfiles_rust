@@ -5,9 +5,9 @@
 | 段階 | 範囲 | 状態 |
 | --- | --- | --- |
 | alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
-| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | ローカル・実GUI合格、push済み、4環境ネイティブCI実行中 |
+| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 4環境ネイティブCI合格・公開済み、公開実物の検証中 |
 | alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 79 Rustテスト・34統合群・実GUI・Linux配布物合格、ネイティブ/公開検証待ち |
-| 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 未着手 |
+| 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 82 Rustテスト・35統合群・実GUI・Linux配布物合格、4環境検証待ち |
 
 ## 取得強化の完了条件
 
@@ -58,3 +58,15 @@ JSON/索引・MBR/GPT・CLI/MCP・プレビュー・ZIP/HTML/CSV・プロセス�
 実GUIで36ファイルの従来フロー、CP932の8ファイル、破損exFATの8ファイルを照合。取得のタイムアウトと64 MiB全量の再開も確認し、実画面20枚を保存した。
 
 [alpha.3ローカル集計](verification/v1.2.0-alpha.3-local.json) · [exFAT試験の全条件](exfat-damage-v1.2.json) · [実画面](UI-v1.2.md)
+
+## v1.2.0 安定版のローカル結果
+
+既知SHA-256照合の18条件で32出力のバイト一致を確認。CLI・MCP・GUIで一致/一覧外/照合不能を区別し、名前の不確実性、元の警告、欠損範囲を維持する。照合一覧のラベルをファイルパスとして開かない。保存後に変えたファイルを再検査したかのように表示しない。
+
+82 Rustテスト、35統合群、Clippy/fmt、配布添付・インストーラ版番号の3テストが合格。Linux DEBとportableの実物、および同梱CLI/MCPの60項目が合格した。先行版から安定版へのWindows/macOS内部版番号の逆戻りも修正した。
+
+実GUIでは36件の従来フロー、CP932の8件、破損exFATの8件、64 MiB取得の中断/再開、照合結果の保存を確認。26枚の実画面とSHA-256を保存した。
+
+[安定版ローカル全記録](verification/v1.2.0-local.json) · [既知ハッシュ試験](known-hashes-v1.2.json) · [実GUIと画面](UI-v1.2.md)
+
+alpha.2: [ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163)合格、[公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2)済み。[公開実物検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895)を実行中。

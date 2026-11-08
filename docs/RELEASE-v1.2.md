@@ -1,58 +1,44 @@
-# Rescue v1.2.0-alpha.3
+# Rescue v1.2.0
 
-破損USB・SDの取得、FATの日本語短名、exFAT大文字変換表の限定的な破損継続を扱う先行版です。CP932を選んで8.3名を解釈し、元バイト・失われた先頭バイト・曖昧な文字境界を記録します。
+取得を中断しても読み取れた範囲を残して再開し、名前や内容の検証が欠ける部分を明示する安定版です。Windows・Linux・macOS Intel/Apple SiliconのGUI・CLI・MCPを提供します。
 
-前段階に続き、初回の順方向読み取りに続き、失敗範囲を逆方向・小ブロック、その後セクター単位で再試行します。保存済み範囲は読み直しません。
+## 変更内容
 
-- 読取専用の子プロセスで待機時間を制限。取消・期限超過後のデータは保存しません。
-- タイムアウトや切断後は元のソースID・容量・セクターサイズ・更新時刻を確認して再接続。別の媒体は拒否します。
-- 旧読取マップを従来の順序で再開。新しい方式はマップへ保存し、再開時に変わらないようにします。
-- GUIに取得方法、読取待機、再接続待機を追加。進行中は方向・読取単位・再接続待ちを表示し、停止理由と再開方法を残します。
-- CLI/MCPは今回のパスごとの取得量・失敗量・タイムアウト・再接続回数を出力します。
+- **段階的なイメージ取得**：順方向の大ブロック、失敗範囲の逆方向・小ブロック、セクター単位で再試行。取得済み範囲は読み直しません。
+- **待機上限と再接続**：専用の読取プロセスで待機を制限し、遅い結果を保存しません。元ソースの識別・容量等が一致した場合に再接続し、停止理由と再開方法をGUIへ表示します。
+- **FATのCP932短名**：明示的な文字コード選択で日本語・半角カナ・NEC/IBM拡張に対応。元11バイト、消えた先頭文字、曖昧な文字境界を記録します。
+- **exFATの限定的な破損継続**：読めた大文字変換表の内容・チェックサムが壊れている場合に、明示的な設定で探索を継続。配置・割当・エントリ集合の検証を維持し、名前ハッシュの未検証を残します。
+- **既知ハッシュ照合**：保存時のSHA-256を手元の一覧と照合し、一致・一覧にない・照合できない結果を分離。別のJSONに元の復元記録と警告も保存します。
+- **インストーラーの版番号**：Windows・macOSで先行版から安定版へ内部番号が逆戻りしないよう修正。アプリの表示バージョンは1.2.0です。
 
-[取得の使い方](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0-alpha.3/docs/IMAGING.md) · [実装範囲と受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0-alpha.3/docs/V1_2_ACCEPTANCE.md)
+[取得](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/IMAGING.md) · [CP932](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/CP932.md) · [exFAT破損表](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/EXFAT-DAMAGE.md) · [既知ハッシュ](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/KNOWN-HASHES.md)
 
 ## ダウンロード
 
-インストーラーまたはポータブルをOS/CPUに合わせて1つ選んでください。添付はWindows x64・Linux x64・macOS Intel/ARMの8配布物と共通SHA256SUMSの9点です。画面やテストJSONはリポジトリとActionsへ保存します。
+OS/CPUに合わせてインストーラーかポータブルを1つ選んでください。添付は8パッケージと共通SHA256SUMSの9点だけです。画面・テストJSONはリポジトリとActionsへ保存します。GitHubが自動生成するソースアーカイブは別枠です。
+
+Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[インストール手順](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/INSTALL.md)
 
 ## 実画面
 
-![取得設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/imaging-settings-ja.png)
+![取得の停止と再開案内](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0/docs/images/v1.2/imaging-timeout-ja.png)
 
-![取得の停止と再開案内](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/imaging-timeout-ja.png)
+![exFATの復元結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0/docs/images/v1.2/exfat-results-ja.png)
 
-## 検証と制限
+![既知ハッシュとの照合](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0/docs/images/v1.2/known-hashes-result-ja.png)
 
-実CLI/MCPの読取プロセスを意図的に停止し、期限超過、取消、同じファイルへの再接続、差し替え拒否、旧マップ互換、再開後のバイト一致を検証します。物理媒体の故障率や復旧率を測定した結果ではありません。
+## 検証と互換性
 
-全4ネイティブ環境の回帰・配布物検証と、Windowsの通常権限GUI/UIA/キーボード/日本語IMEが公開条件です。公開後は実際のダウンロード物も全4環境で再検証します。
+Rust 82テスト、35統合テスト群、Clippy、fmt、配布/版番号の3契約テストを実行。追加の取得13条件、CP932 34条件・168出力、exFAT 31条件・72出力、既知ハッシュ18条件・32復元出力を検証します。各出力数は同じ正解付きデータを異なる経路で検証した合計で、一般的な復元率ではありません。
 
-待機上限はアプリが子プロセスを待つ時間です。OS内部のI/Oや初回デバイス検出を即時終了できる保証はありません。子プロセスが終了しない場合、無制限に増やさず停止します。RAWと.rmapは一緒に保管してください。
+全4ネイティブ環境の回帰・インストーラー/ポータブル検証と、Windows通常権限のUIA・実キー・実日本語IMEが公開条件です。公開後は配布済みポータブルを再取得し、全4環境で同じ実物を検証します。[受入台帳](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0/docs/V1_2_ACCEPTANCE.md)
 
-既知ハッシュ照合は次の段階です。安定版は引き続きv1.1.2です。
+旧読取マップと従来のセッションは維持します。新しいadaptiveマップはスキーマ2、CP932セッションは10、破損exFAT設定は11を使い、対応しない旧版による誤解釈を防ぎます。旧版CLIの実物による拒否も確認しています。
 
-## CP932短名
+## 適用範囲
 
-- GUI詳細設定、CLI `--fat-short-name-encoding cp932`、MCPで明示的に選択。既定のASCIIとUTF-16のLFNは維持します。
-- 日本語・半角カナ・NEC/IBM拡張、05→E5規則に対応。削除で失われた文字は補いません。
-- 元11バイトと解釈根拠を候補・索引・復元レポートへ保持。不明な文字境界は`?{16進数}`で示します。
-- CP932セッションはスキーマ10。旧版による無言の再解釈を防ぎ、再開時も同じ設定を使います。
+待機上限はアプリが専用読取プロセスを待つ時間です。OS内I/Oや最初のデバイス検出を即時取消できる保証はありません。終了しない読取プロセスを無制限に増やさず、取得済み範囲を残して停止します。RAWと.rmapは一緒に保管してください。
 
-[使い方と不確実性](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0-alpha.3/docs/CP932.md)
+exFATの表の欠落・重複・不正チェーンや割当情報の欠損は継続対象ではありません。既知ハッシュ照合は復元時の記録を比較し、保存後のファイルは読み直しません。一覧や外部レポートの真正性、元パスの正しさを証明するものではありません。
 
-![CP932の設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/cp932-settings-ja.png)
-
-![短名の復元と元バイトの証拠](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/cp932-results-ja.png)
-
-## exFATの壊れた大文字変換表
-
-GUI・CLI・MCPから明示的に許可した場合だけ、読めた変換表のチェックサム・展開内容が壊れていても探索します。表の配置・割当・エントリ集合のチェックサム・UTF-16名・ライブファイルとの競合確認は維持し、名前ハッシュが検証できないことを候補と各レポートへ残します。正常な表では名前ハッシュを従来どおり確認します。
-
-31条件で72出力の全バイト一致を検証しました。表の欠落・重複・不正な長さ/チェーン・割当情報の欠損は継続対象ではありません。新しいセッションはスキーマ11で、旧版CLIによる拒否と同じ設定での中断再開も確認しています。
-
-[使い方と適用範囲](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.0-alpha.3/docs/EXFAT-DAMAGE.md)
-
-![exFAT破損表の設定](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/exfat-settings-ja.png)
-
-![exFATの復元結果](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.0-alpha.3/docs/images/v1.2-alpha.3/exfat-results-ja.png)
+取得障害・破損表の試験は所有する合成データや実プロセス停止を使用しています。物理USB/SDの故障時の復旧率、APFS/ext4/ReFSの直接解析、実SSD/HDDの一般的な復元率は対象外です。

@@ -4,6 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from release_assets import package_names, stage_downloads
+from installer_versions import versions
 
 
 class DownloadContract(unittest.TestCase):
@@ -30,6 +31,18 @@ class DownloadContract(unittest.TestCase):
             for name in package_names('1.1.0')[:-1]:(root/name).write_bytes(b'package')
             with self.assertRaises(ValueError):stage_downloads(root,root/'release','1.1.0')
             self.assertFalse((root/'release').exists())
+
+
+class InstallerVersions(unittest.TestCase):
+    def test_numeric_versions_increase_from_preview_to_stable_and_next_patch(self):
+        sequence=['1.2.0-alpha.1','1.2.0-alpha.3','1.2.0','1.2.1-alpha.1','1.2.1','1.3.0-alpha.1','1.3.0','2.0.0']
+        for platform in ['windows','macos']:
+            numeric=[tuple(map(int,versions(v)[platform].split('.'))) for v in sequence]
+            self.assertEqual(numeric,sorted(set(numeric)))
+        self.assertGreater(tuple(map(int,versions('1.2.0')['macos'].split('.'))),(1,2,3))
+        self.assertEqual(versions('1.2.0-alpha.3')['linux'],'1.2.0~alpha.3')
+        for invalid in ['1.2.0-rc.1','1.2.0-alpha.0','1.2.0-alpha.99','100.0.0','1.2.100']:
+            with self.assertRaises(ValueError):versions(invalid)
 
 
 if __name__=='__main__':unittest.main()

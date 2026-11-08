@@ -182,6 +182,13 @@ fn tools() -> Value {
             true
         ),
         tool(
+            "match_known_hashes",
+            "Compare output SHA-256 recorded by a finished recovery job with a supplied UTF-8 SHA256SUMS list (or bare hashes). Does not re-read files or follow labels. Not listed does not mean corrupt; original naming and warnings are retained.",
+            json!({"job_id":string,"checksums":{"type":"string","maxLength":4194304}}),
+            &["job_id", "checksums"],
+            true
+        ),
+        tool(
             "get_job",
             "Get progress and final result of a job.",
             json!({"job_id":string}),
@@ -722,6 +729,32 @@ impl Server {
                 }));
                     Ok(json!({"job_id":id,"state":"running"}))
                 }
+            }
+            "match_known_hashes" => {
+                let manifest = field(args, "checksums")?;
+                let rows = {
+                    let state = self.state.lock().unwrap();
+                    let job = state
+                        .jobs
+                        .get(field(args, "job_id")?)
+                        .ok_or("unknown job")?;
+                    if job.kind != JobKind::Recovery {
+                        return Err("job is not a recovery".into());
+                    }
+                    if !matches!(job.state.as_str(), "completed" | "partial" | "cancelled") {
+                        return Err("recovery job has not finished".into());
+                    }
+                    job.result
+                        .get("results")
+                        .or_else(|| job.result.get("archive").and_then(|a| a.get("results")))
+                        .filter(|v| v.is_array())
+                        .cloned()
+                        .ok_or("job has no recovery results")?
+                };
+                let report = json!({"schema_version":1,"recovery_job_id":field(args,"job_id")?,"results":rows});
+                let comparison =
+                    rescue_core::compare_known_hashes(&report, manifest.as_bytes()).map_err(err)?;
+                Ok(serde_json::to_value(comparison).map_err(err)?)
             }
             "get_job" | "cancel_job" | "pause_job" => {
                 let mut state = self.state.lock().unwrap();

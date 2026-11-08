@@ -204,6 +204,10 @@ pub fn render_recovery_report(report: &Value, format: ReportFormat) -> Result<Ve
 /// Create a new file under a pinned directory. Never replace an existing path.
 pub fn export_recovery_report(report: &Value, format: ReportFormat, output: &Path) -> Result<()> {
     let bytes = render_recovery_report(report, format)?;
+    write_new_report(&bytes, output)
+}
+
+pub(crate) fn write_new_report(bytes: &[u8], output: &Path) -> Result<()> {
     let name = output
         .file_name()
         .ok_or_else(|| Error::Request("report filename is required".into()))?;
@@ -216,7 +220,7 @@ pub fn export_recovery_report(report: &Value, format: ReportFormat, output: &Pat
     let mut file = destination
         .dir
         .open_with(name, OpenOptions::new().write(true).create_new(true))?;
-    file.write_all(&bytes)?;
+    file.write_all(bytes)?;
     file.sync_all()?;
     Ok(())
 }

@@ -14,6 +14,7 @@ import subprocess
 import tarfile
 import tomllib
 import zipfile
+from installer_versions import versions
 
 ROOT=Path(__file__).resolve().parent.parent
 VERSION=tomllib.loads((ROOT/'Cargo.toml').read_text())['workspace']['package']['version']
@@ -33,7 +34,7 @@ def copy_docs(target,notices):
     # Offline installation/usage help only. Test corpora, research reports and
     # historical screenshots stay in the repository and CI artifacts.
     docs=target/'docs';docs.mkdir()
-    for name in ['INSTALL.md','ALPHA.md','READ_ACCESS.md','INDEX.md','LANGUAGE.md','FAT-v1.1.md','REPORTS.md','IMAGING.md','CP932.md','EXFAT-DAMAGE.md','SAME-LOCATION.md']:
+    for name in ['INSTALL.md','ALPHA.md','READ_ACCESS.md','INDEX.md','LANGUAGE.md','FAT-v1.1.md','REPORTS.md','IMAGING.md','CP932.md','EXFAT-DAMAGE.md','KNOWN-HASHES.md','SAME-LOCATION.md']:
         shutil.copy2(ROOT/'docs'/name,docs/name)
     (docs/'ONLINE.md').write_text(
         '# Documentation and verification\n\n'
@@ -79,7 +80,7 @@ def main():
 AppId={{{{CF1492CA-68D8-40E9-994B-916F3344769E}}
 AppName=Rescue
 AppVersion={VERSION}
-VersionInfoVersion={VERSION.replace("-alpha.", ".")}
+VersionInfoVersion={versions(VERSION)["windows"]}
 AppPublisher=Xenoah
 AppPublisherURL=https://github.com/Xenoah/rescue-deletedfiles_rust
 DefaultDirName={{localappdata}}\\Programs\\Rescue
@@ -112,7 +113,7 @@ Filename: "{{app}}\\rescue-gui.exe"; Description: "Launch Rescue"; Flags: nowait
             debroot=stage/'deb';(debroot/'opt').mkdir(parents=True);shutil.copytree(portable,debroot/'opt/rescue')
             control=debroot/'DEBIAN';control.mkdir()
             control.joinpath('control').write_text(f'''Package: rescue-deletedfiles
-Version: {VERSION.replace('-alpha.','~alpha.')}
+Version: {versions(VERSION)['linux']}
 Section: utils
 Priority: optional
 Architecture: amd64
@@ -135,7 +136,7 @@ Description: Read-only disk recovery GUI, CLI and MCP server
         app=stage/'Rescue.app';macos=app/'Contents/MacOS';macos.mkdir(parents=True)
         resources=app/'Contents/Resources';copy_docs(resources,a.notices)
         for name in ['rescue','rescue-gui']:shutil.copy2(a.binaries/name,macos/name)
-        build_version='.'.join(VERSION.split('-')[0].split('.')[:2]+[VERSION.rsplit('.',1)[1]])
+        build_version=versions(VERSION)['macos']
         plist={'CFBundleName':'Rescue','CFBundleDisplayName':'Rescue','CFBundleIdentifier':'org.xenoah.rescue','CFBundleExecutable':'rescue-gui','CFBundlePackageType':'APPL','CFBundleShortVersionString':VERSION.split('-')[0],'CFBundleVersion':build_version,'LSMinimumSystemVersion':'13.0','NSHighResolutionCapable':True,'NSHumanReadableCopyright':'MIT License · Xenoah'}
         with (app/'Contents/Info.plist').open('wb') as f:plistlib.dump(plist,f)
         permissions(app,{macos/'rescue',macos/'rescue-gui'})
