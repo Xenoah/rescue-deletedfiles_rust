@@ -67,7 +67,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
                 completed.token_profile=getattr(outcomes[0],'token_profile',{'method':'Task Scheduler least-privilege interactive token'})
                 completed.token_profile['uia_driver']='runner token; only the GUI uses the limited token'
             else:
-                completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True,restricted=identity.get('restricted',False),user_environment=identity['proof']['profile_loaded'])
+                completed=run_limited(command,token=identity['token'],timeout=180,kill_tree=True,restricted=identity.get('restricted',False),user_environment=identity['proof']['profile_loaded'],preserve_input_services=desktop)
         else:
             completed=subprocess.run(command,capture_output=True,text=True,encoding='utf-8',errors='replace',timeout=180)
     tree=json.loads(result.read_text(encoding='utf-8-sig')) if result.exists() else {'status':'no_result'}

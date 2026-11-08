@@ -59,7 +59,7 @@ def profile_privileges():
         if token:kernel.CloseHandle(token)
 
 
-def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False, user_environment=False):
+def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False, user_environment=False, preserve_input_services=False):
     import ctypes as c
     from ctypes import wintypes as w
     import msvcrt
@@ -155,6 +155,9 @@ def run_limited(command, *, token, timeout=60, kill_tree=False, restricted=False
                 stdout.seek(0);stderr.seek(0)
                 result=subprocess.CompletedProcess(args,code.value,stdout.read().decode('utf-8','replace'),stderr.read().decode('utf-8','replace'))
                 result.token_profile={'method':'restricted_desktop_token' if restricted else 'owned_interactive_uac_linked','launcher':'CreateProcessAsUserW' if restricted else 'CreateProcessWithTokenW','elevated':bool(elevation.value),'administrator_sid_enabled':False,'integrity':'medium','elevation_type':kind.value,'desktop':'winsta0\\default','desktop_permissions':desktop_proof,'owned_tree_job':kill_tree}
+                if job and preserve_input_services and result.returncode==0:
+                    from windows_job import preserve_completed_input_services
+                    result.token_profile['input_service_cleanup']=preserve_completed_input_services(job)
                 return result
     finally:
         if environment:

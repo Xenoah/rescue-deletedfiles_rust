@@ -54,10 +54,6 @@ jobs:
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-native.json
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-limited.json --desktop-token
           python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/release/rescue-gui.exe --output trace-keyboard.json --desktop-token --keyboard
-      - name: Instrument native conversion event ordering for diagnosis only
-        run: |
-          python scripts/instrument_ime_trace.py
-          python scripts/ci_command.py cargo build --release -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
       - name: Install Japanese input support after the preceding GUI sessions
         shell: powershell
         timeout-minutes: 10
