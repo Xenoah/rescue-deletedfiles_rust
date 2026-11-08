@@ -13,8 +13,9 @@ from e2e import check
 from e2e_formats import corpus_load,ntfs_image,file_hash
 
 
-def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=False,scheduled=False,ime=False):
+def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=False,scheduled=False,ime=False,ime_cycles=1):
     check(platform.system()=='Windows','native Windows GUI test requires Windows')
+    check(1 <= ime_cycles <= 16 and (ime or ime_cycles == 1),'IME cycles require --ime and a count between 1 and 16')
     output.parent.mkdir(parents=True,exist_ok=True)
     # Keep failed UIA trees and logs next to the result; all names are unique.
     root=Path(tempfile.mkdtemp(prefix='rescue-owned-uia-',dir=output.parent)).resolve()
@@ -24,7 +25,7 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         if entry['path'].name=='sample.pdf':entry['path']=entry['path'].with_name('削除した報告書.pdf')
         if entry['path'].name=='sample.txt':entry['path']=entry['path'].with_name('原文.txt')
     truth,_=ntfs_image(source,corpus,'fragmented');before=file_hash(source)
-    config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'ime':ime,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
+    config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'ime':ime,'ime_cycles':ime_cycles,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
     powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
     check(powershell.is_file(),'system PowerShell executable is missing')
     command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]
@@ -81,7 +82,15 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         for name,data in expected.items():check(archive.read(name)==data,'GUI bytes differ: '+name)
     check(file_hash(source)==before,'GUI changed its source')
     proof={'status':'passed','gui_binary_sha256':file_hash(binary),'source_sha256':before,'source_unchanged':True,'files_byte_exact':2,'bytes_exact':sum(map(len,expected.values())),'uia':tree,'limited_token':getattr(completed,'token_profile',None),'test_account':identity['proof'] if identity else None,'screenshot':{'file':str(root/'windows-gui-complete.png'),'sha256':file_hash(root/'windows-gui-complete.png')},'scope':__doc__.strip()}
+    if ime:
+        cycles=tree['native_ime']['cycles']
+        check(len(cycles)==ime_cycles,'native IME cycle count differs')
+        proof['ime_cycle_screenshots']=[]
+        for index,cycle in enumerate(cycles,1):
+            check(cycle['cancel_start_value']=='とりけし' and cycle['cancel_trace'][-1]['value']=='' and cycle['committed_value']=='原文','native IME cycle differs')
+            shot=root/f'windows-ime-cycle-{index}.png'
+            proof['ime_cycle_screenshots'].append({'cycle':index,'file':str(shot),'sha256':file_hash(shot)})
     output.write_text(json.dumps(proof,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps({'status':'passed','files_byte_exact':2,'bytes_exact':proof['bytes_exact'],'uia_steps':len(tree['steps'])}))
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');p.add_argument('--desktop-token',action='store_true');p.add_argument('--keyboard',action='store_true');p.add_argument('--limited-gui',action='store_true');p.add_argument('--scheduled-gui',action='store_true');p.add_argument('--ime',action='store_true');a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited or a.desktop_token or a.limited_gui,a.desktop_token,a.keyboard or a.ime,a.limited_gui,a.scheduled_gui,a.ime)
+    p=argparse.ArgumentParser();p.add_argument('--binary',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--limited',action='store_true');p.add_argument('--desktop-token',action='store_true');p.add_argument('--keyboard',action='store_true');p.add_argument('--limited-gui',action='store_true');p.add_argument('--scheduled-gui',action='store_true');p.add_argument('--ime',action='store_true');p.add_argument('--ime-cycles',type=int,default=1);a=p.parse_args();main(a.binary.resolve(),a.output.resolve(),a.limited or a.desktop_token or a.limited_gui,a.desktop_token,a.keyboard or a.ime,a.limited_gui,a.scheduled_gui,a.ime,a.ime_cycles)
