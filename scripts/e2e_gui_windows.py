@@ -26,6 +26,9 @@ def main(binary,output,limited=False,desktop=False,keyboard=False,limited_gui=Fa
         if entry['path'].name=='sample.txt':entry['path']=entry['path'].with_name('原文.txt')
     truth,_=ntfs_image(source,corpus,'fragmented');before=file_hash(source)
     config.write_text(json.dumps({'binary':str(binary),'source':str(source),'destination':str(destination),'root':str(root),'result':str(result),'pdf':'削除した報告書.pdf','text':'原文.txt','query':'原文','keyboard':keyboard,'ime':ime,'ime_cycles':ime_cycles,'require_nonadmin':limited or scheduled,'require_uac':limited and not desktop},ensure_ascii=False),encoding='utf-8')
+    if ime:
+        from windows_selection_probe import build
+        cfg=json.loads(config.read_text(encoding='utf-8'));cfg['selection_probe']=str(build(root));config.write_text(json.dumps(cfg,ensure_ascii=False),encoding='utf-8')
     powershell=Path(os.environ['SystemRoot'])/'System32/WindowsPowerShell/v1.0/powershell.exe'
     check(powershell.is_file(),'system PowerShell executable is missing')
     command=[str(powershell),'-Mta','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',str(Path(__file__).with_name('gui_windows.ps1')),'-Config',str(config)]

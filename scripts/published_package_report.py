@@ -37,7 +37,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
                 if kind=='ime':
                     ime=gui['uia']
                     assert ime['native_input_method_tested'] and ime['input_layout_restored'] and not ime['native_ime']['unicode_injection_used'] and ime['native_ime']['committed_value']=='原文' and ime['native_ime']['cancel_trace'][-1]['value']=='' and ime['native_ime']['cancel_escape_presses']==2
-                    if tuple(map(int,a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(gui)
+                    if tuple(map(int,a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(gui, require_stages=tuple(map(int,a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1,2,2))
     image=run['imaging_verification'];assert image['status']=='passed' and image['checks']>=15 and image['binary_sha256']==run['binary_sha256']
     image_native=run['imaging_native_verification'];assert image_native['status']=='passed' and image_native['native_permission_denied'] and image_native['resume_after_capacity_failure_byte_exact'] and image_native['source_unchanged'] and image_native['binary_sha256']==run['binary_sha256']
     assert disk['native_access']['acquisition_byte_exact'] and disk['native_access']['acquired_files_byte_exact']==108

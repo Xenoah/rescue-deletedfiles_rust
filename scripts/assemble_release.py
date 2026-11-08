@@ -193,7 +193,7 @@ if modern or VERSION=='1.0.0':
         if kind=='ime':
             ime=proof['uia']
             if not ime['native_input_method_tested'] or not ime['input_layout_restored'] or ime['native_ime']['unicode_injection_used'] or ime['native_ime']['committed_value']!='原文' or ime['native_ime']['cancel_trace'][-1]['value']!='' or ime['native_ime']['cancel_escape_presses']!=2:raise SystemExit('v1.0 native Japanese IME proof mismatch')
-            if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(proof)
+            if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(proof, require_stages=tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,2))
 if modern:
     proof=json.loads((ROOT/('docs/gui-v1.2-results.json' if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) else 'docs/gui-v1.1-results.json')).read_text())
     assert proof['status']=='passed' and proof['application_version']==VERSION

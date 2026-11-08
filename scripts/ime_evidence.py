@@ -2,7 +2,7 @@
 import re
 
 
-def require_repeated_ime(proof, count=8):
+def require_repeated_ime(proof, count=8, require_stages=False):
     cycles = proof['uia']['native_ime']['cycles']
     screenshots = proof['ime_cycle_screenshots']
     if len(cycles) != count or len(screenshots) != count:
@@ -22,3 +22,21 @@ def require_repeated_ime(proof, count=8):
             and re.fullmatch(r'[0-9a-f]{64}', shot['sha256'])
         ):
             raise ValueError(f'Native IME cancellation/conversion evidence differs: cycle {index}')
+        if require_stages:
+            for field, phase, value, selected in [
+                ('conversion_preedit', 'conversion-preedit', 'げんぶん', 'げんぶん'),
+                ('converted_preedit', 'converted-preedit', '原文', '原文'),
+                ('commit_state', 'committed', '原文', ''),
+            ]:
+                state = cycle.get(field, {})
+                if not (
+                    state.get('phase') == phase
+                    and state.get('value') == value
+                    and state.get('selected_text') == selected
+                    and state.get('selection_ranges') == 1
+                    and state.get('limit_ms') == 10000
+                    and 0 <= state.get('elapsed_ms', -1) <= 10000
+                ):
+                    raise ValueError(f'Native IME stage evidence differs: cycle {index}, {field}')
+            if cycle.get('space_presses') != 1 or cycle.get('enter_presses') != 1:
+                raise ValueError(f'Native IME conversion key count differs: cycle {index}')

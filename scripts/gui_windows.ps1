@@ -279,12 +279,12 @@ function Wait-ImeState([string]$Expected,[string]$Phase,[bool]$Committed=$false)
     $timer=[System.Diagnostics.Stopwatch]::StartNew()
     do {
         Start-Sleep -Milliseconds 100
-        $edit=Await-Control 'Search results' 'Edit'
-        $value=$edit.GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        $ranges=@($edit.GetCurrentPattern([System.Windows.Automation.TextPattern]::Pattern).GetSelection())
-        $selected=-join @($ranges | ForEach-Object {$_.GetText(-1)})
-        $selectionMatches=if ($Committed) {$ranges.Count -eq 1 -and $selected -ceq ''} else {$selected -ceq $Expected}
-        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$ranges.Count;elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
+        $raw=& $cfg.selection_probe $script:owned.Id
+        if ($LASTEXITCODE -ne 0) {throw 'Owned native UIA selection probe failed'}
+        $selection=$raw | ConvertFrom-Json
+        $value=$selection.value;$selected=$selection.selected_text
+        $selectionMatches=if ($Committed) {$selection.collapsed -and $selected -ceq ''} else {!$selection.collapsed -and $selected -ceq $Expected}
+        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$selection.selection_ranges;collapsed=$selection.collapsed;reader='native-uia-com';elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
         $script:imeDiagnostic.last_state=$state
         if ($value -ceq $Expected -and $selectionMatches) {return $state}
     } while ($timer.Elapsed.TotalSeconds -lt 10)
