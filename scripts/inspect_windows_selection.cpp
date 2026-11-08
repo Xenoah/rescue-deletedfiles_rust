@@ -57,10 +57,12 @@ int wmain(int argc, wchar_t** argv) {
         int endpoints = 0;
         check(range->CompareEndpoints(TextPatternRangeEndpoint_Start, range.Get(),
                                       TextPatternRangeEndpoint_End, &endpoints));
+        DWORD foreground = 0;
+        GetWindowThreadProcessId(GetForegroundWindow(), &foreground);
         std::printf("{\"value\":"); json(current.value);
         std::printf(",\"selected_text\":"); json(selected.value);
-        std::printf(",\"selection_ranges\":%d,\"collapsed\":%s,\"process_id\":%lu}\n",
-                    count, endpoints == 0 ? "true" : "false", owned);
+        std::printf(",\"selection_ranges\":%d,\"collapsed\":%s,\"process_id\":%lu,\"foreground_process_id\":%lu}\n",
+                    count, endpoints == 0 ? "true" : "false", owned, foreground);
     } catch (HRESULT hr) {
         std::fprintf(stderr, "Owned native UIA selection failed: 0x%08lx\n", static_cast<unsigned long>(hr));
         result = 1;

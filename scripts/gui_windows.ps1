@@ -284,8 +284,9 @@ function Wait-ImeState([string]$Expected,[string]$Phase,[bool]$Committed=$false)
         $selection=$raw | ConvertFrom-Json
         $value=$selection.value;$selected=$selection.selected_text
         $selectionMatches=if ($Committed) {$selection.collapsed -and $selected -ceq ''} else {!$selection.collapsed -and $selected -ceq $Expected}
-        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$selection.selection_ranges;collapsed=$selection.collapsed;reader='native-uia-com';elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
+        $state=@{phase=$Phase;value=$value;selected_text=$selected;selection_ranges=$selection.selection_ranges;collapsed=$selection.collapsed;foreground_process_id=$selection.foreground_process_id;owned_process_id=$script:owned.Id;reader='native-uia-com';elapsed_ms=[int]$timer.Elapsed.TotalMilliseconds;limit_ms=10000}
         $script:imeDiagnostic.last_state=$state
+        if ($selection.foreground_process_id -ne $script:owned.Id) {throw 'Owned GUI lost keyboard foreground during IME state observation'}
         if ($value -ceq $Expected -and $selectionMatches) {return $state}
     } while ($timer.Elapsed.TotalSeconds -lt 10)
     throw "Native IME state did not complete: phase=$Phase, expected=$Expected, actual=$value, selected=$selected"
@@ -519,6 +520,21 @@ try {
             } while ($remaining -ne '' -and $observation.Elapsed.TotalSeconds -lt 15)
             Save-OwnedScreenshot 'windows-after-native-wait.png'
             if ($remaining -ne '') {[RescueOwnedWindow]::SaveDump($script:owned.Handle,$script:owned.Id,(Join-Path $cfg.root 'owned-gui-still-waiting.dmp'))}
+            if ($script:imeDiagnostic.last_state.phase -eq 'converted-preedit') {
+                # Diagnose candidate advancement only AFTER preserving failure.
+                # This never changes this run to passed and sends no Enter.
+                $evidence.candidate_advance_diagnostic=@{additional_space_presses=1;before_value=$remaining;observations=@()}
+                [RescueOwnedWindow]::Tap(0x20)
+                $candidateTimer=[System.Diagnostics.Stopwatch]::StartNew()
+                do {
+                    Start-Sleep -Milliseconds 200
+                    $raw=& $cfg.selection_probe $script:owned.Id
+                    if ($LASTEXITCODE -ne 0) {throw 'Candidate diagnostic selection probe failed'}
+                    $state=$raw | ConvertFrom-Json
+                    $evidence.candidate_advance_diagnostic.observations+=@{elapsed_ms=[int]$candidateTimer.Elapsed.TotalMilliseconds;state=$state}
+                } while ($candidateTimer.Elapsed.TotalSeconds -lt 5)
+                Save-OwnedScreenshot 'windows-after-candidate-advance.png'
+            }
         }
     } catch { $evidence.diagnostic_error=$_.Exception.ToString() }
     $evidence | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $cfg.result -Encoding UTF8
