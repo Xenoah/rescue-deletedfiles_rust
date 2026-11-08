@@ -35,6 +35,13 @@
         "value": "とりけし"
       }
     ],
-    "observed": "Cancellation left preedit text after the second Escape. Product IME normalization and the native input driver were unchanged from alpha.2; the same alpha.3 native binary passed on a fresh diagnostic host. Root cause remains unconfirmed. The unchanged failed Windows public gate is being rerun, including all CLI/native and UIA/keyboard/IME tests."
+    "observed": "Cancellation left preedit text after the second Escape. Product IME normalization and the native input driver were unchanged from alpha.2; the same alpha.3 native binary passed on a fresh diagnostic host. Root cause remains unconfirmed. The unchanged failed Windows public gate passed on attempt 2, including all CLI/native and UIA/keyboard/IME tests."
+  },
+  "final_public_acceptance": {
+    "run": 42478332375,
+    "attempt": 2,
+    "status": "passed",
+    "all_four_platforms": true,
+    "record": "v1.2.0-alpha.3-release.json"
   }
 }

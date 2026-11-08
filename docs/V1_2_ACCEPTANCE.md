@@ -5,9 +5,9 @@
 | 段階 | 範囲 | 状態 |
 | --- | --- | --- |
 | alpha.1 | 大ブロックの順方向取得、逆方向の細分化、セクター再試行、読取待機の上限、同一ソースを確認した再接続 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
-| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 4環境ネイティブCI合格・公開済み、公開実物の検証中 |
-| alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 79 Rustテスト・34統合群・実GUI・Linux配布物合格、ネイティブ/公開検証待ち |
-| 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 82 Rustテスト・35統合群・実GUI・Linux配布物合格、4環境検証待ち |
+| alpha.2 | FAT 8.3名の明示的CP932解釈、元バイトと解釈根拠の保持 | 4環境ネイティブCI・4環境公開実物の検証合格、公開完了 |
+| alpha.3 | exFATの破損メタデータに対する限定的な継続と、根拠不足の明示 | 4環境ネイティブCI合格・公開済み、公開実物はWindows再試行を含め4環境合格 |
+| 安定版 | 利用者の既知ハッシュ一覧との照合、統合検証と最終UI記録 | 安定版公開済み・4環境ネイティブCI合格、公開実物の再検証中 |
 
 ## 取得強化の完了条件
 
@@ -69,4 +69,10 @@ JSON/索引・MBR/GPT・CLI/MCP・プレビュー・ZIP/HTML/CSV・プロセス�
 
 [安定版ローカル全記録](verification/v1.2.0-local.json) · [既知ハッシュ試験](known-hashes-v1.2.json) · [実GUIと画面](UI-v1.2.md)
 
-alpha.2: [ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163)合格、[公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2)済み。[公開実物検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895)を実行中。
+alpha.2: [ネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42474565163)合格、[公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0-alpha.2)済み。[公開実物検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477620895)も4環境で合格。
+
+## 公開後の進行状況
+
+alpha.2は[公開実物の全記録](verification/v1.2.0-alpha.2-published.json)と[公開確認](verification/v1.2.0-alpha.2-release.json)を保存済み。alpha.3も[全記録](verification/v1.2.0-alpha.3-published.json)と[公開確認](verification/v1.2.0-alpha.3-release.json)を保存した。alpha.3は初回のWindows IME取消で失敗し、同一実物の別ホスト診断後、Windows公開ゲート全体を変更せず再実行して合格した。[失敗と診断の記録](verification/v1.2.0-alpha.3-windows-diagnostic.json)。原因は未特定で、修正済みや環境起因とは断定しない。
+
+v1.2.0は[4環境のネイティブCI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42477916390)に初回で合格し、9添付で[安定版を公開](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.0)した。[公開実物の再検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42480695687)を実行中。
