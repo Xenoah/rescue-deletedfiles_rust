@@ -1,0 +1,93 @@
+name: Diagnose v1.2.3 hosted IME cancellation
+on:
+  push:
+    branches: [diagnostics/ui-ime-v1.2.3]
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+jobs:
+  control:
+    strategy:
+      fail-fast: false
+      matrix:
+        control: [standard-wpf, published-v1.2.2]
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - name: Download and verify the immutable previous public GUI
+        if: matrix.control == 'published-v1.2.2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          gh release download v1.2.2 --pattern rescue-1.2.2-windows-x64-portable.zip --pattern SHA256SUMS.txt --dir previous-public
+          python - <<'PY'
+          import hashlib,zipfile
+          from pathlib import Path
+          root=Path('previous-public');path=root/'rescue-1.2.2-windows-x64-portable.zip'
+          sums={name:digest for digest,name in (line.split('  ',1) for line in (root/'SHA256SUMS.txt').read_text().splitlines())}
+          assert hashlib.sha256(path.read_bytes()).hexdigest()==sums[path.name]
+          with zipfile.ZipFile(path) as archive:
+              (root/'rescue-gui.exe').write_bytes(archive.read('rescue-gui.exe'))
+          PY
+      - name: Reproduce the native prelude using the previous public GUI
+        if: matrix.control == 'published-v1.2.2'
+        run: |
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary previous-public/rescue-gui.exe --output control-native.json
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary previous-public/rescue-gui.exe --output control-limited.json --desktop-token
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary previous-public/rescue-gui.exe --output control-keyboard.json --desktop-token --keyboard
+      - name: Prepare the same Japanese input profile
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
+      - name: Observe fresh standard WPF controls without running Rescue
+        if: matrix.control == 'standard-wpf'
+        continue-on-error: true
+        run: python scripts/ci_command.py python scripts/ime_wpf_fresh_sessions.py --close-only
+      - name: Observe native IME on the previous public GUI without retries
+        if: matrix.control == 'published-v1.2.2'
+        continue-on-error: true
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary previous-public/rescue-gui.exe --output control-ime.json --desktop-token --ime --ime-cycles 8
+      - name: Compare a standard control after the previous GUI
+        if: always() && matrix.control == 'published-v1.2.2'
+        continue-on-error: true
+        run: python scripts/ci_command.py python scripts/ime_wpf_baseline.py --close-only
+      - name: Restore the original input profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Publish bounded diagnostic observations as annotations
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path('.').glob('rescue-owned-uia-*/uia.json')):
+              value=json.loads(path.read_text(encoding='utf-8-sig'))
+              result={'file':str(path),'status':value.get('status'),'error':value.get('error'),'native_ime_debug':value.get('native_ime_debug'),'cycles':value.get('cycles'),'shutdown':value.get('shutdown')}
+              text=json.dumps(result,ensure_ascii=False).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print('::warning title=IME control observation::'+text[:6000])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ime-control-${{ matrix.control }}
+          path: |
+            control-*.json
+            wpf-fresh-sessions.json
+            ime-profile-state.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/*.txt
+            rescue-owned-uia-*/windows*.png
+          if-no-files-found: error
