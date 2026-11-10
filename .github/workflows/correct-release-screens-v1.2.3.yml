@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ebaec9c
+          ref: ebaec9cdd2c547c36f5b258f9d60d9552cceb08b
           fetch-depth: 0
       - name: Wait for successful publication and public package verification
         run: gh run watch 42846126509 --exit-status --interval 30
