@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "application_version": "1.2.3",
-  "time_utc": "2026-11-10T14:46:06.551034+00:00",
+  "time_utc": "2026-11-10T15:39:47.116760+00:00",
   "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
   "scope": "Actual Linux Xvfb GUI mouse/keyboard. Loaded owned prepared NTFS/CP932/exFAT fixture sessions, returned to Settings, started fresh scans, selected candidates, saved ZIPs, exported HTML/CSV and saved known-hash comparison. Final v1.2.3 debug binaries; native release builds and Windows UIA/IME are independently gated in CI. A stopped owned acquisition child induces a read deadline; no physical disk recovery claim.",
   "settings_to_scan_to_selected_recovery": true,
@@ -344,14 +344,14 @@
       "height": 820
     },
     {
-      "file": "images/v1.2.3/scan-dark-ja.png",
-      "sha256": "c148ea9a2e954bf94517c1d47e17836ffb5c985905e1db6a63e5d51989feb1d6",
+      "file": "images/v1.2.3/scan-progress-dark-ja.png",
+      "sha256": "0b92f407fa17d75814ec8c09f2c78bcf2de4ff5b7098e0185c3e071b42d3e67e",
       "width": 1260,
       "height": 820
     },
     {
-      "file": "images/v1.2.3/scan-light-ja.png",
-      "sha256": "3b6b7ced26c02ca00bc15ce1e4261986a74a4872a4b50b6acc45636dce8370f1",
+      "file": "images/v1.2.3/scan-progress-light-ja.png",
+      "sha256": "40ad097a64108e583bcf3ff0279c7f0b9629e143d7c6c5dc318b0b635d437a08",
       "width": 1260,
       "height": 820
     },
@@ -469,5 +469,53 @@
       "width": 1260,
       "height": 820
     }
-  ]
+  ],
+  "application_source_commit": "12f9c9dcdc8f0b4132b17dc121bc423813a0860b",
+  "screenshot_correction": {
+    "unchanged_gui_binary": true,
+    "same_owned_durable_scan_resumed": true,
+    "dark_progress": {
+      "percent": 0.6,
+      "read_mib": 25,
+      "source_gib": 4
+    },
+    "light_progress": {
+      "percent": 2.3,
+      "read_mib": 95,
+      "source_gib": 4
+    },
+    "appearance_switched_while_progress_increased": true,
+    "corrections": [
+      {
+        "original": {
+          "file": "images/v1.2.3/scan-dark-ja.png",
+          "sha256": "c148ea9a2e954bf94517c1d47e17836ffb5c985905e1db6a63e5d51989feb1d6",
+          "width": 1260,
+          "height": 820
+        },
+        "replacement": {
+          "file": "images/v1.2.3/scan-progress-dark-ja.png",
+          "sha256": "0b92f407fa17d75814ec8c09f2c78bcf2de4ff5b7098e0185c3e071b42d3e67e",
+          "width": 1260,
+          "height": 820
+        },
+        "reason": "Original image showed interrupted Selecting stage, not active Scanning; original bytes remain in immutable release tag."
+      },
+      {
+        "original": {
+          "file": "images/v1.2.3/scan-light-ja.png",
+          "sha256": "3b6b7ced26c02ca00bc15ce1e4261986a74a4872a4b50b6acc45636dce8370f1",
+          "width": 1260,
+          "height": 820
+        },
+        "replacement": {
+          "file": "images/v1.2.3/scan-progress-light-ja.png",
+          "sha256": "40ad097a64108e583bcf3ff0279c7f0b9629e143d7c6c5dc318b0b635d437a08",
+          "width": 1260,
+          "height": 820
+        },
+        "reason": "Original image showed interrupted Selecting stage, not active Scanning; original bytes remain in immutable release tag."
+      }
+    ]
+  }
 }

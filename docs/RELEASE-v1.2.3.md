@@ -14,15 +14,15 @@
 
 ## v1.2.3の実画面
 
-Linux上の実GUIを操作して新規撮影しました。描画イメージのモックアップではありません。
+Linux上の実GUIを操作して新規撮影しました。スキャン中の2枚は、同じv1.2.3バイナリで進捗が25 MiBから95 MiBへ増える間に配色を切り替えて撮影し直しました。画像の訂正記録は `docs/verification/v1.2.3-screenshot-correction.json` に保持しています。
 
 ### ダークモードのスキャン
 
-![ダークモードの進捗表示](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.3/docs/images/v1.2.3/scan-dark-ja.png)
+![ダークモードの進捗表示](images/v1.2.3/scan-progress-dark-ja.png)
 
 ### ライトモードのスキャン
 
-![ライトモードの進捗表示](https://raw.githubusercontent.com/Xenoah/rescue-deletedfiles_rust/v1.2.3/docs/images/v1.2.3/scan-light-ja.png)
+![ライトモードの進捗表示](images/v1.2.3/scan-progress-light-ja.png)
 
 ### 設定不備の赤枠と説明
 
