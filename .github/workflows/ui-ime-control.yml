@@ -2,6 +2,7 @@ name: Diagnose v1.2.3 hosted IME cancellation
 on:
   push:
     branches: [diagnostics/ui-ime-v1.2.3]
+    paths: ["scripts/**", "crates/**"]
 permissions:
   contents: read
 env:
