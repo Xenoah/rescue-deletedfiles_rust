@@ -1,0 +1,41 @@
+{
+  "release_tag": "v1.2.3",
+  "source_commit": "12f9c9dcdc8f0b4132b17dc121bc423813a0860b",
+  "native_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916",
+  "windows_job": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916/job/129903994412",
+  "status": "failed-not-release-proof",
+  "step": "Non-elevated Windows GUI with native Japanese IME",
+  "cycle": 1,
+  "cancel_start_value": "とりけし",
+  "cancel_trace": [
+    {
+      "escape": 1,
+      "focus": "Search results",
+      "value": "とりけし"
+    },
+    {
+      "escape": 2,
+      "focus": "Search results",
+      "initial_value": "とりけし",
+      "value": "とりけし",
+      "completion_limit_ms": 10000,
+      "completion_wait_ms": 10186
+    }
+  ],
+  "shutdown": {
+    "graceful": true,
+    "forced": false,
+    "elapsed_ms": 457,
+    "exit_code": 0
+  },
+  "diagnosis": "Unresolved. Independent previous-release and standard WPF controls passed on two batches of new hosts. An instrumented debug build of the current GUI also passed and is diagnostic only. No cause is attributed and the failed tag run remains failed.",
+  "failed_run_retried": false,
+  "comparison_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42843776201",
+  "comparison_runs": [
+    42843776201,
+    42844436376
+  ],
+  "instrumented_debug_comparison_run": 42845107435,
+  "independent_main_native_run": 42839823094,
+  "packaged_gui_stress_run": 42846126509
+}

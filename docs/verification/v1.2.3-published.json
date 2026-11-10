@@ -1,0 +1,197 @@
+{
+  "release": "v1.2.3",
+  "release_url": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.3",
+  "expected_release_assets": [
+    "SHA256SUMS.txt",
+    "rescue-1.2.3-linux-x64-portable.tar.gz",
+    "rescue-1.2.3-linux-x64.deb",
+    "rescue-1.2.3-macos-arm64-portable.zip",
+    "rescue-1.2.3-macos-arm64.pkg",
+    "rescue-1.2.3-macos-x64-portable.zip",
+    "rescue-1.2.3-macos-x64.pkg",
+    "rescue-1.2.3-windows-x64-portable.zip",
+    "rescue-1.2.3-windows-x64-setup.exe"
+  ],
+  "inline_screenshots_verified": 4,
+  "linux_portable_sha256": "3048f128064ed18dfc5a1565c1f76a38838a907193fd1f867edc093c169f80db",
+  "linux_public_cli_version": "1.2.3",
+  "linux_public_gui_version": "1.2.3",
+  "linux_public_cli_mcp_smoke": {
+    "status": "passed",
+    "checks": 24,
+    "scope": "synthetic NTFS + CLI + stdio MCP"
+  },
+  "latest_release_verified": true,
+  "status": "passed",
+  "public_verification_run": 42847637638,
+  "publication_run": 42846126509,
+  "source_commit": "12f9c9dcdc8f0b4132b17dc121bc423813a0860b",
+  "screenshot_commit": "ebaec9cdd2c547c36f5b258f9d60d9552cceb08b",
+  "verified_at_utc": "2026-11-10T15:59:52.653271+00:00",
+  "native_verification": {
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42839823094",
+    "source_commit": "12f9c9dcdc8f0b4132b17dc121bc423813a0860b",
+    "jobs_passed": 5,
+    "run_attempt": 1,
+    "scope": "Four native platform jobs plus complete release assembly, from the independently started main push. No rerun."
+  },
+  "published_verification": {
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42847637638",
+    "jobs_passed": 5,
+    "run_attempt": 1,
+    "platforms": [
+      "windows-x64",
+      "linux-x64",
+      "macos-x64",
+      "macos-arm64"
+    ],
+    "scope": "Downloaded portable CLI bytes after packaging/signing, native read-only virtual disks and actual deletion fixtures; Windows additionally executes real UIA, keyboard and eight native Japanese IME cycles."
+  },
+  "publication": {
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42846126509",
+    "status": "passed",
+    "all_nine_public_downloads_byte_identical_to_native_packages": true,
+    "tag_preserved": true,
+    "stable_latest": true
+  },
+  "windows_packaged_gui_stress": {
+    "run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42846126509",
+    "fresh_ime_gui_processes": 4,
+    "native_ime_cycles": 32,
+    "gui_sha256": "c3f95820497aa681e2bcf5e9ad8ef6a03d07be81dd39f097947f87e3d03c5da0",
+    "observations": [
+      {
+        "file": "trace-ime-4.json",
+        "status": "passed",
+        "error": null,
+        "sessions": null,
+        "gui_binary_sha256": "c3f95820497aa681e2bcf5e9ad8ef6a03d07be81dd39f097947f87e3d03c5da0",
+        "cycles": 8,
+        "shutdown": {
+          "phase": "process-exited",
+          "forced": false,
+          "graceful": true,
+          "elapsed_ms": 177,
+          "exit_code": 0,
+          "close_requested": true
+        }
+      },
+      {
+        "file": "trace-ime-3.json",
+        "status": "passed",
+        "error": null,
+        "sessions": null,
+        "gui_binary_sha256": "c3f95820497aa681e2bcf5e9ad8ef6a03d07be81dd39f097947f87e3d03c5da0",
+        "cycles": 8,
+        "shutdown": {
+          "phase": "process-exited",
+          "forced": false,
+          "graceful": true,
+          "elapsed_ms": 197,
+          "exit_code": 0,
+          "close_requested": true
+        }
+      },
+      {
+        "file": "trace-ime-2.json",
+        "status": "passed",
+        "error": null,
+        "sessions": null,
+        "gui_binary_sha256": "c3f95820497aa681e2bcf5e9ad8ef6a03d07be81dd39f097947f87e3d03c5da0",
+        "cycles": 8,
+        "shutdown": {
+          "phase": "process-exited",
+          "forced": false,
+          "graceful": true,
+          "elapsed_ms": 187,
+          "exit_code": 0,
+          "close_requested": true
+        }
+      },
+      {
+        "file": "trace-ime-1.json",
+        "status": "passed",
+        "error": null,
+        "sessions": null,
+        "gui_binary_sha256": "c3f95820497aa681e2bcf5e9ad8ef6a03d07be81dd39f097947f87e3d03c5da0",
+        "cycles": 8,
+        "shutdown": {
+          "phase": "process-exited",
+          "forced": false,
+          "graceful": true,
+          "elapsed_ms": 170,
+          "exit_code": 0,
+          "close_requested": true
+        }
+      },
+      {
+        "file": "trace-desktop-lifetime.json",
+        "status": "passed",
+        "error": null,
+        "sessions": [
+          {
+            "name": "native",
+            "returncode": 0
+          },
+          {
+            "name": "limited",
+            "returncode": 0
+          },
+          {
+            "name": "keyboard",
+            "returncode": 0
+          },
+          {
+            "name": "ime-1",
+            "returncode": 0
+          },
+          {
+            "name": "ime-2",
+            "returncode": 0
+          },
+          {
+            "name": "ime-3",
+            "returncode": 0
+          },
+          {
+            "name": "ime-4",
+            "returncode": 0
+          }
+        ],
+        "gui_binary_sha256": null,
+        "cycles": 0,
+        "shutdown": null
+      }
+    ],
+    "scope": "Same packaged GUI bytes, no instrumentation, four fresh processes after native/UIA/keyboard prelude; original input profile and desktop permissions restored."
+  },
+  "screenshot_publication": {
+    "run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42847113275",
+    "proof_commit": "ebaec9cdd2c547c36f5b258f9d60d9552cceb08b",
+    "inline_images": 4,
+    "active_scan_images_corrected": 2,
+    "correction_record": "v1.2.3-screenshot-correction.json"
+  },
+  "original_failed_tag_ci": {
+    "url": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916",
+    "status": "failed",
+    "run_attempt": 1,
+    "retried": false,
+    "cause": "Unresolved first-cycle native IME cancellation deadline; failure and independent controls retained separately. Not counted as release proof.",
+    "record": "v1.2.3-hosted-ime-failure.json"
+  },
+  "sha256sums": {
+    "rescue-1.2.3-linux-x64-portable.tar.gz": "3048f128064ed18dfc5a1565c1f76a38838a907193fd1f867edc093c169f80db",
+    "rescue-1.2.3-linux-x64.deb": "bf902e94dabfc1dd33d98bd2a32acc8a1a0446601789a91060c197ca7b415aaa",
+    "rescue-1.2.3-macos-arm64-portable.zip": "19052ba68e1af3d35ac3dfbae94e3a7f6358f4b00dce5ab5b05f27b44d965930",
+    "rescue-1.2.3-macos-arm64.pkg": "0e6fecd14b230f7a81793efad2c0899100bf8aacc80bcd1b9479573c37b7c611",
+    "rescue-1.2.3-macos-x64-portable.zip": "48aebf2f32de869a642706d86a481e5078d26a91136c33fd988a9e3ca8c858dd",
+    "rescue-1.2.3-macos-x64.pkg": "0877962bf12576a9373b9b89b1f62acf3bc3305a0530f5178d92a033805f6f82",
+    "rescue-1.2.3-windows-x64-portable.zip": "71d62d12101083eac0884e89e28f6ca6f1df4d95f09198077adec36c2d25d14d",
+    "rescue-1.2.3-windows-x64-setup.exe": "5a6bfdeeb206df7f1c9728ef6aaef2cb892ea1d29f9c9ed3291f8f6448bb8de9"
+  },
+  "limits": [
+    "Synthetic/owned virtual media only; no general real HDD/SSD recovery rate is claimed.",
+    "Initial hosted Windows IME cancellation failure remains unexplained and is disclosed in the release notes."
+  ]
+}
