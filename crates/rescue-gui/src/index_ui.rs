@@ -396,6 +396,7 @@ impl App {
         let query = self.index_query();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Scanning;
         self.status = message!(
             "保存した位置からスキャンを再開中…",
@@ -432,6 +433,7 @@ impl App {
         let query = self.index_query();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Scanning;
         self.progress = Progress::default();
         self.status = message!("保存したスキャンを読み込み中…", "Loading a saved scan…");
@@ -476,6 +478,7 @@ impl App {
         let query = self.index_query();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Migrating;
         self.progress = Progress::default();
         self.status = message!(

@@ -4,6 +4,7 @@ mod language;
 #[cfg(test)]
 mod accessibility;
 mod acquisition_ui;
+mod appearance;
 mod columns;
 mod discovery_ui;
 mod hash_ui;
@@ -18,6 +19,7 @@ mod scrolling;
 mod session_ui;
 mod text_input;
 mod theme;
+mod validation;
 mod view;
 use eframe::egui;
 use egui_extras::{Column, TableBuilder};
@@ -39,6 +41,7 @@ use std::{
     },
     thread,
 };
+use validation::Field;
 use view::{GroupBy, Row, SortColumn, ViewStyle};
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum Stage {
@@ -88,6 +91,11 @@ enum Message {
 }
 struct App {
     language: Language,
+    appearance: egui::ThemePreference,
+    appearance_path: Option<PathBuf>,
+    show_validation: bool,
+    path_issues: Vec<validation::PathIssue>,
+    status_error: bool,
     session_dialog: Option<session_ui::Action>,
     session_path: String,
     #[cfg(windows)]
@@ -226,6 +234,11 @@ impl App {
             }
         }
         let mut app = Self::blank();
+        app.appearance_path = appearance::path();
+        if let Some(path) = &app.appearance_path {
+            app.appearance = appearance::load(path);
+        }
+        cc.egui_ctx.set_theme(app.appearance);
         app.language = language;
         app.refresh_disks();
         if let Some(path) = session {
@@ -236,6 +249,11 @@ impl App {
     fn blank() -> Self {
         Self {
             language: Language::Japanese,
+            appearance: egui::ThemePreference::System,
+            appearance_path: None,
+            show_validation: false,
+            path_issues: Vec::new(),
+            status_error: false,
             session_dialog: None,
             session_path: String::new(),
             #[cfg(windows)]
@@ -413,6 +431,7 @@ impl App {
         base.join(".rescue-work")
     }
     fn install_session(&mut self, s: Session, path: &Path) {
+        self.status_error = false;
         self.index = index_ui::State::default();
         self.source = s.source.to_string_lossy().into_owned();
         self.source_mode = if rescue_core::is_device(&s.source) {
@@ -489,6 +508,7 @@ impl App {
             self.source != s.source.to_string_lossy() || self.settings().as_ref() != Ok(&prev)
         });
         if changed {
+            self.status_error = false;
             self.index = index_ui::State::default();
             self.session = None;
             self.selected.clear();
@@ -505,19 +525,14 @@ impl App {
         }
     }
     fn start_scan(&mut self) {
-        if self.source.trim().is_empty()
-            || (self.save_mode != SaveMode::Original && self.destination.trim().is_empty())
-        {
-            self.status = message!(
-                "ディスクと保存先を指定してください。",
-                "Choose a disk and destination."
-            );
+        if !self.validate_configuration() {
             return;
         }
         let settings = match self.settings() {
             Ok(s) => s,
             Err(e) => {
                 self.status = e;
+                self.status_error = true;
                 return;
             }
         };
@@ -527,9 +542,12 @@ impl App {
         if !self.work.trim().is_empty()
             && let Err(error) = &guarded
         {
-            self.status = message!(
-                "再開用の作業フォルダーを使用できません: {error}",
-                "Cannot use the working folder for resume: {error}"
+            self.remember_path_issue(
+                Field::Work,
+                message!(
+                    "再開用の作業フォルダーを使用できません: {error}",
+                    "Cannot use the working folder for resume: {error}"
+                ),
             );
             return;
         }
@@ -542,6 +560,7 @@ impl App {
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Scanning;
         self.discovery_running = false;
         self.session = None;
@@ -626,6 +645,7 @@ impl App {
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(2);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Recovering;
         self.status = message!(
             "復元できなかったデータを書き出し中…",
@@ -672,11 +692,8 @@ impl App {
     }
     fn start_recovery(&mut self) {
         self.invalidate_changed_source();
-        if self.save_mode != SaveMode::Original && self.destination.trim().is_empty() {
-            self.status = message!(
-                "設定画面で保存先を指定してください。",
-                "Choose a destination in Settings."
-            );
+        if !self.validate_configuration() {
+            self.stage = Stage::Settings;
             return;
         }
         let Some(session) = self.session.clone() else {
@@ -702,6 +719,7 @@ impl App {
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Recovering;
         self.status = message!("選択したファイルを復元中…", "Recovering selected files…");
         thread::spawn(move || {
@@ -840,6 +858,15 @@ impl App {
             .map(|rx| rx.try_iter().collect::<Vec<_>>())
             .unwrap_or_default();
         for m in messages {
+            if !matches!(
+                m,
+                Message::Error(_)
+                    | Message::Progress(_)
+                    | Message::IndexProgress(_)
+                    | Message::ImagingProgress(_)
+            ) {
+                self.status_error = false;
+            }
             match m {
                 Message::RaidChecked(report, path) => self.raid_checked(*report, path),
                 Message::RaidSearched(report) => self.raid_searched(*report),
@@ -972,6 +999,7 @@ impl App {
                     self.raid.running = false;
                     self.discovery_running = false;
                     self.status = message!("エラー: {e}", "Error: {e}");
+                    self.status_error = true;
                     self.stage = if self.session.is_some() {
                         Stage::Selecting
                     } else {
@@ -993,6 +1021,7 @@ impl App {
         });
     }
     fn source_ui(&mut self, ui: &mut egui::Ui) {
+        let error = self.field_error(Field::Source);
         theme::section(
             ui,
             "01",
@@ -1059,7 +1088,7 @@ impl App {
                         }
                     }
                 });
-            text_row(
+            checked_text_row(
                 ui,
                 tr!("選択したディスク", "Selected disk"),
                 &mut self.source,
@@ -1076,6 +1105,7 @@ impl App {
                 } else {
                     tr!("/dev/sdb または /dev/sdb1", "/dev/sdb or /dev/sdb1")
                 },
+                error.as_deref(),
             );
             ui.small(tr!("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。", "A whole-disk scan finds MBR / GPT partitions. The source is opened read-only."));
             #[cfg(windows)]
@@ -1086,11 +1116,12 @@ impl App {
                 "Permission to read the disk is required."
             ));
         } else {
-            path_row(
+            checked_path_row(
                 ui,
                 tr!("イメージファイル", "Image file"),
                 &mut self.source,
                 Picker::Open,
+                error.as_deref(),
             );
             ui.small(tr!(
                 "RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。",
@@ -1099,7 +1130,7 @@ impl App {
         }
     }
     fn source_card_ui(&mut self, ui: &mut egui::Ui) {
-        theme::card().show(ui, |ui| {
+        theme::card(ui).show(ui, |ui| {
             ui.set_width(ui.available_width());
             self.source_ui(ui);
             ui.collapsing(tr!("ディスクのツール", "Disk tools"), |ui| {
@@ -1133,7 +1164,8 @@ impl App {
         });
     }
     fn save_card_ui(&mut self, ui: &mut egui::Ui) {
-        theme::card().show(ui, |ui| {
+        let error = self.field_error(Field::Destination);
+        theme::card(ui).show(ui, |ui| {
             ui.set_width(ui.available_width());
             theme::section(ui, "02", tr!("復元したファイルの保存先", "Where to save recovered files"), tr!("別のディスクへの保存をおすすめします。", "A destination on another disk is recommended."));
             ui.horizontal_wrapped(|ui| {
@@ -1144,7 +1176,7 @@ impl App {
             });
             if self.save_mode != SaveMode::Original {
                 let picker = if self.save_mode == SaveMode::Zip { Picker::Zip } else { Picker::Folder };
-                path_row(ui, tr!("保存先", "Destination"), &mut self.destination, picker);
+                checked_path_row(ui, tr!("保存先", "Destination"), &mut self.destination, picker, error.as_deref());
             } else {
                 ui.label(tr!("確認できた元のフォルダーとファイル名で戻します。元の場所が不明な候補はフォルダー保存を選んでください。", "Restore verified original folders and filenames. Choose a destination folder for files whose original locations are unknown."));
             }
@@ -1157,6 +1189,14 @@ impl App {
             });
     }
     fn setup_ui(&mut self, ui: &mut egui::Ui) {
+        let issues = self.configuration_issues();
+        let advanced_invalid = issues.iter().any(|issue| issue.field.advanced());
+        let error = |field| {
+            issues
+                .iter()
+                .find(|issue| issue.field == field)
+                .map(|issue| issue.message.to_string())
+        };
         egui::ScrollArea::vertical().id_salt("settings-scroll").auto_shrink([false,false]).show_accessible(ui, tr!("設定", "Settings"), |ui| {
             ui.set_max_width(ui.available_width());
             ui.add_space(8.0);
@@ -1174,15 +1214,15 @@ impl App {
                 self.save_card_ui(ui);
             }
             ui.add_space(12.0);
-            theme::card().show(ui, |ui| {
+            theme::card(ui).show(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.collapsing(tr!("詳細設定 · 検索方式・範囲・深度・拡張子", "Advanced · Method, range, depth and extensions"), |ui| {
+            egui::CollapsingHeader::new(tr!("詳細設定 · 検索方式・範囲・深度・拡張子", "Advanced · Method, range, depth and extensions")).id_salt("advanced-settings").open(if advanced_invalid { Some(true) } else { None }).show(ui, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     ui.label(tr!("検索方式", "Search method"));
                     ui.selectable_value(&mut self.carve, false, tr!("管理情報 / Quick", "Metadata / Quick"));
                     ui.selectable_value(&mut self.carve, true, tr!("写真・文書・動画 / Carving", "Photos, documents and videos / Carving"));
                 });
-                text_row(ui, tr!("探す拡張子", "File extensions to find"), &mut self.extensions, tr!("空欄: すべて / 例: jpg, pdf, docx, zip", "Blank: all / Example: jpg, pdf, docx, zip"));
+                checked_text_row(ui, tr!("探す拡張子", "File extensions to find"), &mut self.extensions, tr!("空欄: すべて / 例: jpg, pdf, docx, zip", "Blank: all / Example: jpg, pdf, docx, zip"), error(Field::Extensions).as_deref());
                 if self.carve {
                     ui.horizontal_wrapped(|ui| {
                         ui.label(tr!("割当範囲", "Allocation scope"));
@@ -1191,8 +1231,8 @@ impl App {
                     });
                     ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
                     ui.label(tr!("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。", "Find PNG/JPEG, PDF, ZIP/Office and MP4/MOV. Validate structure, CRC or references as appropriate. Original names and deletion status are unknown."));
-                    text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"));
-                    text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"));
+                    checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
+                    checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
                 } else {
                     ui.checkbox(&mut self.estimate_fat_contiguous, tr!("FATの連続配置を推定する（元の内容との一致は未確認）", "Estimate contiguous FAT files (original content unverified)"));
                     ui.horizontal_wrapped(|ui| {
@@ -1214,14 +1254,14 @@ impl App {
                         ui.small(tr!("表の内容・チェックサムの破損に限定します。配置・割当・エントリの検証は維持し、名前ハッシュの未検証を結果に残します。", "Limited to table content/checksum damage. Extents, allocation and entry checksums remain required; missing name-hash verification is recorded."));
                     }
                     ui.checkbox(&mut self.fragments,tr!("残存するMFTレコードも探索（クイックフォーマット後など）", "Also search for remnant MFT records (for example, after a quick format)"));
-                    text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"));
-                    text_row(ui, tr!("検索深度", "Search depth"), &mut self.depth, tr!("空欄: 上限なし / 0: 直下 / 最大256", "Blank: unlimited / 0: direct children / Maximum: 256"));
+                    checked_text_row(ui, tr!("検索フォルダー", "Search folder"), &mut self.path_prefix, tr!("空欄: 全体 / 例: 写真/旅行", "Blank: all / Example: Photos/Travel"), error(Field::Folder).as_deref());
+                    checked_text_row(ui, tr!("検索深度", "Search depth"), &mut self.depth, tr!("空欄: 上限なし / 0: 直下 / 最大256", "Blank: unlimited / 0: direct children / Maximum: 256"), error(Field::Depth).as_deref());
                     ui.small(tr!("範囲・深度・拡張子は結果を絞ります。割当の競合確認はボリューム全体を調べます。", "Range, depth and extensions filter the results. Allocation conflicts are checked across the full volume."));
                 }
-                path_row(ui, tr!("再開用の作業フォルダー（任意）", "Working folder for resume (optional)"), &mut self.work, Picker::Folder);
+                checked_path_row(ui, tr!("再開用の作業フォルダー（任意）", "Working folder for resume (optional)"), &mut self.work, Picker::Folder, error(Field::Work).as_deref());
                 ui.small(tr!("空欄では保存先の近くに索引を作ります。元の場所への復元・同じ物理ディスクの場合はメモリーに保持します。再開には安全な作業フォルダーを指定してください。", "If blank, an index is created near the destination. Original-location or same-physical-disk recovery holds results in memory. Set a suitable working folder to enable resume."));
                 if self.save_mode == SaveMode::Original {
-                    path_row(ui, tr!("元ボリュームのルート（任意）", "Original volume root (optional)"), &mut self.original_root, Picker::Folder);
+                    checked_path_row(ui, tr!("元ボリュームのルート（任意）", "Original volume root (optional)"), &mut self.original_root, Picker::Folder, error(Field::OriginalRoot).as_deref());
                     ui.small(tr!("通常は自動判定します。イメージなど判定できない場合は元ボリュームのルートを指定します。複数パーティションの個別指定はCLIを使います。", "Usually detected automatically. Specify the original volume root for images or when detection fails. Use the CLI to map multiple partitions individually."));
                 }
             });
@@ -1254,13 +1294,13 @@ impl App {
                 }
             });
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                let response = ui.add_enabled(
-                    !self.source.trim().is_empty(),
-                    theme::primary(tr!("スキャン開始", "Start scan"), 176.0),
-                );
+                let response = ui.add(theme::primary(ui, tr!("スキャン開始", "Start scan"), 176.0));
                 self.primary_rect = Some(response.rect);
                 if response.clicked() {
                     self.start_scan();
+                    if !self.configuration_issues().is_empty() {
+                        theme::reveal_errors(ui.ctx());
+                    }
                 }
                 ui.weak(tr!(
                     "ファイルの選択はスキャン後",
@@ -1310,11 +1350,14 @@ impl App {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                     let response = ui.add_enabled(
                         !self.selected.is_empty() && !self.index.loading(),
-                        theme::primary(tr!("選択したファイルを復元", "Recover selected files"), 224.0),
+                        theme::primary(ui, tr!("選択したファイルを復元", "Recover selected files"), 224.0),
                     );
                     self.primary_rect = Some(response.rect);
                     if response.clicked() {
                         self.start_recovery();
+                        if self.stage == Stage::Settings && !self.configuration_issues().is_empty() {
+                            theme::reveal_errors(ui.ctx());
+                        }
                     }
                 });
             });
@@ -1411,7 +1454,7 @@ impl App {
             ui.label(tr!("保存結果・警告・元データとの一致が未確認であることを含めます。既存ファイルは上書きしません。", "Includes saved results, warnings and unverified content. Existing files are never replaced."));
             let label = ui.label(tr!("レポートの保存先", "Report output path"));
             text_input::singleline(ui, &mut path, egui::Id::new("report-output-path"), label.id, ui.available_width(), "");
-            if !error.is_empty() { ui.colored_label(theme::WARNING, &error); }
+            if !error.is_empty() { ui.colored_label(theme::palette(ui).warning, &error); }
             ui.horizontal(|ui| {
                 if ui.button(tr!("参照", "Browse")).clicked()
                     && let Some(chosen) = rfd::FileDialog::new().set_file_name(format!("rescue-report.{}", format.extension())).add_filter(format.extension(), &[format.extension()]).save_file() {
@@ -1479,7 +1522,7 @@ impl App {
                 .iter()
                 .any(|w| w.starts_with("ALLOCATION_FALLBACK:"))
         }) {
-            ui.colored_label(theme::WARNING, tr!("一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。", "Some regions have no verifiable allocation data and are being searched in full. See the evidence for details."));
+            ui.colored_label(theme::palette(ui).warning, tr!("一部の領域で割当情報を確認できないため、その領域は全体を検索しています。詳細は検証情報をご確認ください。", "Some regions have no verifiable allocation data and are being searched in full. See the evidence for details."));
         }
         let busy = self.busy();
         ui.add_enabled_ui(!busy, |ui| {
@@ -1607,6 +1650,7 @@ impl App {
                 });
                 let mut table_scroll = TableBuilder::new(ui)
                     .id_salt("files-table")
+                    .min_scrolled_height(0.0)
                     .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
                     .column(Column::exact(27.0))
                     .column(Column::exact(self.column_widths[0]))
@@ -1615,7 +1659,7 @@ impl App {
                     .column(Column::exact(self.column_widths[3]))
                     .column(Column::exact(self.column_widths[4]))
                     .column(Column::remainder().at_least(90.0))
-                    .header(32.0, |mut row| {
+                    .header(40.0, |mut row| {
                         row.col(|_| {});
                         for (index, (col, label)) in [
                             (SortColumn::Name, tr!("名前", "Name")),
@@ -2008,7 +2052,7 @@ impl App {
         }
         if s.cancelled || s.truncated {
             ui.colored_label(
-                theme::WARNING,
+                theme::palette(ui).warning,
                 tr!(
                     "未探索の領域が残っています。",
                     "Some regions remain unscanned."
@@ -2324,11 +2368,11 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
             value,
             ui.make_persistent_id(label),
             label_id,
-            (ui.available_width() - 72.0).max(40.0),
+            (ui.available_width() - 90.0).max(40.0),
             "",
         );
         if ui
-            .add_sized([64.0, 28.0], egui::Button::new(tr!("参照", "Browse")))
+            .add_sized([80.0, 36.0], egui::Button::new(tr!("参照", "Browse")))
             .on_hover_text(tr_format!("{label}を選択", "Choose {label}"))
             .clicked()
         {
@@ -2360,6 +2404,52 @@ fn text_row(ui: &mut egui::Ui, label: &str, value: &mut String, hint: &str) {
         ui.available_width(),
         hint,
     );
+}
+fn checked_path_row(
+    ui: &mut egui::Ui,
+    label: &str,
+    value: &mut String,
+    picker: Picker,
+    error: Option<&str>,
+) {
+    theme::field(ui, error, |ui| path_row(ui, label, value, picker));
+}
+fn checked_text_row(
+    ui: &mut egui::Ui,
+    label: &str,
+    value: &mut String,
+    hint: &str,
+    error: Option<&str>,
+) {
+    theme::field(ui, error, |ui| text_row(ui, label, value, hint));
+}
+fn grouped(value: impl ToString) -> String {
+    let digits = value.to_string();
+    let mut out = String::new();
+    for (i, ch) in digits.chars().enumerate() {
+        if i > 0 && (digits.len() - i).is_multiple_of(3) {
+            out.push(',');
+        }
+        out.push(ch);
+    }
+    out
+}
+fn progress_text(progress: &Progress) -> String {
+    if progress.unit == rescue_core::ProgressUnit::Bytes {
+        tr_format!(
+            "読み取り済み {} / {}",
+            "Read {} / {}",
+            view::size_text(Some(progress.scanned_records)),
+            view::size_text(Some(progress.total_records))
+        )
+    } else {
+        tr_format!(
+            "解析済み {} / {} レコード",
+            "Analyzed {} / {} records",
+            grouped(progress.scanned_records),
+            grouped(progress.total_records)
+        )
+    }
 }
 fn folder_icon(ui: &mut egui::Ui, size: f32) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(size, size), egui::Sense::hover());
@@ -2394,7 +2484,7 @@ fn file_icon(ui: &mut egui::Ui, size: f32, candidate: &Candidate) {
         "MP3" | "WAV" | "FLAC" | "AAC" | "M4A" => egui::Color32::from_rgb(44, 119, 99),
         "ZIP" | "7Z" | "RAR" | "GZ" | "BZ2" => egui::Color32::from_rgb(142, 106, 22),
         "PDF" | "DOCX" | "TXT" | "XLSX" | "CSV" | "PPTX" => egui::Color32::from_rgb(44, 100, 165),
-        _ => theme::MUTED,
+        _ => theme::palette(ui).muted,
     };
     p.rect_filled(r.shrink(1.0), 3.0, color.gamma_multiply(0.16));
     p.rect_filled(
@@ -2427,6 +2517,46 @@ fn file_icon(ui: &mut egui::Ui, size: f32, candidate: &Candidate) {
     }
 }
 impl App {
+    fn scan_status_ui(&self, ui: &mut egui::Ui) {
+        egui::ScrollArea::vertical().id_salt("scan-status").show_accessible(ui, tr!("スキャンの進行状況", "Scan progress"), |ui| {
+            ui.add_space(16.0);
+            theme::card(ui).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                theme::badge(ui, tr!("処理中 · 読み取り専用", "In progress · Read-only"), false);
+                ui.heading(if self.raid.running {
+                    tr!("RAIDの構成を検査しています", "Checking the RAID configuration")
+                } else if self.discovery_running {
+                    tr!("失われた領域を探しています", "Searching for lost volumes")
+                } else {
+                    tr!("復元できるファイルを探しています", "Finding files to recover")
+                });
+                ui.label(tr!("完了後、見つかったファイルを確認して復元できます。", "When the scan finishes, review the files and choose what to recover."));
+                ui.add_space(12.0);
+                let known = self.progress.total_records > 0;
+                let fraction = if known { self.progress.scanned_records as f32 / self.progress.total_records as f32 } else { 0.0 }.clamp(0.0, 1.0);
+                ui.label(egui::RichText::new(if known {
+                    format!("{:.1}%", fraction * 100.0)
+                } else {
+                    tr!("準備・解析中…", "Preparing / analyzing…").into()
+                }).size(36.0).strong());
+                ui.add(egui::ProgressBar::new(fraction).desired_width(ui.available_width()).desired_height(20.0).fill(theme::palette(ui).primary).animate(!known));
+                ui.label(progress_text(&self.progress));
+                ui.add_space(8.0);
+                ui.separator();
+                ui.horizontal_wrapped(|ui| {
+                    ui.label(tr!("見つかった候補", "Candidates found"));
+                    ui.label(egui::RichText::new(grouped(self.progress.candidates)).size(26.0).strong().color(theme::palette(ui).accent));
+                });
+                ui.label(tr!("候補数は復元成功数ではありません。スキャン後に内容と警告を確認してください。", "Candidate counts are not successful recoveries. Review their contents and warnings after scanning."));
+                ui.separator();
+                ui.strong(tr!("読み取り元", "Source"));
+                ui.add(egui::Label::new(&self.source).wrap());
+                ui.add_space(4.0);
+                ui.small(tr!("中断・取消は画面下のボタンから操作できます。", "Use the buttons below to pause or cancel."));
+            });
+        });
+    }
+
     fn render(&mut self, ctx: &egui::Context) {
         let _language = self.language.enter();
         self.primary_rect = None;
@@ -2444,17 +2574,51 @@ impl App {
         }
         egui::TopBottomPanel::top("title").show(ctx, |ui| {
             ui.add_space(8.0);
-            ui.horizontal(|ui| {
+            ui.horizontal_wrapped(|ui| {
                 ui.label(
                     egui::RichText::new("Rescue")
                         .size(25.0)
                         .strong()
-                        .color(theme::ACCENT),
+                        .color(theme::palette(ui).accent),
                 );
                 ui.weak(rescue_core::VERSION);
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let previous = self.appearance;
+                    egui::ComboBox::from_label(tr!("配色", "Appearance"))
+                        .selected_text(appearance::label(self.appearance))
+                        .width(100.0)
+                        .show_ui(ui, |ui| {
+                            for choice in [
+                                egui::ThemePreference::System,
+                                egui::ThemePreference::Light,
+                                egui::ThemePreference::Dark,
+                            ] {
+                                ui.selectable_value(
+                                    &mut self.appearance,
+                                    choice,
+                                    appearance::label(choice),
+                                );
+                            }
+                        })
+                        .response
+                        .on_hover_text(tr!(
+                            "配色 · ライト／ダーク／システム",
+                            "Appearance · Light / Dark / System"
+                        ));
+                    if self.appearance != previous {
+                        ctx.set_theme(self.appearance);
+                        if let Some(path) = &self.appearance_path
+                            && let Err(error) = appearance::save(path, self.appearance)
+                        {
+                            self.status = message!(
+                                "配色を切り替えましたが、設定を保存できません: {error}",
+                                "Appearance changed, but the preference could not be saved: {error}"
+                            );
+                            self.status_error = true;
+                        }
+                    }
                     let before = self.language;
-                    egui::ComboBox::from_label("Language")
+                    egui::ComboBox::from_label(tr!("言語", "Language"))
                         .selected_text(self.language.name())
                         .width(110.0)
                         .show_ui(ui, |ui| {
@@ -2490,7 +2654,28 @@ impl App {
         });
         let _language = self.language.enter();
         egui::TopBottomPanel::bottom("status").show(ctx, |ui| {
-            ui.label(&self.status);
+            ui.add_space(6.0);
+            if self.stage == Stage::Settings && self.show_validation && !self.status_error {
+                let count = self.configuration_issues().len();
+                if count > 0 {
+                    theme::error_banner(
+                        ui,
+                        &tr_format!(
+                            "設定を確認してください · {count} 件 — 赤枠の項目を修正してください。",
+                            "Check settings · {count} issues — Correct the fields outlined in red."
+                        ),
+                    );
+                } else {
+                    ui.label(tr!(
+                        "設定の不備を修正しました。スキャンを開始できます。",
+                        "Settings corrected. You can start the scan."
+                    ));
+                }
+            } else if self.status_error {
+                theme::error_banner(ui, &self.status.to_string());
+            } else {
+                ui.label(&self.status);
+            }
             if self.busy() {
                 ui.horizontal_wrapped(|ui| {
                     ui.spinner();
@@ -2499,25 +2684,28 @@ impl App {
                     } else {
                         0.0
                     };
-                    ui.add(
-                        egui::ProgressBar::new(fraction)
-                            .desired_width(ui.available_width().min(360.0))
-                            .text(if self.stage == Stage::Recovering {
-                                tr!("ファイルを保存中…", "Saving files…").into()
-                            } else if self.stage == Stage::Migrating {
-                                tr!("索引へコピー中…", "Copying into an index…").into()
-                            } else {
-                                format!(
-                                    "{} / {} {:?}",
-                                    self.progress.scanned_records,
-                                    self.progress.total_records,
-                                    self.progress.unit
-                                )
-                            }),
-                    );
+                    if self.stage != Stage::Scanning {
+                        ui.add(
+                            egui::ProgressBar::new(fraction)
+                                .desired_width(ui.available_width().min(360.0))
+                                .text(if self.stage == Stage::Recovering {
+                                    tr!("ファイルを保存中…", "Saving files…").into()
+                                } else if self.stage == Stage::Migrating {
+                                    tr!("索引へコピー中…", "Copying into an index…").into()
+                                } else {
+                                    progress_text(&self.progress)
+                                }),
+                        );
+                    }
                     if self.stage == Stage::Scanning
                         && self.index.path.is_some()
-                        && ui.button(tr!("中断して保存", "Pause and save")).clicked()
+                        && ui
+                            .add(theme::primary(
+                                ui,
+                                tr!("中断して保存", "Pause and save"),
+                                160.0,
+                            ))
+                            .clicked()
                     {
                         self.cancel.store(true, Ordering::Relaxed);
                         self.status = message!(
@@ -2548,6 +2736,7 @@ impl App {
                     }
                 });
             }
+            ui.add_space(6.0);
         });
         let wide = ctx.content_rect().width() >= 1008.0;
         if self.show_evidence && wide && self.session.is_some() && self.stage != Stage::Settings {
@@ -2562,10 +2751,10 @@ impl App {
                 });
         }
         egui::CentralPanel::default().show(ctx, |ui| {
-            let report_height = if self.report.is_empty() || self.stage == Stage::Settings { 0.0 } else {
+            let report_height = if self.report.is_empty() || self.stage == Stage::Settings || self.busy() { 0.0 } else {
                 36.0 + if self.show_report {104.0} else {0.0}
             };
-            let height = (ui.available_height() - 100.0 - report_height).max(32.0);
+            let height = if self.busy() { ui.available_height() } else { (ui.available_height() - 124.0 - report_height).max(32.0) };
             ui.allocate_ui_with_layout(
                 egui::vec2(ui.available_width(), height),
                 egui::Layout::top_down(egui::Align::Min),
@@ -2573,29 +2762,20 @@ impl App {
                     ui.set_min_height(height);
                     match self.stage {
                         Stage::Settings => self.setup_ui(ui),
-                        Stage::Scanning => {
-                            ui.add_space(24.0);
-                            ui.heading(if self.raid.running {
-                                tr!("RAIDの構成を検査しています", "Checking the RAID configuration")
-                            } else if self.discovery_running {
-                                tr!("失われた領域を探しています", "Searching for lost volumes")
-                            } else {
-                                tr!("スキャンしています", "Scanning")
-                            });
-                            ui.label(&self.source);
-                            ui.label(tr!("完了後、復元するファイルを選択できます。", "Select files to recover when the scan finishes."));
-                        }
+                        Stage::Scanning => self.scan_status_ui(ui),
                         Stage::Imaging => self.imaging_status(ui),
                         Stage::Migrating => {
                             ui.heading(tr!("セッションをコピー移行しています", "Migrating a session copy"));
                             ui.label(&self.session_path);
                             ui.label(tr!("元の記録を保持し、新しい索引を作成しています。取消は画面下から操作できます。", "Creating a new index while keeping the original session. Use the controls below to cancel."));
                         }
-                        _ => self.results_ui(ui),
+                        _ => {
+                            egui::ScrollArea::vertical().id_salt("results-view").auto_shrink([false, false]).show_accessible(ui, tr!("復元候補", "Recovery candidates"), |ui| self.results_ui(ui));
+                        }
                     }
                 },
             );
-            self.actions_ui(ui);
+            if !self.busy() { self.actions_ui(ui); }
         });
         if self.image_dialog && !self.busy() {
             self.imaging_dialog(ctx);

@@ -35,7 +35,7 @@ pub fn singleline(
     }
     let mut response = ui
         .add_sized(
-            [width, 28.0],
+            [width, 36.0],
             egui::TextEdit::singleline(value)
                 .id(id)
                 .hint_text(hint)

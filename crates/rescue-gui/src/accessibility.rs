@@ -588,3 +588,172 @@ fn windows_ime_escape_cancellation_keeps_the_owner_until_preedit_is_removed() {
         assert_eq!(app.filter, "既存原文");
     }
 }
+
+#[test]
+fn empty_scan_explains_errors_and_accessible_edits_clear_them_in_both_themes() {
+    for theme in [egui::ThemePreference::Light, egui::ThemePreference::Dark] {
+        let (ctx, mut app) = app();
+        ctx.set_theme(theme);
+        app.stage = Stage::Settings;
+        app.source_mode = SourceMode::Image;
+        app.source.clear();
+        app.destination.clear();
+        app.session = None;
+        for _ in 0..3 {
+            frame(&ctx, &mut app, vec![]);
+        }
+        let position = app.primary_rect.unwrap().center();
+        for pressed in [true, false] {
+            frame(
+                &ctx,
+                &mut app,
+                vec![
+                    egui::Event::PointerMoved(position),
+                    egui::Event::PointerButton {
+                        pos: position,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            );
+        }
+        let tree = frame(&ctx, &mut app, vec![]);
+        assert_eq!(app.stage, Stage::Settings);
+        assert!(app.messages.is_none());
+        assert!(app.show_validation);
+        assert!(tree.nodes.iter().any(|(_, node)| {
+            node.value()
+                .is_some_and(|text| text.contains("Check: Choose a disk"))
+        }));
+        let edits = [
+            ("Image file", "owned/source.raw"),
+            ("Destination", "owned/recovered"),
+        ]
+        .map(|(label, value)| {
+            let target = tree
+                .nodes
+                .iter()
+                .find(|(id, n)| {
+                    n.role() == egui::accesskit::Role::TextInput && name(&tree, *id) == label
+                })
+                .unwrap()
+                .0;
+            egui::Event::AccessKitActionRequest(egui::accesskit::ActionRequest {
+                action: egui::accesskit::Action::SetValue,
+                target,
+                data: Some(egui::accesskit::ActionData::Value(value.into())),
+            })
+        });
+        frame(&ctx, &mut app, edits.into());
+        frame(&ctx, &mut app, vec![]);
+        assert!(app.configuration_issues().is_empty());
+        assert_eq!(
+            ctx.style().visuals.dark_mode,
+            theme == egui::ThemePreference::Dark
+        );
+    }
+}
+
+#[test]
+fn submitting_a_narrow_form_scrolls_to_a_destination_error_below_the_fold() {
+    let (ctx, mut app) = app();
+    ctx.data_mut(|data| data.insert_temp(egui::Id::new("test-viewport"), egui::vec2(720.0, 520.0)));
+    app.stage = Stage::Settings;
+    app.source_mode = SourceMode::Image;
+    app.source = "owned/source.raw".into();
+    app.destination.clear();
+    app.session = None;
+    for _ in 0..3 {
+        frame(&ctx, &mut app, vec![]);
+    }
+    let position = app.primary_rect.unwrap().center();
+    for pressed in [true, false] {
+        frame(
+            &ctx,
+            &mut app,
+            vec![
+                egui::Event::PointerMoved(position),
+                egui::Event::PointerButton {
+                    pos: position,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+        );
+    }
+    for _ in 0..30 {
+        frame(&ctx, &mut app, vec![]);
+    }
+    let tree = frame(&ctx, &mut app, vec![]);
+    let bounds = tree
+        .nodes
+        .iter()
+        .find(|(id, n)| {
+            n.role() == egui::accesskit::Role::TextInput && name(&tree, *id) == "Destination"
+        })
+        .unwrap()
+        .1
+        .bounds()
+        .unwrap();
+    assert!(
+        bounds.y0 >= 118.0 && bounds.y1 < 350.0,
+        "destination input must be visible: {bounds:?}"
+    );
+    assert!(app.messages.is_none());
+}
+
+#[test]
+fn expanded_report_actions_remain_visible_in_details_and_icons_at_small_sizes() {
+    for size in [egui::vec2(1260.0, 820.0), egui::vec2(720.0, 520.0)] {
+        for view in [ViewStyle::Details, ViewStyle::Icons] {
+            let (ctx, mut app) = app();
+            ctx.data_mut(|data| data.insert_temp(egui::Id::new("test-viewport"), size));
+            app.stage = Stage::Finished;
+            app.view = view;
+            app.report = "Saved recovery report".into();
+            app.show_report = true;
+            app.results.push(RecoveryResult {
+                naming: None,
+                raid_reads: None,
+                candidate_id: "first.pdf".into(),
+                status: "completed".into(),
+                path: None,
+                bytes_written: 61,
+                sha256: None,
+                error: None,
+                error_details: None,
+                warnings: vec![],
+                extent_evidence: Default::default(),
+                allocation_status: Default::default(),
+                archive_entry: None,
+                missing_ranges: vec![],
+            });
+            for _ in 0..3 {
+                frame(&ctx, &mut app, vec![]);
+            }
+            let tree = frame(&ctx, &mut app, vec![]);
+            for label in [
+                "Save HTML report",
+                "Save CSV report",
+                "Compare known hashes",
+            ] {
+                let bounds = tree
+                    .nodes
+                    .iter()
+                    .find(|(id, n)| {
+                        n.role() == egui::accesskit::Role::Button && name(&tree, *id) == label
+                    })
+                    .unwrap()
+                    .1
+                    .bounds()
+                    .unwrap();
+                assert!(
+                    bounds.y0 >= 0.0 && bounds.y1 <= f64::from(size.y - 40.0),
+                    "{label}, {size:?}, {view:?}: {bounds:?}"
+                );
+            }
+        }
+    }
+}

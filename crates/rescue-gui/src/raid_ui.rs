@@ -225,6 +225,7 @@ impl App {
         let cancel = self.cancel.clone();
         self.raid.running = true;
         self.raid.dialog = false;
+        self.status_error = false;
         self.stage = Stage::Scanning;
         self.status = message!(
             "RAIDのサンプルと構成を検査しています…",
@@ -324,7 +325,7 @@ impl App {
                         search = ui.button(tr!("構成の候補を探す", "Find configuration candidates")).clicked();
                     });
                     if !self.raid.error.is_empty() {
-                        ui.colored_label(crate::theme::WARNING, &self.raid.error);
+                        ui.colored_label(crate::theme::palette(ui).warning, &self.raid.error);
                     }
                 });
             ui.separator();

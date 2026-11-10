@@ -267,6 +267,7 @@ impl App {
         let cancel = self.cancel.clone();
         let (tx, rx) = mpsc::sync_channel(8);
         self.messages = Some(rx);
+        self.status_error = false;
         self.stage = Stage::Imaging;
         self.session = None;
         self.selected.clear();

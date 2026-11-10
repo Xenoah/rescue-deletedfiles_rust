@@ -13,6 +13,7 @@ impl App {
         self.results.clear();
         self.report.clear();
         self.discovery_running = true;
+        self.status_error = false;
         self.stage = Stage::Scanning;
         self.status = message!(
             "ブート領域・管理情報を照合しています…",
@@ -89,7 +90,7 @@ impl App {
             ui.label(tr!("範囲と管理情報を確認し、解析する領域を1つ選びます。元のパーティション表は変更しません。", "Check the bounds and metadata, then select one volume to scan. The original partition table stays unchanged."));
             egui::ScrollArea::both().max_height((ctx.content_rect().height()-280.0).max(100.0)).show_accessible(ui, tr!("探索した領域", "Discovered regions"), |ui| {
                 if let Some(result)=&self.discovery {
-                    for warning in &result.warnings {ui.colored_label(crate::theme::WARNING,warning);}
+                    for warning in &result.warnings {ui.colored_label(crate::theme::palette(ui).warning,warning);}
                     if result.volumes.is_empty() {ui.label(tr!("整合性を確認できる領域は見つかりませんでした。写真・文書・動画のCarvingも利用できます。", "No volume with sufficient structural evidence was found. You can also try carving photos, documents and videos."));}
                     egui::Grid::new("discovered-volumes").striped(true).min_row_height(32.0).spacing([16.0,8.0]).show(ui,|ui| {
                         for label in [tr!("選択", "Select"),tr!("形式", "Format"),tr!("開始バイト", "Start byte"),tr!("サイズ", "Size"),tr!("ブート", "Boot region"),tr!("現行の領域表", "Current partition table"),tr!("重複", "Overlap")] {ui.strong(label);}ui.end_row();
@@ -104,7 +105,7 @@ impl App {
                     });
                     if let Some(volume)=result.volumes.iter().find(|v|Some(&v.id)==self.discovered_id.as_ref()) {
                         ui.separator();ui.strong(tr!("この領域の根拠", "Evidence for this volume"));for evidence in &volume.evidence {ui.label(evidence);}
-                        if !volume.overlaps.is_empty() {ui.colored_label(crate::theme::WARNING,tr!("重なる領域は別の解釈です。必要に応じて1つずつスキャンしてください。", "Overlapping volumes represent alternative interpretations. Scan them separately as needed."));}
+                        if !volume.overlaps.is_empty() {ui.colored_label(crate::theme::palette(ui).warning,tr!("重なる領域は別の解釈です。必要に応じて1つずつスキャンしてください。", "Overlapping volumes represent alternative interpretations. Scan them separately as needed."));}
                         ui.small(tr!("構造の整合性は、各ファイルの削除前の内容や完全性の証明とは異なります。", "Structural consistency does not prove that a file matches its original content or is complete."));
                     }
                 }

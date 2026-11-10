@@ -41,6 +41,8 @@ FATのチェーンが消えた複数クラスターは標準では推定しま�
 
 [UIの実操作](docs/UI-v1.2.md) · [レポート](docs/REPORTS.md) · [既知ハッシュ照合](docs/KNOWN-HASHES.md) · [CP932](docs/CP932.md) · [exFAT破損表](docs/EXFAT-DAMAGE.md) · [現行の制限](docs/ALPHA.md) · [索引](docs/INDEX.md) · [同じ場所への保存](docs/SAME-LOCATION.md)
 
+[配色と見やすさの設定](docs/UI-APPEARANCE.md): ライト・ダーク・システム連動、進捗表示、入力欄のエラー表示。
+
 APFS/ext4/ReFSの直接解析、実SSD/HDDでの一般的な復元率、第三者スクリーンリーダーによる人の評価は未対応・未評価です。読み取りは元媒体を変更しませんが、復元先は別媒体を推奨します。推定・保存完了・出力ハッシュは削除前との内容一致を証明しません。
 
 ## CLI / MCP

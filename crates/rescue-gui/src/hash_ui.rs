@@ -57,20 +57,20 @@ impl State {
                         }
                     });
                     if self.receiver.is_some() { ui.horizontal(|ui| {ui.spinner();ui.label(tr!("照合中…", "Comparing…"));}); }
-                    if !self.error.is_empty() {ui.colored_label(theme::WARNING,&self.error);}
+                    if !self.error.is_empty() {ui.colored_label(theme::palette(ui).warning,&self.error);}
                     if let Some(comparison)=&self.comparison {
                         ui.separator();
                         let counts=&comparison.counts;
                         ui.horizontal_wrapped(|ui| {
-                            ui.colored_label(theme::ACCENT,tr_format!("一致 {} 件", "Matched: {}",counts.matched));
+                            ui.colored_label(theme::palette(ui).accent,tr_format!("一致 {} 件", "Matched: {}",counts.matched));
                             ui.label(tr_format!("一覧にない {} 件", "Not listed: {}",counts.not_listed));
-                            ui.colored_label(theme::WARNING,tr_format!("照合できない {} 件", "Not comparable: {}",counts.not_comparable));
+                            ui.colored_label(theme::palette(ui).warning,tr_format!("照合できない {} 件", "Not comparable: {}",counts.not_comparable));
                         });
                         ui.small(tr!("一覧にない結果を破損とは判定しません。複数の既知名が一致しても、名前の変更や復元の根拠の書き換えは行いません。", "Not listed does not mean corrupt. Multiple matching labels do not rename files or change recovery evidence."));
                         ui.collapsing(tr!("ファイル別の結果", "Per-file results"),|ui| {
                             for row in comparison.results.iter().take(200) {
                                 ui.horizontal_wrapped(|ui| {
-                                    let (label,color)=match row.outcome {KnownHashOutcome::Matched=>(tr!("一致", "Matched"),theme::ACCENT),KnownHashOutcome::NotListed=>(tr!("一覧にない", "Not listed"),theme::MUTED),KnownHashOutcome::NotComparable=>(tr!("照合できない", "Not comparable"),theme::WARNING)};
+                                    let (label,color)=match row.outcome {KnownHashOutcome::Matched=>(tr!("一致", "Matched"),theme::palette(ui).accent),KnownHashOutcome::NotListed=>(tr!("一覧にない", "Not listed"),theme::palette(ui).muted),KnownHashOutcome::NotComparable=>(tr!("照合できない", "Not comparable"),theme::palette(ui).warning)};
                                     ui.colored_label(color,label);ui.add(egui::Label::new(&row.displayed_name).wrap());
                                 });
                                 if row.outcome==KnownHashOutcome::Matched && let Some(hash)=&row.recorded_sha256 && let Some(labels)=comparison.known_contents.get(hash) {
@@ -91,7 +91,7 @@ impl State {
                             let result=session.ok_or_else(||rescue_core::Error::Request("no recovery session".into())).and_then(|s|s.guard_output(Path::new(&self.output))).and_then(|()|rescue_core::save_known_hash_comparison(comparison,Path::new(&self.output)));
                             match result {Ok(())=>{self.saved=true;self.error.clear();},Err(e)=>{self.saved=false;self.error=e.to_string();}}
                         }
-                        if self.saved {ui.colored_label(theme::ACCENT,tr!("照合結果を保存しました。元の復元記録と警告も含みます。", "Comparison saved, including the original recovery record and warnings."));}
+                        if self.saved {ui.colored_label(theme::palette(ui).accent,tr!("照合結果を保存しました。元の復元記録と警告も含みます。", "Comparison saved, including the original recovery record and warnings."));}
                     }
                 });
             ui.separator();close=ui.button(tr!("閉じる", "Close")).clicked();
