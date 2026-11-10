@@ -1,0 +1,279 @@
+name: Publish verified v1.2.3 and verify downloads
+on:
+  push:
+    branches: ['release/publish-v1.2.3']
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: publish-verified-v1.2.3
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+  RELEASE_COMMIT: 12f9c9dcdc8f0b4132b17dc121bc423813a0860b
+  NATIVE_RUN: '42839823094'
+  RELEASE_TAG: v1.2.3
+jobs:
+  native-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require the independently started main CI without rerunning it
+        run: |
+          gh run watch "$NATIVE_RUN" --exit-status --interval 30
+          python - <<'PY'
+          import json,os,subprocess
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path],text=True))
+          run=api('actions/runs/'+os.environ['NATIVE_RUN'])
+          jobs=api('actions/runs/'+os.environ['NATIVE_RUN']+'/jobs?per_page=100')['jobs']
+          assert run['head_sha']==os.environ['RELEASE_COMMIT'] and run['head_branch']=='main' and run['conclusion']=='success' and run['run_attempt']==1 and run['path']=='.github/workflows/ci.yml'
+          assert len(jobs)==5 and all(j['conclusion']=='success' for j in jobs)
+          PY
+  ime-stress:
+    needs: native-source
+    runs-on: windows-2022
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+    env:
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 12f9c9dcdc8f0b4132b17dc121bc423813a0860b
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-windows-x64
+          path: native-candidate
+          run-id: 42839823094
+          github-token: ${{ github.token }}
+      - name: Extract only the verified immutable Windows GUI bytes
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,zipfile
+          from pathlib import Path
+          root=Path('native-candidate');portable=root/'rescue-1.2.3-windows-x64-portable.zip'
+          sums={name:digest for digest,name in (line.split('  ',1) for line in (root/'SHA256SUMS-windows-x64.txt').read_text().splitlines())}
+          assert hashlib.sha256(portable.read_bytes()).hexdigest()==sums[portable.name]
+          with zipfile.ZipFile(portable) as z:data=z.read('rescue-gui.exe')
+          digest=hashlib.sha256(data).hexdigest()
+          original=json.loads((root/'gui-ime-windows-x64.json').read_text())
+          assert original['status']=='passed' and original['gui_binary_sha256']==digest
+          Path('rescue-gui.exe').write_bytes(data)
+          Path('stress-provenance.json').write_text(json.dumps({'native_run':int(os.environ['NATIVE_RUN']),'release_commit':os.environ['RELEASE_COMMIT'],'gui_sha256':digest,'instrumented':False,'failed_run_retried':False},indent=2)+'\n')
+          PY
+      - name: Install Japanese input and prepare the unchanged fixture
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
+      - name: Four fresh GUI processes and 32 consecutive native IME cycles
+        timeout-minutes: 12
+        run: python scripts/ci_command.py python scripts/ime_stress_windows.py --binary rescue-gui.exe
+      - name: Restore the exact original language profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Retain every outcome without retrying a failed session
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          paths=[Path('trace-desktop-lifetime.json'),*sorted(Path('.').glob('trace-ime-*.json'))]
+          for p in paths:
+              if p.exists():
+                  v=json.loads(p.read_text(encoding='utf-8-sig'))
+                  observed={'file':str(p),'status':v.get('status'),'error':v.get('error'),'sessions':v.get('sessions'),'gui_binary_sha256':v.get('gui_binary_sha256'),'cycles':len(v.get('uia',{}).get('native_ime',{}).get('cycles',[])),'shutdown':v.get('uia',{}).get('shutdown')}
+                  message=json.dumps(observed,ensure_ascii=False).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+                  print('::notice title=Immutable GUI stress observation::'+message)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v1.2.3-windows-ime-stress
+          path: |
+            stress-provenance.json
+            trace-*.json
+            ime-profile-state.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/*.txt
+            rescue-owned-uia-*/windows*.png
+          if-no-files-found: error
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: ime-stress
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 12f9c9dcdc8f0b4132b17dc121bc423813a0860b
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Require the exact native commit and all five successful jobs
+        run: |
+          gh run watch "$NATIVE_RUN" --exit-status --interval 30
+          python - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          root=Path('publication-proof');root.mkdir()
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path],text=True))
+          run=api('actions/runs/'+os.environ['NATIVE_RUN']);jobs=api('actions/runs/'+os.environ['NATIVE_RUN']+'/jobs?per_page=100')
+          assert run['head_sha']==os.environ['RELEASE_COMMIT'] and run['conclusion']=='success' and run['run_attempt']==1 and run['path']=='.github/workflows/ci.yml'
+          assert len(jobs['jobs'])==5 and all(j['conclusion']=='success' for j in jobs['jobs'])
+          assert subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()==os.environ['RELEASE_COMMIT']
+          for name,value in [('native-run',run),('native-jobs',jobs),('native-artifacts',api('actions/runs/'+os.environ['NATIVE_RUN']+'/artifacts'))]:
+              (root/(name+'.json')).write_text(json.dumps(value,indent=2)+'\n')
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: v1.2.3-windows-ime-stress
+          path: publication-proof/ime-stress
+      - name: Require every stress observation from the exact packaged Windows GUI
+        run: |
+          python - <<'PY'
+          import json,os,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from ime_evidence import require_repeated_ime,require_ime_cleanup
+          root=Path('publication-proof/ime-stress')
+          provenance=json.loads((root/'stress-provenance.json').read_text())
+          assert provenance['native_run']==int(os.environ['NATIVE_RUN']) and provenance['release_commit']==os.environ['RELEASE_COMMIT'] and not provenance['instrumented']
+          desktop=json.loads((root/'trace-desktop-lifetime.json').read_text())
+          assert desktop['status']=='passed' and desktop['desktop_permissions']['restored'] and all(s['returncode']==0 for s in desktop['sessions'])
+          assert [s['name'] for s in desktop['sessions']]==['native','limited','keyboard','ime-1','ime-2','ime-3','ime-4']
+          profile=json.loads((root/'ime-profile-state.json').read_text(encoding='utf-8-sig'))
+          for i in range(1,5):
+              proof=json.loads((root/f'trace-ime-{i}.json').read_text())
+              assert proof['status']=='passed' and proof['source_unchanged'] and proof['files_byte_exact']==2 and proof['gui_binary_sha256']==provenance['gui_sha256']
+              require_repeated_ime(proof,require_stages=True)
+              require_ime_cleanup(proof,profile)
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: dist
+          run-id: 42839823094
+          github-token: ${{ github.token }}
+      - name: Assemble exactly eight packages and one checksum file
+        run: |
+          python scripts/assemble_release.py
+          cd release-dist
+          sha256sum --check SHA256SUMS.txt
+      - name: Preserve the original failed run and disclose it in release notes
+        run: |
+          python - <<'PY'
+          import json,os,subprocess
+          from pathlib import Path
+          repo=os.environ['GH_REPO']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          failure=api('actions/runs/42837636916')
+          assert failure['head_sha']==os.environ['RELEASE_COMMIT'] and failure['conclusion']=='failure' and failure['run_attempt']==1
+          assert failure['head_branch']==os.environ['RELEASE_TAG']
+          Path('publication-proof/original-failed-native-run.json').write_text(json.dumps(failure,indent=2)+'\n')
+          notes=Path('docs/RELEASE-v1.2.3.md').read_text()
+          notes+='\n\n## Windows IME検証の記録\n\n最初のタグCIでは、Windowsの日本語IMEで取消後の未確定文字列が10秒以内に消えない事象を1回観測しました。[失敗記録](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916)は保持し、再実行していません。原因は未確定です。公開済みv1.2.2とWindows標準入力欄による独立した比較では再現しませんでした。\n\n配布物は、その前から動作していた[同じコミットのmain CI](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42839823094)の全検証を通過した成果物です。さらに、そのWindows GUIの同じ実ファイルで4つの新規プロセス・計32回の日本語IME取消／変換を確認しました。アプリ・テスト本体・期限の変更や、失敗した試験の再実行は行っていません。公開ダウンロードからの再検証結果を下に追記します。\n'
+          Path('publication-notes.md').write_text(notes)
+          PY
+      - name: Publish the existing immutable tag as a prerelease
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from release_assets import package_names
+          expected=set(package_names('1.2.3'))|{'SHA256SUMS.txt'}
+          assert {p.name for p in Path('release-dist').iterdir()}==expected
+          repo=os.environ['GH_REPO'];tag=os.environ['RELEASE_TAG'];commit=os.environ['RELEASE_COMMIT']
+          def probe(path):
+              r=subprocess.run(['gh','api','repos/'+repo+'/'+path],capture_output=True,text=True)
+              if r.returncode:
+                  assert json.loads(r.stdout)['status']=='404', 'Unexpected GitHub API error'
+                  return None
+              return json.loads(r.stdout)
+          assert probe('releases/tags/'+tag) is None, 'Release already exists; no automatic replacement'
+          existing=probe('git/ref/tags/'+tag)
+          assert existing is not None and existing['object']['type']=='tag' and probe('commits/'+tag)['sha']==commit, 'Existing annotated tag differs'
+          subprocess.run(['gh','release','create',tag,*[str(Path('release-dist')/name) for name in sorted(expected)],'--verify-tag','--prerelease','--latest=false','--title','Rescue '+tag,'--notes-file','publication-notes.md'],check=True)
+          PY
+      - name: Dispatch public verification against this exact tag
+        id: public
+        run: |
+          python - <<'PY'
+          import datetime,json,os,subprocess,time
+          from pathlib import Path
+          since=datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+          subprocess.run(['gh','workflow','run','published-packages.yml','--ref',os.environ['RELEASE_TAG'],'-f','release_tag='+os.environ['RELEASE_TAG'],'-f','native_run_id='+os.environ['NATIVE_RUN']],check=True)
+          for _ in range(30):
+              path='repos/'+os.environ['GH_REPO']+'/actions/workflows/published-packages.yml/runs?event=workflow_dispatch&head_sha='+os.environ['RELEASE_COMMIT']+'&per_page=100'
+              runs=json.loads(subprocess.check_output(['gh','api',path],text=True))['workflow_runs']
+              matches=[r for r in runs if r['head_branch']==os.environ['RELEASE_TAG'] and r['created_at']>=since]
+              assert len(matches)<=1,'Ambiguous public verification run'
+              if matches:
+                  run=matches[0]
+                  with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('run_id='+str(run['id'])+'\n')
+                  Path('publication-proof/public-dispatch.json').write_text(json.dumps({'run_id':run['id'],'url':run['html_url'],'commit':run['head_sha'],'dispatched_after':since},indent=2)+'\n')
+                  print(run['html_url']);break
+              time.sleep(10)
+          else:raise RuntimeError('Public verification was not scheduled')
+          PY
+      - name: Require successful public verification without retries
+        run: gh run watch '${{ steps.public.outputs.run_id }}' --exit-status --interval 30
+      - name: Verify all downloads and promote only after every public gate passes
+        env:
+          PUBLIC_RUN: ${{ steps.public.outputs.run_id }}
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,subprocess,sys
+          from pathlib import Path
+          sys.path.insert(0,'scripts')
+          from release_assets import package_names
+          root=Path('publication-proof');tag=os.environ['RELEASE_TAG'];commit=os.environ['RELEASE_COMMIT'];rid=os.environ['PUBLIC_RUN']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+os.environ['GH_REPO']+'/'+path],text=True))
+          def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+          run=api('actions/runs/'+rid);jobs=api('actions/runs/'+rid+'/jobs?per_page=100')
+          assert run['head_sha']==commit and run['conclusion']=='success' and run['run_attempt']==1 and run['path']=='.github/workflows/published-packages.yml'
+          assert len(jobs['jobs'])==5 and all(j['conclusion']=='success' for j in jobs['jobs'])
+          ref=api('git/ref/tags/'+tag);assert ref['object']['type']=='tag' and api('commits/'+tag)['sha']==commit
+          release=api('releases/tags/'+tag);expected=set(package_names('1.2.3'))|{'SHA256SUMS.txt'}
+          assert not release['draft'] and release['prerelease'] and {a['name'] for a in release['assets']}==expected
+          out=Path('public-downloads');out.mkdir()
+          subprocess.run(['gh','release','download',tag,'--dir',str(out)],check=True)
+          assert {p.name for p in out.iterdir()}==expected
+          sums={name:digest for digest,name in (line.split('  ',1) for line in (out/'SHA256SUMS.txt').read_text().splitlines())}
+          assert set(sums)==expected-{'SHA256SUMS.txt'}
+          for asset in release['assets']:
+              path=out/asset['name'];digest=sha(path)
+              assert path.stat().st_size==asset['size'] and asset['digest']=='sha256:'+digest
+              assert digest==sha(Path('release-dist')/asset['name'])
+              if asset['name'] in sums:assert digest==sums[asset['name']]
+          subprocess.run(['gh','release','edit',tag,'--prerelease=false','--latest'],check=True)
+          release=api('releases/tags/'+tag);latest=api('releases/latest')
+          assert not release['draft'] and not release['prerelease'] and latest['tag_name']==tag
+          for name,value in [('public-run',run),('public-jobs',jobs),('public-artifacts',api('actions/runs/'+rid+'/artifacts')),('release',release),('release-latest',latest)]:
+              (root/(name+'.json')).write_text(json.dumps(value,indent=2)+'\n')
+          (root/'publication.json').write_text(json.dumps({'status':'passed','release_tag':tag,'release_commit':commit,'native_run':int(os.environ['NATIVE_RUN']),'public_run':int(rid),'release_assets':9,'all_downloads_byte_identical_to_verified_native_packages':True,'latest':True},indent=2)+'\n')
+          print(release['html_url'])
+          PY
+      - name: Preserve publication provenance
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-publication-proof
+          path: publication-proof/*.json
+          if-no-files-found: error

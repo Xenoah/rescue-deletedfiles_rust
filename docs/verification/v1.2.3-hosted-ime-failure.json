@@ -1,0 +1,34 @@
+{
+  "release_tag": "v1.2.3",
+  "source_commit": "12f9c9dcdc8f0b4132b17dc121bc423813a0860b",
+  "native_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916",
+  "windows_job": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42837636916/job/129903994412",
+  "status": "failed-not-release-proof",
+  "step": "Non-elevated Windows GUI with native Japanese IME",
+  "cycle": 1,
+  "cancel_start_value": "とりけし",
+  "cancel_trace": [
+    {
+      "escape": 1,
+      "focus": "Search results",
+      "value": "とりけし"
+    },
+    {
+      "escape": 2,
+      "focus": "Search results",
+      "initial_value": "とりけし",
+      "value": "とりけし",
+      "completion_limit_ms": 10000,
+      "completion_wait_ms": 10186
+    }
+  ],
+  "shutdown": {
+    "graceful": true,
+    "forced": false,
+    "elapsed_ms": 457,
+    "exit_code": 0
+  },
+  "diagnosis": "Unresolved. Native UIA and keyboard recovery passed; compare the same sequence in the previous immutable public GUI and standard WPF controls before attributing this to the UI change.",
+  "failed_run_retried": false,
+  "comparison_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/42843776201"
+}
