@@ -2607,6 +2607,7 @@ impl App {
                         ));
                     if self.appearance != previous {
                         ctx.set_theme(self.appearance);
+                        ctx.request_repaint();
                         if let Some(path) = &self.appearance_path
                             && let Err(error) = appearance::save(path, self.appearance)
                         {
