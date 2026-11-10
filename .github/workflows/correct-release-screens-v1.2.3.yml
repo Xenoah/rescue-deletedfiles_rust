@@ -1,0 +1,57 @@
+name: Attach verified active scan screenshots to v1.2.3
+on:
+  push:
+    branches: [release/correct-notes-v1.2.3]
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: correct-release-screens-v1.2.3
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+jobs:
+  update-notes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ebaec9c
+          fetch-depth: 0
+      - name: Wait for successful publication and public package verification
+        run: gh run watch 42846126509 --exit-status --interval 30
+      - name: Verify immutable screenshot bytes and update only the release body
+        run: |
+          python - <<'PY'
+          import hashlib,json,os,subprocess,urllib.request
+          from pathlib import Path
+          repo=os.environ['GH_REPO'];tag='v1.2.3'
+          proof_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          release_commit=subprocess.check_output(['git','rev-parse',tag+'^{commit}'],text=True).strip()
+          assert release_commit=='12f9c9dcdc8f0b4132b17dc121bc423813a0860b'
+          subprocess.run(['git','diff','--exit-code',release_commit,'--','crates','Cargo.toml','Cargo.lock','scripts','schemas','tests'],check=True)
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          release=api('releases/tags/'+tag);assert not release['draft'] and not release['prerelease'] and api('releases/latest')['tag_name']==tag
+          before_assets=[(a['name'],a['size'],a['digest']) for a in release['assets']]
+          body=release['body'];base='https://raw.githubusercontent.com/'+repo+'/'
+          v=json.loads(Path('docs/gui-v1.2-results.json').read_text())
+          for mode in ['dark','light']:
+              old='images/v1.2.3/scan-'+mode+'-ja.png';new='images/v1.2.3/scan-progress-'+mode+'-ja.png'
+              image_url=base+proof_commit+'/docs/'+new
+              data=urllib.request.urlopen(image_url,timeout=30).read()
+              shot=next(s for s in v['screenshots'] if s['file']==new)
+              assert hashlib.sha256(data).hexdigest()==shot['sha256']
+              old_url=base+tag+'/docs/'+old
+              assert body.count(old_url)==1
+              body=body.replace(old_url,image_url)
+          body=body.replace('/blob/v1.2.3/docs/gui-v1.2-results.json','/blob/'+proof_commit+'/docs/gui-v1.2-results.json')
+          body+='\n\nスキャン中の2枚は、同じv1.2.3バイナリで読み取りが25 MiBから95 MiBへ進む間に配色を切り替えて撮影しました。[画像の検証・訂正記録](https://github.com/'+repo+'/blob/'+proof_commit+'/docs/verification/v1.2.3-screenshot-correction.json)\n'
+          Path('reviewed-release-notes.md').write_text(body)
+          subprocess.run(['gh','release','edit',tag,'--notes-file','reviewed-release-notes.md'],check=True)
+          updated=api('releases/tags/'+tag)
+          assert updated['body'].strip()==body.strip()
+          assert before_assets==[(a['name'],a['size'],a['digest']) for a in updated['assets']]
+          print('::notice title=Verified active scan screenshots::'+json.dumps({'release':updated['html_url'],'proof_commit':proof_commit,'release_commit':release_commit,'unchanged_release_assets':9,'corrected_active_scan_screenshots':2}))
+          PY
