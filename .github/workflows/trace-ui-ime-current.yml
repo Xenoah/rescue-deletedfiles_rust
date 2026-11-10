@@ -1,0 +1,87 @@
+name: Trace current UI IME events without changing release evidence
+on:
+  push:
+    branches: [diagnostics/ui-ime-v1.2.3]
+    paths: [.github/workflows/trace-ui-ime-current.yml]
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  RUSTFLAGS: '-C target-feature=+crt-static'
+  RESCUE_IME_TRACE: '1'
+jobs:
+  trace:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check -r scripts/requirements-test.txt
+      - run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: windows-2022-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: windows-2022-x64-rust-1.99.1-
+      - run: cargo fetch --locked
+      - name: Add event logging to this diagnostic build only
+        run: python scripts/instrument_ime_trace.py
+      - name: Build a diagnostic executable, never a release package
+        run: cargo build -p rescue-gui --target x86_64-pc-windows-msvc --locked --offline
+      - name: Reproduce the same native UIA and keyboard prelude
+        run: |
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/debug/rescue-gui.exe --output current-native.json
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/debug/rescue-gui.exe --output current-limited.json --desktop-token
+          python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/debug/rescue-gui.exe --output current-keyboard.json --desktop-token --keyboard
+      - name: Prepare the unchanged Japanese profile fixture
+        shell: powershell
+        timeout-minutes: 10
+        run: |
+          $capability=Get-WindowsCapability -Online -Name 'Language.Basic~~~ja-JP~0.0.1.0'
+          if ($capability.State -ne 'Installed') {Add-WindowsCapability -Online -Name $capability.Name}
+          ./scripts/windows_ime_profile.ps1 -Action Prepare
+      - name: Observe IME events and preserve failure before passive observation
+        continue-on-error: true
+        timeout-minutes: 6
+        run: python scripts/ci_command.py python scripts/e2e_gui_windows.py --binary target/x86_64-pc-windows-msvc/debug/rescue-gui.exe --output current-ime.json --desktop-token --ime --ime-cycles 8
+      - name: Compare the same host with a standard WPF input
+        if: always()
+        continue-on-error: true
+        run: python scripts/ci_command.py python scripts/ime_wpf_baseline.py --close-only
+      - name: Restore the original input profile
+        if: always()
+        shell: powershell
+        run: ./scripts/windows_ime_profile.ps1 -Action Restore
+      - name: Expose bounded input events and observations for diagnosis
+        if: always()
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path('.').glob('rescue-owned-uia-*/uia.json')):
+              value=json.loads(path.read_text(encoding='utf-8-sig'))
+              observed={key:value.get(key) for key in ['status','error','native_ime_debug','native_wait_observation','cycles','shutdown']}
+              log=path.parent/'stderr.txt'
+              if log.exists():
+                  events=[line for line in log.read_text(encoding='utf-8',errors='replace').splitlines() if line.startswith('IME_')]
+                  observed['input_event_tail']=events[-35:]
+              message=json.dumps(observed,ensure_ascii=False).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print('::warning title=Current IME event observation::'+message[-12000:])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-ui-ime-trace
+          path: |
+            current-*.json
+            ime-profile-state.json
+            rescue-owned-uia-*/uia.json
+            rescue-owned-uia-*/*.txt
+            rescue-owned-uia-*/windows*.png
+          if-no-files-found: error
