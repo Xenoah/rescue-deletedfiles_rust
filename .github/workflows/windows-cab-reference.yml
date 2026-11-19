@@ -1,0 +1,20 @@
+name: Measure Windows MakeCAB and Expand reference files
+on:
+  push:
+    branches: [testing/windows-cab-reference]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python scripts/make_windows_cab_reference.py --output cabinet-reference
+      - uses: actions/upload-artifact@v4
+        with:
+          name: genuine-windows-cabinets
+          path: cabinet-reference
+          if-no-files-found: error
