@@ -1,0 +1,29 @@
+{
+  "filesystem": "ext4",
+  "block_size": 1024,
+  "originals": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37"
+  },
+  "unlinked_inodes": {
+    "log.txt": 13,
+    "readings.csv": 14,
+    "image.bmp": 15,
+    "tone.wav": 16,
+    "bundle.zip": 17,
+    "private.bin": 18,
+    "sparse.dat": 19
+  },
+  "parent_inode": 12,
+  "sha256": "70366244b4b5a5eda50eb6e4229c5fcc8de5d2bffdc20f179f5f874c5c79f0ec",
+  "compressed_sha256": "c07b4eb91c54dd69dd28f8623fb3cd31649ea0345c7d7ac96295bb6e3a5811da",
+  "bytes": 100663296,
+  "journal_sha256": "9aaab50cd97afbe3f85b70138d74d8847f886bd21cc5b62a4b728cb7048516d3",
+  "filesystem_features": "has_journal ext_attr resize_inode dir_index filetype extent 64bit flex_bg sparse_super large_file huge_file dir_nlink extra_isize metadata_csum",
+  "journal_features": "journal_64bit journal_checksum_v3"
+}
