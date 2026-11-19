@@ -1,0 +1,27 @@
+{
+  "filesystem": "Btrfs",
+  "checksum": "blake2",
+  "compression": "zstd",
+  "offline_errors": [],
+  "subvolume": 256,
+  "snapshot": 257,
+  "raw_bytes": 167772160,
+  "sha256": "c001058eb2dbb4dec7b8227d3ed47513a52538c8e5b7da382d32d0e501ee7606",
+  "compressed_sha256": "7454eec193f162c533926decb8a4e8ea9fa7eb80795733b7445d93a7da265ae7",
+  "original_files": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37"
+  },
+  "survivor": "survivor.txt",
+  "created_later": "created-later.txt",
+  "snapshot_leaf_mirrors": [
+    39059456,
+    72613888
+  ],
+  "first_file_data_sector": 13631488
+}

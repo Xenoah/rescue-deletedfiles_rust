@@ -60,6 +60,25 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 17, 0):
+        assert len(run['html_documents']) == 7 and len(run['netpbm_images']) == 9
+        if platform == 'linux':
+            assert run['html_deleted'] == run['html_documents']
+            assert run['netpbm_deleted'] == run['netpbm_images']
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 16, 0):
+        for key in ('ext4_journal','ext4_journal_extent_trees'):
+            assert set(run[key]) == {'1024','4096'} and run[key]['1024'] == run[key]['4096'] and len(run[key]['1024']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 15, 0):
+        originals = run['btrfs_extents']['zstd']
+        assert len(originals) == 7
+        for key, modes in [('btrfs_previous', ('plain', 'zstd')), ('btrfs_checksums', ('xxhash', 'sha256', 'blake2'))]:
+            assert set(run[key]) == set(modes) and all(run[key][mode] == originals for mode in modes)
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 14, 0):
+        assert len(run['aac_recordings']) == 7 and len(run['tar_archives']) == 9
+        if platform == 'linux':
+            assert run['aac_recordings'] == run['aac_recordings_deleted']
+            assert len(run['tar_archives_deleted']) == 7
+            assert all(run['tar_archives'][n] == h for n,h in run['tar_archives_deleted'].items())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 13, 0):
         for key, modes, count in [('btrfs_inline', ('plain', 'zlib'), 7), ('btrfs_extents', ('zlib', 'zstd'), 7), ('btrfs_layouts', ('lzo', 'zstd'), 13)]:
             assert set(run[key]) == set(modes)

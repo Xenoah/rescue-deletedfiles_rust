@@ -1,0 +1,43 @@
+{
+  "filesystem": "Btrfs",
+  "subvolume": 256,
+  "mode": "plain",
+  "snapshots": 0,
+  "current_generation": 9,
+  "before_unlink_generation": 7,
+  "backup_roots": [
+    [
+      9,
+      30834688,
+      0
+    ],
+    [
+      6,
+      30588928,
+      0
+    ],
+    [
+      7,
+      30474240,
+      0
+    ],
+    [
+      8,
+      30736384,
+      0
+    ]
+  ],
+  "verified_roots": [],
+  "sha256": "5f17ceb363642e9589b86359aa85dfdc3b62f35da1e7c8a2780d052e4c07b345",
+  "compressed_sha256": "0e6f71fb59e533da3aba6af33bc45f91e123b1b592b9f513b6ebcee487d05c22",
+  "bytes": 167772160,
+  "originals": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37"
+  }
+}

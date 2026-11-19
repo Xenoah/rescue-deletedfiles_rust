@@ -11,6 +11,8 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 sha2.workspace = true
+blake2 = "0.10"
+twox-hash = { version = "2.1", default-features = false, features = ["xxhash64"] }
 uuid.workspace = true
 cap-std.workspace = true
 png = "0.18.1"
@@ -19,6 +21,8 @@ base64 = "0.22.1"
 flate2 = "1"
 ruzstd = "0.9.1"
 lzo = { version = "0.1.4", default-features = false }
+symphonia-codec-aac = "0.6.1"
+symphonia-core = "0.6.1"
 lzfse_rust = "0.2.1"
 lz4_flex = "0.14.2"
 bzip2 = "0.6.1"
@@ -28,6 +32,7 @@ md-5 = "0.10"
 tiff = "0.11.3"
 ttf-parser = { version = "0.25.1", default-features = false, features = ["std", "variable-fonts"] }
 roxmltree = { version = "0.21.2", default-features = false, features = ["std"] }
+html5gum = "0.9.2"
 quick-xml = "0.41.0"
 zune-core = "0.5.3"
 zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }

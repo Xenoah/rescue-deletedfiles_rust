@@ -4,3 +4,9 @@ third_party/licenses/** -text
 
 tests/corpus/files/** -text
 tests/jpeg/*.jpg -text
+
+# Preserve the exact Netpbm encoder output, including whitespace in plain raster data.
+tests/netpbm/*.pbm binary
+tests/netpbm/*.pgm binary
+tests/netpbm/*.ppm binary
+tests/netpbm/*.pam binary

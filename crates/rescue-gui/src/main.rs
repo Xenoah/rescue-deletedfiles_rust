@@ -8,6 +8,7 @@ mod appearance;
 mod btrfs_ui;
 mod columns;
 mod discovery_ui;
+mod ext4_journal_ui;
 mod extent_ui;
 mod hash_ui;
 mod image_import_ui;
@@ -125,6 +126,7 @@ struct App {
     image_import: image_import_ui::State,
     extent_recovery: extent_ui::State,
     btrfs_snapshots: btrfs_ui::State,
+    ext4_journal: ext4_journal_ui::State,
     image_destination: String,
     image_resume: bool,
     image_original: Option<(String, String, String)>,
@@ -154,6 +156,7 @@ struct App {
     exfat_allow_damaged_upcase: bool,
     extensions: String,
     signature_rule: String,
+    tar_blocking_factor: u16,
     path_prefix: String,
     depth: String,
     range_start: String,
@@ -286,6 +289,7 @@ impl App {
             image_import: image_import_ui::State::default(),
             extent_recovery: extent_ui::State::default(),
             btrfs_snapshots: btrfs_ui::State::default(),
+            ext4_journal: ext4_journal_ui::State::default(),
             image_destination: String::new(),
             image_resume: false,
             image_original: None,
@@ -315,6 +319,7 @@ impl App {
             exfat_allow_damaged_upcase: false,
             extensions: String::new(),
             signature_rule: String::new(),
+            tar_blocking_factor: 1,
             path_prefix: String::new(),
             depth: String::new(),
             range_start: String::new(),
@@ -377,6 +382,10 @@ impl App {
             }
         };
         let s = SearchSettings {
+            tar_blocking_factor: (self.carve
+                && self.signature_rule.trim().is_empty()
+                && self.tar_blocking_factor > 1)
+                .then_some(self.tar_blocking_factor),
             signature_rule: (self.carve && !self.signature_rule.trim().is_empty())
                 .then(|| self.signature_rule.trim().parse())
                 .transpose()?,
@@ -479,6 +488,7 @@ impl App {
         self.exfat_allow_damaged_upcase = settings.exfat_allow_damaged_upcase;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
+        self.tar_blocking_factor = settings.tar_blocking_factor.unwrap_or(1);
         self.signature_rule = settings
             .signature_rule
             .as_ref()
@@ -1226,13 +1236,26 @@ impl App {
                         .add_enabled(
                             !self.source.trim().is_empty(),
                             egui::Button::new(tr!(
-                                "Btrfsスナップショットから復元",
-                                "Restore from a Btrfs snapshot"
+                                "Btrfsの履歴から復元",
+                                "Restore from Btrfs history"
                             )),
                         )
                         .clicked()
                 {
                     self.btrfs_snapshots.show(&self.source);
+                }
+                if self.source_mode == SourceMode::Image
+                    && ui
+                        .add_enabled(
+                            !self.source.trim().is_empty(),
+                            egui::Button::new(tr!(
+                                "ext4ジャーナルから復元",
+                                "Restore from the ext4 journal"
+                            )),
+                        )
+                        .clicked()
+                {
+                    self.ext4_journal.show(&self.source);
                 }
             });
         });
@@ -1305,6 +1328,14 @@ impl App {
                     });
                     ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
                     checked_text_row(ui, tr!("独自形式のルール", "Custom signature rule"), &mut self.signature_rule, tr!("空欄で標準形式 / 例 dat:41424344:end=454e44", "Blank for built-ins / e.g. dat:41424344:end=454e44"), error(Field::SignatureRule).as_deref());
+                    if self.signature_rule.trim().is_empty() {
+                        ui.collapsing(tr!("TARの保存単位", "TAR record size"), |ui| {
+                            ui.horizontal_wrapped(|ui| {
+                                let label=ui.label(tr!("1レコードのブロック数（各512バイト）", "512-byte blocks per record")).id;
+                                ui.add(egui::DragValue::new(&mut self.tar_blocking_factor).range(1..=1024)).labelled_by(label);
+                            });
+                        });
+                    }
                     ui.label(tr!("PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR、PDF、ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR, PDF, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
@@ -2871,6 +2902,9 @@ impl App {
             );
             if !self.busy() { self.actions_ui(ui); }
         });
+        if self.ext4_journal.open && !self.busy() {
+            self.ext4_journal.draw(ctx);
+        }
         if self.btrfs_snapshots.open && !self.busy() {
             self.btrfs_snapshots.draw(ctx);
         }

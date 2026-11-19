@@ -1,4 +1,5 @@
 //! Restore historical files from a retained, read-only Btrfs snapshot.
+mod checksum;
 mod chunks;
 mod extent;
 mod tree;
@@ -16,6 +17,7 @@ pub struct BtrfsRequest {
     pub source: PathBuf,
     pub current_root: Option<u64>,
     pub snapshot_root: Option<u64>,
+    pub previous_generation: Option<u64>,
     pub id: Vec<u64>,
     pub all: bool,
     pub destination: Option<PathBuf>,
@@ -209,32 +211,83 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
     };
     let (_, paths) = image.arguments(req.destination.as_deref())?;
     let mut vol = Volume::open(Path::new(&paths[0]), cancel)?;
-    let mut roots = roots(&mut vol)?;
-    let checksum_root = roots.remove(&7).map(|r| r.node);
-    let inventory=roots.iter().map(|(id,r)|json!({"id":id,"readonly":r.readonly,"uuid":hex(&r.uuid),"parent_uuid":hex(&r.parent)})).collect::<Vec<_>>();
-    let mut result = json!({"roots":inventory});
-    let (current_id, snapshot_id) = match (req.current_root, req.snapshot_root) {
-        (None, None) => return Ok((result, false)),
-        (Some(c), Some(s)) if c != s => (c, s),
+    let mut current_roots = roots(&mut vol)?;
+    let inventory=current_roots.iter().filter(|(id,_)| **id != 7).map(|(id,r)|json!({"id":id,"readonly":r.readonly,"uuid":hex(&r.uuid),"parent_uuid":hex(&r.parent)})).collect::<Vec<_>>();
+    let mut result = json!({"roots":inventory, "current_generation":vol.root.generation, "checksum":vol.checksum.name(),
+        "backup_generations":vol.generations()});
+    let Some(current_id) = req.current_root else {
+        if req.snapshot_root.is_some()
+            || req.previous_generation.is_some()
+            || req.destination.is_some()
+            || req.all
+            || !req.id.is_empty()
+        {
+            return Err(Error::Request("choose a current Btrfs subvolume".into()));
+        }
+        return Ok((result, false));
+    };
+    let current_root = current_roots
+        .remove(&current_id)
+        .filter(|_| current_id != 7)
+        .ok_or_else(|| Error::Request("unknown current root".into()))?;
+    let current = namespace(&mut vol, &current_root, false)?.paths;
+    result["current_root"] = json!(current_id);
+    let (historic, checksum_root, prefix) = match (req.snapshot_root, req.previous_generation) {
+        (Some(snapshot_id), None) => {
+            let historic = current_roots
+                .remove(&snapshot_id)
+                .filter(|_| snapshot_id != 7)
+                .ok_or_else(|| Error::Request("unknown or identical snapshot root".into()))?;
+            if !historic.readonly
+                || current_root.uuid == [0; 16]
+                || historic.parent != current_root.uuid
+            {
+                return Err(Error::Request(
+                    "the read-only snapshot must name the selected subvolume as its parent".into(),
+                ));
+            }
+            result["snapshot_root"] = json!(snapshot_id);
+            result["evidence"] = json!("snapshot_only_regular_file_paths");
+            (
+                historic,
+                current_roots.remove(&7).map(|r| r.node),
+                format!("snapshot-{snapshot_id}"),
+            )
+        }
+        (None, Some(generation)) => {
+            let recorded_checksums = vol.select_generation(generation)?;
+            let mut older = roots(&mut vol)?;
+            let historic = older.remove(&current_id).ok_or_else(|| {
+                Error::Request("subvolume is absent in the selected generation".into())
+            })?;
+            if current_root.uuid == [0; 16]
+                || historic.uuid != current_root.uuid
+                || historic.directory != current_root.directory
+                || historic.node.generation > generation
+            {
+                return Err(bad("historical subvolume identity or generation mismatch"));
+            }
+            let checksums = older.remove(&7).map(|r| r.node);
+            if checksums != Some(recorded_checksums) {
+                return Err(bad(
+                    "historical checksum root disagrees with the backup record",
+                ));
+            }
+            result["previous_generation"] = json!(generation);
+            result["evidence"] = json!("previous_generation_only_regular_file_paths");
+            (
+                historic,
+                checksums,
+                format!("generation-{generation}-root-{current_id}"),
+            )
+        }
         _ => {
             return Err(Error::Request(
-                "choose distinct current and snapshot root IDs".into(),
+                "choose exactly one snapshot root or previous generation".into(),
             ));
         }
     };
-    let current = roots
-        .get(&current_id)
-        .ok_or_else(|| Error::Request("unknown current root".into()))?;
-    let historic = roots
-        .get(&snapshot_id)
-        .ok_or_else(|| Error::Request("unknown snapshot root".into()))?;
-    if !historic.readonly || current.uuid == [0; 16] || historic.parent != current.uuid {
-        return Err(Error::Request(
-            "the read-only snapshot must name the selected subvolume as its parent".into(),
-        ));
-    }
-    let current = namespace(&mut vol, current, false)?.paths;
-    let historical = namespace(&mut vol, historic, true)?;
+    let historical = namespace(&mut vol, &historic, true)?;
     let mut removed: BTreeMap<u64, Vec<&Vec<u8>>> = BTreeMap::new();
     for (path, id) in &historical.paths {
         if let Some(id) = id
@@ -243,9 +296,6 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
             removed.entry(*id).or_default().push(path);
         }
     }
-    result["current_root"] = json!(current_id);
-    result["snapshot_root"] = json!(snapshot_id);
-    result["evidence"] = json!("snapshot_only_regular_file_paths");
     let mut candidates = Vec::new();
     for (&id, names) in &removed {
         let size = historical.files[&id].size;
@@ -276,7 +326,10 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
             .is_some_and(|list| list.iter().any(|r| r.kind == 1))
     }) {
         checksum_root
-            .map(|node| extent::Checksums::load(&mut vol, node))
+            .map(|node| {
+                vol.require_owner(node, 7)?;
+                extent::Checksums::load(&mut vol, node)
+            })
             .transpose()?
             .unwrap_or_default()
     } else {
@@ -290,7 +343,7 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
             .iter()
             .map(|v| String::from_utf8_lossy(v))
             .collect();
-        let mut out = dest.join(format!("snapshot-{snapshot_id}-inode-{id}"));
+        let mut out = dest.join(format!("{prefix}-inode-{id}"));
         let ext = crate::file_extension(&names[0], None);
         if !ext.is_empty() && ext.len() <= 32 && ext.bytes().all(|b| b.is_ascii_alphanumeric()) {
             out.set_extension(ext);

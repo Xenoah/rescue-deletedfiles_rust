@@ -30,9 +30,17 @@ from e2e_aiff import verify as aiff_audio
 from e2e_fonts import verify as font_files
 from e2e_deleted_audio_fonts import verify as deleted_audio_fonts
 from e2e_fingerprinted import verify as unordered_fingerprints, native as deleted_fingerprints
+from e2e_aac import verify as aac_recordings
+from e2e_tar import verify as tar_archives
 from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
+from e2e_netpbm import verify as netpbm_images
+from e2e_html import verify as html_documents
+from e2e_ext4_journal import verify as ext4_journal
+from e2e_ext4_journal_extents import verify as ext4_external_extents
+from e2e_btrfs_previous import verify as btrfs_previous
+from e2e_btrfs_checksums import verify as btrfs_checksums
 from e2e_optical import verify as optical_tracks
 from e2e_iso_sessions import verify as iso_history
 from e2e_apfs_snapshots import verify as apfs_snapshot_files
@@ -205,10 +213,36 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 17, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['html_documents'] = html_documents(binary, Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp:
+            result['netpbm_images'] = netpbm_images(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['html_deleted'] = html_documents(binary, Path(tmp), native=True)
+            with tempfile.TemporaryDirectory() as tmp:
+                result['netpbm_deleted'] = netpbm_images(binary, Path(tmp), native=True)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 16, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['ext4_journal'] = ext4_journal(binary, Path(tmp), independent=a.platform == 'linux')
+        with tempfile.TemporaryDirectory() as tmp:
+            result['ext4_journal_extent_trees'] = ext4_external_extents(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 15, 0):
+        for key, test in [('btrfs_previous', btrfs_previous), ('btrfs_checksums', btrfs_checksums)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 13, 0):
         for key, test in [('btrfs_inline', btrfs_inline), ('btrfs_extents', btrfs_extents), ('btrfs_layouts', btrfs_layouts)]:
             with tempfile.TemporaryDirectory() as tmp:
                 result[key] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 14, 0):
+        for key, test in [('aac_recordings', aac_recordings), ('tar_archives', tar_archives)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
+            if a.platform == 'linux':
+                with tempfile.TemporaryDirectory() as tmp:
+                    result[key + '_deleted'] = test(binary, Path(tmp), native=True)
     result['raid_verification']=raid(binary,(a.output/'raid-results.json').resolve())
     if a.platform=='linux':result['raid_native_verification']=raid_native(binary,(a.output/'raid-native-results.json').resolve())
     result['discovery_verification']=discovery(binary,(a.output/'discovery-results.json').resolve())

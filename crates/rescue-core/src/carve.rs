@@ -1,4 +1,5 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
+mod aac;
 mod aiff;
 mod avi;
 mod compressed;
@@ -14,14 +15,17 @@ mod rtf;
 mod rule;
 mod scope;
 mod streams;
+mod tar;
 mod tiff;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
+mod html;
 mod jpeg;
 mod json;
 mod movie;
 mod mp3;
+mod netpbm;
 mod pdf;
 mod png;
 mod xml;
@@ -39,8 +43,8 @@ use uuid::Uuid;
 
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
-// A tagless MP3 signature may end 42 bytes after the start of a stereo frame.
-const SIGNATURE_LOOKAHEAD: u64 = 41;
+// Three consecutive ADTS headers can span two maximum-length frames.
+const SIGNATURE_LOOKAHEAD: u64 = aac::LOOKAHEAD;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
 const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
@@ -78,7 +82,17 @@ pub(crate) fn validate_estimated_extent(
         "flac" => Some(Format::Flac),
         "aif" | "aiff" => Some(aiff::signature(&head).unwrap_or(Format::Aiff)),
         "aifc" | "afc" => Some(Format::Aifc),
+        "aac" | "adts" => Some(Format::Aac),
         "mp3" => Some(Format::Mp3),
+        "pbm" => Some(Format::Pbm),
+        "pgm" => Some(Format::Pgm),
+        "ppm" => Some(Format::Ppm),
+        "pam" => Some(Format::Pam),
+        "pnm" => Some(
+            netpbm::signature(&head)
+                .ok_or_else(|| Error::Invalid("missing Netpbm magic".into()))?,
+        ),
+        "html" | "htm" => Some(Format::Html),
         "xml" => Some(Format::Xml),
         "json" => Some(Format::Json),
         "rtf" => Some(Format::Rtf),
@@ -111,6 +125,23 @@ pub(crate) fn validate_estimated_extent(
     let Some(format) = format else {
         return Ok(false);
     };
+    if matches!(
+        format,
+        Format::Html | Format::Pbm | Format::Pgm | Format::Ppm | Format::Pam
+    ) {
+        let mut input = container::Input::new(image, at, end, cancel, budget)?;
+        let length = if format == Format::Html {
+            html::parse(&mut input, true)?.0
+        } else {
+            netpbm::parse(format, &mut input, true)?
+        };
+        if length as u64 != size {
+            return Err(Error::Invalid(
+                "estimated FAT length differs from validated document or image extent".into(),
+            ));
+        }
+        return Ok(true);
+    }
     let (_, validated, _) = format.validate(image, at, cancel, budget, end)?;
     if validated.len() as u64 > size {
         return Err(Error::Invalid(
@@ -161,6 +192,13 @@ enum Format<'a> {
     Otf,
     Woff,
     Mp3,
+    Aac,
+    Tar(u16),
+    Pbm,
+    Pgm,
+    Ppm,
+    Pam,
+    Html,
     Xml,
     Json,
     Rtf,
@@ -206,6 +244,13 @@ impl<'a> Format<'a> {
             Self::Otf => "opentype",
             Self::Woff => "woff",
             Self::Mp3 => "mp3",
+            Self::Aac => "aac",
+            Self::Tar(_) => "tar",
+            Self::Pbm => "pbm",
+            Self::Pgm => "pgm",
+            Self::Ppm => "ppm",
+            Self::Pam => "pam",
+            Self::Html => "html",
             Self::Xml => "xml",
             Self::Json => "json",
             Self::Rtf => "rtf",
@@ -245,6 +290,11 @@ impl<'a> Format<'a> {
         }
     }
     fn id(self, offset: u64) -> String {
+        if let Self::Tar(n) = self
+            && n != 1
+        {
+            return format!("tar-{offset:016x}-b{n}");
+        }
         if let Self::Rule(rule) = self {
             return format!(
                 "rule-{offset:016x}-{:x}",
@@ -277,6 +327,13 @@ impl<'a> Format<'a> {
             | Self::Otf
             | Self::Woff
             | Self::Mp3
+            | Self::Aac
+            | Self::Tar(_)
+            | Self::Pbm
+            | Self::Pgm
+            | Self::Ppm
+            | Self::Pam
+            | Self::Html
             | Self::Xml
             | Self::Json
             | Self::Rtf
@@ -304,6 +361,11 @@ impl<'a> Format<'a> {
                     .to_ascii_lowercase();
                 ext == "*"
                     || match self {
+                        Self::Pbm | Self::Pgm | Self::Ppm | Self::Pam => {
+                            ext == "pnm" || ext == self.extension()
+                        }
+                        Self::Html => matches!(ext.as_str(), "html" | "htm"),
+                        Self::Aac => matches!(ext.as_str(), "aac" | "adts"),
                         Self::Aiff => matches!(ext.as_str(), "aif" | "aiff"),
                         Self::Aifc => matches!(ext.as_str(), "afc" | "aifc" | "aif" | "aiff"),
                         Self::Tiff => matches!(ext.as_str(), "tif" | "tiff"),
@@ -333,14 +395,29 @@ impl<'a> Format<'a> {
                 let end = compressed::parse(self, &mut input)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
-            Self::Xml | Self::Mp3 => {
+            Self::Pbm | Self::Pgm | Self::Ppm | Self::Pam => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
-                let (end, internal) = if self == Self::Xml {
-                    xml::parse(&mut input)?
-                } else {
-                    mp3::parse(&mut input)?
+                let end = netpbm::parse(self, &mut input, false)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Html | Self::Xml | Self::Mp3 => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, internal) = match self {
+                    Self::Html => html::parse(&mut input, false)?,
+                    Self::Xml => xml::parse(&mut input)?,
+                    _ => mp3::parse(&mut input)?,
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Tar(factor) => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, records) = tar::parse(&mut input, factor)?;
+                Ok((self, input.finish(end)?, records))
+            }
+            Self::Aac => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = aac::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Json => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -409,6 +486,7 @@ fn detect<'a>(
     bytes: &[u8],
     extensions: &[String],
     rule: Option<&'a SignatureRule>,
+    tar_factor: Option<u16>,
 ) -> Option<Format<'a>> {
     if let Some(rule) = rule {
         return bytes
@@ -416,7 +494,13 @@ fn detect<'a>(
             .then_some(Format::Rule(rule))
             .filter(|format| format.allowed(extensions));
     }
-    if bytes.starts_with(SIGNATURE) {
+    if tar::signature(bytes) && Format::Tar(1).allowed(extensions) {
+        Some(Format::Tar(tar_factor.unwrap_or(1)))
+    } else if bytes.starts_with(b"P")
+        && let Some(format) = netpbm::signature(bytes)
+    {
+        Some(format).filter(|f| f.allowed(extensions))
+    } else if bytes.starts_with(SIGNATURE) {
         [Format::Png, Format::Apng]
             .into_iter()
             .find(|f| f.allowed(extensions))
@@ -438,10 +522,20 @@ fn detect<'a>(
     {
         Some(Format::Json)
     } else if matches!(bytes.first(), Some(0x3c | 0xef))
+        && html::signature(bytes)
+        && Format::Html.allowed(extensions)
+    {
+        Some(Format::Html)
+    } else if matches!(bytes.first(), Some(0x3c | 0xef))
         && xml::signature(bytes)
         && Format::Xml.allowed(extensions)
     {
         Some(Format::Xml)
+    } else if bytes.first() == Some(&0xff)
+        && aac::signature(bytes)
+        && Format::Aac.allowed(extensions)
+    {
+        Some(Format::Aac)
     } else if matches!(bytes.first(), Some(0xff | b'I'))
         && mp3::signature(bytes)
         && Format::Mp3.allowed(extensions)
@@ -508,11 +602,23 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
         ],
+        Format::Tar(_) => &[
+            "Member header checksums, stored lengths, padding and two terminating blocks were checked. TAR has no payload checksum. The blocking factor determines trailing record padding; files with different writer settings may have different byte lengths.",
+        ],
+        Format::Aac => &[
+            "A contiguous run of at least three unprotected mono/stereo AAC-LC ADTS frames, with every payload decoded. ADTS has no file length or terminal marker. Adjacent streams with matching audio parameters can merge, and complete surviving frames may represent only part of a file. External tags are excluded.",
+        ],
         Format::Mp3 => &[
             "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
         ],
         Format::Json => &[
             "UTF-8 JSON object or array validated through its closing delimiter. The value may be embedded in a larger document. Leading and trailing whitespace outside the value is excluded, except whitespace following a UTF-8 BOM. No scalar-root or JSON-with-comments recovery.",
+        ],
+        Format::Pbm | Format::Pgm | Format::Ppm | Format::Pam => &[
+            "Netpbm dimensions, channels, declared raster length and sample range checked. Plain P1–P3 include up to 64 trailing spaces/tabs and one final line ending. Each image is a separate candidate. Pixel data has no checksum.",
+        ],
+        Format::Html => &[
+            "UTF-8 HTML5 doctype and balanced HTML tokens checked. An explicit </html> ends at the closing tag. A document with omitted html tags needs a closed element and zero padding or source EOF. No original checksum. External resources and scripts are never opened or executed.",
         ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
@@ -600,10 +706,11 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
+    let mut aac_end = 0;
     let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
@@ -622,11 +729,17 @@ pub(crate) fn scan_range(
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
-            let Some(format) = detect(rest, extensions, settings.signature_rule.as_ref()) else {
+            let Some(format) = detect(
+                rest,
+                extensions,
+                settings.signature_rule.as_ref(),
+                settings.tar_blocking_factor,
+            ) else {
                 continue;
             };
             let at = offset + index as u64;
-            if format == Format::Json && at < json_end {
+            if (format == Format::Json && at < json_end) || (format == Format::Aac && at < aac_end)
+            {
                 continue;
             }
             let allocation = match scope.status(at, 1, cancel) {
@@ -641,8 +754,10 @@ pub(crate) fn scan_range(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
-                && internal_headers.remove(&(offset + index as u64))
+            if matches!(
+                format,
+                Format::Zip | Format::Html | Format::Xml | Format::Mp3 | Format::Tar(_)
+            ) && internal_headers.remove(&(offset + index as u64))
             {
                 continue;
             }
@@ -691,6 +806,9 @@ pub(crate) fn scan_range(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if validated_format == Format::Aac {
+                        aac_end = at + bytes.len() as u64;
                     }
                     if validated_format == Format::Json {
                         json_end = at + bytes.len() as u64;
@@ -781,7 +899,14 @@ pub(crate) fn recovery_data(
     cancel: &AtomicBool,
     rule: Option<&SignatureRule>,
 ) -> Result<RecoveryData> {
+    let blocking = candidate
+        .id
+        .rsplit_once("-b")
+        .and_then(|(_, n)| n.parse::<u16>().ok())
+        .filter(|n| (1..=1024).contains(n))
+        .unwrap_or(1);
     let format = [
+        Format::Tar(blocking),
         Format::Png,
         Format::Apng,
         Format::Jpeg,
@@ -794,6 +919,12 @@ pub(crate) fn recovery_data(
         Format::Otf,
         Format::Woff,
         Format::Mp3,
+        Format::Aac,
+        Format::Pbm,
+        Format::Pgm,
+        Format::Ppm,
+        Format::Pam,
+        Format::Html,
         Format::Xml,
         Format::Json,
         Format::Rtf,
@@ -834,7 +965,16 @@ pub(crate) fn recovery_data(
         return Err(Error::SourceChanged);
     }
     let mut budget = VALIDATION_BUDGET;
-    let boundary = image.length;
+    let boundary = if format == Format::Aac {
+        let length = candidate.size.ok_or(Error::SourceChanged)?;
+        candidate
+            .record
+            .checked_add(length)
+            .filter(|end| *end <= image.length)
+            .ok_or(Error::SourceChanged)?
+    } else {
+        image.length
+    };
     let (actual, bytes, _) =
         format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
     // Sessions made before package classification recorded ODF/EPUB as generic ZIP.

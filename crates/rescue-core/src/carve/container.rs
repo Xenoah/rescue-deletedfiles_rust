@@ -82,6 +82,9 @@ impl<'a> Input<'a> {
     pub fn limit(&self) -> usize {
         self.limit
     }
+    pub fn is_source_end(&self, offset: usize) -> bool {
+        self.start.checked_add(offset as u64) == Some(self.image.length)
+    }
     pub fn finish(mut self, end: usize) -> Result<Vec<u8>> {
         self.ensure(end)?;
         self.bytes.truncate(end);

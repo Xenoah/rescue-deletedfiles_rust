@@ -158,15 +158,22 @@ pub struct BtrfsArgs {
     /// Single-device RAW volume image with a valid primary Btrfs superblock.
     #[arg(long)]
     source: PathBuf,
-    #[arg(long, requires = "snapshot_root")]
+    #[arg(long)]
     current_root: Option<u64>,
-    #[arg(long, requires = "current_root")]
+    #[arg(
+        long,
+        requires = "current_root",
+        conflicts_with = "previous_generation"
+    )]
     snapshot_root: Option<u64>,
+    /// Compare the same subvolume in an older transaction advertised by the superblock.
+    #[arg(long, requires = "current_root")]
+    previous_generation: Option<u64>,
     #[arg(long, requires = "destination", conflicts_with = "all")]
     id: Vec<u64>,
     #[arg(long, requires = "destination")]
     all: bool,
-    #[arg(long, requires = "snapshot_root")]
+    #[arg(long, requires = "current_root")]
     destination: Option<PathBuf>,
     #[arg(long)]
     json: bool,
@@ -177,6 +184,7 @@ pub fn btrfs(a: BtrfsArgs, cancel: &AtomicBool) -> Result<i32> {
             source: a.source,
             current_root: a.current_root,
             snapshot_root: a.snapshot_root,
+            previous_generation: a.previous_generation,
             id: a.id,
             all: a.all,
             destination: a.destination,
@@ -185,4 +193,40 @@ pub fn btrfs(a: BtrfsArgs, cancel: &AtomicBool) -> Result<i32> {
     )?;
     super::print(report, a.json);
     Ok(if failed { 5 } else { 0 })
+}
+
+#[derive(Args)]
+pub struct Ext4JournalArgs {
+    /// Read-only ext4 filesystem image.
+    #[arg(long)]
+    source: PathBuf,
+    /// Inode from the historical listing.
+    #[arg(long)]
+    inode: Option<u32>,
+    /// New file to write. Omitting this lists prior inode layouts.
+    #[arg(long, requires = "inode")]
+    output: Option<PathBuf>,
+    /// Require the recovered bytes to match this original SHA-256.
+    #[arg(long, requires = "output", conflicts_with = "allow_unverified_content")]
+    sha256: Option<String>,
+    /// Save bytes reconstructed from metadata without an independent original digest.
+    #[arg(long, requires = "output")]
+    allow_unverified_content: bool,
+    #[arg(long)]
+    json: bool,
+}
+
+pub fn ext4_journal(args: Ext4JournalArgs, cancel: &AtomicBool) -> Result<i32> {
+    let report = disk_image::ext4_journal(
+        disk_image::Ext4JournalRequest {
+            source: args.source,
+            inode: args.inode,
+            output: args.output,
+            sha256: args.sha256,
+            allow_unverified_content: args.allow_unverified_content,
+        },
+        cancel,
+    )?;
+    super::print(report, args.json);
+    Ok(0)
 }
