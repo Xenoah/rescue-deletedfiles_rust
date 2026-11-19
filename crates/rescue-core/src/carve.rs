@@ -72,6 +72,7 @@ pub(crate) fn validate_estimated_extent(
         "pdf" => Some(Format::Pdf),
         "tif" | "tiff" => Some(Format::Tiff),
         "ttf" => Some(Format::Ttf),
+        "otf" if head.starts_with(b"PK\x03\x04") => Some(Format::Zip),
         "otf" => Some(Format::Otf),
         "woff" => Some(Format::Woff),
         "flac" => Some(Format::Flac),
@@ -201,7 +202,8 @@ impl<'a> Format<'a> {
             Self::Aifc => "aifc",
             Self::Flac => "flac",
             Self::Ttf => "ttf",
-            Self::Otf => "otf",
+            // "otf" already identifies OpenDocument formula-template sessions.
+            Self::Otf => "opentype",
             Self::Woff => "woff",
             Self::Mp3 => "mp3",
             Self::Xml => "xml",
@@ -238,6 +240,7 @@ impl<'a> Format<'a> {
         match self {
             Self::Rule(rule) => &rule.extension,
             Self::Jpeg => "jpg",
+            Self::Otf => "otf",
             other => other.prefix(),
         }
     }

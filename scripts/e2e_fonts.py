@@ -57,6 +57,22 @@ def verify(binary, root, independent=False, system_fonts=()):
                 check(rendered.getmask('A').getbbox() is not None,name)
         print(mode,len(found),'complete font files matched',flush=True)
 
+    # Both a CFF OpenType font and an OpenDocument formula template use .otf.
+    from e2e_open_documents import samples
+    template = next(data for name,data in samples().items() if name.endswith('.otf'))
+    paired = root/'different-types.raw'
+    paired.write_bytes(template + bytes(512) + files['otf-1.otf'])
+    for i, index in enumerate([[], ['--indexed']]):
+        scan=run(binary,'scan','--source',paired,'--mode','carve','--extension','otf',
+                 '--work-dir',root/f'pair-{i}','--json',*index)
+        rows=run(binary,'results','--session',scan['session'],'--json')['candidates']
+        check({r['id'].split('-')[0] for r in rows}=={'otf','opentype'} and len(rows)==2,rows)
+        for row in rows:
+            result,=run(binary,'recover','--session',scan['session'],'--id',row['id'],
+                        '--destination',root/f'pair-out-{i}','--json')['results']
+            expected=template if row['id'].startswith('otf-') else files['otf-1.otf']
+            check(Path(result['path']).read_bytes()==expected,row)
+
     def replace(b,at,fmt,v):
         copy=bytearray(b);struct.pack_into('>'+fmt,copy,at,v);return bytes(copy)
     sfnt=files['ttf-5.ttf'];woff=files['ttf-5.woff']
