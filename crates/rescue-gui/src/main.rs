@@ -8,6 +8,7 @@ mod appearance;
 mod columns;
 mod discovery_ui;
 mod hash_ui;
+mod image_import_ui;
 #[cfg(any(windows, test))]
 mod ime;
 mod index_ui;
@@ -50,6 +51,7 @@ enum Stage {
     Scanning,
     Imaging,
     Migrating,
+    Importing,
     Selecting,
     Recovering,
     Finished,
@@ -75,6 +77,7 @@ enum Message {
     RaidSearched(Box<rescue_core::RaidSearchResult>),
     ImagingProgress(rescue_core::AcquisitionProgress),
     Imaged(rescue_core::AcquisitionResult),
+    ImageImported(rescue_core::Result<rescue_core::disk_image::ImportedFile>),
     Progress(Progress),
     Discovered(Box<rescue_core::DiscoveryResult>),
     Scanned(Box<Session>, PathBuf),
@@ -115,6 +118,7 @@ struct App {
     map_error: String,
     map_messages: Option<mpsc::Receiver<Result<rescue_core::ReadMapPage, String>>>,
     image_dialog: bool,
+    image_import: image_import_ui::State,
     image_destination: String,
     image_resume: bool,
     image_original: Option<(String, String, String)>,
@@ -273,6 +277,7 @@ impl App {
             map_error: String::new(),
             map_messages: None,
             image_dialog: false,
+            image_import: image_import_ui::State::default(),
             image_destination: String::new(),
             image_resume: false,
             image_original: None,
@@ -342,7 +347,11 @@ impl App {
     fn busy(&self) -> bool {
         matches!(
             self.stage,
-            Stage::Scanning | Stage::Recovering | Stage::Imaging | Stage::Migrating
+            Stage::Scanning
+                | Stage::Recovering
+                | Stage::Imaging
+                | Stage::Migrating
+                | Stage::Importing
         )
     }
     fn settings(&self) -> Result<SearchSettings, Text> {
@@ -889,6 +898,7 @@ impl App {
                     };
                     self.image_progress = Some(p);
                 }
+                Message::ImageImported(result) => self.finish_image_import(result),
                 Message::Imaged(result) => {
                     if let Some(origin) = &mut self.image_original {
                         origin.2 = result.image.to_string_lossy().into_owned();
@@ -1134,8 +1144,8 @@ impl App {
                 error.as_deref(),
             );
             ui.small(tr!(
-                "RAWボリュームまたはMBR／GPT／APMディスクイメージを読み取ります。",
-                "Read a RAW volume or an MBR, GPT or Apple Partition Map disk image."
+                "RAWボリュームやディスクを読み取ります。仮想・証拠イメージは「ディスクのツール」から変換できます。",
+                "Read a RAW volume or disk. Use Disk tools to convert virtual or forensic images."
             ));
         }
     }
@@ -1144,18 +1154,27 @@ impl App {
             ui.set_width(ui.available_width());
             self.source_ui(ui);
             ui.collapsing(tr!("ディスクのツール", "Disk tools"), |ui| {
-                if ui
-                    .add_enabled(
-                        !self.source.trim().is_empty(),
-                        egui::Button::new(tr!(
-                            "ディスクのイメージを作成・再開",
-                            "Create or resume a disk image"
-                        )),
-                    )
-                    .clicked()
-                {
-                    self.image_dialog = true;
-                }
+                ui.horizontal_wrapped(|ui| {
+                    if ui
+                        .add_enabled(
+                            !self.source.trim().is_empty(),
+                            egui::Button::new(tr!(
+                                "ディスクのイメージを作成・再開",
+                                "Create or resume a disk image"
+                            )),
+                        )
+                        .clicked()
+                    {
+                        self.image_dialog = true;
+                    }
+                    if self.source_mode == SourceMode::Image
+                        && ui
+                            .button(tr!("イメージをRAWに変換", "Convert an image to RAW"))
+                            .clicked()
+                    {
+                        self.image_import.show(&self.source);
+                    }
+                });
                 if self.source_mode == SourceMode::Image
                     && ui
                         .add_enabled(
@@ -2362,6 +2381,7 @@ enum Picker {
     Session,
     Folder,
     Zip,
+    Raw,
 }
 /// Top anchoring does not reuse the previous frame's height/width when centering.
 /// This keeps an already-open modal inside the first resized frame.
@@ -2396,6 +2416,10 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
                     .add_filter("Rescue session / index", &["json", "sqlite", "db"])
                     .pick_file(),
                 Picker::Folder => dialog.pick_folder(),
+                Picker::Raw => dialog
+                    .add_filter("RAW", &["raw"])
+                    .set_file_name("disk.raw")
+                    .save_file(),
                 Picker::Zip => dialog
                     .add_filter("ZIP", &["zip"])
                     .set_file_name("recovered.zip")
@@ -2649,7 +2673,7 @@ impl App {
             });
             let _language = self.language.enter();
             let current_step = match self.stage {
-                Stage::Settings | Stage::Imaging | Stage::Migrating => 1,
+                Stage::Settings | Stage::Imaging | Stage::Migrating | Stage::Importing => 1,
                 Stage::Scanning => 2,
                 Stage::Selecting => 3,
                 Stage::Recovering | Stage::Finished => 4,
@@ -2698,7 +2722,7 @@ impl App {
                     } else {
                         0.0
                     };
-                    if self.stage != Stage::Scanning {
+                    if !matches!(self.stage, Stage::Scanning | Stage::Importing) {
                         ui.add(
                             egui::ProgressBar::new(fraction)
                                 .desired_width(ui.available_width().min(360.0))
@@ -2778,6 +2802,7 @@ impl App {
                         Stage::Settings => self.setup_ui(ui),
                         Stage::Scanning => self.scan_status_ui(ui),
                         Stage::Imaging => self.imaging_status(ui),
+                        Stage::Importing => {ui.heading(tr!("イメージを変換中", "Converting disk image")); ui.label(&self.image_import.first); ui.label(&self.image_import.output);},
                         Stage::Migrating => {
                             ui.heading(tr!("セッションをコピー移行しています", "Migrating a session copy"));
                             ui.label(&self.session_path);
@@ -2791,6 +2816,9 @@ impl App {
             );
             if !self.busy() { self.actions_ui(ui); }
         });
+        if self.image_import.open && !self.busy() {
+            self.import_image_dialog(ctx);
+        }
         if self.image_dialog && !self.busy() {
             self.imaging_dialog(ctx);
         }
@@ -2846,6 +2874,7 @@ impl eframe::App for App {
 impl Drop for App {
     fn drop(&mut self) {
         self.cancel.store(true, Ordering::Relaxed);
+        self.image_import.join();
     }
 }
 fn launch_options(

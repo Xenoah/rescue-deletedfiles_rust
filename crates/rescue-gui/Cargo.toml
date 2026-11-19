@@ -18,3 +18,6 @@ eframe = { version = "0.33", default-features = false, features = ["default_font
 [target.'cfg(windows)'.dependencies]
 eframe = { version = "0.33", default-features = false, features = ["default_fonts", "wgpu", "accesskit"] }
 wgpu = { version = "27.0.1", default-features = false, features = ["std", "dx12", "wgsl"] }
+
+[dev-dependencies]
+tempfile.workspace = true
