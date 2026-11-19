@@ -1,9 +1,12 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
+mod avi;
 mod container;
+mod ebml;
 mod extra;
 mod indexed;
 mod rule;
 mod scope;
+mod streams;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
@@ -60,6 +63,11 @@ pub(crate) fn validate_estimated_extent(
         "webp" => Some(Format::Webp),
         "bmp" => Some(Format::Bmp),
         "gif" => Some(Format::Gif),
+        "avi" => Some(Format::Avi),
+        "mkv" => Some(Format::Mkv),
+        "webm" => Some(Format::Webm),
+        "ogg" => Some(Format::Ogg),
+        "gz" => Some(Format::Gzip),
         "sqlite" => Some(Format::Sqlite),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
@@ -117,6 +125,11 @@ enum Format<'a> {
     Webp,
     Bmp,
     Gif,
+    Avi,
+    Mkv,
+    Webm,
+    Ogg,
+    Gzip,
     Sqlite,
 }
 impl<'a> Format<'a> {
@@ -136,6 +149,11 @@ impl<'a> Format<'a> {
             Self::Webp => "webp",
             Self::Bmp => "bmp",
             Self::Gif => "gif",
+            Self::Avi => "avi",
+            Self::Mkv => "mkv",
+            Self::Webm => "webm",
+            Self::Ogg => "ogg",
+            Self::Gzip => "gz",
             Self::Sqlite => "sqlite",
         }
     }
@@ -166,9 +184,16 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Wav | Self::Webp | Self::Bmp | Self::Gif | Self::Sqlite => {
-                ExtentEvidence::FileStructure
-            }
+            Self::Avi
+            | Self::Mkv
+            | Self::Webm
+            | Self::Ogg
+            | Self::Gzip
+            | Self::Wav
+            | Self::Webp
+            | Self::Bmp
+            | Self::Gif
+            | Self::Sqlite => ExtentEvidence::FileStructure,
         }
     }
     fn allowed(self, extensions: &[String]) -> bool {
@@ -196,6 +221,16 @@ impl<'a> Format<'a> {
         boundary: u64,
     ) -> Result<(Format<'a>, Vec<u8>, Vec<usize>)> {
         match self {
+            Self::Avi | Self::Mkv | Self::Webm | Self::Ogg | Self::Gzip => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (format, end) = match self {
+                    Self::Avi => (self, avi::parse(&mut input)?),
+                    Self::Ogg => (self, streams::ogg(&mut input)?),
+                    Self::Gzip => (self, streams::gzip(&mut input)?),
+                    _ => ebml::parse(&mut input)?,
+                };
+                Ok((format, input.finish(end)?, Vec::new()))
+            }
             Self::Wav | Self::Webp | Self::Bmp | Self::Gif | Self::Sqlite => {
                 extra::validate(self, image, at, cancel, budget, boundary)
                     .map(|b| (self, b, Vec::new()))
@@ -251,6 +286,11 @@ fn detect<'a>(
     {
         Some(Format::Mp4)
     } else {
+        if bytes.starts_with(b"\x1a\x45\xdf\xa3") {
+            return [Format::Mkv, Format::Webm]
+                .into_iter()
+                .find(|f| f.allowed(extensions));
+        }
         extra::signature(bytes).filter(|format| format.allowed(extensions))
     }
 }
@@ -268,6 +308,18 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Mp4 | Format::Mov => &[
             "Non-fragmented MP4/QuickTime container, complete sample tables and mdat ranges validated. Encoded video/audio frames are not decoded; original content is unknown. ftyp required, no zero-sized boxes, 1048576 samples, 256 tracks.",
+        ],
+        Format::Ogg => &[
+            "Each candidate covers one Ogg logical stream from BOS to EOS. Page CRCs, serial, sequence and packet lacing verified. Chained streams are reported individually; interleaving is unsupported.",
+        ],
+        Format::Gzip => &[
+            "Each candidate covers one gzip member. DEFLATE output CRC and length checked. Adjacent members are reported separately.",
+        ],
+        Format::Mkv | Format::Webm => &[
+            "Declared-size EBML segment, track headers and cluster structure checked. Unknown-size live streams are unsupported. Media frames are not decoded.",
+        ],
+        Format::Avi => &[
+            "Single classic RIFF AVI with bounded header, stream and media chunks. OpenDML indexes and multi-RIFF streams are unsupported. Frames are not decoded.",
         ],
         Format::Wav | Format::Webp | Format::Bmp | Format::Gif | Format::Sqlite => &[
             "Contiguous extent determined from format structure. Payload decoding, database integrity and original content are unverified.",
@@ -316,7 +368,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut zip_records = std::collections::BTreeSet::new();
@@ -500,6 +552,11 @@ pub(crate) fn recovery_data(
         Format::Webp,
         Format::Bmp,
         Format::Gif,
+        Format::Avi,
+        Format::Mkv,
+        Format::Webm,
+        Format::Ogg,
+        Format::Gzip,
         Format::Sqlite,
     ]
     .into_iter()

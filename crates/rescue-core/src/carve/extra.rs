@@ -10,10 +10,22 @@ fn invalid() -> Error {
 pub(super) fn signature(bytes: &[u8]) -> Option<Format<'static>> {
     match bytes.first()? {
         b'R' if bytes.starts_with(b"RIFF") => match bytes.get(8..12)? {
+            b"AVI " => Some(Format::Avi),
             b"WAVE" => Some(Format::Wav),
             b"WEBP" => Some(Format::Webp),
             _ => None,
         },
+        0x1f if bytes.starts_with(&[0x1f, 0x8b, 8])
+            && bytes.get(3).is_some_and(|v| v & 0xe0 == 0) =>
+        {
+            Some(Format::Gzip)
+        }
+        b'O' if bytes.starts_with(b"OggS\0")
+            && matches!(bytes.get(5), Some(2 | 6))
+            && bytes.get(18..22) == Some(&[0; 4]) =>
+        {
+            Some(Format::Ogg)
+        }
         b'G' if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") => Some(Format::Gif),
         b'S' if bytes.starts_with(b"SQLite format 3\0") => Some(Format::Sqlite),
         b'B' if bytes.starts_with(b"BM")
