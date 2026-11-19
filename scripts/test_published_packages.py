@@ -19,6 +19,9 @@ from e2e_qcow2 import verify as qcow2
 from e2e_apng import verify as animations
 from e2e_icons import verify as icons
 from e2e_rtf import verify as rtf_documents
+from e2e_open_documents import verify as open_documents
+from e2e_json import verify as json_documents
+from e2e_udif import verify as udif_images
 from e2e_xml import verify as xml_documents
 from e2e_mp3 import verify as mp3_audio
 from e2e_flac import verify as flac_audio
@@ -154,6 +157,10 @@ def main():
         for family, test in types:
             with tempfile.TemporaryDirectory() as tmp:
                 result['media_document_verification'][family] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 8, 0):
+        for key, test in [('open_documents', open_documents), ('json_documents', json_documents), ('udif_images', udif_images)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
