@@ -1,6 +1,8 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
 mod apfs;
+mod btrfs;
 pub use apfs::{ApfsRequest, apfs};
+pub use btrfs::{BtrfsRequest, btrfs};
 mod compressed_raw;
 mod ewf;
 mod extents;
@@ -141,6 +143,8 @@ fn read_tool<T>(
     let program = executable_in_path(name).ok_or_else(|| {
         let package = if name.starts_with("ewf") {
             "libewf tools"
+        } else if name == "btrfs-map-logical" {
+            "btrfs-progs"
         } else if name == "xorriso" {
             "xorriso"
         } else {
@@ -149,7 +153,7 @@ fn read_tool<T>(
         Error::Unsupported(format!("install {package} and put {name} on PATH"))
     })?;
     let mut command = Command::new(program);
-    if name.starts_with("ewf") {
+    if name.starts_with("ewf") || name == "btrfs-map-logical" {
         command.env("LC_ALL", "C");
     }
     let mut child = command
