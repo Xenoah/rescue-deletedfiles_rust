@@ -198,7 +198,8 @@ if modern or VERSION=='1.0.0':
             if not ime['native_input_method_tested'] or ime['native_ime']['unicode_injection_used'] or ime['native_ime']['committed_value']!='原文' or ime['native_ime']['cancel_trace'][-1]['value']!='' or ime['native_ime']['cancel_escape_presses']!=2:raise SystemExit('v1.0 native Japanese IME proof mismatch')
             if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,1):require_repeated_ime(proof, require_stages=tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,2))
 if modern:
-    proof=json.loads((ROOT/('docs/gui-v1.2-results.json' if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) else 'docs/gui-v1.1-results.json')).read_text())
+    series='.'.join(VERSION.split('-')[0].split('.')[:2])
+    proof=json.loads((ROOT/f'docs/gui-v{series}-results.json').read_text(encoding='utf-8'))
     assert proof['status']=='passed' and proof['application_version']==VERSION
     assert proof['source_unchanged'] and proof['files_byte_exact']>=2
     assert proof['readable_reports']['files_exactly_match_json']==proof['files_byte_exact']
@@ -213,6 +214,8 @@ if modern:
         upcase=proof['exfat_damage'];assert upcase['files_byte_exact']==8 and upcase['source_unchanged'] and upcase['unverified_candidates']==11
     if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) and VERSION not in ['1.2.0-alpha.1','1.2.0-alpha.2','1.2.0-alpha.3']:
         known=proof['known_hashes'];assert known['matched']==2 and known['not_listed']==6 and known['not_comparable']==0 and known['original_evidence_preserved'] and known['source_unchanged']
+    if series == '1.3':
+        assert proof['files_byte_exact'] >= 5 and proof['custom_rule']['files_byte_exact'] >= 1 and proof['custom_rule']['source_unchanged']
     for shot in proof['screenshots']:
         path=ROOT/'docs'/shot['file']
         assert path.resolve().is_relative_to((ROOT/'docs').resolve())

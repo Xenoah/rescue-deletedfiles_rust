@@ -121,6 +121,7 @@ Maintainer: Xenoah <noreply@users.noreply.github.com>
 Homepage: https://github.com/Xenoah/rescue-deletedfiles_rust
 Depends: libc6 (>= 2.35), libgcc-s1, libstdc++6, libx11-6, libxcursor1, libxrandr2, libxi6, libxkbcommon0, libxkbcommon-x11-0, libwayland-client0, libgl1, libegl1
 Recommends: xdg-desktop-portal, xdg-desktop-portal-gtk, fonts-noto-cjk
+Suggests: sleuthkit
 Description: Read-only disk recovery GUI, CLI and MCP server
  NTFS, FAT32, exFAT metadata recovery and contiguous PNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite carving.
 ''',encoding='utf-8')

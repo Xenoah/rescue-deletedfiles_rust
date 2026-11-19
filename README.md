@@ -23,6 +23,10 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
+## v1.3.0の対応範囲
+
+GUI・CLI・MCPでGIF・BMP・静止WebP・WAV・SQLiteのカービングと、独自形式の署名ルールを使えます。CLIにはThe Sleuth Kitを使う削除管理情報の復元とイメージのRAW変換を追加しました。ext2/3/4、VHD、VMDK、分割RAWで実証しています。[利用手順と実測結果](docs/RELEASE-v1.3.0.md)
+
 ## できること
 
 - NTFS・FAT12/16/32・exFATの削除管理情報を解析。MBR/EBR/GPT、長い名前、対応する断片化チェーンを扱います。
@@ -43,7 +47,7 @@ FATのチェーンが消えた複数クラスターは標準では推定しま�
 
 [配色と見やすさの設定](docs/UI-APPEARANCE.md): ライト・ダーク・システム連動、進捗表示、入力欄のエラー表示。
 
-APFS/ext4/ReFSの直接解析、実SSD/HDDでの一般的な復元率、第三者スクリーンリーダーによる人の評価は未対応・未評価です。読み取りは元媒体を変更しませんが、復元先は別媒体を推奨します。推定・保存完了・出力ハッシュは削除前との内容一致を証明しません。
+共通エンジンの管理情報解析はNTFS・FAT・exFATに対応します。他のファイルシステムはCLIの外部リーダーの対応範囲によります。実SSD/HDDでの一般的な復元率と第三者スクリーンリーダーによる人の評価は未測定です。読み取りは元媒体を変更しませんが、復元先は別媒体を推奨します。推定・保存完了・出力ハッシュは削除前との内容一致を証明しません。
 
 ## CLI / MCP
 
@@ -69,6 +73,6 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
 ```
 
-現行は35統合群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。検証内容と限界は[受入台帳](docs/V1_2_ACCEPTANCE.md)に記録します。
+標準の統合試験は37群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。検証内容と限界は[受入台帳](docs/V1_2_ACCEPTANCE.md)に記録します。
 
 過去の記録: [v1.0リリース](docs/RELEASE-v1.0.md) · [v1.0受入](docs/V1_ACCEPTANCE.md) · [1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md) · [v1.1以降のバックログ](docs/BACKLOG_V1_1.md)。過去の画像や計測を現行版の実績として数えません。
