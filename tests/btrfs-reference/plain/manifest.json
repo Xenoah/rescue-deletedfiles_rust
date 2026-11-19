@@ -1,0 +1,26 @@
+{
+  "filesystem": "Btrfs",
+  "compression": "plain",
+  "offline_errors": [],
+  "subvolume": 256,
+  "snapshot": 257,
+  "raw_bytes": 167772160,
+  "sha256": "e561bcb07afd961f4329baeef648b4690f8aad1bed47256dd16997a1186c07f6",
+  "compressed_sha256": "ca4f95a1fd3ee60e041f63c157f7a762f7f0eee3011afb2ecc0d4746d5c6d38f",
+  "original_files": {
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "sample.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+    "sample.mp3": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+    "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+  },
+  "survivor": "survivor.txt",
+  "created_later": "created-later.txt",
+  "snapshot_leaf": {
+    "logical": 5472256,
+    "physical": 5472256,
+    "bytes": 16384
+  }
+}

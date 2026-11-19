@@ -152,3 +152,37 @@ pub fn iso_sessions(args: IsoArgs, cancel: &AtomicBool) -> Result<i32> {
     super::print(result, args.json);
     Ok(if failed { 5 } else { 0 })
 }
+
+#[derive(Args)]
+pub struct BtrfsArgs {
+    /// Single-device RAW volume image with a valid primary Btrfs superblock.
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(long, requires = "snapshot_root")]
+    current_root: Option<u64>,
+    #[arg(long, requires = "current_root")]
+    snapshot_root: Option<u64>,
+    #[arg(long, requires = "destination", conflicts_with = "all")]
+    id: Vec<u64>,
+    #[arg(long, requires = "destination")]
+    all: bool,
+    #[arg(long, requires = "snapshot_root")]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+pub fn btrfs(a: BtrfsArgs, cancel: &AtomicBool) -> Result<i32> {
+    let (report, failed) = disk_image::btrfs(
+        disk_image::BtrfsRequest {
+            source: a.source,
+            current_root: a.current_root,
+            snapshot_root: a.snapshot_root,
+            id: a.id,
+            all: a.all,
+            destination: a.destination,
+        },
+        cancel,
+    )?;
+    super::print(report, a.json);
+    Ok(if failed { 5 } else { 0 })
+}

@@ -5,6 +5,7 @@ mod language;
 mod accessibility;
 mod acquisition_ui;
 mod appearance;
+mod btrfs_ui;
 mod columns;
 mod discovery_ui;
 mod extent_ui;
@@ -123,6 +124,7 @@ struct App {
     image_dialog: bool,
     image_import: image_import_ui::State,
     extent_recovery: extent_ui::State,
+    btrfs_snapshots: btrfs_ui::State,
     image_destination: String,
     image_resume: bool,
     image_original: Option<(String, String, String)>,
@@ -283,6 +285,7 @@ impl App {
             image_dialog: false,
             image_import: image_import_ui::State::default(),
             extent_recovery: extent_ui::State::default(),
+            btrfs_snapshots: btrfs_ui::State::default(),
             image_destination: String::new(),
             image_resume: false,
             image_original: None,
@@ -1218,6 +1221,19 @@ impl App {
                         .show_fingerprints(!self.source.trim().is_empty());
                 }
                 self.discovery_controls(ui);
+                if self.source_mode == SourceMode::Image
+                    && ui
+                        .add_enabled(
+                            !self.source.trim().is_empty(),
+                            egui::Button::new(tr!(
+                                "Btrfsスナップショットから復元",
+                                "Restore from a Btrfs snapshot"
+                            )),
+                        )
+                        .clicked()
+                {
+                    self.btrfs_snapshots.show(&self.source);
+                }
             });
         });
     }
@@ -2855,6 +2871,9 @@ impl App {
             );
             if !self.busy() { self.actions_ui(ui); }
         });
+        if self.btrfs_snapshots.open && !self.busy() {
+            self.btrfs_snapshots.draw(ctx);
+        }
         if self.extent_recovery.open && !self.busy() {
             self.extent_dialog(ctx);
         }

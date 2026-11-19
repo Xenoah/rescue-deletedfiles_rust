@@ -1,6 +1,8 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
 mod apfs;
+mod btrfs;
 pub use apfs::{ApfsRequest, apfs};
+pub use btrfs::{BtrfsRequest, btrfs};
 mod compressed_raw;
 mod ewf;
 mod extents;

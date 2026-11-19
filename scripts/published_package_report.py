@@ -60,6 +60,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 13, 0):
+        for key, modes, count in [('btrfs_inline', ('plain', 'zlib'), 7), ('btrfs_extents', ('zlib', 'zstd'), 7), ('btrfs_layouts', ('lzo', 'zstd'), 13)]:
+            assert set(run[key]) == set(modes)
+            assert run[key][modes[0]] == run[key][modes[1]] and len(run[key][modes[0]]) == count
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 12, 0):
         assert run['cdrom_tracks'] == {f'{mode}-{stride}': 7 for mode in ('mode1', 'xa-form1') for stride in (2352, 2448)}
         if platform == 'linux':
