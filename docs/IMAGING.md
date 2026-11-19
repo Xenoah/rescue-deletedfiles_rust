@@ -110,7 +110,7 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI・QCOW2はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHD・VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+単独VDI・QCOW2とクラシックVHD（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
 
 ## Apple DMG（UDIF）
 
@@ -146,3 +146,14 @@ rescue recover-extents --source disk.raw --layout layout.json --output restored.
 ## 圧縮したRAWディスク
 
 GUIの変換画面で `.img.gz` などを選ぶか、CLIで `rescue import-image --source disk.img.xz --image-type compressed-raw --output disk.raw --json` を実行します。gzip・bzip2・XZ・Zstandard・LZ4をアプリ内で展開します。同じ方式で連結された完結したストリームは順に読み、XZの4バイト単位のゼロパディングにも対応します。末尾の余分なデータ、途中切断、記録されている検査値の不一致では新しいRAWを確定しません。1イメージは最大16 TiB・65,536ストリーム、XZの復号メモリとZstandardのウィンドウは64 MiBまでです。外部辞書は扱いません。変換後に表示されるSHA-256は論理ディスク全体の値です。
+
+
+## 固定容量・可変容量のクラシックVHD
+
+GUIの「イメージをRAWに変換」でVHDを選ぶか、次のコマンドを実行します。親イメージを持つ差分VHDは対象外です。
+
+```console
+rescue import-image --source guest.vhd --image-type vhd --output guest.raw --json
+```
+
+固定容量型では末尾のフッターと論理容量を照合します。可変容量型では前後のフッター、動的ヘッダーのチェックサム、ブロック配置表、各セクターの割り当てビットを調べます。未割り当てセクターは論理ゼロとして読み、完了時にRAW全体のSHA-256を返します。検証した最大論理容量はテストイメージの68 MiBです。実装の論理容量上限は2 TiBです。

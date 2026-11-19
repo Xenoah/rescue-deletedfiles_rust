@@ -1,5 +1,6 @@
 //! Read logical sectors from self-contained virtual disks. No host path stored in an image is opened.
 mod qcow;
+mod vhd;
 use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
@@ -122,18 +123,21 @@ enum Block {
 enum Disk {
     Vdi(Vdi),
     Qcow(qcow::Qcow),
+    Vhd(vhd::Vhd),
 }
 impl Disk {
-    fn geometry(&self) -> (u64, u64) {
+    fn size(&self) -> u64 {
         match self {
-            Self::Vdi(v) => (v.size, v.block_size),
-            Self::Qcow(q) => (q.size, q.cluster),
+            Self::Vdi(v) => v.size,
+            Self::Qcow(q) => q.size,
+            Self::Vhd(v) => v.size,
         }
     }
-    fn block(&mut self, source: &mut File, offset: u64) -> Result<Block> {
+    fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
         match self {
-            Self::Vdi(v) => Ok(v.block(offset)),
-            Self::Qcow(q) => q.block(source, offset),
+            Self::Vdi(v) => Ok((v.block(offset), v.block_size)),
+            Self::Qcow(q) => Ok((q.block(source, offset)?, q.cluster)),
+            Self::Vhd(v) => v.block(source, offset),
         }
     }
     fn write_raw(
@@ -142,7 +146,7 @@ impl Disk {
         file: &mut File,
         cancel: &AtomicBool,
     ) -> Result<(u64, Sha256)> {
-        let (size, cluster) = self.geometry();
+        let size = self.size();
         let mut digest = Sha256::new();
         let mut buffer = vec![0; 256 * 1024];
         let zeros = vec![0; buffer.len()];
@@ -153,8 +157,9 @@ impl Disk {
             if cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
             }
+            let (block, cluster) = self.block(source, offset)?;
             let count = cluster.min(size - offset);
-            match self.block(source, offset)? {
+            match block {
                 Block::Deflate { at, bytes } => {
                     encoded.resize(bytes, 0);
                     read_at(source, at, &mut encoded)?;
@@ -208,7 +213,7 @@ pub(super) fn import(
     output: &Path,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
-    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2")) {
+    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd")) {
         return Ok(None);
     }
     let mut source = File::open(path)?;
@@ -216,7 +221,18 @@ pub(super) fn import(
     let mut head = [0; 68];
     let n = before.len().min(head.len() as u64) as usize;
     read_at(&mut source, 0, &mut head[..n])?;
-    let kind = if head[..4] == *b"QFI\xfb" {
+    // A fixed VHD starts directly with guest bytes, which may themselves look
+    // like another container. Its identifying footer is outside the guest.
+    let mut tail = [0; 8];
+    if before.len() >= 512 {
+        read_at(&mut source, before.len() - 512, &mut tail)?;
+    }
+    if requested == Some("vhd") && head[..8] == *b"vhdxfile" && tail != *b"conectix" {
+        return Ok(None); // The external VHD driver also reads VHDX.
+    }
+    let kind = if tail == *b"conectix" || head[..8] == *b"conectix" {
+        Some("vhd")
+    } else if head[..4] == *b"QFI\xfb" {
         Some("qcow2")
     } else if head[64..68] == *b"\x7f\x10\xda\xbe" {
         Some("vdi")
@@ -227,6 +243,7 @@ pub(super) fn import(
         return Err(invalid("signature differs from requested image type"));
     }
     let mut disk = match kind {
+        Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),
         Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),
         _ => return Ok(None),
