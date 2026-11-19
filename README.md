@@ -2,11 +2,11 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**最新公開版はv1.2.3です。** GUIの文字・進捗表示を明瞭にし、ダークモードと入力欄の赤枠エラー表示を追加しました。 v1.2.1は公開前の試験で停止し、既存タグを保持しています。[修正と検証の記録](docs/V1_2_ACCEPTANCE.md)。
+**最新公開版はv1.3.0です。** 削除管理情報が残るext2/3/4の復元、VHD・VMDKの読取、管理情報を失った5形式のカービング、独自形式の署名ルールを追加しました。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.2.3) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.2.3/docs/RELEASE-v1.2.md) · [インストール](docs/INSTALL.md) · [検証台帳](docs/V1_2_ACCEPTANCE.md)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.3.0) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.3.0/docs/RELEASE-v1.3.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44533320582)
 
-![設定画面](docs/images/v1.2.3/settings-light-ja.png)
+![v1.3.0で復元した5形式](docs/images/v1.3.0/structures-recovered.png)
 
 ## ダウンロード
 
@@ -14,12 +14,12 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 | 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-windows-x64-portable.zip) |
-| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/rescue-1.2.3-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/rescue-1.3.0-macos-x64-portable.zip) |
 
-リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.2.3/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.3.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
@@ -73,6 +73,6 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
 ```
 
-標準の統合試験は37群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。検証内容と限界は[受入台帳](docs/V1_2_ACCEPTANCE.md)に記録します。
+標準の統合試験は37群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。[v1.3.0の検証結果と制限](docs/RELEASE-v1.3.0.md)。
 
 過去の記録: [v1.0リリース](docs/RELEASE-v1.0.md) · [v1.0受入](docs/V1_ACCEPTANCE.md) · [1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md) · [v1.1以降のバックログ](docs/BACKLOG_V1_1.md)。過去の画像や計測を現行版の実績として数えません。
