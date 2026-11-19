@@ -1,0 +1,154 @@
+{
+  "files_byte_exact": 7,
+  "bytes_exact": 3261,
+  "source_unchanged": true,
+  "source_sha256": "edbafb3f5570426049ba089b887b6e246f45cf30997a159d1b5f8a806461b198",
+  "archive_sha256": "92f52701c3b407a71f3b94ac8ab6aac614271688c94233da389513753dd00b01",
+  "status": "passed",
+  "application_version": "1.6.0",
+  "time_utc": "2026-11-19T15:28:47.390080+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "7fe2f5d5b85fd1a68c93ce4c7ad48b6f508e624e24cf8d0e00f7aa47794d4a1a",
+  "cli_binary_sha256": "9d986de06c9f535d0d135c1f23225b07ff1d60935d9619beeffe0a519588c905",
+  "files": [
+    {
+      "archive_entry": "bz2_0000000000000400.bz2",
+      "bytes": 62,
+      "sha256": "ddb075842f042b3550600cdf672426a7a53d7771aa28fe71ea34a73a0c32ae07"
+    },
+    {
+      "archive_entry": "lz_0000000000000524.lz",
+      "bytes": 59,
+      "sha256": "5ae3cc514e3e825aeefd31af154857fad0fe33c795f6ffd80472f3e764e7f506"
+    },
+    {
+      "archive_entry": "lz4_0000000000000879.lz4",
+      "bytes": 1366,
+      "sha256": "9ff3c4c7ca45f90c4de16c8320af437adc863c907f54a58e527e7c526c8ab665"
+    },
+    {
+      "archive_entry": "lz4_0000000000000e1c.lz4",
+      "bytes": 1135,
+      "sha256": "199ecd933cb45d01192dc3ef1fc7bee32c8f4b9a968f5c3c8a4c483dffe03ef6"
+    },
+    {
+      "archive_entry": "xz_000000000000048b.xz",
+      "bytes": 76,
+      "sha256": "07cb4d397d3d770b377d8932af3008c8fc20cc78f8dfbd424e55c994e6e12fe1"
+    },
+    {
+      "archive_entry": "zst_00000000000005ac.zst",
+      "bytes": 289,
+      "sha256": "44afe18a254c7322245ff50a159c5936c23a5251eb89642d6244591b4d8f37f1"
+    },
+    {
+      "archive_entry": "zst_000000000000071a.zst",
+      "bytes": 274,
+      "sha256": "51ffeceb91a19a6bb7c5f76e3a287b85a74ef682326036a6bba779f3c32fcaa9"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 7,
+    "html_sha256": "7d1046ed6cc224530402188780585b1c60ab56baa52e1e0e7d7615731b193bd9",
+    "csv_sha256": "b0fb55c0793f6d295f72a9ea039e0cff96fa480ca011ce729cf4993e7cea5d58",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 7
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "e5d49c31d9c6a80b4c7573f3ffde300eb3e74328e2bccae7c255c9c4217ac8b5",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "9f0065d39ec7851df893fc09aa0441fd6325481b53b8dc2b830b029e160430ae",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "893f73ea6d2effbcf2be7515f119c37cee73a6ce692bc1a4c847033aa5755f6c"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "09a3ae4dd4127a1183a7757e9c72dc959703e2c76cc685d294940d0e051c7efe"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.6.0/structures-selected.png",
+      "sha256": "b15214a7796c248ce878bf39ac4d36be13e54149cb321eb792bb8f0ac56d6644",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/structures-recovered.png",
+      "sha256": "ddeb934348110f35ddbb7ac0c47487d57f57c633b98039cad1b687fc72a8e28d",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/custom-recovered.png",
+      "sha256": "266fa0ab58a7f69d2b3f46cd5efbf961e8216ab7d578f2d202337468f2825a6e",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/cp932-recovered.png",
+      "sha256": "e29dce79986f52739e8ae871719ab31b738247ba181fc6ddfa7098c2b240d1de",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/exfat-recovered.png",
+      "sha256": "a9b29b9e4a9fa6dd51f572994954481c28b48905b53dfe9025df0304a83019d3",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/hash-saved.png",
+      "sha256": "c9c0ff5a44aa7bb1d098ddac13408fca33e2bf2d9bb5162fc4c374016edcc207",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/acq-interrupted.png",
+      "sha256": "193bd5067cf9b275ae028143207734b2a9bb161b39faff1b42f4e3b01973f9a8",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.6.0/acq-resumed.png",
+      "sha256": "7b424887662adb9a6dc7a93a3bf283cd1a21fb9585eff059400eca3dd12d2616",
+      "width": 1260,
+      "height": 820
+    }
+  ]
+}

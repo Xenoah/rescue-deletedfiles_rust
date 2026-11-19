@@ -23,6 +23,18 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         assert len(run['apng_verification']) >= 7 and len(run['icons_verification']) >= 7
 
 
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 6, 0):
+        assert len(run['archive_stream_verification']) == 11 and len(run['frame_archive_verification']) == 10
+        assert set(run['apple_partition_files']) == {'png', 'webp', 'bz2', 'xml', 'txt', 'ico', 'zip'}
+        if platform == 'linux':
+            disk_images = run['forensic_images']
+            assert set(disk_images) == {'vhdx-fixed', 'vhdx-dynamic', 'aff', 'single', 'multiple'}
+            first = disk_images['single']
+            assert first['segments'] == 1 and disk_images['multiple']['segments'] > 1
+            assert len(first['deleted_files']) == 7
+            for evidence in disk_images.values():
+                assert evidence['logical_sha256'] == first['logical_sha256'] and evidence['deleted_files'] == first['deleted_files']
+
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')

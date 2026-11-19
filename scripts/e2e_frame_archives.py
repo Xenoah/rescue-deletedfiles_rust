@@ -44,6 +44,10 @@ def reference(root):
     return frames
 
 
+def golden_frames():
+    return {k: base64.b64decode(v, validate=True) for k, v in json.loads(FIXTURES.read_text()).items()}
+
+
 def verify(binary, root, frames):
     disk = root / 'frames.raw'
     image = bytearray(b'\xa9' * (1024 * 1024 - 2))
@@ -109,6 +113,6 @@ if __name__ == '__main__':
             if args.independent:
                 frames = reference(root)
             else:
-                frames = {k: base64.b64decode(v, validate=True) for k, v in json.loads(FIXTURES.read_text()).items()}
+                frames = golden_frames()
             check(frames.keys() == raw_cases().keys(), 'expected ten reference frames')
             verify(args.binary.resolve(), root, frames)

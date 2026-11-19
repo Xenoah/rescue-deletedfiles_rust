@@ -19,6 +19,7 @@ def verify(binary,root):
         (root/name).write_bytes(data)
     raw=make_deleted(root,'ext4',files).rename(root/'ext4.raw')
     expected=sha(raw)
+    evidence={}
     def recover(label,source,kind):
         result=run(binary,'filesystem','--source',source,'--image-type',kind,'--fs-type','ext4','--all',
                    '--destination',root/(label+'-files'),'--json')
@@ -40,6 +41,8 @@ def verify(binary,root):
             recover(label+'-direct',segments[0],kind)
         recover(label+'-raw',output,'raw')
         check({p:sha(p) for p in segments}==before and sha(raw)==expected,'source changed')
+        evidence[label]={'segments':len(segments),'logical_sha256':expected,
+                         'deleted_files':{name:hashlib.sha256(data).hexdigest() for name,data in files.items()}}
         print(label,len(segments),'segments; RAW and seven deleted files byte-exact',flush=True)
     for subformat in ('dynamic','fixed'):
         image=root/(subformat+'.vhdx')
@@ -60,6 +63,7 @@ def verify(binary,root):
     failed=broken/'incomplete.raw'
     run(binary,'import-image','--source',source,'--image-type','ewf-verified','--output',failed,'--json',expected=4)
     check(not failed.exists() and sha(raw)==expected,'incomplete EWF output')
+    return evidence
 
 
 if __name__=='__main__':

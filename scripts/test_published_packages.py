@@ -18,6 +18,10 @@ from e2e_virtual_images import verify as virtual_images
 from e2e_qcow2 import verify as qcow2
 from e2e_apng import verify as animations
 from e2e_icons import verify as icons
+from e2e_archive_streams import verify as archive_streams
+from e2e_frame_archives import verify as frame_archives, golden_frames
+from e2e_apple_partitions import verify as apple_partitions
+from e2e_forensic_images import verify as forensic_images
 from e2e_release_fixes import main as release_fixes
 from e2e_acquisition import main as acquisition
 from e2e_cp932 import main as cp932
@@ -127,6 +131,17 @@ def main():
         for name, test in [('qcow2', qcow2), ('apng', animations), ('icons', icons)]:
             with tempfile.TemporaryDirectory() as tmp:
                 result[name + '_verification'] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 6, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['archive_stream_verification'] = archive_streams(binary, Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp:
+            result['frame_archive_verification'] = frame_archives(binary, Path(tmp), golden_frames())
+        with tempfile.TemporaryDirectory() as tmp:
+            files = apple_partitions(binary, Path(tmp))
+            result['apple_partition_files'] = {e['extension']: e['sha256'] for e in files}
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['forensic_images'] = forensic_images(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
