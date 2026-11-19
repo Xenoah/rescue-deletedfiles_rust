@@ -310,15 +310,13 @@ function Set-ImeQuery {
         }
         [RescueOwnedWindow]::RomanKeys('torikeshi')
         $cancelPreedit=-join [char[]](0x3068,0x308a,0x3051,0x3057)
-        # Wait for the actual preedit, not an assumed keyboard/TSF processing time.
-        # Otherwise Escape may be sent before there is any composition to cancel.
-        $until=[DateTime]::UtcNow.AddSeconds(5)
-        do {
-            Start-Sleep -Milliseconds 100
-            $preedit=(Await-Control 'Search results' 'Edit').GetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern).Current.Value
-        } while ($preedit -cne $cancelPreedit -and [DateTime]::UtcNow -lt $until)
+        # A matching ValuePattern can also describe committed text. Send the
+        # cancellation keys only after the native provider reports this kana as
+        # selected preedit in the foreground window of the owned process.
+        $cancellationPreedit=Wait-ImeState $cancelPreedit 'cancellation-preedit'
+        $preedit=$cancellationPreedit.value
         $script:imeDiagnostic.cancel_start_value=$preedit
-        if ($preedit -cne $cancelPreedit) {throw "Native IME cancellation preedit was not ready: $preedit"}
+        $script:imeDiagnostic.cancel_start_state=$cancellationPreedit
         if ($env:RESCUE_IME_TRACE -eq '1') {Save-OwnedScreenshot ("windows-ime-preedit-{0}.png" -f $cycle)}
         $cancelTrace=@()
         for ($press=1;$press -le 2;$press++) {
@@ -368,7 +366,7 @@ function Set-ImeQuery {
         # text selection proves Enter has actually completed the composition.
         $committed=Wait-ImeState $cfg.query 'committed' $true
         $value=$committed.value
-        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
+        $cycleProof=@{description=$description;cancelled_roman_keys='torikeshi';committed_roman_keys='genbunn';committed_value=$value;unicode_injection_used=$false;cancel_escape_presses=2;cancel_start_value=$preedit;cancel_start_state=$cancellationPreedit;cancel_trace=$cancelTrace;conversion_preedit=$conversionPreedit;converted_preedit=$convertedPreedit;commit_state=$committed;space_presses=1;enter_presses=1;os_version=[Environment]::OSVersion.Version.ToString()}
         $script:steps.Add('native-ime: cancel prediction and composition / convert genbunn / commit '+$cfg.query)
         $cycles+=,$cycleProof
         Start-Sleep -Milliseconds 100
