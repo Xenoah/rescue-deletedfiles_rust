@@ -6,7 +6,7 @@ from pathlib import Path
 import struct
 import tempfile
 from e2e import check, run
-from e2e_udif import CORPUS, GOLDEN, END, assemble, crc_header, digest, restore_files
+from e2e_udif import CORPUS, GOLDEN, END, assemble, crc_header, digest, file_hash, restore_files
 
 LZFSE = 0x80000007
 LZMA = 0x80000008
@@ -58,6 +58,20 @@ def verify(binary,root):
         run(binary,'import-image','--source',path,'--image-type','dmg','--output',out,'--json',expected=4)
         check(not out.exists(),(kind,'overexpansion'))
     print(len(cases),'modern UDIF runs; each logical image and seven output files matched. Ten invalid images refused.',flush=True)
+    truth=json.loads((GOLDEN/'manifest.json').read_text())
+    native_dir=GOLDEN/'apple-reference'
+    recorded=json.loads((native_dir/'manifest.json').read_text())['images']
+    for name in ('ULFO.dmg','ULMO.dmg'):
+        folder=root/name;folder.mkdir();image=native_dir/name;out=folder/'disk.raw'
+        check(file_hash(image)==recorded[name]['container_sha256'],name)
+        # In particular an Apple ULMO data fork starts with XZ. The outer UDIF
+        # must be recognized before the standalone compressed-RAW fallback.
+        result=run(binary,'import-image','--source',image,'--output',out,'--json')
+        check(result['sha256']==file_hash(out)==recorded[name]['logical_sha256']==truth['disk_sha256'] and
+              result['bytes']==truth['disk_bytes'],name)
+        restore_files(binary,out,folder,truth['deleted'],True)
+        proof[name]=len(truth['deleted'])
+    print('Actual hdiutil ULFO/ULMO images: both complete disk hashes and 14 deleted file hashes matched',flush=True)
     return proof
 
 
