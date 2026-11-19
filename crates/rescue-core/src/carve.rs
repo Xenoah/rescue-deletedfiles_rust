@@ -3,6 +3,7 @@ mod avi;
 mod container;
 mod ebml;
 mod extra;
+mod icon;
 mod indexed;
 mod rule;
 mod scope;
@@ -68,6 +69,8 @@ pub(crate) fn validate_estimated_extent(
         "webm" => Some(Format::Webm),
         "ogg" => Some(Format::Ogg),
         "gz" => Some(Format::Gzip),
+        "ico" => Some(Format::Ico),
+        "cur" => Some(Format::Cur),
         "sqlite" => Some(Format::Sqlite),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
@@ -131,6 +134,8 @@ enum Format<'a> {
     Webm,
     Ogg,
     Gzip,
+    Ico,
+    Cur,
     Sqlite,
 }
 impl<'a> Format<'a> {
@@ -156,6 +161,8 @@ impl<'a> Format<'a> {
             Self::Webm => "webm",
             Self::Ogg => "ogg",
             Self::Gzip => "gz",
+            Self::Ico => "ico",
+            Self::Cur => "cur",
             Self::Sqlite => "sqlite",
         }
     }
@@ -186,7 +193,9 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Avi
+            Self::Ico
+            | Self::Cur
+            | Self::Avi
             | Self::Mkv
             | Self::Webm
             | Self::Ogg
@@ -224,6 +233,8 @@ impl<'a> Format<'a> {
         boundary: u64,
     ) -> Result<(Format<'a>, Vec<u8>, Vec<usize>)> {
         match self {
+            Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
+                .map(|b| (self, b, Vec::new())),
             Self::Avi | Self::Mkv | Self::Webm | Self::Ogg | Self::Gzip => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let (format, end) = match self {
@@ -295,6 +306,9 @@ fn detect<'a>(
                 .into_iter()
                 .find(|f| f.allowed(extensions));
         }
+        if bytes.first() == Some(&0) {
+            return icon::signature(bytes).filter(|f| f.allowed(extensions));
+        }
         extra::signature(bytes).filter(|format| format.allowed(extensions))
     }
 }
@@ -312,6 +326,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Mp4 | Format::Mov => &[
             "Non-fragmented MP4/QuickTime container, complete sample tables and mdat ranges validated. Encoded video/audio frames are not decoded; original content is unknown. ftyp required, no zero-sized boxes, 1048576 samples, 256 tracks.",
+        ],
+        Format::Ico | Format::Cur => &[
+            "ICO/CUR directory and contiguous resources checked. Embedded PNG pixels are decoded. Classic uncompressed DIB color data and AND mask must fit the recorded dimensions.",
         ],
         Format::Ogg => &[
             "Each candidate covers one Ogg logical stream from BOS to EOS. Page CRCs, serial, sequence and packet lacing verified. Chained streams are reported individually; interleaving is unsupported.",
@@ -372,7 +389,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut zip_records = std::collections::BTreeSet::new();
@@ -562,6 +579,8 @@ pub(crate) fn recovery_data(
         Format::Webm,
         Format::Ogg,
         Format::Gzip,
+        Format::Ico,
+        Format::Cur,
         Format::Sqlite,
     ]
     .into_iter()
