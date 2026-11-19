@@ -259,13 +259,14 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
             return Ok(result);
         }
         if paths.len() == 1 {
-            if let Some(result) = compressed_raw::import(first, kind, output, cancel)? {
-                return Ok(result);
-            }
             if let Some(result) = virtual_image::import(first, kind, output, cancel)? {
                 return Ok(result);
             }
             if let Some(result) = udif::import(first, kind, output, cancel)? {
+                return Ok(result);
+            }
+            // A UDIF data fork can itself begin with gzip, bzip2 or XZ bytes.
+            if let Some(result) = compressed_raw::import(first, kind, output, cancel)? {
                 return Ok(result);
             }
         }
