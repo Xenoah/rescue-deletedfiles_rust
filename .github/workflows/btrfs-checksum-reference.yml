@@ -1,0 +1,55 @@
+name: Verify three Linux Btrfs checksum formats and seven real deletions per filesystem
+on:
+  push:
+    branches: ['testing/btrfs-checksum-reference']
+    paths: ['.github/workflows/btrfs-checksum-reference.yml', 'scripts/generate_btrfs_checksums.py', 'scripts/btrfs_large_samples.py']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y btrfs-progs
+      - name: Create disposable subvolumes, snapshot, unlink and independently recover seven files
+        run: python scripts/ci_command.py python scripts/generate_btrfs_checksums.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btrfs-checksum-reference
+          path: checksum-fixture/
+          retention-days: 5
+  preserve:
+    needs: reference
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: btrfs-checksum-reference
+          path: tests/btrfs-checksum-reference
+      - name: Preserve verified synthetic bytes for portable testing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma
+          for mode in ('xxhash','sha256','blake2'):
+              folder=Path('tests/btrfs-checksum-reference')/mode
+              meta=json.loads((folder/'manifest.json').read_text())
+              packed=(folder/'snapshot.raw.xz').read_bytes()
+              assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
+              disk=lzma.decompress(packed)
+              assert len(disk)==meta['raw_bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
+              assert len(meta['original_files'])==7 and meta['subvolume']!=meta['snapshot']
+              assert meta['checksum'] == mode and not meta['offline_errors']
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/btrfs-checksum-reference/{xxhash,sha256,blake2}/{manifest.json,snapshot.raw.xz}
+          git commit -m "Preserve original and image hashes for three real Btrfs checksum formats"
+          git push origin HEAD:testing/btrfs-checksum-reference
