@@ -142,3 +142,7 @@ rescue recover-extents --source disk.raw --layout layout.json --output restored.
 ```
 
 元ファイルでゼロと分かっているスパース領域は `{"zero_bytes": 4096}` のように指定できます。通常の読み取り領域が取得マップの欠損に重なる場合は処理を止めます。全体のSHA-256が一致したときにだけ新しい保存先を確定します。RAW、対応する読み取り専用の物理ディスク、Rescueの取得マップ・RAID構成を使用できます。配置表の上限は4 MiB・65,536領域、ファイルの上限は16 TiBです。
+
+## 圧縮したRAWディスク
+
+GUIの変換画面で `.img.gz` などを選ぶか、CLIで `rescue import-image --source disk.img.xz --image-type compressed-raw --output disk.raw --json` を実行します。gzip・bzip2・XZ・Zstandard・LZ4をアプリ内で展開します。同じ方式で連結された完結したストリームは順に読み、XZの4バイト単位のゼロパディングにも対応します。末尾の余分なデータ、途中切断、記録されている検査値の不一致では新しいRAWを確定しません。1イメージは最大16 TiB・65,536ストリーム、XZの復号メモリとZstandardのウィンドウは64 MiBまでです。外部辞書は扱いません。変換後に表示されるSHA-256は論理ディスク全体の値です。

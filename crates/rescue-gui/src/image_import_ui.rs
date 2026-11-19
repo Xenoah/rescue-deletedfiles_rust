@@ -6,6 +6,7 @@ use rescue_core::disk_image::{ImageInput, ImportedFile};
 enum Format {
     Vdi,
     Qcow2,
+    CompressedRaw,
     Dmg,
     Ewf,
     Vhd,
@@ -16,9 +17,10 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 9] = [
+    const ALL: [Self; 10] = [
         Self::Vdi,
         Self::Qcow2,
+        Self::CompressedRaw,
         Self::Dmg,
         Self::Ewf,
         Self::Vhd,
@@ -35,6 +37,7 @@ impl Format {
             .to_ascii_lowercase()
             .as_str()
         {
+            "gz" | "bz2" | "xz" | "zst" | "zstd" | "lz4" => Some(Self::CompressedRaw),
             "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
             "qcow2" | "qcow" => Some(Self::Qcow2),
@@ -50,6 +53,7 @@ impl Format {
 
     fn reader(self) -> &'static str {
         match self {
+            Self::CompressedRaw => "compressed-raw",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
@@ -64,6 +68,7 @@ impl Format {
 
     fn label(self) -> &'static str {
         match self {
+            Self::CompressedRaw => "Compressed RAW (gzip, bzip2, XZ, Zstd, LZ4)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
             Self::Qcow2 => "QCOW2",
@@ -135,6 +140,7 @@ impl App {
                     }).response.labelled_by(label);
                 if let Some(format) = state.format {
                     match format {
+                        Format::CompressedRaw => {ui.small(tr!("圧縮ストリームを順に展開し、論理ディスクのSHA-256を計算します。","Expands compressed streams in order and calculates the logical disk SHA-256."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vdi | Format::Qcow2 => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}

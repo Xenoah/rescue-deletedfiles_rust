@@ -83,6 +83,9 @@ jobs:
       - name: Recover eight ext4 unlinks from e2fsprogs block locations
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_known_extents.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover deleted FAT32 files from five independently compressed RAW images
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_compressed_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Cross-check Apple disk images with dmg2img and QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --independent --binary target/${{ matrix.target }}/debug/rescue

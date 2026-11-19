@@ -1,4 +1,5 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
+mod compressed_raw;
 mod ewf;
 mod extents;
 pub use extents::recover_extents;
@@ -38,7 +39,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, for explicitly split images.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi and qcow2. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -258,6 +259,9 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
             return Ok(result);
         }
         if paths.len() == 1 {
+            if let Some(result) = compressed_raw::import(first, kind, output, cancel)? {
+                return Ok(result);
+            }
             if let Some(result) = virtual_image::import(first, kind, output, cancel)? {
                 return Ok(result);
             }
@@ -268,7 +272,7 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
     }
     if matches!(
         image.image_type.as_deref(),
-        Some("udif" | "dmg" | "qcow2" | "vdi")
+        Some("compressed-raw" | "udif" | "dmg" | "qcow2" | "vdi")
     ) {
         return Err(Error::Unsupported(
             "this image format requires a single standalone file".into(),
