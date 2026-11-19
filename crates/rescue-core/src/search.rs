@@ -178,6 +178,7 @@ impl SearchSettings {
             (candidate.id.starts_with("jpeg-")
                 && name.ends_with(".jpg")
                 && matches!(ext.as_str(), "jpeg" | "jpe"))
+                || (candidate.id.starts_with("aac-") && name.ends_with(".aac") && ext == "adts")
                 || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")
                 || (candidate.id.starts_with("aiff-") && name.ends_with(".aiff") && ext == "aif")
                 || (candidate.id.starts_with("aifc-")

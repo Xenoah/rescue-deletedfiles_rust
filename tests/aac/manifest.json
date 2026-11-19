@@ -1,0 +1,58 @@
+{
+  "mono-speech": {
+    "sha256": "36dc7d380992400f2e3f38e5389c60cea6c1fd880a6d12514108f7db695a9b0d",
+    "rate": 16000,
+    "channels": 1,
+    "frames": 5,
+    "bitrate_kbps": 36,
+    "frequency_hz": 317
+  },
+  "stereo-music": {
+    "sha256": "da56e5eb5dc170bdf17d51b97260fe99439c1736bd5626ac346c38f2fe5f0fc2",
+    "rate": 44100,
+    "channels": 2,
+    "frames": 12,
+    "bitrate_kbps": 90,
+    "frequency_hz": 709
+  },
+  "telephone": {
+    "sha256": "cd0b3adca33b23977b15c0b696db96d3b4d686d8f9add7a5e50aa7b51602924b",
+    "rate": 8000,
+    "channels": 1,
+    "frames": 3,
+    "bitrate_kbps": 24,
+    "frequency_hz": 419
+  },
+  "broadcast": {
+    "sha256": "0853d8e62b2f5b66c644e781d7cc1a2777b853fed357c8c7c0eb582b33631f27",
+    "rate": 48000,
+    "channels": 2,
+    "frames": 13,
+    "bitrate_kbps": 128,
+    "frequency_hz": 1009
+  },
+  "half-rate": {
+    "sha256": "0eef77710f3453f2acc2b02d74445d1afc6a14681a1bff470ff92d9de64c42cf",
+    "rate": 22050,
+    "channels": 1,
+    "frames": 7,
+    "bitrate_kbps": 44,
+    "frequency_hz": 551
+  },
+  "low-rate-stereo": {
+    "sha256": "2b4ffa1391fc8d50005e6164a6be8dfd5c3032b17dc130e1760ddb1c4cd14835",
+    "rate": 32000,
+    "channels": 2,
+    "frames": 9,
+    "bitrate_kbps": 72,
+    "frequency_hz": 651
+  },
+  "hi-rate": {
+    "sha256": "02bb0346e9a0861d6eabb228931983940a3f511c412efb84d2ec0df8f01bc46d",
+    "rate": 96000,
+    "channels": 1,
+    "frames": 24,
+    "bitrate_kbps": 96,
+    "frequency_hz": 1759
+  }
+}

@@ -1,4 +1,5 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
+mod aac;
 mod aiff;
 mod avi;
 mod compressed;
@@ -39,8 +40,8 @@ use uuid::Uuid;
 
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
-// A tagless MP3 signature may end 42 bytes after the start of a stereo frame.
-const SIGNATURE_LOOKAHEAD: u64 = 41;
+// Three consecutive ADTS headers can span two maximum-length frames.
+const SIGNATURE_LOOKAHEAD: u64 = aac::LOOKAHEAD;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
 const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
@@ -78,6 +79,7 @@ pub(crate) fn validate_estimated_extent(
         "flac" => Some(Format::Flac),
         "aif" | "aiff" => Some(aiff::signature(&head).unwrap_or(Format::Aiff)),
         "aifc" | "afc" => Some(Format::Aifc),
+        "aac" | "adts" => Some(Format::Aac),
         "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
         "json" => Some(Format::Json),
@@ -161,6 +163,7 @@ enum Format<'a> {
     Otf,
     Woff,
     Mp3,
+    Aac,
     Xml,
     Json,
     Rtf,
@@ -206,6 +209,7 @@ impl<'a> Format<'a> {
             Self::Otf => "opentype",
             Self::Woff => "woff",
             Self::Mp3 => "mp3",
+            Self::Aac => "aac",
             Self::Xml => "xml",
             Self::Json => "json",
             Self::Rtf => "rtf",
@@ -277,6 +281,7 @@ impl<'a> Format<'a> {
             | Self::Otf
             | Self::Woff
             | Self::Mp3
+            | Self::Aac
             | Self::Xml
             | Self::Json
             | Self::Rtf
@@ -304,6 +309,7 @@ impl<'a> Format<'a> {
                     .to_ascii_lowercase();
                 ext == "*"
                     || match self {
+                        Self::Aac => matches!(ext.as_str(), "aac" | "adts"),
                         Self::Aiff => matches!(ext.as_str(), "aif" | "aiff"),
                         Self::Aifc => matches!(ext.as_str(), "afc" | "aifc" | "aif" | "aiff"),
                         Self::Tiff => matches!(ext.as_str(), "tif" | "tiff"),
@@ -341,6 +347,11 @@ impl<'a> Format<'a> {
                     mp3::parse(&mut input)?
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Aac => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = aac::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Json => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -442,6 +453,11 @@ fn detect<'a>(
         && Format::Xml.allowed(extensions)
     {
         Some(Format::Xml)
+    } else if bytes.first() == Some(&0xff)
+        && aac::signature(bytes)
+        && Format::Aac.allowed(extensions)
+    {
+        Some(Format::Aac)
     } else if matches!(bytes.first(), Some(0xff | b'I'))
         && mp3::signature(bytes)
         && Format::Mp3.allowed(extensions)
@@ -507,6 +523,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
+        ],
+        Format::Aac => &[
+            "A contiguous run of at least three unprotected mono/stereo AAC-LC ADTS frames, with every payload decoded. ADTS has no file length or terminal marker. Adjacent streams with matching audio parameters can merge, and complete surviving frames may represent only part of a file. External tags are excluded.",
         ],
         Format::Mp3 => &[
             "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
@@ -604,6 +623,7 @@ pub(crate) fn scan_range(
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
+    let mut aac_end = 0;
     let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
@@ -626,7 +646,8 @@ pub(crate) fn scan_range(
                 continue;
             };
             let at = offset + index as u64;
-            if format == Format::Json && at < json_end {
+            if (format == Format::Json && at < json_end) || (format == Format::Aac && at < aac_end)
+            {
                 continue;
             }
             let allocation = match scope.status(at, 1, cancel) {
@@ -691,6 +712,9 @@ pub(crate) fn scan_range(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if validated_format == Format::Aac {
+                        aac_end = at + bytes.len() as u64;
                     }
                     if validated_format == Format::Json {
                         json_end = at + bytes.len() as u64;
@@ -794,6 +818,7 @@ pub(crate) fn recovery_data(
         Format::Otf,
         Format::Woff,
         Format::Mp3,
+        Format::Aac,
         Format::Xml,
         Format::Json,
         Format::Rtf,
@@ -834,7 +859,16 @@ pub(crate) fn recovery_data(
         return Err(Error::SourceChanged);
     }
     let mut budget = VALIDATION_BUDGET;
-    let boundary = image.length;
+    let boundary = if format == Format::Aac {
+        let length = candidate.size.ok_or(Error::SourceChanged)?;
+        candidate
+            .record
+            .checked_add(length)
+            .filter(|end| *end <= image.length)
+            .ok_or(Error::SourceChanged)?
+    } else {
+        image.length
+    };
     let (actual, bytes, _) =
         format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
     // Sessions made before package classification recorded ODF/EPUB as generic ZIP.

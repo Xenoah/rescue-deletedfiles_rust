@@ -21,6 +21,8 @@ struct Checkpoint {
     internal_headers: BTreeSet<u64>,
     #[serde(default)]
     json_end: u64,
+    #[serde(default)]
+    aac_end: u64,
     missing: bool,
 }
 pub(crate) fn scan(
@@ -58,6 +60,7 @@ pub(crate) fn scan(
         validation_budget: VALIDATION_BUDGET,
         internal_headers: BTreeSet::new(),
         json_end: 0,
+        aac_end: 0,
         missing: false,
     };
     let writer = IndexWriter::create(work, &header, "carve_signatures_v1", &checkpoint)?;
@@ -90,6 +93,7 @@ pub(crate) fn resume(
         || saved.options.max_candidates > 10_000_000
         || saved.attempts > saved.options.max_records
         || saved.validation_budget > VALIDATION_BUDGET
+        || saved.aac_end > saved.end
         || saved.json_end > saved.end
         || saved.internal_headers.len() > 1_048_576
         || saved
@@ -140,7 +144,9 @@ pub(crate) fn resume(
             else {
                 continue;
             };
-            if format == Format::Json && at < saved.json_end {
+            if (format == Format::Json && at < saved.json_end)
+                || (format == Format::Aac && at < saved.aac_end)
+            {
                 continue;
             }
             let allocation = match scope.status(at, 1, cancel) {
@@ -206,6 +212,9 @@ pub(crate) fn resume(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if found == Format::Aac {
+                        saved.aac_end = at + bytes.len() as u64;
                     }
                     if found == Format::Json {
                         saved.json_end = at + bytes.len() as u64;
