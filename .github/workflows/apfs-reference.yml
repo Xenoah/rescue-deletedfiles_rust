@@ -6,14 +6,65 @@ permissions:
   contents: read
 jobs:
   reference:
-    runs-on: macos-26
-    timeout-minutes: 10
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Create a new Apple volume, take a snapshot and remove seven files
-        run: python3 scripts/apfs_reference_fixture.py reference-media
+      - uses: actions/checkout@v4
+        with:
+          repository: linux-apfs/linux-apfs-rw
+          ref: 297a8d0a0046a0abb86d09e1878ba6990337b032
+          path: independent-apfs-driver
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: linux-apfs/apfsprogs
+          ref: b9c4cb404f88ffab6c4f260bbab29a8fb4784907
+          path: independent-apfs-tools
+          persist-credentials: false
+      - name: Build the pinned filesystem and snapshot tools on this disposable runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y linux-headers-"$(uname -r)" sleuthkit libicu-dev
+          make -C independent-apfs-driver -j2
+          make -C independent-apfs-tools/mkapfs -j2
+          make -C independent-apfs-tools/apfs-snap -j2
+          sudo modprobe libcrc32c
+          sudo insmod independent-apfs-driver/apfs.ko
+      - name: Create and mount a new snapshot, unlink seven files, inspect with Sleuth Kit
+        run: python3 scripts/apfs_linux_fixture.py independent-apfs-tools reference-media
       - uses: actions/upload-artifact@v4
         with:
           name: apfs-snapshot-reference
           path: reference-media
           retention-days: 5
+  preserve:
+    needs: reference
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: apfs-snapshot-reference
+          path: tests/apfs-reference
+      - name: Preserve the verified synthetic volume and seven original hashes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,lzma
+          loc=Path('tests/apfs-reference')
+          meta=json.loads((loc/'manifest.json').read_text())
+          b=(loc/'snapshot.raw.xz').read_bytes()
+          assert len(b)<5*1024*1024 and hashlib.sha256(b).hexdigest()==meta['compressed_sha256']
+          d=lzma.decompress(b)
+          assert len(d)==meta['raw_bytes'] and hashlib.sha256(d).hexdigest()==meta['sha256']
+          assert len(meta['original_files'])==7
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/apfs-reference/manifest.json tests/apfs-reference/snapshot.raw.xz
+          git commit -m "Preserve the independently verified APFS snapshot from the owned test volume"
+          git push origin HEAD:testing/apfs-snapshot
