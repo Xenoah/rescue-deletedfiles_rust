@@ -49,7 +49,10 @@ def main():
                         assert (mount/meta['created_later']).is_file() and all(not (mount/name).exists() for name in meta['original_files'])
                     else:
                         assert not (mount/meta['created_later']).exists()
-                        assert all(hashlib.sha256((mount/name).read_bytes()).hexdigest()==digest for name,digest in meta['original_files'].items())
+                        for name,digest in meta['original_files'].items():
+                            original=(fixture.parent/'corpus/files'/Path(name).name).read_bytes()
+                            restored=(mount/name).read_bytes()
+                            assert restored==original and hashlib.sha256(restored).hexdigest()==digest
                 finally:run('sudo','/sbin/umount',mount)
             print('macOS mounted both namespaces read-only and verified all seven original SHA-256 values',flush=True)
         finally:run('hdiutil','detach',dev)

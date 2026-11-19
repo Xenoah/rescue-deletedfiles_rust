@@ -38,7 +38,13 @@ def verify(binary,root):
         check(found.keys()==meta['original_files'].keys() and ls['evidence']=='snapshot_only_paths',ls)
         dest=root/(label+'-out')
         results=run(binary,'apfs',*image,*flags,'--all','--destination',dest,'--json')['results']
-        checks={r['original_paths'][0]:file_hash(Path(r['path'])) for r in results}
+        checks={}
+        for row in results:
+            historic=row['original_paths'][0]
+            original=GOLD.parent/'corpus/files'/Path(historic).name
+            restored=Path(row['path'])
+            check(restored.read_bytes()==original.read_bytes(),historic)
+            checks[historic]=file_hash(restored)
         check(checks==meta['original_files'] and all(r['sha256']==checks[r['original_paths'][0]] for r in results),results)
         pick=next(iter(found))
         row,=run(binary,'apfs',*image,*flags,'--id',found[pick],'--destination',root/(label+'-one'),'--json')['results']
