@@ -43,7 +43,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, for explicitly split images.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -269,6 +269,9 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
             if let Some(result) = udif::import(first, kind, output, cancel)? {
                 return Ok(result);
             }
+            if let Some(result) = optical::import(first, kind, output, cancel)? {
+                return Ok(result);
+            }
             // A UDIF data fork can itself begin with gzip, bzip2 or XZ bytes.
             if let Some(result) = compressed_raw::import(first, kind, output, cancel)? {
                 return Ok(result);
@@ -277,7 +280,7 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
     }
     if matches!(
         image.image_type.as_deref(),
-        Some("compressed-raw" | "udif" | "dmg" | "qcow2" | "vdi")
+        Some("cd-raw" | "compressed-raw" | "udif" | "dmg" | "qcow2" | "vdi")
     ) {
         return Err(Error::Unsupported(
             "this image format requires a single standalone file".into(),
@@ -288,4 +291,5 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
 }
 
 mod filesystem;
+mod optical;
 pub use filesystem::{FilesystemRequest, filesystem};

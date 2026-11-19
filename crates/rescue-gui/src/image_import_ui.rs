@@ -8,6 +8,7 @@ enum Format {
     Qcow2,
     CompressedRaw,
     Dmg,
+    Optical,
     Ewf,
     Vhd,
     Vhdx,
@@ -17,11 +18,12 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 10] = [
+    const ALL: [Self; 11] = [
         Self::Vdi,
         Self::Qcow2,
         Self::CompressedRaw,
         Self::Dmg,
+        Self::Optical,
         Self::Ewf,
         Self::Vhd,
         Self::Vhdx,
@@ -38,6 +40,7 @@ impl Format {
             .as_str()
         {
             "gz" | "bz2" | "xz" | "zst" | "zstd" | "lz4" => Some(Self::CompressedRaw),
+            "bin" => Some(Self::Optical),
             "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
             "qcow2" | "qcow" => Some(Self::Qcow2),
@@ -54,6 +57,7 @@ impl Format {
     fn reader(self) -> &'static str {
         match self {
             Self::CompressedRaw => "compressed-raw",
+            Self::Optical => "cd-raw",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
@@ -69,6 +73,7 @@ impl Format {
     fn label(self) -> &'static str {
         match self {
             Self::CompressedRaw => "Compressed RAW (gzip, bzip2, XZ, Zstd, LZ4)",
+            Self::Optical => "CD-ROM (Mode 1 / XA Form 1)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
             Self::Qcow2 => "QCOW2",
@@ -141,6 +146,7 @@ impl App {
                 if let Some(format) = state.format {
                     match format {
                         Format::CompressedRaw => {ui.small(tr!("圧縮ストリームを順に展開し、論理ディスクのSHA-256を計算します。","Expands compressed streams in order and calculates the logical disk SHA-256."));}
+                        Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vdi | Format::Qcow2 | Format::Vhd => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}

@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img
+          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -98,6 +98,9 @@ jobs:
       - name: Restore deleted files from QEMU fixed and dynamic classic VHD
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhd.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Cross-check two-session CD-ROM data tracks with bchunk and xorriso
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_optical.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Cross-check Apple disk images with dmg2img and QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --independent --binary target/${{ matrix.target }}/debug/rescue
