@@ -25,6 +25,7 @@ mod jpeg;
 mod json;
 mod movie;
 mod mp3;
+mod netpbm;
 mod pdf;
 mod png;
 mod xml;
@@ -83,6 +84,14 @@ pub(crate) fn validate_estimated_extent(
         "aifc" | "afc" => Some(Format::Aifc),
         "aac" | "adts" => Some(Format::Aac),
         "mp3" => Some(Format::Mp3),
+        "pbm" => Some(Format::Pbm),
+        "pgm" => Some(Format::Pgm),
+        "ppm" => Some(Format::Ppm),
+        "pam" => Some(Format::Pam),
+        "pnm" => Some(
+            netpbm::signature(&head)
+                .ok_or_else(|| Error::Invalid("missing Netpbm magic".into()))?,
+        ),
         "html" | "htm" => Some(Format::Html),
         "xml" => Some(Format::Xml),
         "json" => Some(Format::Json),
@@ -116,11 +125,19 @@ pub(crate) fn validate_estimated_extent(
     let Some(format) = format else {
         return Ok(false);
     };
-    if format == Format::Html {
+    if matches!(
+        format,
+        Format::Html | Format::Pbm | Format::Pgm | Format::Ppm | Format::Pam
+    ) {
         let mut input = container::Input::new(image, at, end, cancel, budget)?;
-        if html::parse(&mut input, true)?.0 as u64 != size {
+        let length = if format == Format::Html {
+            html::parse(&mut input, true)?.0
+        } else {
+            netpbm::parse(format, &mut input, true)?
+        };
+        if length as u64 != size {
             return Err(Error::Invalid(
-                "estimated FAT length differs from HTML extent".into(),
+                "estimated FAT length differs from validated document or image extent".into(),
             ));
         }
         return Ok(true);
@@ -177,6 +194,10 @@ enum Format<'a> {
     Mp3,
     Aac,
     Tar(u16),
+    Pbm,
+    Pgm,
+    Ppm,
+    Pam,
     Html,
     Xml,
     Json,
@@ -225,6 +246,10 @@ impl<'a> Format<'a> {
             Self::Mp3 => "mp3",
             Self::Aac => "aac",
             Self::Tar(_) => "tar",
+            Self::Pbm => "pbm",
+            Self::Pgm => "pgm",
+            Self::Ppm => "ppm",
+            Self::Pam => "pam",
             Self::Html => "html",
             Self::Xml => "xml",
             Self::Json => "json",
@@ -304,6 +329,10 @@ impl<'a> Format<'a> {
             | Self::Mp3
             | Self::Aac
             | Self::Tar(_)
+            | Self::Pbm
+            | Self::Pgm
+            | Self::Ppm
+            | Self::Pam
             | Self::Html
             | Self::Xml
             | Self::Json
@@ -332,6 +361,9 @@ impl<'a> Format<'a> {
                     .to_ascii_lowercase();
                 ext == "*"
                     || match self {
+                        Self::Pbm | Self::Pgm | Self::Ppm | Self::Pam => {
+                            ext == "pnm" || ext == self.extension()
+                        }
                         Self::Html => matches!(ext.as_str(), "html" | "htm"),
                         Self::Aac => matches!(ext.as_str(), "aac" | "adts"),
                         Self::Aiff => matches!(ext.as_str(), "aif" | "aiff"),
@@ -361,6 +393,11 @@ impl<'a> Format<'a> {
             Self::Bzip | Self::Xz | Self::Lzip => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = compressed::parse(self, &mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Pbm | Self::Pgm | Self::Ppm | Self::Pam => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = netpbm::parse(self, &mut input, false)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Html | Self::Xml | Self::Mp3 => {
@@ -459,6 +496,10 @@ fn detect<'a>(
     }
     if tar::signature(bytes) && Format::Tar(1).allowed(extensions) {
         Some(Format::Tar(tar_factor.unwrap_or(1)))
+    } else if bytes.starts_with(b"P")
+        && let Some(format) = netpbm::signature(bytes)
+    {
+        Some(format).filter(|f| f.allowed(extensions))
     } else if bytes.starts_with(SIGNATURE) {
         [Format::Png, Format::Apng]
             .into_iter()
@@ -573,6 +614,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         Format::Json => &[
             "UTF-8 JSON object or array validated through its closing delimiter. The value may be embedded in a larger document. Leading and trailing whitespace outside the value is excluded, except whitespace following a UTF-8 BOM. No scalar-root or JSON-with-comments recovery.",
         ],
+        Format::Pbm | Format::Pgm | Format::Ppm | Format::Pam => &[
+            "Netpbm dimensions, channels, declared raster length and sample range checked. Plain P1–P3 include up to 64 trailing spaces/tabs and one final line ending. Each image is a separate candidate. Pixel data has no checksum.",
+        ],
         Format::Html => &[
             "UTF-8 HTML5 doctype and balanced HTML tokens checked. An explicit </html> ends at the closing tag. A document with omitted html tags needs a closed element and zero padding or source EOF. No original checksum. External resources and scripts are never opened or executed.",
         ],
@@ -662,7 +706,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -876,6 +920,10 @@ pub(crate) fn recovery_data(
         Format::Woff,
         Format::Mp3,
         Format::Aac,
+        Format::Pbm,
+        Format::Pgm,
+        Format::Ppm,
+        Format::Pam,
         Format::Html,
         Format::Xml,
         Format::Json,

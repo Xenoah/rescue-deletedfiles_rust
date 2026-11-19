@@ -190,6 +190,10 @@ impl SearchSettings {
             (candidate.id.starts_with("jpeg-")
                 && name.ends_with(".jpg")
                 && matches!(ext.as_str(), "jpeg" | "jpe"))
+                || (ext == "pnm"
+                    && ["pbm-", "pgm-", "ppm-", "pam-"]
+                        .iter()
+                        .any(|prefix| candidate.id.starts_with(prefix)))
                 || (candidate.id.starts_with("html-") && name.ends_with(".html") && ext == "htm")
                 || (candidate.id.starts_with("aac-") && name.ends_with(".aac") && ext == "adts")
                 || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")

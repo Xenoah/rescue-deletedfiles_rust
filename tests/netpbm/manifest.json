@@ -1,0 +1,150 @@
+{
+  "plain-bitmap.pbm": {
+    "width": 17,
+    "height": 13,
+    "magic": "P1",
+    "sha256": "d4ce90e0136359686ccfb2c68864494dd83f59099d3cdfd8edbf5c33136aea6e",
+    "imagemagick_args": [
+      "-size",
+      "17x13",
+      "gradient:black-white",
+      "-depth",
+      "8",
+      "-compress",
+      "none",
+      "pbm:-"
+    ]
+  },
+  "plain-gray.pgm": {
+    "width": 21,
+    "height": 9,
+    "magic": "P2",
+    "sha256": "b8738d253fff9b3c624865c08f320bac4cbe02fff3c477522ea990e519d49d44",
+    "imagemagick_args": [
+      "-size",
+      "21x9",
+      "gradient:black-white",
+      "-depth",
+      "16",
+      "-compress",
+      "none",
+      "pgm:-"
+    ]
+  },
+  "plain-rgb.ppm": {
+    "width": 13,
+    "height": 17,
+    "magic": "P3",
+    "sha256": "cc116d7929e86b24248f10f516783b444b432b69bf8354ba9b827882daa7de4b",
+    "imagemagick_args": [
+      "-size",
+      "13x17",
+      "gradient:navy-orange",
+      "-depth",
+      "8",
+      "-compress",
+      "none",
+      "ppm:-"
+    ]
+  },
+  "packed.pbm": {
+    "width": 19,
+    "height": 11,
+    "magic": "P4",
+    "sha256": "7f08ba6f9b3e9108b5609019dbf3bde4409487cb487a9d0b0668fff29afaf900",
+    "imagemagick_args": [
+      "-size",
+      "19x11",
+      "pattern:checkerboard",
+      "-depth",
+      "8",
+      "pbm:-"
+    ]
+  },
+  "gray16.pgm": {
+    "width": 37,
+    "height": 23,
+    "magic": "P5",
+    "sha256": "75220864ddf2624937bf1f934ffec612dc890dd48538d9351ce1090edf6086b0",
+    "imagemagick_args": [
+      "-size",
+      "37x23",
+      "gradient:gray10-gray85",
+      "-depth",
+      "16",
+      "pgm:-"
+    ]
+  },
+  "rgb8.ppm": {
+    "width": 47,
+    "height": 19,
+    "magic": "P6",
+    "sha256": "62c68b967d609e5f8ad888b2031618e03ad31c6e8e5a499e44f7cc97322371b4",
+    "imagemagick_args": [
+      "-size",
+      "47x19",
+      "gradient:blue-yellow",
+      "-depth",
+      "8",
+      "ppm:-"
+    ]
+  },
+  "rgb16.ppm": {
+    "width": 19,
+    "height": 29,
+    "magic": "P6",
+    "sha256": "1f77f13e952b6c20ecdb8bbc3356861d4d6325cc10f5af249319202af84a2e1f",
+    "imagemagick_args": [
+      "-size",
+      "19x29",
+      "gradient:purple-white",
+      "-depth",
+      "16",
+      "ppm:-"
+    ]
+  },
+  "alpha.pam": {
+    "width": 31,
+    "height": 17,
+    "magic": "P7",
+    "sha256": "a0a83a9ad7cb29e4295440689bd27c66544eaac668f1b9b12db593c4a5dafc58",
+    "imagemagick_args": [
+      "-size",
+      "31x17",
+      "gradient:blue-red",
+      "-alpha",
+      "set",
+      "-channel",
+      "A",
+      "-evaluate",
+      "set",
+      "68%",
+      "+channel",
+      "-depth",
+      "8",
+      "pam:-"
+    ]
+  },
+  "alpha16.pam": {
+    "width": 23,
+    "height": 37,
+    "magic": "P7",
+    "sha256": "dfe48709a9d192e1d88a6121e6ec7213f0244b1a2e7909038ec7cb1c6748e0a1",
+    "imagemagick_args": [
+      "-size",
+      "23x37",
+      "gradient:black-orange",
+      "-alpha",
+      "set",
+      "-channel",
+      "A",
+      "-evaluate",
+      "set",
+      "31%",
+      "+channel",
+      "-depth",
+      "16",
+      "pam:-"
+    ]
+  }
+}

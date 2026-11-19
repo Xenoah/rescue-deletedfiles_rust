@@ -61,9 +61,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 17, 0):
-        assert len(run['html_documents']) == 7
+        assert len(run['html_documents']) == 7 and len(run['netpbm_images']) == 9
         if platform == 'linux':
             assert run['html_deleted'] == run['html_documents']
+            assert run['netpbm_deleted'] == run['netpbm_images']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 16, 0):
         for key in ('ext4_journal','ext4_journal_extent_trees'):
             assert set(run[key]) == {'1024','4096'} and run[key]['1024'] == run[key]['4096'] and len(run[key]['1024']) == 7
