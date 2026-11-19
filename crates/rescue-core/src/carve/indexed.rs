@@ -19,6 +19,8 @@ struct Checkpoint {
     validation_budget: u64,
     #[serde(rename = "zip_records")] // Preserve existing indexed checkpoints.
     internal_headers: BTreeSet<u64>,
+    #[serde(default)]
+    json_end: u64,
     missing: bool,
 }
 pub(crate) fn scan(
@@ -55,6 +57,7 @@ pub(crate) fn scan(
         attempts: 0,
         validation_budget: VALIDATION_BUDGET,
         internal_headers: BTreeSet::new(),
+        json_end: 0,
         missing: false,
     };
     let writer = IndexWriter::create(work, &header, "carve_signatures_v1", &checkpoint)?;
@@ -87,6 +90,7 @@ pub(crate) fn resume(
         || saved.options.max_candidates > 10_000_000
         || saved.attempts > saved.options.max_records
         || saved.validation_budget > VALIDATION_BUDGET
+        || saved.json_end > saved.end
         || saved.internal_headers.len() > 1_048_576
         || saved
             .internal_headers
@@ -136,6 +140,9 @@ pub(crate) fn resume(
             else {
                 continue;
             };
+            if format == Format::Json && at < saved.json_end {
+                continue;
+            }
             let allocation = match scope.status(at, 1, cancel) {
                 Ok(status) => status,
                 Err(Error::Cancelled) => {
@@ -199,6 +206,9 @@ pub(crate) fn resume(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if found == Format::Json {
+                        saved.json_end = at + bytes.len() as u64;
                     }
                     candidate.id = found.id(at);
                     candidate.name = found.name(at);

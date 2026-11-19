@@ -280,7 +280,11 @@ fn write_tables(
                         output.write_all(&buffer[..n])?;
                         &buffer[..n]
                     };
-                    crc.update(buf);
+                    // DiskImages omits IGNORE sectors from the table CRC. They
+                    // still occupy zero-filled sectors in the exported disk.
+                    if run.kind != 2 {
+                        crc.update(buf);
+                    }
                     digest.update(buf);
                     remaining -= n as u64;
                 }
