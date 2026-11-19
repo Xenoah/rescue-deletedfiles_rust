@@ -15,7 +15,7 @@ pub struct ImageArgs {
     /// Additional image segments in logical order, for explicitly split images.
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi and qcow2. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2 and dmg. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.

@@ -6,6 +6,7 @@ use rescue_core::disk_image::{ImageInput, ImportedFile};
 enum Format {
     Vdi,
     Qcow2,
+    Dmg,
     Ewf,
     Vhd,
     Vhdx,
@@ -15,9 +16,10 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 8] = [
+    const ALL: [Self; 9] = [
         Self::Vdi,
         Self::Qcow2,
+        Self::Dmg,
         Self::Ewf,
         Self::Vhd,
         Self::Vhdx,
@@ -33,6 +35,7 @@ impl Format {
             .to_ascii_lowercase()
             .as_str()
         {
+            "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
             "qcow2" | "qcow" => Some(Self::Qcow2),
             "e01" | "ex01" => Some(Self::Ewf),
@@ -47,6 +50,7 @@ impl Format {
 
     fn reader(self) -> &'static str {
         match self {
+            Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
             Self::Ewf => "ewf-verified",
@@ -60,6 +64,7 @@ impl Format {
 
     fn label(self) -> &'static str {
         match self {
+            Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
             Self::Qcow2 => "QCOW2",
             Self::Ewf => "E01 / Ex01 (libewf)",
@@ -130,6 +135,7 @@ impl App {
                     }).response.labelled_by(label);
                 if let Some(format) = state.format {
                     match format {
+                        Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vdi | Format::Qcow2 => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}

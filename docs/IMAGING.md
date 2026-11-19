@@ -111,3 +111,13 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
 単独VDI・QCOW2はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHD・VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+
+## Apple DMG（UDIF）
+
+GUIの変換画面で「DMG (UDIF)」を選ぶか、CLIで次のように指定します。
+
+```sh
+rescue import-image --source disk.dmg --image-type dmg --output disk.raw --json
+```
+
+対象は、ディスクのセクター数を記録した単独のUDIFイメージです。XMLのブロック表から全セクターの位置を確定し、非圧縮、ゼロ領域、ADC、zlib、bzip2をアプリ内で展開します。記録のあるデータフォーク・ブロック表・展開データのCRC-32を照合します。圧縮ブロックの入力と展開後の上限は各64 MiBです。暗号化・分割DMG・旧リソースフォーク形式や未対応コーデックでは、この方法で変換できません。

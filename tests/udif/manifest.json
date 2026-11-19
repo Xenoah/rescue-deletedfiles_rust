@@ -1,0 +1,18 @@
+{
+  "encoder": "libdmg-hfsplus 7ac55ec64c96f7800d9818ce64c79670e7f02b67, dmg dmg",
+  "layout": "GNU Parted APM, dosfstools FAT32, mtools file creation and deletion",
+  "disk_bytes": 71303168,
+  "disk_sha256": "01795973103fcce3c9443284f881ee6d8396d9c130ab126bb3f752713a091b6a",
+  "container_sha256": "63eba9ba76d53c14d0279512da35b71a0cbe1dfd494fac58fa08d9d8c5de71c3",
+  "deleted": {
+    "recovery-test.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "recovery-test.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "recovery-test.ico": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+    "recovery-test.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+    "recovery-test.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "recovery-test.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+    "recovery-test.bz2": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816"
+  },
+  "independent_decode": "libdmg-hfsplus dmg iso",
+  "independent_decode_sha256": "01795973103fcce3c9443284f881ee6d8396d9c130ab126bb3f752713a091b6a"
+}

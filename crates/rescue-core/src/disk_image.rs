@@ -1,5 +1,6 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
 mod ewf;
+mod udif;
 mod virtual_image;
 use crate::{Error, Result};
 use sha2::{Digest, Sha256};
@@ -248,21 +249,28 @@ fn publish_output(
 
 pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<ImportedFile> {
     let (mut args, paths) = image.arguments(Some(output))?;
-    if !crate::is_device(Path::new(&paths[0]))
-        && let Some(result) = ewf::import(&paths, image.image_type.as_deref(), output, cancel)?
-    {
-        return Ok(result);
+    let first = Path::new(&paths[0]);
+    let kind = image.image_type.as_deref();
+    if !crate::is_device(first) {
+        if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
+            return Ok(result);
+        }
+        if paths.len() == 1 {
+            if let Some(result) = virtual_image::import(first, kind, output, cancel)? {
+                return Ok(result);
+            }
+            if let Some(result) = udif::import(first, kind, output, cancel)? {
+                return Ok(result);
+            }
+        }
     }
-    if paths.len() == 1
-        && !crate::is_device(Path::new(&paths[0]))
-        && let Some(result) = virtual_image::import(
-            Path::new(&paths[0]),
-            image.image_type.as_deref(),
-            output,
-            cancel,
-        )?
-    {
-        return Ok(result);
+    if matches!(
+        image.image_type.as_deref(),
+        Some("udif" | "dmg" | "qcow2" | "vdi")
+    ) {
+        return Err(Error::Unsupported(
+            "this image format requires a single standalone file".into(),
+        ));
     }
     args.extend(paths);
     write_output("img_cat", &args, output, None, cancel)
