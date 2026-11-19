@@ -13,5 +13,34 @@
     "packed_sha256": "b6c92a46f2b698a4cf1e6db22ffcdd27a04accebb45dce9baa7647abcdd150f4",
     "guest_sha256": "472d06ed71972ad97d0347748a4bbff0f52ee6849ddb28696375cb849001cf0c",
     "zero_guest_offset": 62914560
+  },
+  "stream": {
+    "windows_guest": "fixed",
+    "creator": "QEMU",
+    "vmdk_sha256": "2d959eafef11c3211a85ad4b448c4920065b3ace0e632913c81b11fa27646110",
+    "packed_sha256": "dfc138eafd79810395c817f976483354f912677ab044515d6d659be0b637dbd0",
+    "guest_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0"
+  },
+  "footer": {
+    "windows_guest": "fixed",
+    "creator": "vmdktool c9fef6e",
+    "vmdk_sha256": "00eb95a2cf8812e86d0c14fb80d5ab12e08d8c49bdda927cc55c44824e4482a8",
+    "packed_sha256": "10b182b936192f51dabba7c28817b7627a2dd9d7e8c0c37bd543b55537e6e90f",
+    "guest_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0"
+  },
+  "footer-only": {
+    "windows_guest": "fixed",
+    "creator": "vmdktool c9fef6e with the initial directory field set to the specified GD_AT_END sentinel",
+    "vmdk_sha256": "fdb00b9273373ee4e6d5d6d1075e5e4f50fbdb4c228bb37098ab074781807d1f",
+    "packed_sha256": "27fbb4191fd7156261157ddddcca844ad3232817cb8862ecf3845939c9f6f44b",
+    "guest_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0"
+  },
+  "tail": {
+    "windows_guest": "fixed",
+    "creator": "vmdktool c9fef6e",
+    "suffix_bytes": 1536,
+    "vmdk_sha256": "d2ccfcb55d5e3a3a5f07915739f5e9a7f04cb5e7b14fb5c5b476a6183b6f68bf",
+    "packed_sha256": "b8c7b3828249b3d01ea1ef806c8d6ef6123250b50238b5e2d8db4ddcc78af178",
+    "guest_sha256": "c0e80f90c531efd66ad988f6894f27b6be754a3dc7a94f45f68779380967e800"
   }
 }

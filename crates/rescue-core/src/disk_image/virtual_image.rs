@@ -117,10 +117,20 @@ impl Vdi {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Compression {
+    QcowDeflate,
+    VmdkZlib,
+}
+
 enum Block {
     Zero,
     Data(u64),
-    Deflate { at: u64, bytes: usize },
+    Compressed {
+        at: u64,
+        bytes: usize,
+        codec: Compression,
+    },
 }
 enum Disk {
     Vdi(Vdi),
@@ -168,16 +178,21 @@ impl Disk {
             let (block, cluster) = self.block(source, offset)?;
             let count = cluster.min(size - offset);
             match block {
-                Block::Deflate { at, bytes } => {
+                Block::Compressed { at, bytes, codec } => {
                     encoded.resize(bytes, 0);
                     read_at(source, at, &mut encoded)?;
                     decoded.resize(cluster as usize + 1, 0);
-                    let mut stream = Decompress::new(false);
+                    let wrapped = codec == Compression::VmdkZlib;
+                    let mut stream = Decompress::new(wrapped);
                     let status = stream
                         .decompress(&encoded, &mut decoded, FlushDecompress::Finish)
-                        .map_err(|_| invalid("QCOW2 compressed cluster"))?;
-                    if status != Status::StreamEnd || stream.total_out() != cluster {
-                        return Err(invalid("QCOW2 compressed cluster length"));
+                        .map_err(|_| invalid("invalid compressed virtual disk block"))?;
+                    let decoded_length = stream.total_out();
+                    if status != Status::StreamEnd
+                        || (decoded_length != cluster && !(wrapped && decoded_length == count))
+                        || (wrapped && stream.total_in() != bytes as u64)
+                    {
+                        return Err(invalid("compressed virtual disk block length"));
                     }
                     file.seek(SeekFrom::Start(offset))?;
                     file.write_all(&decoded[..count as usize])?;
@@ -250,12 +265,6 @@ pub(super) fn import(
     };
     if requested == Some("vmdk") && kind.is_none() {
         return Ok(None); // Other VMDK variants can use the external driver.
-    }
-    if kind == Some("vmdk")
-        && matches!(requested, None | Some("vmdk"))
-        && le32(&head, 8) & (1 << 16) != 0
-    {
-        return Ok(None); // Compressed VMDK currently uses the external driver.
     }
     // Historically the external VHD reader also accepted VHDX under the vhd alias.
     if requested.is_some()

@@ -1,5 +1,6 @@
 """Verify native standalone VMDK import using real NTFS deletions and independent guest hashes."""
 import argparse
+import hashlib
 import json
 import lzma
 from pathlib import Path
@@ -55,6 +56,43 @@ def sparse_negatives(binary, disk, root):
     print(len(cases), 'damaged or dependent hosted sparse VMDK variants refused', flush=True)
 
 
+def streamed_negatives(binary, source, root):
+    original = source.read_bytes()
+    footer = len(original)-1024
+    directory = struct.unpack_from('<Q', original, footer+56)[0]*512
+    first_table = struct.unpack_from('<I', original, directory)[0]*512
+    first = struct.unpack_from('<I', original, first_table)[0]*512
+    size = struct.unpack_from('<I', original, first+8)[0]
+    last_table = struct.unpack_from('<I', original, directory+8)[0]*512
+    entries = struct.unpack_from('<512I', original, last_table)
+    last = 512*next(n for n in reversed(entries) if n)
+    last_size = struct.unpack_from('<I', original, last+8)[0]
+    def byte(at):
+        return bytes([original[at]^1])
+    def u32(n):
+        return struct.pack('<I', n)
+    def u64(n):
+        return struct.pack('<Q', n)
+    cases = {
+        'footer-magic': (footer, b'BAD!'), 'footer-marker': (footer-512+12, u32(2)),
+        'footer-geometry': (footer+20, u64(256)), 'end-marker': (len(original)-512, u64(1)),
+        'directory-marker-kind': (directory-512+12, u32(1)),
+        'table-marker-length': (first_table-512, u64(3)),
+        'directory-outside': (footer+56, u64(len(original)//512)),
+        'grain-lba': (first, u64(17)), 'zero-compressed-bytes': (first+8, u32(0)),
+        'oversized-encoded-grain': (first+8, u32(0xffffffff)),
+        'trailing-zlib-data': (first+8, u32(size+1)), 'truncated-zlib': (first+8, u32(size-1)),
+        'last-grain-adler': (last+12+last_size-1, byte(last+12+last_size-1)),
+    }
+    for label, (offset, data) in cases.items():
+        altered = bytearray(original)
+        altered[offset:offset+len(data)] = data
+        bad = root/'bad-stream.vmdk'
+        bad.write_bytes(altered)
+        native_import(binary, bad, root/(label+'.raw'), 'vmdk', expected=4)
+    print(len(cases), 'invalid stream markers, addresses, zlib and footer cases refused including the final grain', flush=True)
+
+
 def verify(binary, root, independent=False):
     fixtures = json.loads((GOLD / 'manifest.json').read_text())
     proof = {}
@@ -68,7 +106,14 @@ def verify(binary, root, independent=False):
             shutil.copyfileobj(src, dest)
         check(digest(source) == item['vmdk_sha256'], name)
         oracle = json.loads((WINDOWS / item['windows_guest'] / 'manifest.json').read_text())
-        check(oracle['guest_sha256'] == item['guest_sha256'], name)
+        if 'suffix_bytes' in item:
+            tail = bytes(range(256))*6
+            check(len(tail) == item['suffix_bytes'], name)
+            oracle['guest_bytes'] += len(tail)
+            oracle['guest_sha256'] = item['guest_sha256']
+            oracle['guest_mib_sha256'].append(hashlib.sha256(tail).hexdigest())
+        else:
+            check(oracle['guest_sha256'] == item['guest_sha256'], name)
         raw = work / 'guest.raw'
         result = native_import(binary, source, raw, 'vmdk' if name == 'zero-grain' else None)
         verify_guest(raw, result, oracle)
@@ -87,6 +132,8 @@ def verify(binary, root, independent=False):
                 check(struct.unpack('<I', image.read(4))[0] == 1, 'explicit zero entry')
         if name == 'sparse':
             sparse_negatives(binary, source, work)
+        if name == 'footer-only':
+            streamed_negatives(binary, source, work)
         check(digest(source) == item['vmdk_sha256'], 'source changed')
         print(name, 'whole Windows guest and seven actual deleted files match bytes and SHA-256', flush=True)
     return proof

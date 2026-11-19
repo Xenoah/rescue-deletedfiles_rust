@@ -10,6 +10,8 @@ const MAX_GRAINS: u64 = 1 << 22;
 const NL: u32 = 1;
 const REDUNDANT: u32 = 2;
 const ZERO_GRAIN: u32 = 4;
+const ZLIB: u32 = 1 << 16;
+const MARKERS: u32 = 1 << 17;
 
 fn u64le(data: &[u8], at: usize) -> u64 {
     u64::from_le_bytes(data[at..at + 8].try_into().unwrap())
@@ -26,6 +28,43 @@ fn region(start: u64, len: u64, end: u64) -> Result<Range<u64>> {
     Ok(start..stop)
 }
 
+// Stream writers can place the active directory at EOF and mark its initial
+// location with all ones. The final three sectors hold a footer marker, a
+// header with the resolved directory and an end-of-stream marker.
+fn select_directory(
+    file: &mut File,
+    h: &[u8],
+    length: u64,
+    compressed: bool,
+) -> Result<(u64, Option<u64>)> {
+    let primary = u64le(h, 56);
+    if !compressed || primary < u64le(h, 64) {
+        return Ok((sectors(primary)?, None));
+    }
+    let at = length
+        .checked_sub(3 * SECTOR)
+        .filter(|at| at.is_multiple_of(SECTOR))
+        .ok_or_else(|| invalid("VMDK footer position"))?;
+    let mut tail = [0; 1536];
+    read_at(file, at, &mut tail)?;
+    let last = &tail[512..1024];
+    if u64le(&tail, 0) != 1
+        || le32(&tail, 8) != 0
+        || le32(&tail, 12) != 3
+        || tail[1024..1040] != [0; 16]
+        || h[..48] != last[..48]
+        || h[64..79] != last[64..79]
+        || h[48..56] != last[48..56]
+    {
+        return Err(invalid("VMDK footer marker, repeated header or end marker"));
+    }
+    let directory = u64le(last, 56);
+    if primary != u64::MAX && primary != directory {
+        return Err(invalid("conflicting VMDK grain directory pointers"));
+    }
+    Ok((sectors(directory)?, Some(at)))
+}
+
 struct Header {
     capacity: u64,
     grain_size: u64,
@@ -35,20 +74,24 @@ struct Header {
     directory: u64,
     backup: u64,
     overhead: u64,
+    compressed: bool,
+    footer: Option<u64>,
 }
 impl Header {
     fn read(file: &mut File, length: u64) -> Result<Self> {
         let mut h = [0; 512];
         read_at(file, 0, &mut h)?;
         let flags = le32(&h, 8);
+        let compressed = flags & ZLIB != 0;
         if &h[..4] != b"KDMV"
             || !(1..=3).contains(&le32(&h, 4))
-            || flags & !(NL | REDUNDANT | ZERO_GRAIN) != 0
+            || flags & !(NL | REDUNDANT | ZERO_GRAIN | ZLIB | MARKERS) != 0
             || h[72] != 0
-            || h[77..79] != [0, 0]
+            || (flags & MARKERS != 0) != compressed
+            || h[77..79] != [u8::from(compressed), 0]
         {
             return Err(Error::Unsupported(
-                "requires a clean standalone uncompressed hosted sparse VMDK".into(),
+                "requires a clean standalone hosted sparse or zlib streamOptimized VMDK".into(),
             ));
         }
         if flags & NL != 0 && h[73..77] != [10, 32, 13, 10] {
@@ -76,14 +119,24 @@ impl Header {
             return Err(invalid("missing or excessive VMDK descriptor"));
         }
         let descriptor = region(ds, dl, overhead)?;
+        let (directory, footer) = select_directory(file, &h, length, compressed)?;
+        if footer.is_some_and(|f| f < overhead || directory < overhead) {
+            return Err(invalid("VMDK streamed metadata placement"));
+        }
         Ok(Self {
             capacity,
             grain_size,
             entries,
             flags,
             descriptor,
-            directory: sectors(u64le(&h, 56))?,
-            backup: sectors(u64le(&h, 48))?,
+            directory,
+            compressed,
+            footer,
+            backup: if flags & REDUNDANT != 0 {
+                sectors(u64le(&h, 48))?
+            } else {
+                0
+            },
             overhead,
         })
     }
@@ -150,14 +203,25 @@ fn descriptor(file: &mut File, h: &Header) -> Result<()> {
     if version != Some("1")
         || !cid.is_some_and(|s| s.len() == 8 && s.bytes().all(|c| c.is_ascii_hexdigit()))
         || !parent.is_some_and(|s| s.eq_ignore_ascii_case("ffffffff"))
-        || kind != Some("\"monolithicSparse\"")
+        || kind
+            != Some(if h.compressed {
+                "\"streamOptimized\""
+            } else {
+                "\"monolithicSparse\""
+            })
         || extent.is_none()
     {
         return Err(Error::Unsupported(
-            "VMDK descriptor is incomplete, dependent or not monolithicSparse".into(),
+            "VMDK descriptor conflicts with standalone extent type".into(),
         ));
     }
     Ok(())
+}
+
+#[derive(Clone, Copy, Default)]
+struct Grain {
+    sector: u32,
+    encoded: u32,
 }
 
 struct Maps {
@@ -165,28 +229,81 @@ struct Maps {
     length: u64,
 }
 impl Maps {
-    fn table(&mut self, file: &mut File, at: u64, count: usize, limit: u64) -> Result<Vec<u8>> {
+    fn table(
+        &mut self,
+        file: &mut File,
+        at: u64,
+        count: usize,
+        h: &Header,
+        marker_kind: u32,
+    ) -> Result<Vec<u8>> {
         let len = count as u64 * 4;
-        let area = region(at, len.next_multiple_of(SECTOR), limit)?;
+        let mut area = region(
+            at,
+            len.next_multiple_of(SECTOR),
+            h.footer.unwrap_or(h.overhead),
+        )?;
         if at < SECTOR {
             return Err(invalid("VMDK table overlaps header"));
+        }
+        if h.footer.is_some() {
+            if at < h.overhead + SECTOR {
+                return Err(invalid("VMDK stream metadata overlaps its header"));
+            }
+            area.start -= SECTOR;
+            let mut marker = [0; 16];
+            read_at(file, area.start, &mut marker)?;
+            if u64le(&marker, 0) != len.div_ceil(SECTOR)
+                || le32(&marker, 8) != 0
+                || le32(&marker, 12) != marker_kind
+            {
+                return Err(invalid("VMDK metadata marker type or length"));
+            }
         }
         self.regions.push(area);
         let mut bytes = vec![0; len as usize];
         read_at(file, at, &mut bytes)?;
         Ok(bytes)
     }
+    fn grain(&mut self, file: &mut File, sector: u32, index: usize, h: &Header) -> Result<Grain> {
+        if sector == 0 || sector == 1 && h.flags & ZERO_GRAIN != 0 {
+            return Ok(Grain::default());
+        }
+        let at = u64::from(sector) * SECTOR;
+        if at < h.overhead {
+            return Err(invalid("VMDK grain overlaps metadata"));
+        }
+        if !h.compressed {
+            self.regions.push(region(at, h.grain_size, self.length)?);
+            return Ok(Grain { sector, encoded: 0 });
+        }
+        let mut marker = [0; 12];
+        read_at(file, at, &mut marker)?;
+        let encoded = le32(&marker, 8);
+        if u64le(&marker, 0) != index as u64 * (h.grain_size / SECTOR)
+            || encoded == 0
+            || u64::from(encoded) > 2 * h.grain_size + 1024
+        {
+            return Err(invalid("VMDK compressed grain address or length"));
+        }
+        self.regions.push(region(
+            at,
+            (12 + u64::from(encoded)).next_multiple_of(SECTOR),
+            h.footer.unwrap_or(self.length),
+        )?);
+        Ok(Grain { sector, encoded })
+    }
     fn read_grains(
         &mut self,
         file: &mut File,
         h: &Header,
         cancel: &AtomicBool,
-    ) -> Result<Vec<u32>> {
+    ) -> Result<Vec<Grain>> {
         let count = h.capacity.div_ceil(h.grain_size) as usize;
         let table_count = count.div_ceil(h.entries);
-        let main = self.table(file, h.directory, table_count, h.overhead)?;
+        let main = self.table(file, h.directory, table_count, h, 2)?;
         let backup = if h.flags & REDUNDANT != 0 {
-            Some(self.table(file, h.backup, table_count, h.overhead)?)
+            Some(self.table(file, h.backup, table_count, h, 2)?)
         } else {
             None
         };
@@ -202,27 +319,18 @@ impl Maps {
             }
             let used = h.entries.min(count - result.len());
             if at == 0 {
-                result.resize(result.len() + used, 0);
+                result.resize(result.len() + used, Grain::default());
                 continue;
             }
-            let table = self.table(file, at, h.entries, h.overhead)?;
+            let table = self.table(file, at, h.entries, h, 1)?;
             if let Some(b) = other
-                && self.table(file, b, h.entries, h.overhead)? != table
+                && self.table(file, b, h.entries, h, 1)? != table
             {
                 return Err(invalid("VMDK grain table copies disagree"));
             }
             for entry in table[..used * 4].as_chunks::<4>().0 {
-                let sector = u32::from_le_bytes(*entry);
-                if sector == 0 || sector == 1 && h.flags & ZERO_GRAIN != 0 {
-                    result.push(0);
-                } else {
-                    let start = u64::from(sector) * SECTOR;
-                    if start < h.overhead {
-                        return Err(invalid("VMDK grain overlaps metadata"));
-                    }
-                    self.regions.push(region(start, h.grain_size, self.length)?);
-                    result.push(sector);
-                }
+                let grain = self.grain(file, u32::from_le_bytes(*entry), result.len(), h)?;
+                result.push(grain);
             }
         }
         self.regions.sort_unstable_by_key(|r| r.start);
@@ -235,7 +343,7 @@ impl Maps {
 pub(super) struct Vmdk {
     pub size: u64,
     grain_size: u64,
-    grains: Vec<u32>,
+    grains: Vec<Grain>,
 }
 impl Vmdk {
     pub fn open(file: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
@@ -252,15 +360,20 @@ impl Vmdk {
         })
     }
     pub fn block(&self, offset: u64) -> (Block, u64) {
-        let at = self.grains[(offset / self.grain_size) as usize];
+        let grain = self.grains[(offset / self.grain_size) as usize];
         let within = offset % self.grain_size;
-        (
-            if at == 0 {
-                Block::Zero
-            } else {
-                Block::Data(u64::from(at) * SECTOR + within)
-            },
-            self.grain_size - within,
-        )
+        let at = u64::from(grain.sector) * SECTOR;
+        let block = if grain.sector == 0 {
+            Block::Zero
+        } else if grain.encoded != 0 {
+            Block::Compressed {
+                at: at + 12,
+                bytes: grain.encoded as usize,
+                codec: super::Compression::VmdkZlib,
+            }
+        } else {
+            Block::Data(at + within)
+        };
+        (block, self.grain_size - within)
     }
 }

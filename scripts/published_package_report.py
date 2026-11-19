@@ -62,7 +62,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 19, 0):
         vmdk = run['standalone_vmdk']
-        assert set(vmdk) == {'sparse', 'zero-grain'} and all(rows == run['windows_vhdx']['fixed'] for rows in vmdk.values())
+        assert set(vmdk) == {'sparse', 'zero-grain', 'stream', 'footer', 'footer-only', 'tail'} and all(rows == run['windows_vhdx']['fixed'] for rows in vmdk.values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 18, 0):
         vhdx = run['windows_vhdx']
         assert vhdx['fixed'] == vhdx['expandable'] and len(vhdx['fixed']) == 7
