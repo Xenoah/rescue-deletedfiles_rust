@@ -18,7 +18,7 @@ cap-std.workspace = true
 png = "0.18.1"
 crc32fast = "1"
 base64 = "0.22.1"
-flate2 = "1"
+flate2 = { version = "1", features = ["zlib-rs"] }
 ruzstd = "0.9.1"
 lzo = { version = "0.1.4", default-features = false }
 symphonia-codec-aac = "0.6.1"
@@ -42,6 +42,7 @@ tempfile.workspace = true
 rusqlite = { version = "0.41", features = ["bundled", "limits", "hooks"] }
 encoding_rs = "=0.8.35"
 sevenz-rust2 = { version = "0.25.0", default-features = false, features = ["bzip2", "deflate"] }
+lzxd = "0.2.7"
 
 [dev-dependencies]
 tempfile.workspace = true

@@ -1,0 +1,47 @@
+{
+  "gcab-stored.cab": {
+    "sha256": "7727fffbb38fbeda07cc4e00989ab6616fb4885c990e53dbf2eda8e4075851c7",
+    "bytes": 179,
+    "producer": "gcab 1.6",
+    "members": {
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    }
+  },
+  "gcab-unicode.cab": {
+    "sha256": "bac40538840611060419e1a663ce1cf4d7015894468627d2d0458094a4520025",
+    "bytes": 249,
+    "producer": "gcab 1.6",
+    "members": {
+      "記録.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "gcab-multiblock.cab": {
+    "sha256": "5211994be87e41a0bd3a4283f83b4e4f7380cef92f9735eef8b74808578ac6fe",
+    "bytes": 2406,
+    "producer": "gcab 1.6",
+    "members": {
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+    }
+  },
+  "gcab-raw-blocks.cab": {
+    "sha256": "a90e56e3443413b953eedb7a40f61c90430b2a86480bea5cf8ca7ef0931ea4d9",
+    "bytes": 137559,
+    "producer": "gcab 1.6",
+    "members": {
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "reserved.cab": {
+    "sha256": "9c54b6e4b352c484bff5a30e64088b92caee13bc6090aca712a980e933b650c7",
+    "bytes": 197,
+    "producer": "gcab stored with explicit zero-filled optional reservations (9/2/3 bytes)",
+    "members": {
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    }
+  }
+}

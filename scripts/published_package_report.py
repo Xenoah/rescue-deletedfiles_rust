@@ -61,9 +61,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 20, 0):
-        assert len(run['sevenz_archives']) == 9
+        assert len(run['sevenz_archives']) == len(run['cab_archives']) == 9
         if platform == 'linux':
-            assert run['sevenz_deleted'] == run['sevenz_archives']
+            assert run['sevenz_deleted'] == run['sevenz_archives'] and run['cab_deleted'] == run['cab_archives']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 19, 0):
         vmdk = run['standalone_vmdk']
         assert set(vmdk) == {'sparse', 'zero-grain', 'stream', 'footer', 'footer-only', 'tail'} and all(rows == run['windows_vhdx']['fixed'] for rows in vmdk.values())

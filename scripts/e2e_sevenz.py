@@ -1,6 +1,5 @@
 """Carve real 7-Zip archives, preserving compressed bytes and validating every decoded member."""
 import argparse
-import hashlib
 import json
 from pathlib import Path
 import shutil
@@ -9,16 +8,13 @@ import subprocess
 import tempfile
 import zlib
 
+from archive_trials import digest, recover_archives
 from e2e import check, run
 from e2e_html import make_deleted_fat
 from e2e_imaging import mark_gap
 
 GOLD = Path(__file__).resolve().parents[1] / 'tests/sevenz'
 CORPUS = GOLD.parent / 'corpus/files'
-
-
-def digest(data):
-    return hashlib.sha256(data).hexdigest()
 
 
 def check_members(path, members):
@@ -82,25 +78,12 @@ def verify(binary, root, native=False):
     else:
         disk=root/'consecutive.raw'
         disk.write_bytes(b'!'*((1<<20)-3)+b''.join(files.values()))
-    before=digest(disk.read_bytes())
-    for label,flags in [('session',[]),('index',['--indexed'])]:
-        scan=run(binary,'scan','--source',disk,'--mode','carve','--extension','7z','--work-dir',root/label,'--json',*flags,timeout=180)
-        rows=run(binary,'results','--session',scan['session'],'--json')['candidates']
-        check(len(rows)==len(files) and {r['record_sha256'] for r in rows}==set(hashes),rows)
-        result=run(binary,'recover','--session',scan['session'],*[x for row in rows for x in ('--id',row['id'])],
-                   '--destination',root/(label+'-out'),'--json')['results']
-        check(len(result)==len(files),result)
-        for row in result:
-            path=Path(row['path'])
-            original=hashes[row['sha256']]
-            check(path.read_bytes()==files[original] and digest(path.read_bytes())==row['sha256'],original)
-            if native:
-                check_members(path,meta[original]['members'])
-        print(label,len(rows),'real FAT32 unlinks' if native else '7z files','restored byte-for-byte with matching SHA-256',flush=True)
-    check(digest(disk.read_bytes())==before,'source changed')
+    def independent(path, name):
+        check_members(path, meta[name]['members'])
+    proof = recover_archives(binary, root, disk, files, '7z', independent if native else None)
     if not native:
         rejected(binary,root,files)
-    return {name:item['sha256'] for name,item in meta.items()}
+    return proof
 
 
 if __name__=='__main__':

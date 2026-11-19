@@ -1,0 +1,66 @@
+{
+  "win-mszip.cab": {
+    "sha256": "73957ec69475564ef158903b8f6f860f74be8e8bfbaa6126b799633a902336e1",
+    "bytes": 1428,
+    "producer": "Windows MakeCAB",
+    "codec": "MSZIP",
+    "window": 0,
+    "split_folder": false,
+    "members": {
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "data.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "table.csv": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "win-lzx15.cab": {
+    "sha256": "8925b029ed49aa801533ae251b5144d68942cdbdd394b8ae20b6413a3bdc31f7",
+    "bytes": 1023,
+    "producer": "Windows MakeCAB",
+    "codec": "LZX",
+    "window": 15,
+    "split_folder": false,
+    "members": {
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "data.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "table.csv": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "win-lzx18.cab": {
+    "sha256": "11c57a971c9d320269809881b517d17586d28c749133cc432082d809682f692c",
+    "bytes": 1023,
+    "producer": "Windows MakeCAB",
+    "codec": "LZX",
+    "window": 18,
+    "split_folder": false,
+    "members": {
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "data.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "table.csv": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "win-lzx21-folders.cab": {
+    "sha256": "789c86f700c5e98b75f29e7d4f769b64d413c7ef3c611e1307c3a3935e653e5c",
+    "bytes": 1067,
+    "producer": "Windows MakeCAB",
+    "codec": "LZX",
+    "window": 21,
+    "split_folder": true,
+    "members": {
+      "doc.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "logo.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "data.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "table.csv": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "large.bin": "8a854fffd52d039e4b884702587644318bc8d932b39ea932c2f207154185f93e",
+      "void.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  }
+}

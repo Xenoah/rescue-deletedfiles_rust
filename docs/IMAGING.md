@@ -292,3 +292,9 @@ rescue ext4-journal --source volume.raw --inode 13 --output recovered.bin --allo
 `rescue scan --source disk.raw --mode carve --extension 7z --work-dir scan --json` は、管理情報を失った連続領域から7zファイルを探します。開始ヘッダーと次ヘッダーのCRC、各データストリームの復号サイズとメンバーCRCを検証します。復元時には圧縮されたままの元バイトを保存します。空メンバー、ソリッド圧縮、LZMA・LZMA2・Deflate・BZip2などに対応します。
 
 対象は形式バージョン0.0〜0.4の単独7zです。1候補は圧縮64 MiB、展開128 MiB、4,096項目までで、デコーダーの辞書には32 MiBの制限があります。暗号化、未対応の圧縮方式、分割アーカイブ、不足するメンバーCRCは検証できません。分割ファイルや暗号化アーカイブは全巻と必要なパスワードをそろえ、対応する7-Zipで確認してください。断片化したアーカイブの内容検索には元のバイト順を特定できる情報が必要です。[実ファイルの検証記録](../tests/sevenz/README.md)
+
+## Microsoft Cabinetの内容検索
+
+`rescue scan --source disk.raw --mode carve --extension cab --work-dir scan --json` は、連続して残ったCAB 1.3を元の圧縮バイトに戻します。無圧縮、MSZIP、32 KiB〜2 MiBのウィンドウを使うLZXに対応し、フォルダーごとの圧縮履歴、各データブロックのチェックサム、展開長とファイルの配置を照合します。メンバーの名前を使ってホスト側のファイルを開く処理はありません。
+
+内蔵処理の上限はCAB全体で64 MiB、展開後128 MiBです。複数巻にまたがるもの、Quantum圧縮、チェックサムのないブロック、署名付き・用途不明の非ゼロ予約領域は対象外です。署名や分割されたファイルには、必要な全巻とそれらを扱える外部ツールが必要です。CABのブロックチェックサムは暗号学的な原本照合には使えません。[Windows・Linuxでの実ファイルの照合](../tests/cab/README.md)
