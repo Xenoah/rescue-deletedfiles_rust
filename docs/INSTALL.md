@@ -2,7 +2,7 @@
 
 配布元は[GitHub Releases](https://github.com/Xenoah/rescue-deletedfiles_rust/releases)。OSとCPUに合う版を選ぶ。
 各配布物のSHA-256は同じリリースのSHA256SUMS.txtで確認できる。
-組み込みの管理情報解析はNTFS・FAT12/16/32・exFATに対応する。CLIでext2/3/4、VHD・VHDXなどを扱う場合はThe Sleuth Kitを追加する。E01の検証付き取り込みにはlibewf、追加のファイル形式検索にはPhotoRecを利用できる。Debian/Ubuntuでは `sudo apt install sleuthkit ewf-tools testdisk` で導入できる。[ディスクイメージの取り込み](IMAGING.md)
+組み込みの管理情報解析はNTFS・FAT12/16/32・exFATに対応する。固定・可変VHDのRAW変換は内蔵機能を利用する。CLIでext2/3/4の管理情報やVHDXを読む場合はThe Sleuth Kitを追加する。E01の検証付き取り込みにはlibewf、追加のファイル形式検索にはPhotoRecを利用できる。Debian/Ubuntuでは `sudo apt install sleuthkit ewf-tools testdisk` で導入できる。[ディスクイメージの取り込み](IMAGING.md)
 
 ## Windows x64
 
@@ -19,7 +19,7 @@ alpha.6以降の配布ビルドはVCランタイムを静的リンクする。GU
 glibc 2.35以降を必要とする。インストール版はDebian/Ubuntu系のDEB。
 
 ```sh
-sudo apt install ./rescue-1.9.0-linux-x64.deb
+sudo apt install ./rescue-1.12.0-linux-x64.deb
 rescue-gui
 rescue --version
 sudo apt remove rescue-deletedfiles

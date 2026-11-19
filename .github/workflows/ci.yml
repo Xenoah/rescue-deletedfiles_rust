@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img
+          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -75,28 +75,61 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
+      - name: Exercise real debug CLI and MCP commands with a 1 MiB main-thread stack
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          ulimit -s 1024
+          python scripts/ci_command.py python scripts/e2e.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Debug CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
+      - name: Restore seven actually unlinked files from an independently generated APFS snapshot
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_apfs_snapshots.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Locate fingerprinted fragments of seven actually deleted FAT files
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_fingerprinted.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover eight ext4 unlinks from e2fsprogs block locations
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_known_extents.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover deleted FAT32 files from five independently compressed RAW images
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_compressed_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Carve ten actually unlinked audio and font files from ext4
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_deleted_audio_fonts.py --binary target/${{ matrix.target }}/debug/rescue
+      - name: Restore deleted files from QEMU fixed and dynamic classic VHD
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vhd.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Restore all historical file types from a multisession ISO with xorriso
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_iso_sessions.py --binary target/${{ matrix.target }}/debug/rescue
+      - name: Cross-check two-session CD-ROM data tracks with bchunk and xorriso
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_optical.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Cross-check Apple disk images with dmg2img and QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Mount both the current APFS volume and its retained snapshot read-only in macOS
+        if: runner.os == 'macOS' && matrix.arch == 'x64'
+        run: python scripts/ci_command.py python scripts/apfs_native_reader.py
       - name: Convert Apple-generated raw, zlib, bzip2, ADC, LZFSE and LZMA disk images
         if: runner.os == 'macOS' && matrix.arch == 'arm64'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --hdiutil --binary target/${{ matrix.target }}/debug/rescue
-      - name: Reopen carved MP3, FLAC and TIFF with FFmpeg and ImageMagick
+      - name: Verify font tables in fontTools and render recovered glyphs with FreeType
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip install --disable-pip-version-check fonttools==4.61.1
+          python scripts/ci_command.py python scripts/e2e_fonts.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Reopen carved MP3, FLAC, AIFF and TIFF with FFmpeg and ImageMagick
         if: runner.os == 'Linux'
         run: |
           python scripts/ci_command.py python scripts/e2e_mp3.py --independent --binary target/${{ matrix.target }}/debug/rescue
           python scripts/ci_command.py python scripts/e2e_flac.py --independent --binary target/${{ matrix.target }}/debug/rescue
+          python scripts/ci_command.py python scripts/e2e_aiff.py --independent --binary target/${{ matrix.target }}/debug/rescue
           python scripts/ci_command.py python scripts/e2e_tiff.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Verify independently encoded Zstandard and LZ4 frames
         if: runner.os == 'Linux'

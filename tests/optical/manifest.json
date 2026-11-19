@@ -1,0 +1,17 @@
+{
+  "logical_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+  "logical_bytes": 589824,
+  "files": {
+    "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+    "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+    "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "tracks": {
+    "mode1": "b8632bc496b4bf65773cb43cac9cc32a22810e65798e2ac0c51c52c451401a73",
+    "xa-form1": "c77be1d3602590af4713b69dad381ffa62a09e32ce3f5d52f3e6c8482b846ae7"
+  }
+}

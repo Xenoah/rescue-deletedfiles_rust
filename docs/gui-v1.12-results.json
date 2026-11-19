@@ -1,0 +1,228 @@
+{
+  "files_byte_exact": 7,
+  "bytes_exact": 13863,
+  "source_unchanged": true,
+  "source_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+  "archive_sha256": "3f83d5352bec5f83d78205c94be6ba858862ce53852ec26f6541af115372c610",
+  "status": "passed",
+  "application_version": "1.12.0",
+  "time_utc": "2026-11-19T18:23:40.316728+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "3c8aede9c2b505e2aab2ba7a7189d01d6033d05cb1c1f0ee8310f6eead819963",
+  "cli_binary_sha256": "3c0391b1d89cb06adc5778a5a8a5057838eb89f755d09f2d500c90c5d6ebbc2e",
+  "files": [
+    {
+      "archive_entry": "flac_000000000001c000.flac",
+      "bytes": 9478,
+      "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+    },
+    {
+      "archive_entry": "jpeg_000000000001e800.jpg",
+      "bytes": 767,
+      "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+    },
+    {
+      "archive_entry": "png_000000000001f000.png",
+      "bytes": 102,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    },
+    {
+      "archive_entry": "rtf_000000000001f800.rtf",
+      "bytes": 55,
+      "sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36"
+    },
+    {
+      "archive_entry": "tif_0000000000020000.tif",
+      "bytes": 3212,
+      "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+    },
+    {
+      "archive_entry": "xml_0000000000021000.xml",
+      "bytes": 70,
+      "sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+    },
+    {
+      "archive_entry": "zip_0000000000021800.zip",
+      "bytes": 179,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 7,
+    "html_sha256": "ed9c252b4d9d7c8119d627cbd26badd0b05c95e78bf0e60476f69380461391d1",
+    "csv_sha256": "0e4adb59fd901a66eb6829494c5891162f71edbdbc0aebebae3e32b111c8e341",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 7
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "677909380b84460ca2b26b04cacb39c7e78a4dfe78bf691e850aee45848975a4",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "c2b1a3da926d1dada46683ae89f32b9d686b33e326113c21e68ffbecd67bc707",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "3d7cd594d4540c5f451b7fa793c3afa30dfa50164aeeb0ccd93bf3b7c42b5c1f"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "78fec7be06f84a314117c8687e4a218819b62288018e3c265fca877b7b2a8a38"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.12.0/structures-selected.png",
+      "sha256": "90fb91bbfd49bfa8f5b6f2c571b3a012a4f1133f076bee3643e3df9c2c803fee",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/structures-recovered.png",
+      "sha256": "acbea13b074ca074903322b82e04ebccc7d2e448711547d8e01a9f21e6adab37",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/custom-recovered.png",
+      "sha256": "00df2d767cc6958e60fa5cf9737984cab035b59ad884c584e38839ff7870132a",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/cp932-recovered.png",
+      "sha256": "da737160f08fc0f0dae380d5f43d41543e6b650df17c2a3f8240f43e61d73cfa",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/exfat-recovered.png",
+      "sha256": "6b0447f4f9be2debfd2bc111808f49c8bd7b1e6c36f6a2bb4e76d30bd87be656",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/hash-saved.png",
+      "sha256": "3de2eeee3fb5fd09b2e2241708439ba74b7e14baec4db07703cb80b4a5c20d9a",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/acq-interrupted.png",
+      "sha256": "61c48bfba26b7907decc6e391989a95b2913bd36350cb004e9f5c4b350e9bc4b",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/acq-resumed.png",
+      "sha256": "1ada5c43f804d50b8b1da54361378be9a136cbb12a5fa857829686e9f0263a60",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/optical-import-settings.png",
+      "sha256": "b5d12b4d5e5756f7177ab6ec8984377848297072b8e0d850ae305235d30d2e46",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.12.0/optical-import-complete.png",
+      "sha256": "ddcb296b72138039ad92ec2a850c30af2de5b6b153bf57570339e574beae8ceb",
+      "width": 1260,
+      "height": 820
+    }
+  ],
+  "optical_import": {
+    "mode1-2352": {
+      "files": {
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+        "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+        "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "source_sha256": "b8632bc496b4bf65773cb43cac9cc32a22810e65798e2ac0c51c52c451401a73",
+      "logical_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+      "source_unchanged": true,
+      "gui_selected_result_as_source": true
+    },
+    "mode1-2448": {
+      "files": {
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+        "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+        "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "source_sha256": "177a2e8d1fc11cf7bfac668f5d2906f3fa98fe9b2d318782f56b431fd834330c",
+      "logical_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+      "source_unchanged": true,
+      "gui_selected_result_as_source": true
+    },
+    "xa-form1-2352": {
+      "files": {
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+        "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+        "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "source_sha256": "c77be1d3602590af4713b69dad381ffa62a09e32ce3f5d52f3e6c8482b846ae7",
+      "logical_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+      "source_unchanged": true,
+      "gui_selected_result_as_source": true
+    },
+    "xa-form1-2448": {
+      "files": {
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+        "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+        "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "source_sha256": "f5ece1b8e483256a9ee623f2cb5f09b2af52dee90596c3a67ea560d463b82ca0",
+      "logical_sha256": "f95ba87f51d3232a0b7394eac899fa961865979edb4a38a1043a6132201ad864",
+      "source_unchanged": true,
+      "gui_selected_result_as_source": true
+    }
+  }
+}

@@ -110,7 +110,7 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI・QCOW2はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHD・VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+単独VDI・QCOW2とクラシックVHD（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
 
 ## Apple DMG（UDIF）
 
@@ -146,3 +146,66 @@ rescue recover-extents --source disk.raw --layout layout.json --output restored.
 ## 圧縮したRAWディスク
 
 GUIの変換画面で `.img.gz` などを選ぶか、CLIで `rescue import-image --source disk.img.xz --image-type compressed-raw --output disk.raw --json` を実行します。gzip・bzip2・XZ・Zstandard・LZ4をアプリ内で展開します。同じ方式で連結された完結したストリームは順に読み、XZの4バイト単位のゼロパディングにも対応します。末尾の余分なデータ、途中切断、記録されている検査値の不一致では新しいRAWを確定しません。1イメージは最大16 TiB・65,536ストリーム、XZの復号メモリとZstandardのウィンドウは64 MiBまでです。外部辞書は扱いません。変換後に表示されるSHA-256は論理ディスク全体の値です。
+
+
+## 固定容量・可変容量のクラシックVHD
+
+GUIの「イメージをRAWに変換」でVHDを選ぶか、次のコマンドを実行します。親イメージを持つ差分VHDは対象外です。
+
+```console
+rescue import-image --source guest.vhd --image-type vhd --output guest.raw --json
+```
+
+固定容量型では末尾のフッターと論理容量を照合します。可変容量型では前後のフッター、動的ヘッダーのチェックサム、ブロック配置表、各セクターの割り当てビットを調べます。未割り当てセクターは論理ゼロとして読み、完了時にRAW全体のSHA-256を返します。検証した最大論理容量はテストイメージの68 MiBです。実装の論理容量上限は2 TiBです。
+
+
+## 断片の位置が分からないファイルを復元する
+
+削除前の原本、または同じ内容の別のコピーから、ファイル全体と各断片のハッシュを記録します。配置情報を含まないため、別のディスクに記録した後でも使用できます。
+
+```sh
+rescue fingerprint-file --source original.bin --chunk-size 512 --output original.fingerprint.json --json
+rescue recover-fingerprinted --source disk.raw --manifest original.fingerprint.json --output recovered.bin --json
+```
+
+各断片のローリングハッシュでディスク上の候補を探し、SHA-256で一致した断片を元の順番で読み直します。ファイル全体のSHA-256が合ったときに新しい出力を確定します。同じ内容の断片が複数の位置にある場合、復元されたバイト列は確認できますが、削除前の物理位置を特定するものではありません。ファイルシステムや拡張子の情報は使いません。
+
+断片サイズは512バイトから1 MiBまでの2の累乗、最大65,536断片です。各断片内のバイトがディスク上に連続して残っている必要があります。ファイルシステムの最小割当単位が不明なら、512バイトを選ぶと小さな断片に分割できます。読み取り不能範囲は検索対象から除きます。既定では全バイト位置を検索します。元の断片がセクター境界にあると分かっているときは `--alignment 512`、調べたい領域が限られているときは `--start` と `--end`（バイト単位、終端を含まない）を指定できます。
+
+
+## APFSスナップショットに残ったファイル
+
+`rescue apfs` は現在のディレクトリと保存済みスナップショットを比較し、以前のパスにだけ存在する通常ファイルを表示します。APFSに対応するThe Sleuth Kitの `pstat`・`fsstat`・`fls`・`icat` が必要です。コンテナ先頭のイメージでは次のように使います。
+
+```sh
+rescue apfs --source container.raw --json
+rescue apfs --source container.raw --volume-block 32770 --snapshot-xid 3 --json
+rescue apfs --source container.raw --volume-block 32770 --snapshot-xid 3 --all --destination restored --json
+```
+
+最初のコマンドでボリュームのUUID・ブロック番号と、利用可能なスナップショットのXIDを確認します。例の番号は試験用ディスクの値です。ディスク全体では `--sector-offset` でコンテナの先頭セクターを指定できます。`--all` の代わりに一覧にある `--id` を指定すると個別のファイルを復元できます。
+
+一つのinodeに複数の過去の名前がある場合、レポートの `original_paths` にまとめ、ファイルは1件書き出します。移動・改名したファイルも、以前のパスが消えていれば候補になります。現在も同じパスにあるファイルは除外します。途中までしか読めない内容、データのないスナップショット、既存の出力ファイルには成功を報告しません。削除より前の読み取り可能なスナップショットが必要です。
+
+## CD-ROMデータトラック
+
+GUIの「イメージをRAWに変換」でBINファイルを選ぶか、CLIで次のように実行します。出力のISOは内容検索の復元元に指定できます。
+
+```sh
+rescue import-image --source track.bin --image-type cd-raw --output data.iso --json
+rescue scan --source data.iso --mode carve --work-dir optical-scan --json
+```
+
+単一のMode 1またはMode 2 XA Form 1データトラックを読み取ります。2352バイトのセクターと、後ろに96バイトのサブチャンネルが付いた2448バイトのセクターに対応します。アドレスの連続性、EDC、P/Qパリティを各セクターで照合し、2048バイトのユーザーデータを取り出します。サブチャンネルは破棄します。CD-DA音声、XA Form 2、混在トラック、スクランブルされたセクター、損傷したセクターの訂正は対象外です。CUEを使う複数トラックでは、対象のデータトラックをあらかじめ切り出してください。
+
+### 追記前のISOセッションから取り出す
+
+`xorriso` が利用できる場合、標準のISO 9660またはRock Ridgeイメージのセッションを一覧にし、古いセッションにあり、現在のディレクトリでは消えている通常ファイルを復元できます。圧縮されたzisofsファイルも展開して保存します。
+
+```sh
+rescue iso-sessions --source data.iso --json
+rescue iso-sessions --source data.iso --session 1 --json
+rescue iso-sessions --source data.iso --session 1 --all --destination old-files --json
+```
+
+個別のファイルは `--all` の代わりに一覧の `--path '/Removed/example.bin'` を指定します。復元先では安全な名前を新しく付け、レポートの `original_path` に元の名前を残します。以前のセッションが残り、イメージのセッション表から読み取れることが条件です。名前変更や移動も候補になります。同じパスに現在も項目がある場合は候補から外れます。現在のセッションだけをコピーしたISOや、再利用され上書きされた媒体からは過去の内容を取り出せません。

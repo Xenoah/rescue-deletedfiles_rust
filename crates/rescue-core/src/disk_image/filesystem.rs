@@ -28,7 +28,7 @@ struct Entry {
 // fls -dFrpl: metadata identity, tab, full name, four times, size, gid and uid.
 // Only an unallocated regular entry with an unreallocated regular inode qualifies.
 fn parse_entry(line: &str) -> Option<(&str, Entry)> {
-    let (header, row) = line.split_once(":\t")?;
+    let (header, path, size) = listing_row(line)?;
     let id = header.strip_prefix("r/r * ")?;
     if id.len() > 64
         || !id
@@ -37,10 +37,21 @@ fn parse_entry(line: &str) -> Option<(&str, Entry)> {
     {
         return None;
     }
+    Some((
+        id,
+        Entry {
+            path: path.to_owned(),
+            size,
+        },
+    ))
+}
+
+pub(super) fn listing_row(line: &str) -> Option<(&str, &str, u64)> {
+    let (header, row) = line.split_once(":\t")?;
     let mut columns = row.rsplitn(8, '\t');
     let size = columns.nth(2)?.parse().ok()?;
-    let path = columns.nth(4)?.to_owned();
-    Some((id, Entry { path, size }))
+    let path = columns.nth(4)?;
+    Some((header, path, size))
 }
 
 pub fn filesystem(request: FilesystemRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {

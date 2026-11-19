@@ -1,10 +1,12 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
+mod aiff;
 mod avi;
 mod compressed;
 mod container;
 mod ebml;
 mod extra;
 mod flac;
+mod font;
 mod frame_archive;
 mod icon;
 mod indexed;
@@ -69,7 +71,13 @@ pub(crate) fn validate_estimated_extent(
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
         "tif" | "tiff" => Some(Format::Tiff),
+        "ttf" => Some(Format::Ttf),
+        "otf" if head.starts_with(b"PK\x03\x04") => Some(Format::Zip),
+        "otf" => Some(Format::Otf),
+        "woff" => Some(Format::Woff),
         "flac" => Some(Format::Flac),
+        "aif" | "aiff" => Some(aiff::signature(&head).unwrap_or(Format::Aiff)),
+        "aifc" | "afc" => Some(Format::Aifc),
         "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
         "json" => Some(Format::Json),
@@ -146,7 +154,12 @@ enum Format<'a> {
     Apng,
     Jpeg,
     Tiff,
+    Aiff,
+    Aifc,
     Flac,
+    Ttf,
+    Otf,
+    Woff,
     Mp3,
     Xml,
     Json,
@@ -185,7 +198,13 @@ impl<'a> Format<'a> {
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
             Self::Tiff => "tif",
+            Self::Aiff => "aiff",
+            Self::Aifc => "aifc",
             Self::Flac => "flac",
+            Self::Ttf => "ttf",
+            // "otf" already identifies OpenDocument formula-template sessions.
+            Self::Otf => "opentype",
+            Self::Woff => "woff",
             Self::Mp3 => "mp3",
             Self::Xml => "xml",
             Self::Json => "json",
@@ -221,6 +240,7 @@ impl<'a> Format<'a> {
         match self {
             Self::Rule(rule) => &rule.extension,
             Self::Jpeg => "jpg",
+            Self::Otf => "otf",
             other => other.prefix(),
         }
     }
@@ -250,7 +270,12 @@ impl<'a> Format<'a> {
             }
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
+            | Self::Aiff
+            | Self::Aifc
             | Self::Flac
+            | Self::Ttf
+            | Self::Otf
+            | Self::Woff
             | Self::Mp3
             | Self::Xml
             | Self::Json
@@ -279,6 +304,8 @@ impl<'a> Format<'a> {
                     .to_ascii_lowercase();
                 ext == "*"
                     || match self {
+                        Self::Aiff => matches!(ext.as_str(), "aif" | "aiff"),
+                        Self::Aifc => matches!(ext.as_str(), "afc" | "aifc" | "aif" | "aiff"),
                         Self::Tiff => matches!(ext.as_str(), "tif" | "tiff"),
                         Self::Png => ext == "png",
                         Self::Apng => matches!(ext.as_str(), "apng" | "png"),
@@ -322,6 +349,16 @@ impl<'a> Format<'a> {
             }
             Self::Tiff => {
                 tiff::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
+            }
+            Self::Ttf | Self::Otf | Self::Woff => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = font::parse(&mut input, self)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Aiff | Self::Aifc => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = aiff::parse(&mut input, self)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Rtf | Self::Flac => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -415,6 +452,11 @@ fn detect<'a>(
         && Format::Tiff.allowed(extensions)
     {
         Some(Format::Tiff)
+    } else if matches!(bytes.first(), Some(0 | b'O' | b't' | b'w'))
+        && let Some(format) = font::signature(bytes)
+        && format.allowed(extensions)
+    {
+        Some(format)
     } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
         Some(Format::Flac)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
@@ -441,7 +483,8 @@ fn detect<'a>(
         if bytes.first() == Some(&0) {
             return icon::signature(bytes).filter(|f| f.allowed(extensions));
         }
-        extra::signature(bytes)
+        aiff::signature(bytes)
+            .or_else(|| extra::signature(bytes))
             .or_else(|| compressed::signature(bytes))
             .or_else(|| frame_archive::signature(bytes))
             .filter(|format| format.allowed(extensions))
@@ -455,6 +498,12 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Tiff => &[
             "Classic TIFF/BigTIFF through the last referenced byte. Each supported page is pixel-decoded. Private pointer tags, subsidiary IFDs and unreferenced trailing padding are excluded. Up to 256 pages and 128 MiB decoded across all pages.",
+        ],
+        Format::Aiff | Format::Aifc => &[
+            "FORM and padded chunk boundaries, sample rate representation, channel count, sample encoding and sound data length checked. PCM, 32/64-bit float and A-law/mu-law supported. Sample values have no embedded checksum.",
+        ],
+        Format::Ttf | Format::Otf | Format::Woff => &[
+            "Standalone outline font. Directory, aligned extents, table checksums, metrics, character map and outline tables checked. SFNT also checks the entire file checksum and WOFF checks zlib streams. Rendering and every individual glyph are unverified.",
         ],
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
@@ -551,7 +600,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -738,7 +787,12 @@ pub(crate) fn recovery_data(
         Format::Jpeg,
         Format::Pdf,
         Format::Tiff,
+        Format::Aiff,
+        Format::Aifc,
         Format::Flac,
+        Format::Ttf,
+        Format::Otf,
+        Format::Woff,
         Format::Mp3,
         Format::Xml,
         Format::Json,

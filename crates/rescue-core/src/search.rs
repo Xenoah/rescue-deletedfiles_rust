@@ -179,6 +179,10 @@ impl SearchSettings {
                 && name.ends_with(".jpg")
                 && matches!(ext.as_str(), "jpeg" | "jpe"))
                 || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")
+                || (candidate.id.starts_with("aiff-") && name.ends_with(".aiff") && ext == "aif")
+                || (candidate.id.starts_with("aifc-")
+                    && name.ends_with(".aifc")
+                    && matches!(ext.as_str(), "aif" | "aiff" | "afc"))
                 || (candidate.id.starts_with("apng-") && name.ends_with(".apng") && ext == "png")
                 || (ext == "zip"
                     && candidate.extent_evidence == crate::ExtentEvidence::ZipCrcValidated

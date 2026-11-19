@@ -15,7 +15,7 @@ pub struct ImageArgs {
     /// Additional image segments in logical order, for explicitly split images.
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
@@ -77,5 +77,78 @@ pub fn filesystem(request: FilesystemArgs, cancel: &AtomicBool) -> Result<i32> {
         cancel,
     )?;
     super::print(report, request.json);
+    Ok(if failed { 5 } else { 0 })
+}
+
+#[derive(Args)]
+pub struct ApfsArgs {
+    #[command(flatten)]
+    image: ImageArgs,
+    /// First sector of the APFS container in the logical image.
+    #[arg(long, default_value_t = 0)]
+    sector_offset: u64,
+    /// APSB block reported by the APFS listing.
+    #[arg(long)]
+    volume_block: Option<u64>,
+    /// Compare this snapshot transaction ID with the current directory tree.
+    #[arg(long)]
+    snapshot_xid: Option<u64>,
+    #[arg(long, requires = "destination", conflicts_with = "all")]
+    id: Vec<String>,
+    #[arg(long, requires = "destination")]
+    all: bool,
+    #[arg(long, requires = "snapshot_xid")]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+
+pub fn apfs(request: ApfsArgs, cancel: &AtomicBool) -> Result<i32> {
+    let (report, failed) = disk_image::apfs(
+        disk_image::ApfsRequest {
+            image: request.image.into(),
+            sector_offset: request.sector_offset,
+            volume_block: request.volume_block,
+            snapshot_xid: request.snapshot_xid,
+            id: request.id,
+            all: request.all,
+            destination: request.destination,
+        },
+        cancel,
+    )?;
+    super::print(report, request.json);
+    Ok(if failed { 5 } else { 0 })
+}
+
+#[derive(Args)]
+pub struct IsoArgs {
+    /// Cooked 2048-byte-sector ISO image. Convert raw CD tracks with import-image first.
+    #[arg(long)]
+    source: PathBuf,
+    /// Historical session number to compare with the latest session.
+    #[arg(long)]
+    session: Option<u32>,
+    /// Exact historical file path from the candidate list. Repeat to select more.
+    #[arg(long = "path", requires = "destination", conflicts_with = "all")]
+    paths: Vec<String>,
+    #[arg(long, requires = "destination")]
+    all: bool,
+    #[arg(long, requires = "session")]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+pub fn iso_sessions(args: IsoArgs, cancel: &AtomicBool) -> Result<i32> {
+    let (result, failed) = disk_image::iso_sessions(
+        disk_image::IsoRequest {
+            source: args.source,
+            session: args.session,
+            paths: args.paths,
+            all: args.all,
+            destination: args.destination,
+        },
+        cancel,
+    )?;
+    super::print(result, args.json);
     Ok(if failed { 5 } else { 0 })
 }

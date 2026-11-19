@@ -16,15 +16,15 @@ const MAX_MANIFEST: u64 = 4 << 20;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Layout {
-    schema_version: u32,
-    sha256: String,
-    extents: Vec<Extent>,
+pub(super) struct Layout {
+    pub(super) schema_version: u32,
+    pub(super) sha256: String,
+    pub(super) extents: Vec<Extent>,
 }
 
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
-enum Extent {
+pub(super) enum Extent {
     Source { offset: u64, length: u64 },
     Hole { zero_bytes: u64 },
 }
@@ -96,6 +96,22 @@ pub fn recover_extents(
     let layout = Layout::read(manifest)?;
     let mut image = Image::open(source)?;
     let output = canonical_output_path(output)?;
+    guard_image_output(&image, &output)?;
+    restore_layout(&mut image, layout, &output, cancel)
+}
+
+pub(super) fn guard_image_output(image: &Image, output: &Path) -> Result<()> {
+    for path in image
+        .backing_paths()
+        .iter()
+        .chain(std::iter::once(&image.path))
+    {
+        guard_file_output(path, output)?;
+    }
+    Ok(())
+}
+
+pub(super) fn guard_file_output(path: &Path, output: &Path) -> Result<()> {
     // A new .rmap beside an existing source changes how future opens interpret it.
     // Resolve its stem to handle hard links and case-insensitive filesystems.
     let map_owner = output
@@ -103,24 +119,27 @@ pub fn recover_extents(
         .filter(|ext| ext.eq_ignore_ascii_case("rmap"))
         .and_then(|_| output.file_stem())
         .map(|stem| output.with_file_name(stem));
-    for path in image
-        .backing_paths()
-        .iter()
-        .chain(std::iter::once(&image.path))
+    guard_output_path(path, output)?;
+    if crate::source::map_path(path) == output
+        || map_owner
+            .as_ref()
+            .is_some_and(|p| same_file::is_same_file(p, path).unwrap_or(false))
     {
-        guard_output_path(path, &output)?;
-        if crate::source::map_path(path) == output
-            || map_owner
-                .as_ref()
-                .is_some_and(|p| same_file::is_same_file(p, path).unwrap_or(false))
-        {
-            return Err(Error::UnsafeDestination(
-                "output would replace the source read-map path".into(),
-            ));
-        }
+        return Err(Error::UnsafeDestination(
+            "output would replace the source read-map path".into(),
+        ));
     }
-    let size = layout.size(&image)?;
-    publish_output(&output, cancel, |file| {
+    Ok(())
+}
+
+pub(super) fn restore_layout(
+    image: &mut Image,
+    layout: Layout,
+    output: &Path,
+    cancel: &AtomicBool,
+) -> Result<ImportedFile> {
+    let size = layout.size(image)?;
+    publish_output(output, cancel, |file| {
         let mut digest = Sha256::new();
         let zeros = vec![0; CHUNK];
         for extent in layout.extents {

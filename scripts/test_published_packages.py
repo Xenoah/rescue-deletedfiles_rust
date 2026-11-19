@@ -25,6 +25,14 @@ from e2e_udif import verify as udif_images
 from e2e_compressed_raw import verify as compressed_disks
 from e2e_udif_codecs import verify as modern_udif_codecs
 from e2e_known_extents import verify as known_extents
+from e2e_vhd import verify as classic_vhd
+from e2e_aiff import verify as aiff_audio
+from e2e_fonts import verify as font_files
+from e2e_deleted_audio_fonts import verify as deleted_audio_fonts
+from e2e_fingerprinted import verify as unordered_fingerprints, native as deleted_fingerprints
+from e2e_optical import verify as optical_tracks
+from e2e_iso_sessions import verify as iso_history
+from e2e_apfs_snapshots import verify as apfs_snapshot_files
 from e2e_xml import verify as xml_documents
 from e2e_mp3 import verify as mp3_audio
 from e2e_flac import verify as flac_audio
@@ -168,6 +176,28 @@ def main():
         for key, test in [('compressed_disks', compressed_disks), ('modern_udif', modern_udif_codecs), ('known_extents', known_extents)]:
             with tempfile.TemporaryDirectory() as tmp:
                 result[key] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 10, 0):
+        for key, test in [('classic_vhd', classic_vhd), ('aiff_audio', aiff_audio), ('font_files', font_files)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['qemu_vhd'] = classic_vhd(binary, Path(tmp), native=True)
+            with tempfile.TemporaryDirectory() as tmp:
+                result['actual_deleted_audio_fonts'] = deleted_audio_fonts(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 11, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['unordered_fingerprints'] = unordered_fingerprints(binary, Path(tmp))
+        if a.platform == 'linux':
+            for key, test in [('fragmented_fat_files', deleted_fingerprints), ('apfs_snapshot_files', apfs_snapshot_files)]:
+                with tempfile.TemporaryDirectory() as tmp:
+                    result[key] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 12, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['cdrom_tracks'] = optical_tracks(binary, Path(tmp), independent=a.platform == 'linux')
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['historical_iso_files'] = iso_history(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())

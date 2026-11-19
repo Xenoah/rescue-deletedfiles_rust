@@ -2853,7 +2853,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.9.0"
+version = "1.12.0"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2866,7 +2866,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.9.0"
+version = "1.12.0"
 dependencies = [
  "base64",
  "bzip2",
@@ -2892,6 +2892,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "tiff",
+ "ttf-parser",
  "uuid",
  "windows-sys 0.61.2",
  "zip",
@@ -2901,7 +2902,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.9.0"
+version = "1.12.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2914,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "1.9.0"
+version = "1.12.0"
 dependencies = [
  "rescue-core",
  "serde_json",
