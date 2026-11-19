@@ -4,7 +4,7 @@ use super::chunks::{Chunks, Device};
 use super::{bad, u32le, u64le};
 use crate::{Error, Result};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     path::Path,
@@ -44,7 +44,7 @@ pub(super) struct Key(pub u64, pub u8, pub u64);
 fn key(b: &[u8]) -> Key {
     Key(u64le(b, 0), b[8], u64le(b, 9))
 }
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) struct Node {
     pub address: u64,
     pub generation: u64,
@@ -56,7 +56,16 @@ pub(super) struct Item {
     pub offset: usize,
     pub length: usize,
 }
+#[derive(Clone, Copy)]
+struct Backup {
+    root: Node,
+    chunks: Node,
+    checksums: Node,
+}
 pub(super) struct Volume<'a> {
+    backups: BTreeMap<u64, Option<Backup>>,
+    system: Chunks,
+    device: Device,
     pub root: Node,
     pub sector: usize,
     file: File,
@@ -114,7 +123,45 @@ impl<'a> Volume<'a> {
             sector: sector as u64,
         };
         let bootstrap = Chunks::bootstrap(&sb, &device)?;
+        let current = u64le(&sb, 72);
+        let mut backups = BTreeMap::new();
+        // Four struct btrfs_root_backup records follow the fixed-size system chunk array.
+        for record in sb[2859..2859 + 4 * 168].as_chunks::<168>().0 {
+            let node = |index: usize| Node {
+                address: u64le(record, index * 16),
+                generation: u64le(record, index * 16 + 8),
+                level: record[152 + index],
+            };
+            let backup = Backup {
+                root: node(0),
+                chunks: node(1),
+                checksums: node(5),
+            };
+            let generation = backup.root.generation;
+            if generation == 0
+                || generation >= current
+                || u64le(record, 96) != length
+                || u64le(record, 112) != 1
+                || [backup.root, backup.chunks, backup.checksums]
+                    .iter()
+                    .any(|n| {
+                        n.address == 0
+                            || n.generation == 0
+                            || n.generation > generation
+                            || n.level > 8
+                    })
+            {
+                continue;
+            }
+            // An ambiguous generation may never select an unrelated root.
+            if backups.insert(generation, Some(backup)).is_some() {
+                backups.insert(generation, None);
+            }
+        }
         let mut volume = Self {
+            backups,
+            system: bootstrap.clone(),
+            device,
             file,
             path,
             initial,
@@ -134,8 +181,16 @@ impl<'a> Volume<'a> {
             generation: u64le(&sb, 164),
             level: sb[199],
         };
+        volume.load_chunks(chunk_root)?;
+        Ok(volume)
+    }
+
+    fn load_chunks(&mut self, chunk_root: Node) -> Result<()> {
+        self.chunks = self.system.clone();
+        self.require_owner(chunk_root, 3)?;
+        let device = self.device;
         let mut full = Chunks::default();
-        volume.walk(chunk_root, |Key(id, ty, start), _, b| {
+        self.walk(chunk_root, |Key(id, ty, start), _, b| {
             if ty == 228 {
                 if id != 256 {
                     return Err(bad("invalid chunk-tree key"));
@@ -145,12 +200,42 @@ impl<'a> Volume<'a> {
             Ok(())
         })?;
         full.validate()?;
-        if !full.includes(&volume.chunks) {
+        if !full.includes(&self.system) {
             return Err(bad("system chunk array disagrees with chunk tree"));
         }
-        volume.chunks = full;
-        Ok(volume)
+        self.chunks = full;
+        Ok(())
     }
+    pub fn generations(&self) -> Vec<u64> {
+        self.backups
+            .iter()
+            .rev()
+            .filter_map(|(g, b)| b.map(|_| *g))
+            .collect()
+    }
+
+    pub fn select_generation(&mut self, generation: u64) -> Result<Node> {
+        let b = self
+            .backups
+            .get(&generation)
+            .copied()
+            .flatten()
+            .ok_or_else(|| {
+                Error::Request("unknown or ambiguous historical Btrfs generation".into())
+            })?;
+        self.load_chunks(b.chunks)?;
+        self.require_owner(b.root, 1)?;
+        self.root = b.root;
+        Ok(b.checksums)
+    }
+
+    pub fn require_owner(&mut self, node: Node, owner: u64) -> Result<()> {
+        if u64le(&self.block(node)?, 88) != owner {
+            return Err(bad("tree root has an unexpected owner"));
+        }
+        Ok(())
+    }
+
     pub fn unchanged(&self) -> Result<()> {
         let m = fs::metadata(self.path)?;
         if m.len() != self.initial.len() || m.modified()? != self.initial.modified()? {

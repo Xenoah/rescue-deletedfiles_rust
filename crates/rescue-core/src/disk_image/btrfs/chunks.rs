@@ -3,14 +3,15 @@ use super::{bad, u16le, u64le};
 use crate::{Error, Result};
 use std::collections::BTreeMap;
 
-#[derive(Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub(super) struct Chunks(BTreeMap<u64, Chunk>);
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 struct Chunk {
     length: u64,
     kind: u64,
     physical: Vec<u64>,
 }
+#[derive(Clone, Copy)]
 pub(super) struct Device {
     pub id: u64,
     pub uuid: [u8; 16],

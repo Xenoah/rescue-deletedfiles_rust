@@ -274,7 +274,7 @@ enum Command {
     Filesystem(sleuthkit::FilesystemArgs),
     /// List APFS snapshots and recover historical regular files whose paths have disappeared.
     Apfs(sleuthkit::ApfsArgs),
-    /// Compare a retained Btrfs snapshot and restore historical files.
+    /// Restore files from a Btrfs snapshot or a retained historical transaction.
     Btrfs(sleuthkit::BtrfsArgs),
     /// List retained ISO 9660 sessions or recover historical files through xorriso.
     IsoSessions(sleuthkit::IsoArgs),

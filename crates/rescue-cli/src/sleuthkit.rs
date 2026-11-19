@@ -158,15 +158,22 @@ pub struct BtrfsArgs {
     /// Single-device RAW volume image with a valid primary Btrfs superblock.
     #[arg(long)]
     source: PathBuf,
-    #[arg(long, requires = "snapshot_root")]
+    #[arg(long)]
     current_root: Option<u64>,
-    #[arg(long, requires = "current_root")]
+    #[arg(
+        long,
+        requires = "current_root",
+        conflicts_with = "previous_generation"
+    )]
     snapshot_root: Option<u64>,
+    /// Compare the same subvolume in an older transaction advertised by the superblock.
+    #[arg(long, requires = "current_root")]
+    previous_generation: Option<u64>,
     #[arg(long, requires = "destination", conflicts_with = "all")]
     id: Vec<u64>,
     #[arg(long, requires = "destination")]
     all: bool,
-    #[arg(long, requires = "snapshot_root")]
+    #[arg(long, requires = "current_root")]
     destination: Option<PathBuf>,
     #[arg(long)]
     json: bool,
@@ -177,6 +184,7 @@ pub fn btrfs(a: BtrfsArgs, cancel: &AtomicBool) -> Result<i32> {
             source: a.source,
             current_root: a.current_root,
             snapshot_root: a.snapshot_root,
+            previous_generation: a.previous_generation,
             id: a.id,
             all: a.all,
             destination: a.destination,

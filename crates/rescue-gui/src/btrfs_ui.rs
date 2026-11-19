@@ -10,6 +10,12 @@ enum Action {
     List,
     Restore,
 }
+#[derive(Clone, Copy)]
+enum History {
+    Snapshot(u64),
+    Generation(u64),
+}
+
 struct Job {
     action: Action,
     cancel: Arc<AtomicBool>,
@@ -19,7 +25,7 @@ struct Job {
 pub(super) struct State {
     pub open: bool,
     source: PathBuf,
-    pairs: Vec<(u64, u64)>,
+    pairs: Vec<(u64, History)>,
     pair: usize,
     candidates: Vec<Value>,
     selected: BTreeSet<u64>,
@@ -54,7 +60,14 @@ impl State {
         let request = BtrfsRequest {
             source: self.source.clone(),
             current_root: pair.map(|v| v.0),
-            snapshot_root: pair.map(|v| v.1),
+            snapshot_root: pair.and_then(|(_, history)| match history {
+                History::Snapshot(id) => Some(id),
+                History::Generation(_) => None,
+            }),
+            previous_generation: pair.and_then(|(_, history)| match history {
+                History::Generation(generation) => Some(generation),
+                History::Snapshot(_) => None,
+            }),
             id: if restore && !all {
                 self.selected.iter().copied().collect()
             } else {
@@ -112,7 +125,23 @@ impl State {
                         Some((*parents.get(r["parent_uuid"].as_str()?)?, r["id"].as_u64()?))
                     })
                     .filter(|(c, s)| c != s)
+                    .map(|(c, s)| (c, History::Snapshot(s)))
                     .collect();
+                let generations = rows(&mut report["backup_generations"]);
+                for root in &roots {
+                    if root["uuid"]
+                        .as_str()
+                        .is_some_and(|uuid| uuid != "00000000000000000000000000000000")
+                        && let Some(id) = root["id"].as_u64()
+                    {
+                        self.pairs.extend(
+                            generations
+                                .iter()
+                                .filter_map(Value::as_u64)
+                                .map(|g| (id, History::Generation(g))),
+                        );
+                    }
+                }
             }
             Action::List => {
                 self.candidates = rows(&mut report["candidates"]);
@@ -123,13 +152,19 @@ impl State {
     }
     fn choose_pair(&mut self, ui: &mut egui::Ui) {
         let previous = self.pair;
-        let label = |(current, snapshot): (u64, u64)| {
-            tr_format!(
+        let label = |(current, history): (u64, History)| match history {
+            History::Generation(g) => tr_format!(
+                "現行 {} / 過去の世代 {}",
+                "Current {} / Previous generation {}",
+                current,
+                g
+            ),
+            History::Snapshot(snapshot) => tr_format!(
                 "現行 {} / スナップショット {}",
                 "Current {} / Snapshot {}",
                 current,
                 snapshot
-            )
+            ),
         };
         egui::ComboBox::from_id_salt("snapshot-root-pair")
             .selected_text(label(self.pairs[self.pair]))
@@ -267,8 +302,8 @@ impl State {
         if self.pairs.is_empty() {
             if self.error.is_none() {
                 ui.label(tr!(
-                    "現行のサブボリュームに対応する読み取り専用スナップショットがありません。",
-                    "No retained read-only snapshot identifies a current subvolume as its parent."
+                    "照合できるスナップショットや過去の世代が記録されていません。",
+                    "No snapshot or previous generation is available for comparison."
                 ));
             }
             return None;
@@ -301,10 +336,7 @@ impl State {
         let mut close = false;
         let modal = responsive_modal(ctx, "btrfs-snapshots", 680.0).show(ctx, |ui| {
             ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 680.0));
-            ui.heading(tr!(
-                "Btrfsスナップショットから復元",
-                "Restore from a Btrfs snapshot"
-            ));
+            ui.heading(tr!("Btrfsの履歴から復元", "Restore from Btrfs history"));
             egui::ScrollArea::vertical()
                 .id_salt("btrfs-dialog")
                 .max_height((ctx.content_rect().height() - 170.0).max(100.0))

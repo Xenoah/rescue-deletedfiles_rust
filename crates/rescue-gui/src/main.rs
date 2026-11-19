@@ -1233,8 +1233,8 @@ impl App {
                         .add_enabled(
                             !self.source.trim().is_empty(),
                             egui::Button::new(tr!(
-                                "Btrfsスナップショットから復元",
-                                "Restore from a Btrfs snapshot"
+                                "Btrfsの履歴から復元",
+                                "Restore from Btrfs history"
                             )),
                         )
                         .clicked()
