@@ -140,8 +140,12 @@ pub(crate) fn resume(
                 break 'scan;
             }
             let rest = &buffer[index..];
-            let Some(format) = detect(rest, &settings.extensions, settings.signature_rule.as_ref())
-            else {
+            let Some(format) = detect(
+                rest,
+                &settings.extensions,
+                settings.signature_rule.as_ref(),
+                settings.tar_blocking_factor,
+            ) else {
                 continue;
             };
             if (format == Format::Json && at < saved.json_end)
@@ -161,8 +165,10 @@ pub(crate) fn resume(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
-                && saved.internal_headers.remove(&at)
+            if matches!(
+                format,
+                Format::Zip | Format::Xml | Format::Mp3 | Format::Tar(_)
+            ) && saved.internal_headers.remove(&at)
             {
                 continue;
             }

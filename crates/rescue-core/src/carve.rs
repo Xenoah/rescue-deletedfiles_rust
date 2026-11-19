@@ -15,6 +15,7 @@ mod rtf;
 mod rule;
 mod scope;
 mod streams;
+mod tar;
 mod tiff;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
@@ -164,6 +165,7 @@ enum Format<'a> {
     Woff,
     Mp3,
     Aac,
+    Tar(u16),
     Xml,
     Json,
     Rtf,
@@ -210,6 +212,7 @@ impl<'a> Format<'a> {
             Self::Woff => "woff",
             Self::Mp3 => "mp3",
             Self::Aac => "aac",
+            Self::Tar(_) => "tar",
             Self::Xml => "xml",
             Self::Json => "json",
             Self::Rtf => "rtf",
@@ -249,6 +252,11 @@ impl<'a> Format<'a> {
         }
     }
     fn id(self, offset: u64) -> String {
+        if let Self::Tar(n) = self
+            && n != 1
+        {
+            return format!("tar-{offset:016x}-b{n}");
+        }
         if let Self::Rule(rule) = self {
             return format!(
                 "rule-{offset:016x}-{:x}",
@@ -282,6 +290,7 @@ impl<'a> Format<'a> {
             | Self::Woff
             | Self::Mp3
             | Self::Aac
+            | Self::Tar(_)
             | Self::Xml
             | Self::Json
             | Self::Rtf
@@ -347,6 +356,11 @@ impl<'a> Format<'a> {
                     mp3::parse(&mut input)?
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Tar(factor) => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, records) = tar::parse(&mut input, factor)?;
+                Ok((self, input.finish(end)?, records))
             }
             Self::Aac => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -420,6 +434,7 @@ fn detect<'a>(
     bytes: &[u8],
     extensions: &[String],
     rule: Option<&'a SignatureRule>,
+    tar_factor: Option<u16>,
 ) -> Option<Format<'a>> {
     if let Some(rule) = rule {
         return bytes
@@ -427,7 +442,9 @@ fn detect<'a>(
             .then_some(Format::Rule(rule))
             .filter(|format| format.allowed(extensions));
     }
-    if bytes.starts_with(SIGNATURE) {
+    if tar::signature(bytes) && Format::Tar(1).allowed(extensions) {
+        Some(Format::Tar(tar_factor.unwrap_or(1)))
+    } else if bytes.starts_with(SIGNATURE) {
         [Format::Png, Format::Apng]
             .into_iter()
             .find(|f| f.allowed(extensions))
@@ -523,6 +540,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
+        ],
+        Format::Tar(_) => &[
+            "Member header checksums, stored lengths, padding and two terminating records were checked. TAR has no payload checksum. The blocking factor determines trailing record padding; files with different writer settings may have different byte lengths.",
         ],
         Format::Aac => &[
             "A contiguous run of at least three unprotected mono/stereo AAC-LC ADTS frames, with every payload decoded. ADTS has no file length or terminal marker. Adjacent streams with matching audio parameters can merge, and complete surviving frames may represent only part of a file. External tags are excluded.",
@@ -642,7 +662,12 @@ pub(crate) fn scan_range(
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
-            let Some(format) = detect(rest, extensions, settings.signature_rule.as_ref()) else {
+            let Some(format) = detect(
+                rest,
+                extensions,
+                settings.signature_rule.as_ref(),
+                settings.tar_blocking_factor,
+            ) else {
                 continue;
             };
             let at = offset + index as u64;
@@ -662,8 +687,10 @@ pub(crate) fn scan_range(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
-                && internal_headers.remove(&(offset + index as u64))
+            if matches!(
+                format,
+                Format::Zip | Format::Xml | Format::Mp3 | Format::Tar(_)
+            ) && internal_headers.remove(&(offset + index as u64))
             {
                 continue;
             }
@@ -805,7 +832,14 @@ pub(crate) fn recovery_data(
     cancel: &AtomicBool,
     rule: Option<&SignatureRule>,
 ) -> Result<RecoveryData> {
+    let blocking = candidate
+        .id
+        .rsplit_once("-b")
+        .and_then(|(_, n)| n.parse::<u16>().ok())
+        .filter(|n| (1..=1024).contains(n))
+        .unwrap_or(1);
     let format = [
+        Format::Tar(blocking),
         Format::Png,
         Format::Apng,
         Format::Jpeg,

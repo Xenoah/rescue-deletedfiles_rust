@@ -1,0 +1,79 @@
+{
+  "ustar-text": {
+    "format": "ustar",
+    "blocking_factor": 20,
+    "sha256": "ecccbc8c850fa1362e36633f4e41349cbf1e855adf736184e2a308da10d9bda3",
+    "members": {
+      "note.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+    }
+  },
+  "ustar-bundle": {
+    "format": "ustar",
+    "blocking_factor": 20,
+    "sha256": "ac85ee8ed8b93a597c0bc618074a5012dd921f81b69825c90a0699616f486278",
+    "members": {
+      "data.csv": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+      "image.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    }
+  },
+  "gnu-long": {
+    "format": "gnu",
+    "blocking_factor": 20,
+    "sha256": "76e50a857188e466855c11e9c0aca167f8633077bbbb111aef1c31907374aa1f",
+    "members": {
+      "audio-kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk.mp3": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+    }
+  },
+  "pax-unicode": {
+    "format": "posix",
+    "blocking_factor": 20,
+    "sha256": "def3ee71578ee7a15af16eeb2d8b1164067d122b2c0bfbdeba3759c4e15f58fc",
+    "members": {
+      "資料/計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測計測.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+    }
+  },
+  "gnu-hardlink": {
+    "format": "gnu",
+    "blocking_factor": 20,
+    "sha256": "a5c89e3025c40c09cdfaef65b2a366aaae8b9786c04687803538dae5b27a1da8",
+    "members": {
+      "original.bin": "c948810e749377c6722975a9753ee0c1150cd9599fb353fa11e988aa3b0d8cb7",
+      "second.bin": "c948810e749377c6722975a9753ee0c1150cd9599fb353fa11e988aa3b0d8cb7"
+    }
+  },
+  "posix-directory": {
+    "format": "posix",
+    "blocking_factor": 20,
+    "sha256": "4f57ef65d036f45003fa36298c0224e854bfaec5aea1ce423dccbf26aab3bf91",
+    "members": {
+      "folder/empty": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "folder/音声.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    }
+  },
+  "ustar-link": {
+    "format": "ustar",
+    "blocking_factor": 20,
+    "sha256": "08aebd352728dc35195e35307b9fc3fc6a5c07cb9f75b34882d484adfb340b41",
+    "members": {
+      "readme.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "readme-link": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31"
+    }
+  },
+  "compact": {
+    "format": "ustar",
+    "blocking_factor": 1,
+    "sha256": "722994e77fd50ff60415eb7d76a4b482554a2f59a9cb4fd7f4feb588dec2a815",
+    "members": {
+      "note.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "image.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    }
+  },
+  "factor-seven": {
+    "format": "gnu",
+    "blocking_factor": 7,
+    "sha256": "659962050a7a30a1acce726dde7412a9364222d4ebca2c2c38cec8f94e9c5faa",
+    "members": {
+      "audio-jjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjjj.mp3": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b"
+    }
+  }
+}

@@ -50,6 +50,9 @@ struct ScanArgs {
     /// Only carve this rule, e.g. dat:41424344:size=128 or dat:41424344:end=454e44.
     #[arg(long)]
     signature_rule: Option<rescue_core::SignatureRule>,
+    /// TAR record size in 512-byte blocks, when known (GNU tar default: 20).
+    #[arg(long, value_parser = clap::value_parser!(u16).range(1..=1024))]
+    tar_blocking_factor: Option<u16>,
     #[arg(long = "extension", value_delimiter = ',')]
     extensions: Vec<String>,
     #[arg(long, default_value = "")]
@@ -815,6 +818,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             mode,
             carve_scope,
             signature_rule,
+            tar_blocking_factor,
             extensions,
             path_prefix,
             max_depth,
@@ -855,6 +859,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
                 _ => rescue_core::FatShortNameEncoding::Ascii,
             };
             let settings = SearchSettings {
+                tar_blocking_factor,
                 signature_rule,
                 carve_scope: if carve_scope == "all" {
                     rescue_core::CarveScope::All

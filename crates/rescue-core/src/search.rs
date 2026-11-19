@@ -31,6 +31,9 @@ pub struct SearchSettings {
     pub carve_scope: CarveScope,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub signature_rule: Option<crate::SignatureRule>,
+    /// TAR record size in 512-byte blocks. Unspecified uses the two end markers.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub tar_blocking_factor: Option<u16>,
     pub extensions: Vec<String>,
     pub path_prefix: String,
     /// Maximum folder levels below the selected path. None has no extra limit.
@@ -52,6 +55,15 @@ pub struct SearchSettings {
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.tar_blocking_factor.is_some_and(|n| {
+            !(1..=1024).contains(&n)
+                || self.method != ScanMethod::Carve
+                || self.signature_rule.is_some()
+        }) {
+            return Err(Error::Request(
+                "TAR blocking factor must be 1 through 1024 and requires built-in carving".into(),
+            ));
+        }
         if self.signature_rule.is_some() && self.method != ScanMethod::Carve {
             return Err(Error::Request(
                 "signature rules require a carving scan".into(),
