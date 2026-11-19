@@ -17,6 +17,11 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         expected_hashes = sorted(structures['session'][e] for e in expected_types)
         virtual = run['virtual_image_verification']
         assert virtual['automatic'] == virtual['explicit'] and virtual['automatic']['restored_sha256'] == expected_hashes
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 5, 0):
+        qcow = run['qcow2_verification']
+        assert qcow['v2'] == qcow['v3'] and qcow['v3']['restored_sha256'] == expected_hashes
+        assert len(run['apng_verification']) >= 7 and len(run['icons_verification']) >= 7
+
 
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)

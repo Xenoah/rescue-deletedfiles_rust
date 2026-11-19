@@ -15,6 +15,9 @@ import urllib.request
 import zipfile
 from e2e_file_structures import verify as file_structures
 from e2e_virtual_images import verify as virtual_images
+from e2e_qcow2 import verify as qcow2
+from e2e_apng import verify as animations
+from e2e_icons import verify as icons
 from e2e_release_fixes import main as release_fixes
 from e2e_acquisition import main as acquisition
 from e2e_cp932 import main as cp932
@@ -120,6 +123,10 @@ def main():
         result['file_structure_verification'] = file_structures(binary)
         with tempfile.TemporaryDirectory() as tmp:
             result['virtual_image_verification'] = virtual_images(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 5, 0):
+        for name, test in [('qcow2', qcow2), ('apng', animations), ('icons', icons)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[name + '_verification'] = test(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())

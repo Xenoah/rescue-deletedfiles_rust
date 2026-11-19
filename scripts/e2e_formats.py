@@ -210,7 +210,8 @@ def carving(binary,source,files,root,case,rows,large_png=False,erase_metadata=Tr
         with source.open('r+b') as f:f.write(bytes(512));f.seek(MFT_LCN*SECTOR);f.write(bytes(128*RECORD))
     if erase_metadata:run(binary,'scan','--source',source,'--work-dir',root/(case+'-quick'),'--json',expected=4)
     before=file_hash(source)
-    scan=run(binary,'scan','--mode','carve','--source',source,'--work-dir',root/(case+'-work'),'--json',expected=5)
+    scan=run(binary,'scan','--mode','carve','--source',source,'--work-dir',root/(case+'-work'),'--json',expected=0 if large_png else 5)
+    check(not scan['truncated'], 'incomplete carving scan: '+case)
     listed=run(binary,'results','--session',scan['session'],'--limit','1000','--json')['candidates']
     selected=[c['id'] for c in listed if c['supported']]
     results=run(binary,'recover','--session',scan['session'],*[v for key in selected for v in ['--id',key]],'--destination',root/(case+'-out'),'--json')['results']
