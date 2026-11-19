@@ -1,8 +1,8 @@
 //! Read logical sectors from self-contained virtual disks. No host path stored in an image is opened.
 mod qcow;
+use super::ImportedFile;
+use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
-use rescue_core::{Error, Result};
-use serde_json::Value;
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
@@ -207,7 +207,7 @@ pub(super) fn import(
     requested: Option<&str>,
     output: &Path,
     cancel: &AtomicBool,
-) -> Result<Option<Value>> {
+) -> Result<Option<ImportedFile>> {
     if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2")) {
         return Ok(None);
     }
@@ -231,7 +231,7 @@ pub(super) fn import(
         Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),
         _ => return Ok(None),
     };
-    let result = super::sleuthkit::publish_output(output, cancel, |file| {
+    let result = super::publish_output(output, cancel, |file| {
         let summary = disk.write_raw(&mut source, file, cancel)?;
         let after = source.metadata()?;
         if before.len() != after.len() || before.modified()? != after.modified()? {

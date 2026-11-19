@@ -1,7 +1,7 @@
 //! Read EWF segments with libewf tools and independently compare the exported logical bytes.
-use super::sleuthkit::{executable_in_path, publish_output, read_tool};
-use rescue_core::{Error, Result};
-use serde_json::Value;
+use super::ImportedFile;
+use super::{executable_in_path, publish_output, read_tool};
+use crate::{Error, Result};
 use sha2::{Digest, Sha256};
 use std::{
     ffi::OsString,
@@ -97,7 +97,7 @@ pub(super) fn import(
     kind: Option<&str>,
     output: &Path,
     cancel: &AtomicBool,
-) -> Result<Option<Value>> {
+) -> Result<Option<ImportedFile>> {
     if kind.is_some_and(|v| !matches!(v, "e01" | "ewf" | "ewf-verified")) {
         return Ok(None);
     }
@@ -138,8 +138,10 @@ pub(super) fn import(
             export(reader, file, &expected)
         })
     })?;
-    result["reader"] = "libewf".into();
-    result["logical_sha256_verified"] = true.into();
+    result.ewf = Some(super::EwfVerification {
+        reader: "libewf",
+        logical_sha256_verified: true,
+    });
     Ok(Some(result))
 }
 

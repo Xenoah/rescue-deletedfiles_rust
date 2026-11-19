@@ -7,6 +7,7 @@ mod contract;
 mod destination;
 mod device;
 mod discovery;
+pub mod disk_image;
 mod disk_scan;
 mod fat;
 mod index;

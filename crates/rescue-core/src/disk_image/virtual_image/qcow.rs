@@ -1,6 +1,6 @@
 //! Read-only QCOW2 v2/v3 base images. Only metadata inside the selected file is read.
 use super::{Block, invalid, read_at};
-use rescue_core::{Error, Result};
+use crate::{Error, Result};
 use std::{
     collections::BTreeMap,
     fs::File,
