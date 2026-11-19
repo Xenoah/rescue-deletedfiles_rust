@@ -60,6 +60,16 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 24, 0):
+        segments = run['split_raw']
+        assert segments['originals'] == run['windows_vhdx']['fixed'] and segments['segments'] == 8
+        if platform == 'linux':
+            assert set(run['gnu_split_raw']) == {'fat32', 'ext4'}
+            for disk in run['gnu_split_raw'].values():
+                assert disk['originals'] == run['android_sparse'] and disk['crossing_segments'] == 8
+            large = run['large_split_raw']
+            assert large['logical_bytes'] > large['first_segment_bytes'] > 4 << 30
+            assert large['originals'] == segments['originals']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 23, 0):
         assert run['strided_files'] == run['whole_file_hashes']
         if platform == 'linux':

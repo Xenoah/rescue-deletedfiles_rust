@@ -92,6 +92,12 @@ jobs:
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover real FAT32 and ext4 unlinks from GNU and unaligned split RAW images
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_split_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover seven NTFS unlinks across a non-aligned split RAW boundary beyond 4 GiB
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_split_raw.py --large --binary target/${{ matrix.target }}/debug/rescue
       - name: Compare Android sparse captures and real FAT32 and ext4 deletions with AOSP libsparse
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_android_sparse.py --native --binary target/${{ matrix.target }}/debug/rescue
