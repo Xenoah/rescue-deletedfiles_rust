@@ -60,6 +60,15 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 21, 0):
+        originals = run['whole_file_hashes']
+        assert set(originals) == {'NOTE.TXT','DATA.CSV','PAGE.HTM','SONG.WAV','FILES.ZIP','VENDOR.BIN','DUP.DAT'}
+        if platform == 'linux':
+            layouts = run['deleted_whole_file_hashes']
+            assert set(layouts) == {'12','16','32'}
+            for files in layouts.values():
+                assert {name: row['sha256'] for name,row in files.items()} == originals
+                assert all(len(row['extents']) == 2 and row['bytes'] == sum(s['length'] for s in row['extents']) for row in files.values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 20, 0):
         assert len(run['sevenz_archives']) == len(run['cab_archives']) == 9
         if platform == 'linux':
