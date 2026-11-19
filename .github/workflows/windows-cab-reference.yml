@@ -1,20 +1,46 @@
-name: Measure Windows MakeCAB and Expand reference files
+name: Preserve independently decoded Windows MakeCAB references
 on:
   push:
     branches: [testing/windows-cab-reference]
+    paths: [.github/workflows/windows-cab-reference.yml]
 permissions:
-  contents: read
+  contents: write
+  actions: read
 jobs:
-  windows:
-    runs-on: windows-2022
+  verify:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: python scripts/make_windows_cab_reference.py --output cabinet-reference
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: genuine-windows-cabinets
-          path: cabinet-reference
-          if-no-files-found: error
+          path: tests/cab/windows
+          run-id: 44616251073
+          github-token: ${{ github.token }}
+      - name: Check every Microsoft-compressed member against its original before preserving references
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cabextract
+          python - <<'PY'
+          import json, hashlib, subprocess
+          from pathlib import Path
+          root=Path('tests/cab/windows')
+          corpus=Path('tests/corpus/files')
+          files={'doc.rtf':'sample.rtf','logo.png':'sample.png','data.xml':'sample.xml','table.csv':'sample.csv'}
+          expected={name:(corpus/f).read_bytes() for name,f in files.items()}
+          expected.update({'large.bin':bytes(range(251))*547, 'void.txt':b''})
+          manifest=json.loads((root/'windows.json').read_text())
+          assert set(manifest)=={'win-mszip.cab','win-lzx15.cab','win-lzx18.cab','win-lzx21-folders.cab'}
+          for filename,item in manifest.items():
+              cab=root/filename
+              assert hashlib.sha256(cab.read_bytes()).hexdigest()==item['sha256']
+              assert set(item['members'])==set(expected)
+              for entry, data in expected.items():
+                  actual=subprocess.check_output(['cabextract','-sp','-F',entry,cab])
+                  assert actual==data and hashlib.sha256(actual).hexdigest()==item['members'][entry]
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/cab/windows
+          git commit -m "Preserve four Windows cabinets after Linux decoded all six members per archive"
+          git push origin HEAD:testing/windows-cab-reference
