@@ -1,6 +1,6 @@
 //! Reconstruct snapshot file offsets, validating physical file data against the checksum tree.
 use super::tree::{Item, Key, Node, Volume};
-use super::{FileInfo, bad, u64le};
+use super::{FileInfo, bad, u32le, u64le};
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
 use sha2::{Digest, Sha256};
@@ -68,6 +68,58 @@ impl Checksums {
     }
 }
 
+// Each LZO segment describes at most one filesystem sector. A segment's
+// four-byte header cannot cross a sector boundary; the kernel pads that gap.
+fn lzo_segments(
+    input: &[u8],
+    sector: usize,
+    padded: usize,
+    inline: bool,
+) -> Result<(Vec<u8>, &[u8])> {
+    if input.len() < 8 {
+        return Err(bad("truncated LZO extent header"));
+    }
+    let total = u32le(input, 0) as usize;
+    let data = input
+        .get(..total)
+        .filter(|s| s.len() >= 8)
+        .ok_or_else(|| bad("LZO extent length exceeds stored data"))?;
+    let mut plain = Vec::with_capacity(padded);
+    let mut segment = vec![0; sector];
+    let mut at = 4;
+    while at < data.len() {
+        if data.len() - at < 4 || (inline && at != 4) {
+            return Err(bad("invalid LZO segment header"));
+        }
+        let bytes = u32le(data, at) as usize;
+        at += 4;
+        if bytes == 0 || bytes > data.len() - at {
+            return Err(bad("invalid LZO segment length"));
+        }
+        let decoded = lzo::decompress_into(&data[at..at + bytes], &mut segment)
+            .map_err(|_| bad("invalid LZO segment stream"))?;
+        if decoded == 0 || plain.len() + decoded > padded {
+            return Err(bad("oversized LZO extent"));
+        }
+        plain.extend_from_slice(&segment[..decoded]);
+        at += bytes;
+        let until_boundary = at.next_multiple_of(sector) - at;
+        if (1..4).contains(&until_boundary) && at < data.len() {
+            let padding = data
+                .get(at..at + until_boundary)
+                .ok_or_else(|| bad("truncated LZO alignment"))?;
+            if padding.iter().any(|&b| b != 0) {
+                return Err(bad("invalid LZO segment alignment"));
+            }
+            at += until_boundary;
+        }
+        if at < data.len() && decoded != sector {
+            return Err(bad("short intermediate LZO segment"));
+        }
+    }
+    Ok((plain, &input[total..]))
+}
+
 fn decode(codec: u8, input: &[u8], length: usize, sector: usize, inline: bool) -> Result<Vec<u8>> {
     let padded = length.div_ceil(sector) * sector;
     if padded > MAX_COMPRESSED {
@@ -87,6 +139,7 @@ fn decode(codec: u8, input: &[u8], length: usize, sector: usize, inline: bool) -
             data.truncate(stream.total_out() as usize);
             (data, &input[stream.total_in() as usize..])
         }
+        2 => lzo_segments(input, sector, padded, inline)?,
         3 => {
             let mut rest = input;
             let mut decoder = ruzstd::decoding::StreamingDecoder::new_with_max_window_size(

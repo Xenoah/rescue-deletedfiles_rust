@@ -1,0 +1,41 @@
+{
+  "filesystem": "Btrfs",
+  "compression": "zstd",
+  "offline_errors": [
+    {
+      "root": "before",
+      "name": "sample.png"
+    },
+    {
+      "root": "before",
+      "name": "sample.rtf"
+    },
+    {
+      "root": "before",
+      "name": "sample.xml"
+    }
+  ],
+  "subvolume": 256,
+  "snapshot": 257,
+  "raw_bytes": 167772160,
+  "sha256": "485d1bd681142201a250a35ecf752f8df5479c4d413ec2c8a2c93d59571514dd",
+  "compressed_sha256": "ecad13c465497dc68acea499e1aa85c2d798998ae6335e14fdbdfd32574a9adb",
+  "original_files": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+    "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "empty.private": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "sliced-reflink.bin": "a04a706e8d9ece0ffa0af8bf1dcace77c5ccee338fffa3af85b6e469b003afd6",
+    "preallocated.bin": "4b58a4802734ac1f1f59db3c78990b81b9a1c0ade27d622e64ee7b4f2b32e604"
+  },
+  "native_mounted_matches": 13,
+  "survivor": "survivor.txt",
+  "created_later": "created-later.txt"
+}

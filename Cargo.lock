@@ -2059,6 +2059,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lzo"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1574f8e322bb9d442095896ff66d126e521f5a85ef7d7343a269bb7d6eeb3f0b"
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2879,6 +2885,7 @@ dependencies = [
  "lz4_flex",
  "lzfse_rust",
  "lzma-rust2",
+ "lzo",
  "md-5",
  "png",
  "quick-xml",
