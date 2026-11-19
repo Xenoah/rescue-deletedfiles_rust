@@ -27,6 +27,233 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 }
+#[derive(clap::Args)]
+struct ScanArgs {
+    /// Persist candidates and resumable checkpoints in a disk index.
+    #[arg(long)]
+    indexed: bool,
+    #[arg(long)]
+    max_records: Option<u64>,
+    #[arg(long)]
+    max_candidates: Option<usize>,
+    #[arg(long)]
+    progress: bool,
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(long)]
+    work_dir: PathBuf,
+    #[arg(long, default_value = "quick", value_parser = ["quick", "carve"])]
+    mode: String,
+    /// Search unallocated clusters by default; unreadable maps fall back explicitly.
+    #[arg(long, default_value = "unallocated", value_parser = ["unallocated", "all"])]
+    carve_scope: String,
+    /// Only carve this rule, e.g. dat:41424344:size=128 or dat:41424344:end=454e44.
+    #[arg(long)]
+    signature_rule: Option<rescue_core::SignatureRule>,
+    #[arg(long = "extension", value_delimiter = ',')]
+    extensions: Vec<String>,
+    #[arg(long, default_value = "")]
+    path_prefix: String,
+    #[arg(long)]
+    max_depth: Option<u16>,
+    #[arg(long, default_value_t = 0)]
+    range_start: u64,
+    #[arg(long)]
+    range_end: Option<u64>,
+    /// Select one validated volume returned by discover (including overlaps).
+    #[arg(long)]
+    volume_id: Option<String>,
+    /// Also search self-contained NTFS records outside the current MFT.
+    #[arg(long)]
+    fragments: bool,
+    /// Estimate contiguous extents for deleted FAT files whose entire chain is free.
+    #[arg(long)]
+    estimate_fat_contiguous: bool,
+    /// Decode FAT 8.3 names with an explicitly selected OEM code page.
+    #[arg(long, default_value = "ascii", value_parser = ["ascii", "cp932"])]
+    fat_short_name_encoding: String,
+    /// Continue when only the exFAT upcase table content/checksum is damaged; names remain unverified.
+    #[arg(long)]
+    exfat_allow_damaged_upcase: bool,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct RecoverArgs {
+    #[arg(long)]
+    session: PathBuf,
+    #[arg(long, conflicts_with = "all", required_unless_present = "all")]
+    id: Vec<String>,
+    #[arg(long)]
+    all: bool,
+    #[arg(long)]
+    destination: Option<PathBuf>,
+    /// Restore verified original paths on the mounted source volume.
+    #[arg(long, conflicts_with_all = ["destination", "archive", "stream"])]
+    original: bool,
+    /// Override mounted volume root: PATH, or PARTITION=PATH for a disk scan.
+    #[arg(long, requires = "original")]
+    volume_root: Vec<String>,
+    #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
+    collision: String,
+    /// Legacy streaming into a separate physical disk, without the 512 MiB batch limit.
+    #[arg(long)]
+    stream: bool,
+    #[arg(
+        long,
+        conflicts_with = "destination",
+        required_unless_present_any = ["destination", "original"]
+    )]
+    archive: Option<PathBuf>,
+    #[arg(long)]
+    work_dir: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct ImageArgs {
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(long)]
+    destination: PathBuf,
+    #[arg(long,default_value_t=4*1024*1024)]
+    block_size: u32,
+    #[arg(long, default_value_t = 2)]
+    retries: u8,
+    /// Auto uses adaptive passes for new images and the saved strategy on resume.
+    #[arg(long, default_value = "auto", value_parser = ["auto", "adaptive", "linear"])]
+    strategy: String,
+    /// Read-helper wait limit in milliseconds; 0 uses direct, unbounded OS reads.
+    #[arg(long, default_value_t = 30000)]
+    read_timeout_ms: u32,
+    /// Wait for the identical source to reconnect; 0 disables automatic reconnect.
+    #[arg(long, default_value_t = 15000)]
+    reconnect_wait_ms: u32,
+    #[arg(long)]
+    resume: bool,
+    /// Emit durable progress as JSON lines on stderr, while the final result remains on stdout.
+    #[arg(long)]
+    progress: bool,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct ResultsArgs {
+    #[arg(long)]
+    cursor: Option<String>,
+    #[arg(long, default_value="discovery", value_parser=["discovery","name","path","size","created","modified","type","state"])]
+    sort: String,
+    #[arg(long,default_value="none",value_parser=["none","folder","type","created","modified","size","initial","state"])]
+    group: String,
+    #[arg(long)]
+    descending: bool,
+    #[arg(long)]
+    supported_only: bool,
+    #[arg(long)]
+    session: PathBuf,
+    #[arg(long, default_value_t = 100)]
+    limit: usize,
+    #[arg(long, default_value_t = 0)]
+    offset: usize,
+    #[arg(long)]
+    name: Option<String>,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct RaidArgs {
+    #[arg(long)]
+    config: PathBuf,
+    #[arg(long, conflicts_with = "output")]
+    search: bool,
+    #[arg(long, requires = "search", value_delimiter = ',')]
+    stripe_sizes: Vec<u32>,
+    #[arg(long, requires = "search")]
+    reorder: bool,
+    #[arg(long, default_value_t = 128)]
+    max_configurations: u16,
+    #[arg(long, default_value_t = 5000)]
+    max_milliseconds: u32,
+    /// Save a fingerprint-bound .rescue-raid.json source, using exclusive creation.
+    #[arg(long)]
+    output: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct RestoreArgs {
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(
+        long,
+        required_unless_present = "original",
+        conflicts_with = "original"
+    )]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    original: bool,
+    #[arg(long, requires = "original")]
+    volume_root: Vec<String>,
+    /// Exact filename (case-insensitive); repeat to select multiple names.
+    #[arg(long, required_unless_present = "all", conflicts_with = "all")]
+    name: Vec<String>,
+    #[arg(long)]
+    all: bool,
+    #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
+    collision: String,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct RecoverFingerprintedArgs {
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(long)]
+    manifest: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+    /// Candidate positions must be multiples of this power of two. One searches every byte.
+    #[arg(long, default_value_t = 1)]
+    alignment: u32,
+    #[arg(long, default_value_t = 0)]
+    start: u64,
+    /// Exclusive logical byte offset.
+    #[arg(long)]
+    end: Option<u64>,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct ExportRawArgs {
+    #[arg(long)]
+    session: PathBuf,
+    #[arg(long, required = true)]
+    id: Vec<String>,
+    #[arg(long)]
+    destination: PathBuf,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
+struct McpArgs {
+    #[arg(long, required = true)]
+    stdio: bool,
+    #[arg(long, required = true)]
+    allow_source: Vec<PathBuf>,
+    #[arg(long)]
+    work_dir: PathBuf,
+    #[arg(long)]
+    allow_output_root: Vec<PathBuf>,
+}
+
 #[derive(Subcommand)]
 enum Command {
     /// Convert a standalone virtual or forensic disk image to a new RAW file.
@@ -57,52 +284,9 @@ enum Command {
         json: bool,
     },
     /// Inspect or save an explicit read-only RAID configuration. Members remain unchanged.
-    Raid {
-        #[arg(long)]
-        config: PathBuf,
-        #[arg(long, conflicts_with = "output")]
-        search: bool,
-        #[arg(long, requires = "search", value_delimiter = ',')]
-        stripe_sizes: Vec<u32>,
-        #[arg(long, requires = "search")]
-        reorder: bool,
-        #[arg(long, default_value_t = 128)]
-        max_configurations: u16,
-        #[arg(long, default_value_t = 5000)]
-        max_milliseconds: u32,
-        /// Save a fingerprint-bound .rescue-raid.json source, using exclusive creation.
-        #[arg(long)]
-        output: Option<PathBuf>,
-        #[arg(long)]
-        json: bool,
-    },
+    Raid(RaidArgs),
     /// Acquire a disk into a durable RAW image/read-map pair. The output directory must be empty.
-    Image {
-        #[arg(long)]
-        source: PathBuf,
-        #[arg(long)]
-        destination: PathBuf,
-        #[arg(long,default_value_t=4*1024*1024)]
-        block_size: u32,
-        #[arg(long, default_value_t = 2)]
-        retries: u8,
-        /// Auto uses adaptive passes for new images and the saved strategy on resume.
-        #[arg(long, default_value = "auto", value_parser = ["auto", "adaptive", "linear"])]
-        strategy: String,
-        /// Read-helper wait limit in milliseconds; 0 uses direct, unbounded OS reads.
-        #[arg(long, default_value_t = 30000)]
-        read_timeout_ms: u32,
-        /// Wait for the identical source to reconnect; 0 disables automatic reconnect.
-        #[arg(long, default_value_t = 15000)]
-        reconnect_wait_ms: u32,
-        #[arg(long)]
-        resume: bool,
-        /// Emit durable progress as JSON lines on stderr, while the final result remains on stdout.
-        #[arg(long)]
-        progress: bool,
-        #[arg(long)]
-        json: bool,
-    },
+    Image(ImageArgs),
     /// Inspect acquisition coverage without reading damaged source media.
     ReadMap {
         #[arg(long)]
@@ -166,133 +350,11 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    Scan {
-        /// Persist candidates and resumable checkpoints in a disk index.
-        #[arg(long)]
-        indexed: bool,
-        #[arg(long)]
-        max_records: Option<u64>,
-        #[arg(long)]
-        max_candidates: Option<usize>,
-        #[arg(long)]
-        progress: bool,
-        #[arg(long)]
-        source: PathBuf,
-        #[arg(long)]
-        work_dir: PathBuf,
-        #[arg(long, default_value = "quick", value_parser = ["quick", "carve"])]
-        mode: String,
-        /// Search unallocated clusters by default; unreadable maps fall back explicitly.
-        #[arg(long, default_value = "unallocated", value_parser = ["unallocated", "all"])]
-        carve_scope: String,
-        /// Only carve this rule, e.g. dat:41424344:size=128 or dat:41424344:end=454e44.
-        #[arg(long)]
-        signature_rule: Option<rescue_core::SignatureRule>,
-        #[arg(long = "extension", value_delimiter = ',')]
-        extensions: Vec<String>,
-        #[arg(long, default_value = "")]
-        path_prefix: String,
-        #[arg(long)]
-        max_depth: Option<u16>,
-        #[arg(long, default_value_t = 0)]
-        range_start: u64,
-        #[arg(long)]
-        range_end: Option<u64>,
-        /// Select one validated volume returned by discover (including overlaps).
-        #[arg(long)]
-        volume_id: Option<String>,
-        /// Also search self-contained NTFS records outside the current MFT.
-        #[arg(long)]
-        fragments: bool,
-        /// Estimate contiguous extents for deleted FAT files whose entire chain is free.
-        #[arg(long)]
-        estimate_fat_contiguous: bool,
-        /// Decode FAT 8.3 names with an explicitly selected OEM code page.
-        #[arg(long, default_value = "ascii", value_parser = ["ascii", "cp932"])]
-        fat_short_name_encoding: String,
-        /// Continue when only the exFAT upcase table content/checksum is damaged; names remain unverified.
-        #[arg(long)]
-        exfat_allow_damaged_upcase: bool,
-        #[arg(long)]
-        json: bool,
-    },
-    Results {
-        #[arg(long)]
-        cursor: Option<String>,
-        #[arg(long, default_value="discovery", value_parser=["discovery","name","path","size","created","modified","type","state"])]
-        sort: String,
-        #[arg(long,default_value="none",value_parser=["none","folder","type","created","modified","size","initial","state"])]
-        group: String,
-        #[arg(long)]
-        descending: bool,
-        #[arg(long)]
-        supported_only: bool,
-        #[arg(long)]
-        session: PathBuf,
-        #[arg(long, default_value_t = 100)]
-        limit: usize,
-        #[arg(long, default_value_t = 0)]
-        offset: usize,
-        #[arg(long)]
-        name: Option<String>,
-        #[arg(long)]
-        json: bool,
-    },
-    Recover {
-        #[arg(long)]
-        session: PathBuf,
-        #[arg(long, conflicts_with = "all", required_unless_present = "all")]
-        id: Vec<String>,
-        #[arg(long)]
-        all: bool,
-        #[arg(long)]
-        destination: Option<PathBuf>,
-        /// Restore verified original paths on the mounted source volume.
-        #[arg(long, conflicts_with_all = ["destination", "archive", "stream"])]
-        original: bool,
-        /// Override mounted volume root: PATH, or PARTITION=PATH for a disk scan.
-        #[arg(long, requires = "original")]
-        volume_root: Vec<String>,
-        #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
-        collision: String,
-        /// Legacy streaming into a separate physical disk, without the 512 MiB batch limit.
-        #[arg(long)]
-        stream: bool,
-        #[arg(
-            long,
-            conflicts_with = "destination",
-            required_unless_present_any = ["destination", "original"]
-        )]
-        archive: Option<PathBuf>,
-        #[arg(long)]
-        work_dir: Option<PathBuf>,
-        #[arg(long)]
-        json: bool,
-    },
+    Scan(ScanArgs),
+    Results(ResultsArgs),
+    Recover(RecoverArgs),
     /// Scan and recover in memory, without saving a session on the source disk.
-    Restore {
-        #[arg(long)]
-        source: PathBuf,
-        #[arg(
-            long,
-            required_unless_present = "original",
-            conflicts_with = "original"
-        )]
-        destination: Option<PathBuf>,
-        #[arg(long)]
-        original: bool,
-        #[arg(long, requires = "original")]
-        volume_root: Vec<String>,
-        /// Exact filename (case-insensitive); repeat to select multiple names.
-        #[arg(long, required_unless_present = "all", conflicts_with = "all")]
-        name: Vec<String>,
-        #[arg(long)]
-        all: bool,
-        #[arg(long, default_value = "keep-both", value_parser = ["keep-both", "skip"])]
-        collision: String,
-        #[arg(long)]
-        json: bool,
-    },
+    Restore(RestoreArgs),
     /// Record a known original's whole-file SHA-256 and position-independent chunk fingerprints.
     FingerprintFile {
         #[arg(long)]
@@ -305,24 +367,7 @@ enum Command {
         json: bool,
     },
     /// Locate fingerprinted chunks on a disk, then reassemble and verify the original file.
-    RecoverFingerprinted {
-        #[arg(long)]
-        source: PathBuf,
-        #[arg(long)]
-        manifest: PathBuf,
-        #[arg(long)]
-        output: PathBuf,
-        /// Candidate positions must be multiples of this power of two. One searches every byte.
-        #[arg(long, default_value_t = 1)]
-        alignment: u32,
-        #[arg(long, default_value_t = 0)]
-        start: u64,
-        /// Exclusive logical byte offset.
-        #[arg(long)]
-        end: Option<u64>,
-        #[arg(long)]
-        json: bool,
-    },
+    RecoverFingerprinted(RecoverFingerprintedArgs),
     /// Restore a file from ordered byte extents, verifying the supplied original SHA-256.
     RecoverExtents {
         #[arg(long)]
@@ -338,16 +383,7 @@ enum Command {
     },
     /// Write unrecoverable candidates' raw bytes (unreadable media zero-filled) with a JSON map.
     /// Output is unverified raw data, never presented as the original file.
-    ExportRaw {
-        #[arg(long)]
-        session: PathBuf,
-        #[arg(long, required = true)]
-        id: Vec<String>,
-        #[arg(long)]
-        destination: PathBuf,
-        #[arg(long)]
-        json: bool,
-    },
+    ExportRaw(ExportRawArgs),
     /// Export an existing recovery JSON report as an offline HTML or CSV file.
     ExportReport {
         #[arg(long)]
@@ -377,16 +413,7 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
-    Mcp {
-        #[arg(long, required = true)]
-        stdio: bool,
-        #[arg(long, required = true)]
-        allow_source: Vec<PathBuf>,
-        #[arg(long)]
-        work_dir: PathBuf,
-        #[arg(long)]
-        allow_output_root: Vec<PathBuf>,
-    },
+    Mcp(McpArgs),
 }
 fn print(value: serde_json::Value, compact: bool) {
     if compact {
@@ -454,14 +481,14 @@ fn run(cli: Cli) -> Result<i32, Error> {
     let signal = cancel.clone();
     // MCP clients close stdin for a graceful shutdown. Do not intercept SIGINT
     // with the unrelated cancellation flag used by interactive CLI operations.
-    if !matches!(cli.command, Command::Mcp { .. }) {
+    if !matches!(cli.command, Command::Mcp(_)) {
         ctrlc::set_handler(move || signal.store(true, std::sync::atomic::Ordering::Relaxed))
             .map_err(|e| Error::Request(e.to_string()))?;
     }
     if cli.request_read_access {
         let source=match &cli.command {
-            Command::RecoverFingerprinted{source,..}|Command::RecoverExtents{source,..}|Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
-            Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw{session,..}=> {
+            Command::RecoverFingerprinted(RecoverFingerprintedArgs{source,..})|Command::RecoverExtents{source,..}|Command::Scan(ScanArgs{source,..})|Command::Image(ImageArgs{source,..})|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore(RestoreArgs{source,..})=>source.clone(),
+            Command::Recover(RecoverArgs{session,..})|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw(ExportRawArgs{session,..})=> {
                 if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
                 else {Session::load(session)?.source}
             },
@@ -487,7 +514,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             print(json!(report), compact);
             Ok(0)
         }
-        Command::RecoverFingerprinted {
+        Command::RecoverFingerprinted(RecoverFingerprintedArgs {
             source,
             manifest,
             output,
@@ -495,7 +522,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             start,
             end,
             json: compact,
-        } => {
+        }) => {
             let report = rescue_core::disk_image::recover_fingerprinted(
                 &source, &manifest, &output, alignment, start, end, &cancel,
             )?;
@@ -519,12 +546,12 @@ fn run(cli: Cli) -> Result<i32, Error> {
         Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
         Command::Apfs(request) => sleuthkit::apfs(request, &cancel),
-        Command::ExportRaw {
+        Command::ExportRaw(ExportRawArgs {
             session,
             id,
             destination,
             json: compact,
-        } => {
+        }) => {
             let session = if rescue_core::CandidateIndex::is_index(&session)? {
                 rescue_core::CandidateIndex::open(&session)?.selected_session(&id)?
             } else {
@@ -567,7 +594,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             }
             Ok(0)
         }
-        Command::Image {
+        Command::Image(ImageArgs {
             source,
             destination,
             block_size,
@@ -578,7 +605,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             resume,
             progress,
             json: compact,
-        } => {
+        }) => {
             let result = rescue_core::acquire_image(
                 &source,
                 &destination,
@@ -646,7 +673,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             );
             Ok(0)
         }
-        Command::Raid {
+        Command::Raid(RaidArgs {
             config,
             output,
             search,
@@ -655,7 +682,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             max_configurations,
             max_milliseconds,
             json: compact,
-        } => {
+        }) => {
             use std::io::Read;
             let file = std::fs::File::open(&config)?;
             let mut bytes = Vec::new();
@@ -771,7 +798,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             );
             Ok(0)
         }
-        Command::Scan {
+        Command::Scan(ScanArgs {
             indexed,
             max_records,
             max_candidates,
@@ -792,7 +819,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             estimate_fat_contiguous,
             fat_short_name_encoding,
             exfat_allow_damaged_upcase,
-        } => {
+        }) => {
             rescue_core::guard_output_path(&source, &work_dir)?;
             let recovered_volume = if let Some(id) = volume_id {
                 if mode != "quick" {
@@ -920,7 +947,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
                 0
             })
         }
-        Command::Results {
+        Command::Results(ResultsArgs {
             cursor,
             sort,
             group,
@@ -931,7 +958,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             offset,
             name,
             json: compact,
-        } => {
+        }) => {
             if limit == 0 || limit > 1000 {
                 return Err(Error::Request("limit must be 1..1000".into()));
             }
@@ -996,7 +1023,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             );
             Ok(0)
         }
-        Command::Recover {
+        Command::Recover(RecoverArgs {
             session,
             mut id,
             all,
@@ -1008,7 +1035,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             archive,
             work_dir,
             json: compact,
-        } => {
+        }) => {
             let archive_work = work_dir.unwrap_or_else(|| {
                 session
                     .parent()
@@ -1100,7 +1127,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             );
             Ok(recovery_code(&results, &cancel))
         }
-        Command::Restore {
+        Command::Restore(RestoreArgs {
             source,
             destination,
             original,
@@ -1109,7 +1136,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             all,
             collision,
             json: compact,
-        } => {
+        }) => {
             let session = scan_with_settings(
                 &source,
                 ScanOptions::default(),
@@ -1214,12 +1241,12 @@ fn run(cli: Cli) -> Result<i32, Error> {
             );
             Ok(0)
         }
-        Command::Mcp {
+        Command::Mcp(McpArgs {
             allow_source,
             work_dir,
             allow_output_root,
             ..
-        } => {
+        }) => {
             rescue_mcp::serve(rescue_mcp::Config {
                 sources: allow_source,
                 work_dir,

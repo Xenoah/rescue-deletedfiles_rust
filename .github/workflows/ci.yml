@@ -75,6 +75,12 @@ jobs:
       - run: python scripts/ci_command.py cargo clippy --workspace --all-targets --target ${{ matrix.target }} --locked --offline -- -D warnings
       - run: python scripts/ci_command.py cargo test --workspace --target ${{ matrix.target }} --locked --offline
       - run: python scripts/ci_command.py cargo build --workspace --target ${{ matrix.target }} --locked --offline
+      - name: Exercise real debug CLI and MCP commands with a 1 MiB main-thread stack
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          ulimit -s 1024
+          python scripts/ci_command.py python scripts/e2e.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Debug CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Restore seven actually unlinked files from an independently generated APFS snapshot
