@@ -1,7 +1,8 @@
 //! Read checksummed Btrfs tree blocks from a single-device volume.
 //! Resolve metadata through the validated system and chunk trees, checking each mirror.
+use super::checksum::Checksum;
 use super::chunks::{Chunks, Device};
-use super::{bad, u32le, u64le};
+use super::{bad, u16le, u32le, u64le};
 use crate::{Error, Result};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -13,32 +14,6 @@ use std::{
 
 const HEADER: usize = 101;
 const MAX_BLOCKS: usize = 8192;
-const fn crc_table() -> [u32; 256] {
-    let mut a = [0; 256];
-    let mut i = 0;
-    while i < 256 {
-        let mut v = i as u32;
-        let mut j = 0;
-        while j < 8 {
-            v = (v >> 1) ^ if v & 1 != 0 { 0x82f63b78 } else { 0 };
-            j += 1;
-        }
-        a[i] = v;
-        i += 1;
-    }
-    a
-}
-const CRC: [u32; 256] = crc_table();
-pub(super) fn crc32c(data: &[u8]) -> u32 {
-    let mut c = u32::MAX;
-    for &b in data {
-        c = (c >> 8) ^ CRC[usize::from(c as u8 ^ b)];
-    }
-    !c
-}
-fn valid_crc(data: &[u8]) -> bool {
-    u32le(data, 0) == crc32c(&data[32..])
-}
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct Key(pub u64, pub u8, pub u64);
 fn key(b: &[u8]) -> Key {
@@ -66,6 +41,7 @@ pub(super) struct Volume<'a> {
     backups: BTreeMap<u64, Option<Backup>>,
     system: Chunks,
     device: Device,
+    pub checksum: Checksum,
     pub root: Node,
     pub sector: usize,
     file: File,
@@ -91,13 +67,14 @@ impl<'a> Volume<'a> {
         if &sb[64..72] != b"_BHRfS_M" || u64le(&sb, 48) != 65536 {
             return Err(bad("missing primary superblock"));
         }
-        if sb[196..198] != [0, 0] || u64le(&sb, 136) != 1 {
+        if u64le(&sb, 136) != 1 {
             return Err(Error::Unsupported(
-                "Btrfs requires a single-device CRC32C volume".into(),
+                "Btrfs requires a single-device volume".into(),
             ));
         }
-        if !valid_crc(&sb) {
-            return Err(bad("superblock CRC32C mismatch"));
+        let checksum = Checksum::from_code(u16le(&sb, 196))?;
+        if !checksum.block_matches(&sb) {
+            return Err(bad("superblock checksum mismatch"));
         }
         let sector = u32le(&sb, 144) as usize;
         let node_size = u32le(&sb, 148) as usize;
@@ -159,6 +136,7 @@ impl<'a> Volume<'a> {
             }
         }
         let mut volume = Self {
+            checksum,
             backups,
             system: bootstrap.clone(),
             device,
@@ -265,14 +243,14 @@ impl<'a> Volume<'a> {
                 && u64le(&bytes, 48) == node.address
                 && u64le(&bytes, 80) == node.generation
                 && bytes[100] == node.level
-                && valid_crc(&bytes)
+                && self.checksum.block_matches(&bytes)
             {
                 return Ok(bytes);
             }
         }
         Err(bad("no matching checksummed tree-block mirror"))
     }
-    pub fn data_sector(&mut self, logical: u64, expected: u32, bytes: &mut [u8]) -> Result<()> {
+    pub fn data_sector(&mut self, logical: u64, expected: &[u8], bytes: &mut [u8]) -> Result<()> {
         if bytes.len() != self.sector || !logical.is_multiple_of(self.sector as u64) {
             return Err(bad("unaligned data sector"));
         }
@@ -282,7 +260,7 @@ impl<'a> Volume<'a> {
                 .seek(SeekFrom::Start(physical))
                 .and_then(|_| self.file.read_exact(bytes))
                 .is_ok()
-                && crc32c(bytes) == expected
+                && self.checksum.matches(bytes, expected)
             {
                 return Ok(());
             }

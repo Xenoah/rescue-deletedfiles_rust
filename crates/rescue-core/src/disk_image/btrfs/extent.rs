@@ -19,10 +19,11 @@ const MAX_COMPRESSED: usize = 128 << 10;
 const MAX_OUTPUT: u64 = 16 << 40;
 
 #[derive(Default)]
-pub(super) struct Checksums(BTreeMap<u64, Vec<u32>>);
+pub(super) struct Checksums(BTreeMap<u64, Vec<u8>>);
 impl Checksums {
     pub fn load(volume: &mut Volume, root: Node) -> Result<Self> {
         let sector = volume.sector as u64;
+        let width = volume.checksum.size();
         let mut index = BTreeMap::new();
         let mut bytes = 0usize;
         let mut end = 0;
@@ -30,30 +31,27 @@ impl Checksums {
             if object != u64::MAX - 9 || ty != 128 {
                 return Err(bad("unsupported checksum-tree item"));
             }
-            let (words, rest) = payload.as_chunks::<4>();
-            if words.is_empty()
-                || !rest.is_empty()
+            if payload.is_empty()
+                || !payload.len().is_multiple_of(width)
                 || !logical.is_multiple_of(sector)
                 || logical < end
             {
                 return Err(bad("invalid extent checksum range"));
             }
             end = logical
-                .checked_add(words.len() as u64 * sector)
+                .checked_add((payload.len() / width) as u64 * sector)
                 .ok_or_else(|| bad("checksum range overflow"))?;
             bytes += payload.len();
             if bytes > 64 << 20 {
                 return Err(Error::Limit("Btrfs checksum index exceeds 64 MiB".into()));
             }
-            index.insert(
-                logical,
-                words.iter().copied().map(u32::from_le_bytes).collect(),
-            );
+            index.insert(logical, payload.to_vec());
             Ok(())
         })?;
         Ok(Self(index))
     }
     fn sector(&self, volume: &mut Volume, logical: u64, bytes: &mut [u8]) -> Result<()> {
+        let width = volume.checksum.size();
         let sum = self
             .0
             .range(..=logical)
@@ -61,10 +59,11 @@ impl Checksums {
             .and_then(|(&start, values)| {
                 usize::try_from((logical - start) / volume.sector as u64)
                     .ok()
-                    .and_then(|i| values.get(i))
+                    .and_then(|i| i.checked_mul(width))
+                    .and_then(|start| values.get(start..)?.get(..width))
             })
             .ok_or_else(|| bad("missing data sector checksum"))?;
-        volume.data_sector(logical, *sum, bytes)
+        volume.data_sector(logical, sum, bytes)
     }
 }
 

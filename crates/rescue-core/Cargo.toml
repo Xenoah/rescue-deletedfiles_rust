@@ -11,6 +11,8 @@ serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 sha2.workspace = true
+blake2 = "0.10"
+twox-hash = { version = "2.1", default-features = false, features = ["xxhash64"] }
 uuid.workspace = true
 cap-std.workspace = true
 png = "0.18.1"

@@ -23,13 +23,13 @@ def flip(path, offset):
         image.write(bytes([original[0] ^ 1]))
 
 
-def verify(binary, root):
+def verify(binary, root, fixture_root=GOLD, modes=('zlib', 'zstd')):
     originals = samples()
     proof = {}
-    for mode in ('zlib', 'zstd'):
+    for mode in modes:
         folder = root / mode
         folder.mkdir()
-        fixture = GOLD / mode
+        fixture = fixture_root / mode
         meta = json.loads((fixture / 'manifest.json').read_text())
         expected = {name: hashlib.sha256(data).hexdigest() for name, data in originals.items()}
         check(expected == meta['original_files'], 'independently generated originals')
@@ -41,7 +41,9 @@ def verify(binary, root):
         check(sha(disk) == meta['sha256'] and disk.stat().st_size == meta['raw_bytes'], 'raw fixture')
         args = ['btrfs', '--source', disk, '--current-root', str(meta['subvolume']),
                 '--snapshot-root', str(meta['snapshot']), '--json']
-        listing = run(binary, *args)['candidates']
+        report = run(binary, *args)
+        check(report['checksum'] == meta.get('checksum', 'crc32c'), 'filesystem checksum')
+        listing = report['candidates']
         check({p for row in listing for p in row['original_paths']} == {'/' + n for n in originals}, listing)
         check(all(not row['inline_extent'] for row in listing), 'regular extents expected')
 
@@ -75,6 +77,9 @@ def verify(binary, root):
                 name = row['original_paths'][0][1:]
                 check(Path(row['path']).read_bytes() == originals[name] and row['sha256'] == expected[name], row)
         flip(disk, meta['first_file_data_sector'])
+        flip(disk, 65536)
+        run(binary, *args, expected=4)
+        flip(disk, 65536)
         check(sha(disk) == meta['sha256'], 'damage simulation left fixture changed')
         print(f'{mode}: seven originals match bytes and SHA-256; one lost metadata mirror tolerated, double loss and corrupt data detected', flush=True)
     return proof

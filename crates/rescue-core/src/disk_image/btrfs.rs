@@ -1,4 +1,5 @@
 //! Restore historical files from a retained, read-only Btrfs snapshot.
+mod checksum;
 mod chunks;
 mod extent;
 mod tree;
@@ -212,7 +213,7 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
     let mut vol = Volume::open(Path::new(&paths[0]), cancel)?;
     let mut current_roots = roots(&mut vol)?;
     let inventory=current_roots.iter().filter(|(id,_)| **id != 7).map(|(id,r)|json!({"id":id,"readonly":r.readonly,"uuid":hex(&r.uuid),"parent_uuid":hex(&r.parent)})).collect::<Vec<_>>();
-    let mut result = json!({"roots":inventory, "current_generation":vol.root.generation,
+    let mut result = json!({"roots":inventory, "current_generation":vol.root.generation, "checksum":vol.checksum.name(),
         "backup_generations":vol.generations()});
     let Some(current_id) = req.current_root else {
         if req.snapshot_root.is_some()
