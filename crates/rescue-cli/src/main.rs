@@ -214,6 +214,36 @@ struct RestoreArgs {
 }
 
 #[derive(clap::Args)]
+struct RecoverByHashArgs {
+    #[arg(long)]
+    source: PathBuf,
+    #[arg(long)]
+    output: PathBuf,
+    /// Original SHA-256 in hexadecimal.
+    #[arg(long)]
+    sha256: String,
+    /// Exact original length (1 byte to 64 MiB).
+    #[arg(long)]
+    file_bytes: u64,
+    /// Position grid relative to --start, also the unit of a possible split.
+    #[arg(long, default_value_t = 512)]
+    block_size: u32,
+    #[arg(long, default_value_t = 0)]
+    start: u64,
+    /// Exclusive logical byte offset. Defaults to the end of the source.
+    #[arg(long)]
+    end: Option<u64>,
+    /// Known first byte offset. Also searches two non-overlapping runs when supplied.
+    #[arg(long)]
+    first_offset: Option<u64>,
+    /// Logical search byte budget, excluding the final verified copy.
+    #[arg(long, default_value_t = rescue_core::disk_image::DEFAULT_HASH_WORK)]
+    max_work: u64,
+    #[arg(long)]
+    json: bool,
+}
+
+#[derive(clap::Args)]
 struct RecoverFingerprintedArgs {
     #[arg(long)]
     source: PathBuf,
@@ -377,6 +407,8 @@ enum Command {
     },
     /// Locate fingerprinted chunks on a disk, then reassemble and verify the original file.
     RecoverFingerprinted(RecoverFingerprintedArgs),
+    /// Find a contiguous file or two anchored runs by exact size and whole-file SHA-256.
+    RecoverByHash(RecoverByHashArgs),
     /// Restore a file from ordered byte extents, verifying the supplied original SHA-256.
     RecoverExtents {
         #[arg(long)]
@@ -496,7 +528,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
     }
     if cli.request_read_access {
         let source=match &cli.command {
-            Command::RecoverFingerprinted(RecoverFingerprintedArgs{source,..})|Command::RecoverExtents{source,..}|Command::Scan(ScanArgs{source,..})|Command::Image(ImageArgs{source,..})|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore(RestoreArgs{source,..})=>source.clone(),
+            Command::RecoverByHash(RecoverByHashArgs{source,..})|Command::RecoverFingerprinted(RecoverFingerprintedArgs{source,..})|Command::RecoverExtents{source,..}|Command::Scan(ScanArgs{source,..})|Command::Image(ImageArgs{source,..})|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore(RestoreArgs{source,..})=>source.clone(),
             Command::Recover(RecoverArgs{session,..})|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw(ExportRawArgs{session,..})=> {
                 if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
                 else {Session::load(session)?.source}
@@ -521,6 +553,25 @@ fn run(cli: Cli) -> Result<i32, Error> {
             let report =
                 rescue_core::disk_image::fingerprint_file(&source, &output, chunk_size, &cancel)?;
             print(json!(report), compact);
+            Ok(0)
+        }
+        Command::RecoverByHash(args) => {
+            let request = rescue_core::disk_image::HashSearch {
+                sha256: &args.sha256,
+                file_bytes: args.file_bytes,
+                block_size: args.block_size,
+                start: args.start,
+                end: args.end,
+                first_offset: args.first_offset,
+                max_work: args.max_work,
+            };
+            let report = rescue_core::disk_image::recover_by_hash(
+                &args.source,
+                &args.output,
+                &request,
+                &cancel,
+            )?;
+            print(json!(report), args.json);
             Ok(0)
         }
         Command::RecoverFingerprinted(RecoverFingerprintedArgs {

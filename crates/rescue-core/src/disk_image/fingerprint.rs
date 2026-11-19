@@ -78,9 +78,11 @@ fn rolling(bytes: &[u8]) -> u64 {
     })
 }
 
-fn strong(s: &str) -> Result<Hash> {
+pub(super) fn strong(s: &str) -> Result<Hash> {
     if s.len() != 64 || !s.bytes().all(|b| b.is_ascii_hexdigit()) {
-        return Err(Error::Request("invalid chunk manifest SHA-256".into()));
+        return Err(Error::Request(
+            "expected a SHA-256 digest of 64 hexadecimal digits".into(),
+        ));
     }
     let mut result = [0; 32];
     for (i, v) in result.iter_mut().enumerate() {
