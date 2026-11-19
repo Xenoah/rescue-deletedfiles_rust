@@ -60,4 +60,4 @@ jobs:
           git push origin "refs/tags/$RELEASE_TAG"
           gh release create "$RELEASE_TAG" packages/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file notes.md
       - name: Start the public download verification on all four platforms
-        run: gh workflow run published-packages.yml --ref "$RELEASE_TAG" -f release_tag="$RELEASE_TAG" -f native_run_id="$NATIVE_RUN"
+        run: gh workflow run published-packages.yml --ref qa/public-v1.14.0-ffmpeg -f release_tag="$RELEASE_TAG" -f native_run_id="$NATIVE_RUN"
