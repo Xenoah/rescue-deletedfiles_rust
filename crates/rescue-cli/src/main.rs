@@ -1,4 +1,5 @@
 mod sleuthkit;
+mod virtual_image;
 
 use clap::{Parser, Subcommand};
 use rescue_core::{
@@ -28,7 +29,7 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
-    /// Read a forensic or virtual image into a new RAW file using Sleuth Kit img_cat.
+    /// Convert a standalone virtual or forensic disk image to a new RAW file.
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,

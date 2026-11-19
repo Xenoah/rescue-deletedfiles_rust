@@ -22,7 +22,7 @@ pub struct ImageArgs {
     /// Additional image segments in logical order, for explicitly split images.
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Sleuth Kit image type, such as raw, ewf, vhd or vmdk. Default: auto-detect.
+    /// Sleuth Kit image type, such as raw, ewf, vhd or vmdk. import-image also accepts standalone vdi. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
@@ -174,6 +174,41 @@ fn write_output(
     expected_size: Option<u64>,
     cancel: &AtomicBool,
 ) -> Result<Value> {
+    publish_output(output, cancel, |file| {
+        let mut digest = Sha256::new();
+        let bytes = read_tool(tool, args, cancel, |reader| {
+            let mut buf = [0; 64 * 1024];
+            let mut bytes = 0u64;
+            loop {
+                let n = reader.read(&mut buf)?;
+                if n == 0 {
+                    break;
+                }
+                bytes += n as u64;
+                if expected_size.is_some_and(|size| bytes > size) {
+                    return Err(Error::Invalid("output exceeds the recorded length".into()));
+                }
+                file.write_all(&buf[..n])?;
+                digest.update(&buf[..n]);
+            }
+            Ok(bytes)
+        })?;
+        if expected_size.is_some_and(|size| bytes != size)
+            || (expected_size.is_none() && bytes == 0)
+        {
+            return Err(Error::Invalid(
+                "reader returned an incomplete output".into(),
+            ));
+        }
+        Ok((bytes, digest))
+    })
+}
+
+pub(super) fn publish_output(
+    output: &Path,
+    cancel: &AtomicBool,
+    write: impl FnOnce(&mut fs::File) -> Result<(u64, Sha256)>,
+) -> Result<Value> {
     if output.try_exists()? {
         return Err(Error::Request(format!(
             "output exists: {}",
@@ -185,29 +220,7 @@ fn write_output(
         .filter(|p| !p.as_os_str().is_empty())
         .unwrap_or(Path::new("."));
     let mut temp = tempfile::NamedTempFile::new_in(parent)?;
-    let mut digest = Sha256::new();
-    let bytes = read_tool(tool, args, cancel, |reader| {
-        let mut buf = [0; 64 * 1024];
-        let mut bytes = 0u64;
-        loop {
-            let n = reader.read(&mut buf)?;
-            if n == 0 {
-                break;
-            }
-            bytes += n as u64;
-            if expected_size.is_some_and(|size| bytes > size) {
-                return Err(Error::Invalid("output exceeds the recorded length".into()));
-            }
-            temp.write_all(&buf[..n])?;
-            digest.update(&buf[..n]);
-        }
-        Ok(bytes)
-    })?;
-    if expected_size.is_some_and(|size| bytes != size) || (expected_size.is_none() && bytes == 0) {
-        return Err(Error::Invalid(
-            "reader returned an incomplete output".into(),
-        ));
-    }
+    let (bytes, digest) = write(temp.as_file_mut())?;
     temp.as_file().sync_all()?;
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
@@ -218,6 +231,18 @@ fn write_output(
 
 pub fn import(image: ImageArgs, output: &Path, json: bool, cancel: &AtomicBool) -> Result<i32> {
     let (mut args, paths) = image.arguments(Some(output))?;
+    if paths.len() == 1
+        && !rescue_core::is_device(Path::new(&paths[0]))
+        && let Some(result) = super::virtual_image::import(
+            Path::new(&paths[0]),
+            image.image_type.as_deref(),
+            output,
+            cancel,
+        )?
+    {
+        super::print(result, json);
+        return Ok(0);
+    }
     args.extend(paths);
     let result = write_output("img_cat", &args, output, None, cancel)?;
     super::print(result, json);

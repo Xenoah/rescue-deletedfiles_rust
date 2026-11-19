@@ -89,6 +89,18 @@ def verify(binary, root, native):
         check(result['sha256'] == sha(expected) and imported.read_bytes() == expected, suffix)
         check(sha(image.read_bytes()) == before, suffix + ' import modified source')
         print(suffix, 'logical RAW image byte-exact', flush=True)
+    # Compare the built-in VDI reader against qemu-img, then recover the real
+    # debugfs deletions from its output using the same metadata workflow.
+    for fmt, options in [('dynamic-vdi', []), ('fixed-vdi', ['-o', 'static=on'])]:
+        image = root / (fmt + '.image')
+        command('qemu-img', 'convert', '-f', 'raw', '-O', 'vdi', *options, raw, image)
+        before = sha(image.read_bytes())
+        imported = root / (fmt + '-decoded.raw')
+        flags = ['--image-type', 'vdi'] if options else []
+        result = run(binary, 'import-image', '--source', image, '--output', imported, '--json', *flags)
+        check(result['bytes'] == len(expected) and result['sha256'] == sha(expected)
+              and imported.read_bytes() == expected and sha(image.read_bytes()) == before, fmt)
+        recover(fmt, [imported], ['--fs-type', 'ext4'])
     parts = [root / 'split.first', root / 'split.second']
     parts[0].write_bytes(expected[:len(expected)//2])
     parts[1].write_bytes(expected[len(expected)//2:])
