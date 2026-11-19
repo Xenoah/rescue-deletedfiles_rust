@@ -15,6 +15,7 @@ uuid.workspace = true
 cap-std.workspace = true
 png = "0.18.1"
 crc32fast = "1"
+base64 = "0.22.1"
 flate2 = "1"
 ruzstd = "0.9.1"
 lz4_flex = "0.14.2"

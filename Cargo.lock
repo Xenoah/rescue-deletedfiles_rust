@@ -487,6 +487,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2841,11 +2847,10 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "clap",
  "ctrlc",
- "flate2",
  "rescue-core",
  "rescue-mcp",
  "serde_json",
@@ -2855,8 +2860,9 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
+ "base64",
  "bzip2",
  "cap-std",
  "claxon",
@@ -2888,19 +2894,20 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "eframe",
  "egui_extras",
  "rescue-core",
  "rfd",
  "serde_json",
+ "tempfile",
  "wgpu",
 ]
 
 [[package]]
 name = "rescue-mcp"
-version = "1.7.0"
+version = "1.8.0"
 dependencies = [
  "rescue-core",
  "serde_json",

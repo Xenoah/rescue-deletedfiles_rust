@@ -39,6 +39,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         media_documents = run['media_document_verification']
         assert set(media_documents) == {'rtf', 'xml', 'mp3', 'flac', 'tif'}
         assert all(len(variants) >= 8 for variants in media_documents.values())
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 8, 0):
+        assert len(run['open_documents']) == 21 and len(run['json_documents']) == 12
+        assert set(run['udif_images']) == {'raw', 'zlib', 'bzip2', 'adc', 'mixed', 'data-fork-offset', 'libdmg-apm-fat32'}
+        assert all(count == 7 for count in run['udif_images'].values())
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')

@@ -1,0 +1,89 @@
+{
+  "platform": "Linux x64, Xvfb",
+  "fixtures": "QEMU, libewf, AFFLIB and four split RAW segments of an ext4 filesystem. Seven original files were unlinked using debugfs.",
+  "inputs": [
+    {
+      "image": "vdi",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "qcow2",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "vhd",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "vhdx",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "vmdk",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "aff",
+      "segments": 1,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "ewf",
+      "segments": 5,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    },
+    {
+      "image": "split-raw",
+      "segments": 4,
+      "logical_bytes": 16777216,
+      "logical_sha256": "c83f52bffd824a3ae4ed8601139d187be8a5971f4372e2f0fe22a5cecc811db6",
+      "source_unchanged": true,
+      "selected_as_scan_source": true,
+      "deleted_files_byte_exact": 7
+    }
+  ],
+  "original_file_sha256": {
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.mp3": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+    "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+  },
+  "cancellation": "64 GiB sparse VDI cancelled during conversion. No final or temporary output remained.",
+  "collision": "An existing RAW was refused and retained its original SHA-256."
+}

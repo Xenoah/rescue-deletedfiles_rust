@@ -17,6 +17,7 @@ pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
+mod json;
 mod movie;
 mod mp3;
 mod pdf;
@@ -71,6 +72,7 @@ pub(crate) fn validate_estimated_extent(
         "flac" => Some(Format::Flac),
         "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
+        "json" => Some(Format::Json),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
@@ -91,6 +93,7 @@ pub(crate) fn validate_estimated_extent(
         "xz" => Some(Format::Xz),
         "lz" => Some(Format::Lzip),
         "sqlite" => Some(Format::Sqlite),
+        ext if zip::package::formats().any(|kind| kind.extension() == ext) => Some(Format::Zip),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
         _ if head.starts_with(b"%PDF-") => Some(Format::Pdf),
@@ -124,6 +127,11 @@ pub(crate) fn validate_estimated_extent(
     Ok(true)
 }
 
+pub(crate) fn is_open_package_id(id: &str) -> bool {
+    id.split_once('-')
+        .is_some_and(|(ext, _)| zip::package::formats().any(|format| format.extension() == ext))
+}
+
 fn charge(budget: &mut u64, amount: usize) -> Result<()> {
     *budget = budget
         .checked_sub(amount as u64)
@@ -141,9 +149,11 @@ enum Format<'a> {
     Flac,
     Mp3,
     Xml,
+    Json,
     Rtf,
     Pdf,
     Zip,
+    Package(&'static str),
     Docx,
     Xlsx,
     Pptx,
@@ -178,9 +188,11 @@ impl<'a> Format<'a> {
             Self::Flac => "flac",
             Self::Mp3 => "mp3",
             Self::Xml => "xml",
+            Self::Json => "json",
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
+            Self::Package(ext) => ext,
             Self::Docx => "docx",
             Self::Xlsx => "xlsx",
             Self::Pptx => "pptx",
@@ -233,12 +245,15 @@ impl<'a> Format<'a> {
             Self::Png | Self::Apng => ExtentEvidence::PngValidated,
             Self::Jpeg => ExtentEvidence::JpegValidated,
             Self::Pdf => ExtentEvidence::PdfStructure,
-            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
+            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
+                ExtentEvidence::ZipCrcValidated
+            }
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
             | Self::Flac
             | Self::Mp3
             | Self::Xml
+            | Self::Json
             | Self::Rtf
             | Self::Ico
             | Self::Cur
@@ -268,6 +283,7 @@ impl<'a> Format<'a> {
                         Self::Png => ext == "png",
                         Self::Apng => matches!(ext.as_str(), "apng" | "png"),
                         Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
+                        Self::Package(subtype) => ext == subtype || ext == "zip",
                         other => ext == other.extension(),
                     }
             })
@@ -298,6 +314,11 @@ impl<'a> Format<'a> {
                     mp3::parse(&mut input)?
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Json => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = json::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Tiff => {
                 tiff::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
@@ -338,7 +359,7 @@ impl<'a> Format<'a> {
             Self::Pdf => {
                 pdf::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
             }
-            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => {
+            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
                 zip::validate(image, at, cancel, budget, boundary)
             }
             Self::Mp4 | Self::Mov => movie::validate(image, at, cancel, budget, boundary)
@@ -366,6 +387,19 @@ fn detect<'a>(
         Some(Format::Jpeg)
     } else if bytes.starts_with(b"{\\rtf1") && Format::Rtf.allowed(extensions) {
         Some(Format::Rtf)
+    } else if matches!(bytes.first(), Some(b'{' | b'[' | 0xef))
+        && Format::Json.allowed(extensions)
+        && json::signature(
+            bytes,
+            extensions.iter().any(|v| {
+                v.trim()
+                    .trim_start_matches("*.")
+                    .trim_start_matches('.')
+                    .eq_ignore_ascii_case("json")
+            }),
+        )
+    {
+        Some(Format::Json)
     } else if matches!(bytes.first(), Some(0x3c | 0xef))
         && xml::signature(bytes)
         && Format::Xml.allowed(extensions)
@@ -388,7 +422,8 @@ fn detect<'a>(
     } else if (bytes.starts_with(b"PK\x03\x04")
         || (bytes.len() >= 22 && bytes.starts_with(b"PK\x05\x06") && bytes[4..20] == [0; 16]))
         && [Format::Zip, Format::Docx, Format::Xlsx, Format::Pptx]
-            .iter()
+            .into_iter()
+            .chain(zip::package::formats())
             .any(|f| f.allowed(extensions))
     {
         Some(Format::Zip)
@@ -427,6 +462,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         Format::Mp3 => &[
             "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
         ],
+        Format::Json => &[
+            "UTF-8 JSON object or array validated through its closing delimiter. The value may be embedded in a larger document. Leading and trailing whitespace outside the value is excluded, except whitespace following a UTF-8 BOM. No scalar-root or JSON-with-comments recovery.",
+        ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
         ],
@@ -435,6 +473,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Pdf => &[
             "Classic-xref PDF: references, page tree and declared stream extents validated. Encrypted/xref-stream PDFs are unsupported. Stream codecs, scripts and page rendering are not executed. EOF-based extent is an estimate; trailing padding cannot be established.",
+        ],
+        Format::Package(_) => &[
+            "ZIP entries and every entry CRC checked. The stored leading MIME type and package manifest identify the document family. Document rendering, embedded objects and encryption inside the package are unverified.",
         ],
         Format::Zip | Format::Docx | Format::Xlsx | Format::Pptx => &[
             "ZIP central/local records, decoded lengths and every entry CRC validated. Office classification identifies a container, not document rendering or macro safety. Stored/DEFLATE only, no encryption/multi-volume; 4096 entries, 128 MiB decoded total, 64 MiB per entry.",
@@ -510,9 +551,10 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
+    let mut json_end = 0;
     let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
@@ -535,6 +577,9 @@ pub(crate) fn scan_range(
                 continue;
             };
             let at = offset + index as u64;
+            if format == Format::Json && at < json_end {
+                continue;
+            }
             let allocation = match scope.status(at, 1, cancel) {
                 Ok(status) => status,
                 Err(Error::Cancelled) => {
@@ -597,6 +642,9 @@ pub(crate) fn scan_range(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if validated_format == Format::Json {
+                        json_end = at + bytes.len() as u64;
                     }
                     candidate.id = validated_format.id(at);
                     candidate.name = validated_format.name(at);
@@ -693,6 +741,7 @@ pub(crate) fn recovery_data(
         Format::Flac,
         Format::Mp3,
         Format::Xml,
+        Format::Json,
         Format::Rtf,
         Format::Zip,
         Format::Docx,
@@ -719,6 +768,7 @@ pub(crate) fn recovery_data(
         Format::Sqlite,
     ]
     .into_iter()
+    .chain(zip::package::formats())
     .filter(|_| rule.is_none())
     .chain(rule.map(Format::Rule))
     .find(|f| candidate.id == f.id(candidate.record))
@@ -733,7 +783,8 @@ pub(crate) fn recovery_data(
     let boundary = image.length;
     let (actual, bytes, _) =
         format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
-    if actual != format {
+    // Sessions made before package classification recorded ODF/EPUB as generic ZIP.
+    if actual != format && !(format == Format::Zip && matches!(actual, Format::Package(_))) {
         return Err(Error::SourceChanged);
     }
     if candidate.record_sha256 != format!("{:x}", Sha256::digest(&bytes)) {

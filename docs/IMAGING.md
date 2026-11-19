@@ -103,3 +103,21 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 ```
 
 分割E01は同じ取得セットの全セグメントを順番に指定します。既存の出力ファイルは上書きしません。取得エラーが記録されている場合、欠落セグメント、検証失敗、取消の場合は、新しいRAWを確定しません。`--image-type ewf-verified` ではlibewfによる照合が必須です。ツールの構成に応じる自動選択で照合が完了した場合、JSONに `"reader": "libewf"` と `"logical_sha256_verified": true` を記録します。
+
+## GUIで仮想ディスク・証拠イメージを開く
+
+1. 設定画面で「保存したイメージ」を選び、「ディスクのツール」から「イメージをRAWに変換」を開きます。
+2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。
+3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
+
+単独VDI・QCOW2はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHD・VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+
+## Apple DMG（UDIF）
+
+GUIの変換画面で「DMG (UDIF)」を選ぶか、CLIで次のように指定します。
+
+```sh
+rescue import-image --source disk.dmg --image-type dmg --output disk.raw --json
+```
+
+対象は、ディスクのセクター数を記録した単独のUDIFイメージです。XMLのブロック表から全セクターの位置を確定し、非圧縮、ゼロ領域、ADC、zlib、bzip2をアプリ内で展開します。記録のあるデータフォーク・ブロック表・展開データのCRC-32を照合します。圧縮ブロックの入力と展開後の上限は各64 MiBです。暗号化・分割DMG・旧リソースフォーク形式や未対応コーデックでは、この方法で変換できません。

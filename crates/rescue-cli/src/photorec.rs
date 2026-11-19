@@ -1,5 +1,5 @@
 //! Optional broad-format whole-source carving with the installed PhotoRec reader.
-use super::sleuthkit::{executable_in_path, single_raw_source};
+use rescue_core::disk_image::{executable_in_path, single_raw_source};
 use rescue_core::{Error, Result};
 use serde_json::json;
 use sha2::{Digest, Sha256};

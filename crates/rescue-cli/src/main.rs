@@ -1,7 +1,5 @@
-mod ewf;
 mod photorec;
 mod sleuthkit;
-mod virtual_image;
 
 use clap::{Parser, Subcommand};
 use rescue_core::{
