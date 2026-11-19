@@ -26,5 +26,10 @@
     "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
   },
   "survivor": "survivor.txt",
-  "created_later": "created-later.txt"
+  "created_later": "created-later.txt",
+  "snapshot_leaf": {
+    "logical": 5472256,
+    "physical": 5472256,
+    "bytes": 16384
+  }
 }

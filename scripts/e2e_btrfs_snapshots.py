@@ -30,7 +30,7 @@ def crc32c(data):
     return n ^ 0xffffffff
 
 
-def verify(binary, root):
+def verify(binary, root, independent=False):
     proof={}
     for mode in ('plain','zlib'):
         folder=root/mode;folder.mkdir()
@@ -65,12 +65,15 @@ def verify(binary, root):
         print(mode,len(recovered),'historical files matched their original bytes and SHA-256',flush=True)
 
     # Alter one zlib trailer on a private fixture while retaining a valid metadata CRC.
-    roots=subprocess.check_output(['btrfs','restore','-l',disk],text=True)
-    address=int(re.search(rf'\({snapshot} ROOT_ITEM \d+\) (\d+) level 0',roots)[1])
-    mapping=subprocess.check_output(['btrfs-map-logical','-l',str(address),disk],text=True)
-    physical=int(re.search(r'mirror 1 logical \d+ physical (\d+) device ',mapping)[1])
+    ref=meta['snapshot_leaf']
+    physical=ref['physical'];nodesize=ref['bytes']
+    if independent:
+        roots=subprocess.check_output(['btrfs','restore','-l',disk],text=True)
+        address=int(re.search(rf'\({snapshot} ROOT_ITEM \d+\) (\d+) level 0',roots)[1])
+        mapping=subprocess.check_output(['btrfs-map-logical','-l',str(address),disk],text=True)
+        check(address==ref['logical'] and int(re.search(r'mirror 1 logical \d+ physical (\d+) device ',mapping)[1])==physical,'independent chunk and root addresses')
     with disk.open('r+b') as f:
-        f.seek(65536+148);nodesize=struct.unpack('<I',f.read(4))[0]
+        f.seek(65536+148);check(struct.unpack('<I',f.read(4))[0]==nodesize,'fixture node size')
         f.seek(physical);leaf=bytearray(f.read(nodesize))
         check(struct.unpack_from('<I',leaf)[0]==crc32c(leaf[32:]),'initial metadata CRC32C')
         original=bytes(leaf)
@@ -96,5 +99,6 @@ def verify(binary, root):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--binary',type=Path,required=True)
+    p.add_argument('--independent',action='store_true',help='cross-check the fixture mapping with btrfs-progs')
     args=p.parse_args()
-    with tempfile.TemporaryDirectory() as directory:verify(args.binary.resolve(),Path(directory))
+    with tempfile.TemporaryDirectory() as directory:verify(args.binary.resolve(),Path(directory),args.independent)

@@ -85,7 +85,7 @@ jobs:
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/debug/${{ matrix.executable }}
       - name: Read seven real Btrfs snapshot unlinks in plain and compressed inline extents
         if: runner.os == 'Linux'
-        run: python scripts/ci_command.py python scripts/e2e_btrfs_snapshots.py --binary target/${{ matrix.target }}/debug/rescue
+        run: python scripts/ci_command.py python scripts/e2e_btrfs_snapshots.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Restore seven actually unlinked files from an independently generated APFS snapshot
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_apfs_snapshots.py --binary target/${{ matrix.target }}/debug/rescue

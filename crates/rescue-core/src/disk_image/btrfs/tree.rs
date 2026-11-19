@@ -1,11 +1,10 @@
 //! Read checksummed Btrfs tree blocks from a single-device volume.
-//! btrfs-progs maps logical addresses to physical mirrors; every returned block is validated here.
+//! Resolve metadata through the validated system and chunk trees, checking each mirror.
+use super::chunks::{Chunks, Device};
 use super::{bad, u32le, u64le};
-use crate::disk_image::read_tool;
 use crate::{Error, Result};
 use std::{
     collections::BTreeSet,
-    ffi::OsString,
     fs::{self, File},
     io::{Read, Seek, SeekFrom},
     path::Path,
@@ -59,7 +58,7 @@ pub(super) struct Volume<'a> {
     pub sector: usize,
     file: File,
     path: &'a Path,
-    length: u64,
+    chunks: Chunks,
     node_size: usize,
     fsid: [u8; 16],
     initial: fs::Metadata,
@@ -105,11 +104,18 @@ impl<'a> Volume<'a> {
         } else {
             32
         };
-        Ok(Self {
+        let device = Device {
+            id: u64le(&sb, 201),
+            uuid: sb[267..283].try_into().unwrap(),
+            length,
+            sector: sector as u64,
+        };
+        let bootstrap = Chunks::bootstrap(&sb, &device)?;
+        let mut volume = Self {
             file,
             path,
             initial,
-            length,
+            chunks: bootstrap,
             node_size,
             sector,
             fsid: sb[offset..offset + 16].try_into().unwrap(),
@@ -119,7 +125,28 @@ impl<'a> Volume<'a> {
                 level: sb[198],
             },
             cancel,
-        })
+        };
+        let chunk_root = Node {
+            address: u64le(&sb, 88),
+            generation: u64le(&sb, 164),
+            level: sb[199],
+        };
+        let mut full = Chunks::default();
+        volume.walk(chunk_root, |Key(id, ty, start), _, b| {
+            if ty == 228 {
+                if id != 256 {
+                    return Err(bad("invalid chunk-tree key"));
+                }
+                full.add(start, b, &device)?;
+            }
+            Ok(())
+        })?;
+        full.validate()?;
+        if !full.includes(&volume.chunks) {
+            return Err(bad("system chunk array disagrees with chunk tree"));
+        }
+        volume.chunks = full;
+        Ok(volume)
     }
     pub fn unchanged(&self) -> Result<()> {
         let m = fs::metadata(self.path)?;
@@ -136,46 +163,16 @@ impl<'a> Volume<'a> {
         if node.level > 8 || node.address == 0 || !node.address.is_multiple_of(self.sector as u64) {
             return Err(bad("invalid tree pointer"));
         }
-        let args = [
-            OsString::from("-l"),
-            node.address.to_string().into(),
-            self.path.as_os_str().to_owned(),
-        ];
-        let map = read_tool("btrfs-map-logical", &args, self.cancel, |s| {
-            let mut data = Vec::new();
-            s.take(65537).read_to_end(&mut data)?;
-            if data.len() > 65536 {
-                return Err(bad("excessive mapping response"));
-            }
-            String::from_utf8(data).map_err(|_| bad("mapping response is not UTF-8"))
-        })?;
         let mut bytes = vec![0; self.node_size];
-        for line in map.lines() {
-            let Some((entry, dev)) = line.split_once(" device ") else {
-                continue;
-            };
-            let f: Vec<_> = entry.split_ascii_whitespace().collect();
-            if f.len() != 6
-                || f[0] != "mirror"
-                || f[2] != "logical"
-                || f[4] != "physical"
-                || f[3].parse::<u64>().ok() != Some(node.address)
-                || Path::new(dev) != self.path
+        for at in self.chunks.addresses(node.address, self.node_size, 2 | 4)? {
+            if self
+                .file
+                .seek(SeekFrom::Start(at))
+                .and_then(|_| self.file.read_exact(&mut bytes))
+                .is_err()
             {
                 continue;
             }
-            let Ok(at) = f[5].parse::<u64>() else {
-                continue;
-            };
-            if !at.is_multiple_of(self.sector as u64)
-                || at
-                    .checked_add(bytes.len() as u64)
-                    .is_none_or(|n| n > self.length)
-            {
-                continue;
-            }
-            self.file.seek(SeekFrom::Start(at))?;
-            self.file.read_exact(&mut bytes)?;
             if bytes[32..48] == self.fsid
                 && u64le(&bytes, 48) == node.address
                 && u64le(&bytes, 80) == node.generation

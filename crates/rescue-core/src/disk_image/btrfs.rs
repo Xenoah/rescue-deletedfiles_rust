@@ -1,4 +1,5 @@
 //! Restore historical inline files from a retained, read-only Btrfs snapshot.
+mod chunks;
 mod tree;
 use super::{ImageInput, publish_output};
 use crate::{Error, Result};

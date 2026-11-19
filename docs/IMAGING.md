@@ -212,7 +212,7 @@ rescue iso-sessions --source data.iso --session 1 --all --destination old-files 
 
 ## Btrfsの読み取り専用スナップショット
 
-`rescue btrfs` は単一デバイスのBtrfsボリュームRAWからサブボリュームを一覧にします。現行サブボリュームのUUIDと、読み取り専用スナップショットに記録された親UUIDを照合してから、過去のツリーにだけ残る通常ファイルを探します。ボリューム先頭のイメージと、btrfs-progsの `btrfs-map-logical` が必要です。
+`rescue btrfs` は単一デバイスのBtrfsボリュームRAWからサブボリュームを一覧にします。現行サブボリュームのUUIDと、読み取り専用スナップショットに記録された親UUIDを照合してから、過去のツリーにだけ残る通常ファイルを探します。ボリューム先頭のRAWを指定します。single・DUP配置の論理アドレスを内部で解決します。DUPのメタデータは、CRC32Cとブロックの識別情報を検証できたコピーを読みます。
 
 ```sh
 rescue btrfs --source volume.raw --json
