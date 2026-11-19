@@ -2,7 +2,9 @@
 mod compressed_raw;
 mod ewf;
 mod extents;
+mod fingerprint;
 pub use extents::recover_extents;
+pub use fingerprint::{FingerprintedFile, MatchedFile, fingerprint_file, recover_fingerprinted};
 mod udif;
 mod virtual_image;
 use crate::{Error, Result};

@@ -80,6 +80,9 @@ jobs:
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Locate fingerprinted fragments of seven actually deleted FAT files
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_fingerprinted.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover eight ext4 unlinks from e2fsprogs block locations
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_known_extents.py --native --binary target/${{ matrix.target }}/debug/rescue

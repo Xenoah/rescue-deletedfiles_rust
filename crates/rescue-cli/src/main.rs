@@ -291,6 +291,36 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Record a known original's whole-file SHA-256 and position-independent chunk fingerprints.
+    FingerprintFile {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value_t = 4096)]
+        chunk_size: u32,
+        #[arg(long)]
+        json: bool,
+    },
+    /// Locate fingerprinted chunks on a disk, then reassemble and verify the original file.
+    RecoverFingerprinted {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        manifest: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        /// Candidate positions must be multiples of this power of two. One searches every byte.
+        #[arg(long, default_value_t = 1)]
+        alignment: u32,
+        #[arg(long, default_value_t = 0)]
+        start: u64,
+        /// Exclusive logical byte offset.
+        #[arg(long)]
+        end: Option<u64>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Restore a file from ordered byte extents, verifying the supplied original SHA-256.
     RecoverExtents {
         #[arg(long)]
@@ -428,7 +458,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
     }
     if cli.request_read_access {
         let source=match &cli.command {
-            Command::RecoverExtents{source,..}|Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
+            Command::RecoverFingerprinted{source,..}|Command::RecoverExtents{source,..}|Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
             Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw{session,..}=> {
                 if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
                 else {Session::load(session)?.source}
@@ -444,6 +474,32 @@ fn run(cli: Cli) -> Result<i32, Error> {
             output,
             json,
         } => sleuthkit::import(image, &output, json, &cancel),
+        Command::FingerprintFile {
+            source,
+            output,
+            chunk_size,
+            json: compact,
+        } => {
+            let report =
+                rescue_core::disk_image::fingerprint_file(&source, &output, chunk_size, &cancel)?;
+            print(json!(report), compact);
+            Ok(0)
+        }
+        Command::RecoverFingerprinted {
+            source,
+            manifest,
+            output,
+            alignment,
+            start,
+            end,
+            json: compact,
+        } => {
+            let report = rescue_core::disk_image::recover_fingerprinted(
+                &source, &manifest, &output, alignment, start, end, &cancel,
+            )?;
+            print(json!(report), compact);
+            Ok(0)
+        }
         Command::RecoverExtents {
             source,
             layout,
