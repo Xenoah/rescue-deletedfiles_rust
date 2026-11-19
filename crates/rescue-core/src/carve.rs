@@ -542,7 +542,7 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
         ],
         Format::Tar(_) => &[
-            "Member header checksums, stored lengths, padding and two terminating records were checked. TAR has no payload checksum. The blocking factor determines trailing record padding; files with different writer settings may have different byte lengths.",
+            "Member header checksums, stored lengths, padding and two terminating blocks were checked. TAR has no payload checksum. The blocking factor determines trailing record padding; files with different writer settings may have different byte lengths.",
         ],
         Format::Aac => &[
             "A contiguous run of at least three unprotected mono/stereo AAC-LC ADTS frames, with every payload decoded. ADTS has no file length or terminal marker. Adjacent streams with matching audio parameters can merge, and complete surviving frames may represent only part of a file. External tags are excluded.",

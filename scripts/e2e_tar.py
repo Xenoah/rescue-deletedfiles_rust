@@ -7,7 +7,7 @@ import subprocess
 import tarfile
 import tempfile
 
-from e2e import check, run
+from e2e import Client, check, run
 from e2e_extended_filesystems import command
 
 GOLD = Path(__file__).resolve().parents[1] / 'tests/tar'
@@ -73,6 +73,24 @@ def verify(binary, root, native=False):
                 proof[name]=r['sha256']
             print(mode, len(results), 'actual FAT32 TAR deletions' if native else 'TAR files', 'byte-exact; blocking factor', factor, flush=True)
         check(digest(disk.read_bytes())==before,'source changed')
+    if not native:
+        client=Client(binary,disk,root/'mcp-work',root/'mcp-out')
+        try:
+            client.rpc('initialize',{'protocolVersion':'2025-11-25'})
+            req={'request_id':'gnu-archives','source':str(disk),'mode':'carve','extensions':['tar'],'indexed':True,'tar_blocking_factor':20}
+            job=client.wait(client.tool('start_scan',req)['job_id'])
+            check(job['state']=='completed',job)
+            sid=job['result']['session_id']
+            rows=client.tool('list_candidates',{'session_id':sid,'limit':50})['candidates']
+            check({r['record_sha256'] for r in rows}==set(lookup),rows)
+            restore=client.wait(client.tool('recover_files',{'session_id':sid,'ids':[r['id'] for r in rows],
+                                'destination':str(root/'mcp-out'),'request_id':'gnu-extract'})['job_id'])
+            check(restore['state']=='completed' and len(restore['result']['results'])==7,restore)
+            for row in restore['result']['results']:
+                check(Path(row['path']).read_bytes()==files[lookup[row['sha256']]+'.tar'],row)
+            print('MCP restored seven complete 20-block archives',flush=True)
+        finally:
+            client.close()
     if not native:
         compact=(GOLD/'compact.tar').read_bytes()
         longname=(GOLD/'gnu-long.tar').read_bytes()
