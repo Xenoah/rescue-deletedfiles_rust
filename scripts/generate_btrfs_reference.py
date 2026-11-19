@@ -20,9 +20,9 @@ def sha(path):
     with path.open('rb') as f:return hashlib.file_digest(f,'sha256').hexdigest()
 
 
-def main():
+def generate(mode):
     corpus=Path('tests/corpus/files')
-    dest=Path('btrfs-fixture');dest.mkdir()
+    dest=Path('btrfs-fixture')/mode;dest.mkdir(parents=True)
     names=['sample.'+e for e in ('png','xml','txt','zip','mp3','rtf','webp')]
     originals={name:sha(corpus/name) for name in names}
     with tempfile.TemporaryDirectory() as tmp:
@@ -34,7 +34,7 @@ def main():
         assert re.fullmatch('/dev/loop[0-9]+',device)
         try:
             cmd('sudo','mkfs.btrfs','-q','-f','-L','RescueFixture','-m','single','-d','single',device)
-            cmd('sudo','mount','-t','btrfs','-o','nodev,nosuid,compress=zlib',device,mount)
+            cmd('sudo','mount','-t','btrfs','-o','nodev,nosuid' + (',compress=zlib' if mode=='zlib' else ''),device,mount)
             try:
                 live=mount/'Current';old=mount/'Before'
                 cmd('sudo','btrfs','subvolume','create',live)
@@ -54,9 +54,14 @@ def main():
             finally:cmd('sudo','umount',mount)
         finally:cmd('sudo','losetup','--detach',device)
         cmd('btrfs','check','--readonly',image)
+        offline_errors=[]
         for sub,id in [('before',old_id),('current',live_id)]:
             out=root/sub;out.mkdir()
-            cmd('btrfs','restore','-r',id,image,out)
+            restored=subprocess.run(['btrfs','restore','-r',str(id),str(image),str(out)],capture_output=True,text=True,timeout=90)
+            if restored.returncode:
+                assert mode=='zlib' and 'inflate failed' in restored.stderr,restored.stderr
+                offline_errors.append({'root':sub,'diagnostic':restored.stderr.strip()})
+                continue
             if sub=='before':
                 for name,digest in originals.items():
                     assert (out/name).read_bytes()==(corpus/name).read_bytes() and sha(out/name)==digest
@@ -64,11 +69,12 @@ def main():
         packed=dest/'snapshot.raw.xz'
         with image.open('rb') as r,lzma.open(packed,'wb',preset=6) as w:shutil.copyfileobj(r,w)
         assert packed.stat().st_size<2<<20
-        report=dict(filesystem='Btrfs',subvolume=live_id,snapshot=old_id,raw_bytes=image.stat().st_size,
+        report=dict(filesystem='Btrfs',compression=mode,offline_errors=offline_errors,subvolume=live_id,snapshot=old_id,raw_bytes=image.stat().st_size,
                     sha256=sha(image),compressed_sha256=sha(packed),original_files=originals,
                     survivor='survivor.txt',created_later='created-later.txt')
         (dest/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
-        print('Seven real unlinks checked with both the Linux Btrfs driver and offline btrfs restore',report,flush=True)
+        print('Seven real unlinks verified against the native Btrfs snapshot. Offline reader errors:',offline_errors,flush=True)
 
 
-if __name__=='__main__':main()
+if __name__=='__main__':
+    for compression in ['plain','zlib']:generate(compression)

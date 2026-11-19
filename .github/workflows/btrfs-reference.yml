@@ -15,7 +15,7 @@ jobs:
           python-version: '3.12'
       - run: sudo apt-get update -qq && sudo apt-get install -y btrfs-progs
       - name: Create disposable subvolumes, snapshot, unlink and independently recover seven files
-        run: python scripts/generate_btrfs_reference.py
+        run: python scripts/ci_command.py python scripts/generate_btrfs_reference.py
       - uses: actions/upload-artifact@v4
         with:
           name: btrfs-reference
@@ -38,16 +38,18 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import hashlib,json,lzma
-          folder=Path('tests/btrfs-reference')
-          meta=json.loads((folder/'manifest.json').read_text())
-          packed=(folder/'snapshot.raw.xz').read_bytes()
-          assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
-          disk=lzma.decompress(packed)
-          assert len(disk)==meta['raw_bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
-          assert len(meta['original_files'])==7 and meta['subvolume']!=meta['snapshot']
+          for mode in ('plain','zlib'):
+              folder=Path('tests/btrfs-reference')/mode
+              meta=json.loads((folder/'manifest.json').read_text())
+              packed=(folder/'snapshot.raw.xz').read_bytes()
+              assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
+              disk=lzma.decompress(packed)
+              assert len(disk)==meta['raw_bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
+              assert len(meta['original_files'])==7 and meta['subvolume']!=meta['snapshot']
+              assert mode=='zlib' or not meta['offline_errors']
           PY
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
-          git add tests/btrfs-reference/manifest.json tests/btrfs-reference/snapshot.raw.xz
+          git add tests/btrfs-reference/plain/manifest.json tests/btrfs-reference/plain/snapshot.raw.xz tests/btrfs-reference/zlib/manifest.json tests/btrfs-reference/zlib/snapshot.raw.xz
           git commit -m "Preserve the Btrfs snapshot and seven verified deleted originals"
           git push origin HEAD:testing/btrfs-snapshot-reference
