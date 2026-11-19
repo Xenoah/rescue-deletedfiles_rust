@@ -9,6 +9,7 @@ enum Format {
     CompressedRaw,
     Dmg,
     Optical,
+    Android,
     Ewf,
     Vhd,
     Vhdx,
@@ -18,7 +19,7 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 11] = [
+    const ALL: [Self; 12] = [
         Self::Vdi,
         Self::Qcow2,
         Self::CompressedRaw,
@@ -30,6 +31,7 @@ impl Format {
         Self::Vmdk,
         Self::Aff,
         Self::Raw,
+        Self::Android,
     ];
 
     fn from_path(path: &str) -> Option<Self> {
@@ -44,6 +46,7 @@ impl Format {
             "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
             "qcow2" | "qcow" => Some(Self::Qcow2),
+            "simg" | "sparse" => Some(Self::Android),
             "e01" | "ex01" => Some(Self::Ewf),
             "vhd" => Some(Self::Vhd),
             "vhdx" => Some(Self::Vhdx),
@@ -58,6 +61,7 @@ impl Format {
         match self {
             Self::CompressedRaw => "compressed-raw",
             Self::Optical => "cd-raw",
+            Self::Android => "android-sparse",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
@@ -73,6 +77,7 @@ impl Format {
     fn label(self) -> &'static str {
         match self {
             Self::CompressedRaw => "Compressed RAW (gzip, bzip2, XZ, Zstd, LZ4)",
+            Self::Android => "Android sparse",
             Self::Optical => "CD-ROM (Mode 1 / XA Form 1)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
@@ -145,6 +150,7 @@ impl App {
                     }).response.labelled_by(label);
                 if let Some(format) = state.format {
                     match format {
+                        Format::Android => {ui.small(tr!("新しい保存先フォルダー名を指定してください。RAWと読取マップを一緒に保存し、省略されたブロックを未取得として扱います。","Enter a new directory name. The RAW and read map are saved together, with omitted blocks marked unavailable."));}
                         Format::CompressedRaw => {ui.small(tr!("圧縮ストリームを順に展開し、論理ディスクのSHA-256を計算します。","Expands compressed streams in order and calculates the logical disk SHA-256."));}
                         Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
@@ -168,7 +174,11 @@ impl App {
                         }
                     }
                 }
-                path_row(ui, tr!("新しいRAWファイル", "New RAW file"), &mut state.output, Picker::Raw);
+                if state.format == Some(Format::Android) {
+                    path_row(ui, tr!("新しい保存先フォルダー", "New destination directory"), &mut state.output, Picker::File);
+                } else {
+                    path_row(ui, tr!("新しいRAWファイル", "New RAW file"), &mut state.output, Picker::Raw);
+                }
             });
             if let Some(error) = &state.error { theme::error_banner(ui, &error.to_string()); }
             ui.horizontal_wrapped(|ui| {
@@ -229,7 +239,11 @@ impl App {
                         ));
                     }
                 }
-                rescue_core::disk_image::import(&request, &output, &cancel)
+                if format == Format::Android {
+                    rescue_core::disk_image::import_android(&request.source, &output, &cancel)
+                } else {
+                    rescue_core::disk_image::import(&request, &output, &cancel)
+                }
             })();
             let _ = tx.send(Message::ImageImported(result));
         }));
@@ -248,6 +262,15 @@ impl App {
                 self.image_original = None;
                 self.invalidate_changed_source();
                 self.status_error = false;
+                if let Some(proof) = import.android_sparse {
+                    self.status = message!(
+                        "読取マップ付きRAWを設定しました。記録済み {} バイト、未取得 {} バイト。",
+                        "Mapped RAW selected. {} recorded bytes, {} unavailable bytes.",
+                        proof.recorded_bytes,
+                        proof.unrecorded_bytes
+                    );
+                    return;
+                }
                 self.status = message!(
                     "RAWをスキャン元に設定しました。{} バイト、SHA-256 {}",
                     "RAW selected for scanning. {} bytes, SHA-256 {}",
@@ -303,6 +326,7 @@ mod tests {
             bytes: 512,
             sha256: "abcd".into(),
             ewf: None,
+            android_sparse: None,
         }));
         assert_eq!(Path::new(&app.source), output);
         assert!(app.source_mode == SourceMode::Image && !app.status_error);

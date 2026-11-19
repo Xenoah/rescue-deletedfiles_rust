@@ -112,6 +112,20 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 
 単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
 
+## Android sparseイメージ
+
+Android sparse 1.0の単独イメージを、RAWと読取マップの組に展開します。GUIの「イメージをRAWに変換」で形式に「Android sparse」を選び、新しい保存先フォルダー名を指定します。CLIでは次のように実行します。親フォルダーは既存のものを指定してください。
+
+```sh
+rescue import-android --source system.img --destination system-import --json
+rescue read-map --image system-import/image.rescue.raw --json
+rescue scan --source system-import/image.rescue.raw --mode carve --work-dir scan --json
+```
+
+RAWチャンクをコピーし、FILLの4バイトパターンを展開します。DONT_CAREに対応する範囲は読取マップで未取得として残します。物理RAWを単独で読むと空き領域はゼロに見えるため、復元には同じフォルダー内の `image.rescue.raw.rmap` が必要です。レポートの `sha256` は空きをゼロで表現した論理RAWのハッシュ、`android_sparse.input_sha256` は入力コンテナのハッシュです。総量、記録されたバイト数、未取得バイト数、検証したCRC-32の数も確認できます。
+
+対応上限は論理64 GiB、262,144チャンク、262,144件の検証済み読取レコードです。ブロックサイズは512バイト〜1 MiBで512の倍数です。ヘッダーまたはCRCチャンクにチェックサムがあれば、未取得バイトを論理ゼロとして検証します。未取得範囲の旧内容や暗号化されたファイルの平文は、この変換で取り出せません。分割されたfastbootイメージの重ね合わせ、Androidの動的パーティションの分解、暗号化の解除は別の処理です。単独イメージの変換・検証に外部プログラムは不要です。[実ファイルによる再現手順](../tests/android-sparse/README.md)
+
 ## VMDKの内蔵読み取り
 
 `rescue import-image --source guest.vmdk --image-type vmdk --output guest.raw --json` は、クリーンな単独のmonolithicSparse・streamOptimizedを読み取ります。ディスクリプターの容量・親の有無・単一エクステントの宣言、グレインディレクトリと割り当て表の範囲を検証します。冗長な表が存在する場合は両方を比較し、同じ物理領域を複数のグレインが参照する場合は拒否します。ホスト上でイメージを改名しても読み取れます。ディスクリプター中のパスは開きません。
