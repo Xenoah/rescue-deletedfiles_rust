@@ -1117,7 +1117,7 @@ impl App {
                 },
                 error.as_deref(),
             );
-            ui.small(tr!("ディスク全体はMBR／GPTの各パーティションを検出します。読み取り専用でアクセスします。", "A whole-disk scan finds MBR / GPT partitions. The source is opened read-only."));
+            ui.small(tr!("ディスク全体はMBR／GPT／APMの各パーティションを検出します。読み取り専用でアクセスします。", "A whole-disk scan finds MBR, GPT or Apple Partition Map partitions. The source is opened read-only."));
             #[cfg(windows)]
             self.read_access.show(ui, &self.source);
             #[cfg(not(windows))]
@@ -1134,8 +1134,8 @@ impl App {
                 error.as_deref(),
             );
             ui.small(tr!(
-                "RAWボリュームまたはMBR／GPTディスクイメージを読み取ります。",
-                "Read a RAW volume or an MBR / GPT disk image."
+                "RAWボリュームまたはMBR／GPT／APMディスクイメージを読み取ります。",
+                "Read a RAW volume or an MBR, GPT or Apple Partition Map disk image."
             ));
         }
     }

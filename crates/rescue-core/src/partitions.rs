@@ -1,4 +1,5 @@
-//! Bounded MBR/EBR and CRC-checked GPT interpretation. No disk writes or repairs.
+//! Bounded MBR/EBR, Apple Partition Map and CRC-checked GPT interpretation.
+mod apple;
 use crate::{Error, FileSystem, Result, source::Image};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -425,6 +426,19 @@ pub(crate) fn inspect_image(image: &mut Image) -> Result<SourceLayout> {
     }
     if protective {
         return Err(gpt_error);
+    }
+    if boot.starts_with(b"ER") {
+        if entries
+            .as_ref()
+            .is_ok_and(|rows| rows.iter().any(|r| r.0 != 0))
+        {
+            return Err(invalid("hybrid Apple partition map/MBR is ambiguous"));
+        }
+        let (block, regions) = apple::read(image, &boot)?;
+        layout.scheme = "apm".into();
+        layout.sector_size = block;
+        layout.regions = regions;
+        return Ok(layout);
     }
     entries?;
     layout.scheme = "mbr".into();

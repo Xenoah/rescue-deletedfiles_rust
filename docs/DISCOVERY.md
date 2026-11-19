@@ -65,3 +65,12 @@ fixup破損、オフセット改変、元パス拒否、割当末尾を確認し
 （resident 50、non-resident 50）をCLI/MCPでそれぞれ全バイト一致で取り出しました。
 試験用の新規通常イメージだけをフォーマットし、その後の復元では元イメージ不変を照合しました。
 これは同一クラスタ構成のntfs-3gプロファイルであり、Windows format.exeやSSD TRIMの実績ではありません。
+
+## Apple Partition Map
+
+ディスク全体の通常スキャン、CLIの `inspect`、MCPのディスク解析から旧MacのApple Partition Map（APM）を読み取れます。ドライバー記述子と各パーティションの範囲を照合し、マップ自身と空き領域を除いて元の番号とMacRoman名を表示します。512・1024・2048・4096バイトのブロックと最大256エントリーに対応します。領域の重複、マップの不整合、同時にMBRパーティションを持つディスクはエラーになります。領域内で管理情報を使って復元できるファイルシステムは、他のパーティション方式と共通です。
+
+```sh
+rescue inspect --source old-mac.raw --json
+rescue scan --source old-mac.raw --work-dir sessions --json
+```

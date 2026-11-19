@@ -8,7 +8,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 
-/// Scan a volume or all recognized volumes on an MBR/GPT disk, with a global budget.
+/// Scan a volume or all recognized volumes on a partitioned disk, with a global budget.
 pub fn scan_source(
     path: &Path,
     options: ScanOptions,
@@ -73,7 +73,7 @@ pub fn scan_source(
         }
         if region.filesystem.is_none() {
             session.truncated = true;
-            session.warnings.push(format!("Partition {} ({}) skipped: unsupported filesystem; full-disk PNG carving is available separately", region.index, region.name));
+            session.warnings.push(format!("Partition {} ({}) skipped: unsupported filesystem; full-disk file carving is available separately", region.index, region.name));
             continue;
         }
         let remaining = ScanOptions {
