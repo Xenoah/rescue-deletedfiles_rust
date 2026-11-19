@@ -1,0 +1,356 @@
+{
+  "version": "1.21.0",
+  "cli_binary_sha256": "9f4ccbf0b6bafe4e6ecd3ccfa51e4b5b88a3f07955e214592a378f3d003d209c",
+  "gui_binary_sha256": "b7c4b7c66c81c052ea62429bcfa3302fe70b889b68d3cb2596f773a31546fa2d",
+  "actual_mtools_unlinks": {
+    "12": {
+      "NOTE.TXT": {
+        "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+        "bytes": 4240,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 16896
+          },
+          {
+            "length": 2192,
+            "offset": 19456
+          }
+        ]
+      },
+      "DATA.CSV": {
+        "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+        "bytes": 3364,
+        "extents": [
+          {
+            "length": 1536,
+            "offset": 22528
+          },
+          {
+            "length": 1828,
+            "offset": 24576
+          }
+        ]
+      },
+      "PAGE.HTM": {
+        "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+        "bytes": 3916,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 27136
+          },
+          {
+            "length": 1868,
+            "offset": 29696
+          }
+        ]
+      },
+      "SONG.WAV": {
+        "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+        "bytes": 3044,
+        "extents": [
+          {
+            "length": 1536,
+            "offset": 32256
+          },
+          {
+            "length": 1508,
+            "offset": 34304
+          }
+        ]
+      },
+      "FILES.ZIP": {
+        "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+        "bytes": 4558,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 36352
+          },
+          {
+            "length": 2510,
+            "offset": 38912
+          }
+        ]
+      },
+      "VENDOR.BIN": {
+        "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+        "bytes": 5901,
+        "extents": [
+          {
+            "length": 3072,
+            "offset": 41984
+          },
+          {
+            "length": 2829,
+            "offset": 45568
+          }
+        ]
+      },
+      "DUP.DAT": {
+        "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+        "bytes": 4611,
+        "extents": [
+          {
+            "length": 2560,
+            "offset": 49152
+          },
+          {
+            "length": 2051,
+            "offset": 52224
+          }
+        ]
+      }
+    },
+    "16": {
+      "NOTE.TXT": {
+        "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+        "bytes": 4240,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 147968
+          },
+          {
+            "length": 2192,
+            "offset": 151040
+          }
+        ]
+      },
+      "DATA.CSV": {
+        "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+        "bytes": 3364,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 155136
+          },
+          {
+            "length": 1316,
+            "offset": 158208
+          }
+        ]
+      },
+      "PAGE.HTM": {
+        "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+        "bytes": 3916,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 161280
+          },
+          {
+            "length": 1868,
+            "offset": 164352
+          }
+        ]
+      },
+      "SONG.WAV": {
+        "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+        "bytes": 3044,
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 167424
+          },
+          {
+            "length": 2020,
+            "offset": 169472
+          }
+        ]
+      },
+      "FILES.ZIP": {
+        "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+        "bytes": 4558,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 172544
+          },
+          {
+            "length": 2510,
+            "offset": 175616
+          }
+        ]
+      },
+      "VENDOR.BIN": {
+        "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+        "bytes": 5901,
+        "extents": [
+          {
+            "length": 3072,
+            "offset": 179712
+          },
+          {
+            "length": 2829,
+            "offset": 183808
+          }
+        ]
+      },
+      "DUP.DAT": {
+        "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+        "bytes": 4611,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 187904
+          },
+          {
+            "length": 2563,
+            "offset": 190976
+          }
+        ]
+      }
+    },
+    "32": {
+      "NOTE.TXT": {
+        "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+        "bytes": 4240,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 662016
+          },
+          {
+            "length": 2192,
+            "offset": 664576
+          }
+        ]
+      },
+      "DATA.CSV": {
+        "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+        "bytes": 3364,
+        "extents": [
+          {
+            "length": 1536,
+            "offset": 667648
+          },
+          {
+            "length": 1828,
+            "offset": 669696
+          }
+        ]
+      },
+      "PAGE.HTM": {
+        "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+        "bytes": 3916,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 672256
+          },
+          {
+            "length": 1868,
+            "offset": 674816
+          }
+        ]
+      },
+      "SONG.WAV": {
+        "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+        "bytes": 3044,
+        "extents": [
+          {
+            "length": 1536,
+            "offset": 677376
+          },
+          {
+            "length": 1508,
+            "offset": 679424
+          }
+        ]
+      },
+      "FILES.ZIP": {
+        "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+        "bytes": 4558,
+        "extents": [
+          {
+            "length": 2048,
+            "offset": 681472
+          },
+          {
+            "length": 2510,
+            "offset": 684544
+          }
+        ]
+      },
+      "VENDOR.BIN": {
+        "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+        "bytes": 5901,
+        "extents": [
+          {
+            "length": 3072,
+            "offset": 687616
+          },
+          {
+            "length": 2829,
+            "offset": 691200
+          }
+        ]
+      },
+      "DUP.DAT": {
+        "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+        "bytes": 4611,
+        "extents": [
+          {
+            "length": 2560,
+            "offset": 694784
+          },
+          {
+            "length": 2051,
+            "offset": 697856
+          }
+        ]
+      }
+    }
+  },
+  "gui_fat12": {
+    "source_sha256": "981165695a617f2ec28a35fd0165dac98ca0fb97db625b3025028328f1d7d4e7",
+    "source_unchanged": true,
+    "original_bytes_and_sha256": {
+      "NOTE.TXT": {
+        "bytes": 4240,
+        "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270"
+      },
+      "DATA.CSV": {
+        "bytes": 3364,
+        "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6"
+      },
+      "PAGE.HTM": {
+        "bytes": 3916,
+        "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22"
+      },
+      "SONG.WAV": {
+        "bytes": 3044,
+        "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a"
+      },
+      "FILES.ZIP": {
+        "bytes": 4558,
+        "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7"
+      },
+      "VENDOR.BIN": {
+        "bytes": 5901,
+        "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555"
+      },
+      "DUP.DAT": {
+        "bytes": 4611,
+        "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99"
+      }
+    },
+    "wrong_whole_sha256_refused": true
+  },
+  "gui_screenshots": {
+    "images/v1.21.0/whole-hash-search.png": "a5b82ef160dfa501f59767f7105c013f85d8761706df462ab55128e9702f9bb5",
+    "images/v1.21.0/whole-hash-restored.png": "f4ecf1a259d5b18fd661048557148af6707566efd303a0dab6adf3bc0dc480a8",
+    "images/v1.21.0/whole-hash-limits.png": "ce9c2fc3fe4d3fbe6e19d60bacaa0d72b03ddcfe93557a1332cc5746fb458a02",
+    "images/v1.21.0/whole-hash-refused.png": "e97da0cc1e443f02b6f4d98c30e1b208d9a64a9664258e2fd360d23c6f87d63a"
+  },
+  "release_integration_suites": 78,
+  "unit_tests": 96,
+  "independent_corpus": {
+    "formats": 35,
+    "originals": 36,
+    "byte_exact": 1016,
+    "observations": 1116
+  }
+}
