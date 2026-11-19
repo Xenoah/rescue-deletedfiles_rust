@@ -42,6 +42,8 @@ enum Command {
     Photorec(photorec::Args),
     /// List or recover deleted regular files using Sleuth Kit filesystem metadata.
     Filesystem(sleuthkit::FilesystemArgs),
+    /// List APFS snapshots and recover historical regular files whose paths have disappeared.
+    Apfs(sleuthkit::ApfsArgs),
     /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
     /// Writes a derived PNG/text under destination; never opens a viewer.
     Preview {
@@ -516,6 +518,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
         }
         Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
+        Command::Apfs(request) => sleuthkit::apfs(request, &cancel),
         Command::ExportRaw {
             session,
             id,

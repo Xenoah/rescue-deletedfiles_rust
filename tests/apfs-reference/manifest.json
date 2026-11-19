@@ -1,0 +1,22 @@
+{
+  "raw_bytes": 167772160,
+  "sha256": "89479432c999c7d5ce3487166275789e46137e393d4a0e54b60afa28105b27b9",
+  "compressed_sha256": "1c43c38433c606ab4b90d4622d884a438bb97b0cf0005e11e306fce0047739b3",
+  "volume": "RescueFixture",
+  "sector_offset": 0,
+  "volume_block": 32770,
+  "snapshot_xid": 3,
+  "snapshot": "RescueFixture",
+  "original_files": {
+    "Rescue-Test/sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "Rescue-Test/sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+    "Rescue-Test/sample.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+    "Rescue-Test/sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+    "Rescue-Test/sample.mp3": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+    "Rescue-Test/sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+    "Rescue-Test/sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+  },
+  "survivor": "Rescue-Test/survivor.txt",
+  "created_later": "Rescue-Test/created-later.txt",
+  "source": "Linux APFS read/write module 297a8d0a, apfsprogs b9c4cb4 and an independently checked Sleuth Kit volume"
+}

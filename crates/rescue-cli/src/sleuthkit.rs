@@ -79,3 +79,43 @@ pub fn filesystem(request: FilesystemArgs, cancel: &AtomicBool) -> Result<i32> {
     super::print(report, request.json);
     Ok(if failed { 5 } else { 0 })
 }
+
+#[derive(Args)]
+pub struct ApfsArgs {
+    #[command(flatten)]
+    image: ImageArgs,
+    /// First sector of the APFS container in the logical image.
+    #[arg(long, default_value_t = 0)]
+    sector_offset: u64,
+    /// APSB block reported by the APFS listing.
+    #[arg(long)]
+    volume_block: Option<u64>,
+    /// Compare this snapshot transaction ID with the current directory tree.
+    #[arg(long)]
+    snapshot_xid: Option<u64>,
+    #[arg(long, requires = "destination", conflicts_with = "all")]
+    id: Vec<String>,
+    #[arg(long, requires = "destination")]
+    all: bool,
+    #[arg(long, requires = "snapshot_xid")]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+
+pub fn apfs(request: ApfsArgs, cancel: &AtomicBool) -> Result<i32> {
+    let (report, failed) = disk_image::apfs(
+        disk_image::ApfsRequest {
+            image: request.image.into(),
+            sector_offset: request.sector_offset,
+            volume_block: request.volume_block,
+            snapshot_xid: request.snapshot_xid,
+            id: request.id,
+            all: request.all,
+            destination: request.destination,
+        },
+        cancel,
+    )?;
+    super::print(report, request.json);
+    Ok(if failed { 5 } else { 0 })
+}
