@@ -18,7 +18,8 @@ def main(binary, output=None):
     cases = []
     with tempfile.TemporaryDirectory(prefix='rescue-export-raw-') as tmp:
         root = Path(tmp); source = root / 'source.raw'; truth = build(source)
-        acquired = run(binary, 'image', '--source', source, '--destination', root / 'image', '--block-size', '512', '--json')
+        # Acquisition flushes each 512-byte block and its journal to durable storage.
+        acquired = run(binary, 'image', '--source', source, '--destination', root / 'image', '--block-size', '512', '--json', timeout=120)
         image = Path(acquired['image'])
         payload = bytes.fromhex(truth['mft-21-7']['hex'])
         raw = source.read_bytes()
