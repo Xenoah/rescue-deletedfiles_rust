@@ -110,7 +110,13 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI・QCOW2とクラシックVHD（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VHDX・VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+
+## VHDXの内蔵読み取り
+
+`rescue import-image --source disk.vhdx --image-type vhdx --output guest.raw --json` は、外部ドライバーなしで固定・可変の単独VHDXをRAWに変換します。2組のヘッダーと領域表のCRC32C、現在のヘッダーの世代、メタデータの必須項目、ブロック割り当て表と物理領域の重複を確認します。読み取りは元イメージを変更しません。出力のSHA-256は取り出した論理ディスク全体の値です。
+
+対応範囲はクリーンなVHDX v1、最大64 TiB、BATは最大1,048,576項目です。差分ディスク、再生が必要なログ、未定義・破棄済み・部分割り当てブロックは拒否します。親やログが必要な場合は、参照先を確認できる仮想化環境でコピーから単独イメージを準備します。格納先を指さない空きブロックと明示的なゼロブロックは、論理ディスク上のゼロとして出力します。現在のゲストデータと異なる過去の物理ブロックの内容は復元しません。
 
 ## Apple DMG（UDIF）
 

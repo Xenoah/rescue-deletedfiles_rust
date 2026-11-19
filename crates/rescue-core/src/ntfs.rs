@@ -263,7 +263,7 @@ impl Geometry {
                 .checked_mul(code as u64)
                 .ok_or_else(|| invalid("record size overflow"))?
         };
-        if record < sector as u64 || record > 65536 || !record.is_multiple_of(sector as u64) {
+        if !(512..=65536).contains(&record) || !record.is_multiple_of(512) {
             return Err(invalid("unsupported MFT record size"));
         }
         if mft
@@ -419,13 +419,18 @@ pub(crate) fn parse_record(mut raw: Vec<u8>, geometry: &Geometry) -> Result<Reco
     let hash = format!("{:x}", Sha256::digest(&raw));
     let usa = u16_at(&raw, 4)? as usize;
     let count = u16_at(&raw, 6)? as usize;
-    if count != raw.len() / geometry.sector + 1 || usa < 8 || usa + count * 2 > geometry.sector - 2
-    {
+    // Windows also writes 1 KiB FILE records on 4Kn media. Their update
+    // sequence protects each 512-byte unit, independent of the boot sector.
+    let stride = [512, geometry.sector]
+        .into_iter()
+        .find(|&unit| raw.len().is_multiple_of(unit) && raw.len() / unit + 1 == count)
+        .ok_or_else(|| invalid("invalid MFT update sequence count"))?;
+    if usa < 8 || usa + count * 2 > stride - 2 {
         return Err(invalid("invalid update sequence array"));
     }
     let marker = u16_at(&raw, usa)?;
     for i in 1..count {
-        let tail = i * geometry.sector - 2;
+        let tail = i * stride - 2;
         if u16_at(&raw, tail)? != marker {
             return Err(invalid("MFT sector fixup mismatch"));
         }
