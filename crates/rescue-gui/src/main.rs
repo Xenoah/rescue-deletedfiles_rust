@@ -79,7 +79,7 @@ enum Message {
     RaidSearched(Box<rescue_core::RaidSearchResult>),
     ImagingProgress(rescue_core::AcquisitionProgress),
     Imaged(rescue_core::AcquisitionResult),
-    ExtentsRecovered(rescue_core::Result<rescue_core::disk_image::ImportedFile>),
+    ExtentsRecovered(rescue_core::Result<extent_ui::Outcome>),
     ImageImported(rescue_core::Result<rescue_core::disk_image::ImportedFile>),
     Progress(Progress),
     Discovered(Box<rescue_core::DiscoveryResult>),
@@ -1206,6 +1206,16 @@ impl App {
                     .clicked()
                 {
                     self.extent_recovery.show();
+                }
+                if ui
+                    .button(tr!(
+                        "断片ハッシュでファイルを探す",
+                        "Find a file by chunk fingerprints"
+                    ))
+                    .clicked()
+                {
+                    self.extent_recovery
+                        .show_fingerprints(!self.source.trim().is_empty());
                 }
                 self.discovery_controls(ui);
             });
@@ -2830,7 +2840,7 @@ impl App {
                         Stage::Settings => self.setup_ui(ui),
                         Stage::Scanning => self.scan_status_ui(ui),
                         Stage::Imaging => self.imaging_status(ui),
-                        Stage::RestoringExtents => {ui.heading(tr!("配置表からファイルを復元中", "Recovering from the layout")); ui.label(&self.extent_recovery.output);},
+                        Stage::RestoringExtents => {ui.heading(self.extent_recovery.working_title()); ui.label(self.extent_recovery.working_output());},
                         Stage::Importing => {ui.heading(tr!("イメージを変換中", "Converting disk image")); ui.label(&self.image_import.first); ui.label(&self.image_import.output);},
                         Stage::Migrating => {
                             ui.heading(tr!("セッションをコピー移行しています", "Migrating a session copy"));
