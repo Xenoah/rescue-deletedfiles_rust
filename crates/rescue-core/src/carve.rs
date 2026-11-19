@@ -7,6 +7,7 @@ mod extra;
 mod frame_archive;
 mod icon;
 mod indexed;
+mod rtf;
 mod rule;
 mod scope;
 mod streams;
@@ -60,6 +61,7 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
         "wav" => Some(Format::Wav),
@@ -125,6 +127,7 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Rtf,
     Pdf,
     Zip,
     Docx,
@@ -157,6 +160,7 @@ impl<'a> Format<'a> {
             Self::Png => "png",
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
+            Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
             Self::Docx => "docx",
@@ -213,7 +217,8 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Ico
+            Self::Rtf
+            | Self::Ico
             | Self::Cur
             | Self::Avi
             | Self::Mkv
@@ -260,6 +265,11 @@ impl<'a> Format<'a> {
             Self::Bzip | Self::Xz | Self::Lzip => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = compressed::parse(self, &mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Rtf => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = rtf::parse(&mut input)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
@@ -315,6 +325,8 @@ fn detect<'a>(
             .find(|f| f.allowed(extensions))
     } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
         Some(Format::Jpeg)
+    } else if bytes.starts_with(b"{\\rtf1") && Format::Rtf.allowed(extensions) {
+        Some(Format::Rtf)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -349,6 +361,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Rtf => &[
+            "RTF extent ends at the matching outer group. Control words, hexadecimal escapes, nested groups and counted binary payloads are checked. Document rendering and bytes after the closing brace are unverified.",
         ],
         Format::Pdf => &[
             "Classic-xref PDF: references, page tree and declared stream extents validated. Encrypted/xref-stream PDFs are unsupported. Stream codecs, scripts and page rendering are not executed. EOF-based extent is an estimate; trailing padding cannot be established.",
@@ -427,7 +442,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut zip_records = std::collections::BTreeSet::new();
@@ -602,6 +617,7 @@ pub(crate) fn recovery_data(
         Format::Apng,
         Format::Jpeg,
         Format::Pdf,
+        Format::Rtf,
         Format::Zip,
         Format::Docx,
         Format::Xlsx,
