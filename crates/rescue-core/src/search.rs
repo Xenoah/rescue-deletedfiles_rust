@@ -178,6 +178,7 @@ impl SearchSettings {
             (candidate.id.starts_with("jpeg-")
                 && name.ends_with(".jpg")
                 && matches!(ext.as_str(), "jpeg" | "jpe"))
+                || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")
                 || (candidate.id.starts_with("apng-") && name.ends_with(".apng") && ext == "png")
                 || ext == "*"
                 || name.ends_with(&(".".to_owned() + &ext))

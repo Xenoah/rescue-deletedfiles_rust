@@ -1,0 +1,37 @@
+{
+  "big-endian": {
+    "sha256": "85046d2913e1670147c7240fa17711e64b5a3dc3bbe35bf28dd38b392eba3abe",
+    "rgb_sha256": "7dc521ba9ed906abc3cd0bb9fc556ce14c2f03e06ba89e3aebc884d930dce2f9",
+    "pages": 1
+  },
+  "bigtiff": {
+    "sha256": "bc825485f06d9c0987e0e0d53f9688a8cfdf041f8bfde5adababc343d8cd3de1",
+    "rgb_sha256": "0d98ea3d08cca67b9994cc4ab66e696a5617e71c25824ef49c225c4e2fd9410c",
+    "pages": 1
+  },
+  "deflate": {
+    "sha256": "cc852e356b97c142b14c59352d74137c4129ff61a75f837c6fb26977492b7b3e",
+    "rgb_sha256": "d52e9549e5f7a46554c0b786196f0dd4ec9184474b888614f641e28dac8c878f",
+    "pages": 1
+  },
+  "lzw": {
+    "sha256": "8681a8b8286b97401f598e429c0edb3a2956171e3f88e0c9c5d95edb17d7983b",
+    "rgb_sha256": "d52e9549e5f7a46554c0b786196f0dd4ec9184474b888614f641e28dac8c878f",
+    "pages": 1
+  },
+  "multipage": {
+    "sha256": "e61fe466092c8a0b5d1346af4b4409eb64c6422ef7d1a33b282478ca54d0a885",
+    "rgb_sha256": "614e5d4d2e33f99c975c4fa9e7ff59e25ec126396fb115bd4d43f8c3051748c6",
+    "pages": 2
+  },
+  "packbits": {
+    "sha256": "82941c8f59d23eb136ec9cbd30d376bb8771a7dcc41ee0254eeedd2c00a4d1e2",
+    "rgb_sha256": "d52e9549e5f7a46554c0b786196f0dd4ec9184474b888614f641e28dac8c878f",
+    "pages": 1
+  },
+  "tiled": {
+    "sha256": "4aa236882695536b0ea503e958301533783aab9cad73b422836821f26ba91eb2",
+    "rgb_sha256": "0d98ea3d08cca67b9994cc4ab66e696a5617e71c25824ef49c225c4e2fd9410c",
+    "pages": 1
+  }
+}
