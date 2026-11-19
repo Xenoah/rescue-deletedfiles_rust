@@ -16,14 +16,15 @@ def sha(path):
         return hashlib.file_digest(f,'sha256').hexdigest()
 
 
-def measure(binary,corpus,root):
+def measure(binary,corpus,root,regular_strides=False):
     files=list(corpus_load(corpus))
     report={'cli_version':subprocess.check_output([binary,'--version'],text=True).strip(),
             'cli_sha256':sha(binary),'formats':len({f['format'] for f in files}),'originals':len(files),
             'logical_sector_bytes':512,'disk_images':{},'cases':{}}
-    for layout in ['contiguous','fragmented','overwritten']:
+    layouts = ['fragmented','overwritten'] if regular_strides else ['contiguous','fragmented','overwritten']
+    for layout in layouts:
         image=root/(layout+'.raw')
-        truth,meta=ntfs_image(image,files,'fragmented' if layout=='fragmented' else 'contiguous')
+        truth,meta=ntfs_image(image,files,'fragmented' if regular_strides or layout=='fragmented' else 'contiguous')
         # Keep file data for the first two scenarios. Erase boot record and every MFT record.
         with image.open('r+b') as f:
             f.write(bytes(512));f.seek(MFT_LCN*SECTOR);f.write(bytes(128*RECORD))
@@ -32,8 +33,10 @@ def measure(binary,corpus,root):
                     for offset,length in spans:
                         f.seek(offset);f.write(bytes(length))
         before=sha(image);report['disk_images'][layout]=before
-        for anchored in ([False,True] if layout=='fragmented' else [False]):
+        for anchored in ([False,True] if regular_strides or layout=='fragmented' else [False]):
             scenario=layout+('-known-start' if anchored else '-unknown-start')
+            if regular_strides:
+                scenario+='-detected-step' if anchored else '-fixed-step'
             rows={};folder=root/scenario;folder.mkdir()
             for key,item in truth.items():
                 output=folder/item['path'].name
@@ -43,6 +46,8 @@ def measure(binary,corpus,root):
                 args=[binary,'recover-by-hash','--source',image,'--output',output,'--sha256',item['sha256'],
                       '--file-bytes',str(item['bytes']),'--block-size','512','--max-work',str(work),'--json']
                 if anchored:args+=['--first-offset',str(meta['extents'][key][0][0])]
+                if regular_strides:
+                    args += ['--max-stride-blocks','8'] if anchored else ['--stride-blocks','2']
                 r=subprocess.run(args,capture_output=True,text=True,encoding='utf-8',timeout=180)
                 row=dict(original_bytes=item['bytes'],original_sha256=item['sha256'])
                 if r.returncode==0:
@@ -57,11 +62,13 @@ def measure(binary,corpus,root):
                     else:
                         check('no whole-file SHA-256 match' in r.stderr,r.stderr)
                         row.update(result='no_match')
+                if regular_strides and r.returncode==0:
+                    row['matched_stride']=result['matched_stride']
                 rows[output.name]=row
             totals={k:sum(row['result']==k for row in rows.values()) for k in ['byte_exact','no_match','search_limit']}
             report['cases'][scenario]=dict(search_budget_per_original=work,totals=totals,files=rows)
             check(sha(image)==before,scenario+' changed the input')
-            if layout=='contiguous':check(totals['byte_exact']==len(files),totals)
+            if layout=='contiguous' or (regular_strides and layout=='fragmented'):check(totals['byte_exact']==len(files),totals)
             if layout=='overwritten':check(totals['no_match']==len(files),totals)
             print(scenario,totals,flush=True)
     return report
@@ -71,7 +78,9 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--regular-strides',action='store_true',
+                        help='test a fixed sector spacing with unknown start and a bounded spacing search with known start')
     args=parser.parse_args()
     with tempfile.TemporaryDirectory() as temp:
-        report=measure(args.binary.resolve(),Path(__file__).resolve().parents[1]/'tests/corpus',Path(temp))
+        report=measure(args.binary.resolve(),Path(__file__).resolve().parents[1]/'tests/corpus',Path(temp),args.regular_strides)
     args.output.write_text(json.dumps(report,indent=2)+'\n')
