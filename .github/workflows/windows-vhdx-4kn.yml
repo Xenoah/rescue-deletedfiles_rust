@@ -1,0 +1,56 @@
+name: Acquire a native Windows 4Kn GPT VHDX after seven NTFS deletions
+on:
+  push:
+    branches: ['testing/windows-vhdx-4kn']
+    paths: ['.github/workflows/windows-vhdx-4kn.yml', 'scripts/create_vhdx_4kn.py', 'scripts/generate_windows_vhdx_reference.py']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Create an owned native 4Kn disk, check its reported sector sizes and hash the guest
+        run: python scripts/ci_command.py python scripts/generate_windows_vhdx_reference.py --4kn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-vhdx-4kn
+          path: windows-vhdx-proof/
+          retention-days: 7
+  preserve:
+    needs: reference
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-vhdx-4kn
+          path: tests/windows-vhdx
+      - name: Verify the acquired 4Kn geometry, Windows guest measurements and packed fixture
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma,subprocess,tempfile
+          for kind in ('4kn',):
+              p=Path('tests/windows-vhdx')/kind
+              m=json.loads((p/'manifest.json').read_text())
+              packed=(p/'volume.vhdx.xz').read_bytes()
+              assert len(packed)<3<<20 and hashlib.sha256(packed).hexdigest()==m['packed_sha256']
+              with tempfile.TemporaryDirectory() as tmp:
+                  src=Path(tmp)/'disk.vhdx';raw=Path(tmp)/'disk.raw'
+                  src.write_bytes(lzma.decompress(packed))
+                  assert hashlib.sha256(src.read_bytes()).hexdigest()==m['container_sha256']
+                  assert m['logical_sector']==m['physical_sector']==4096 and m['guest_bytes']==96<<20
+                  assert len(m['guest_mib_sha256'])==96 and all(len(h)==64 for h in m['guest_mib_sha256'])
+                  assert len(m['originals'])==7
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/windows-vhdx
+          git commit -m "Preserve Windows 4Kn GPT VHDX after NTFS deletions and a complete read-only guest measurement"
+          git push origin HEAD:testing/windows-vhdx-4kn

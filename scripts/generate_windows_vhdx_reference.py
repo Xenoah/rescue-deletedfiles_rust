@@ -28,8 +28,15 @@ def generate(root, out, subformat):
         return result.stdout.strip()
 
     diskpart = root / (subformat + '.txt')
-    diskpart.write_text(f'create vdisk file="{image}" maximum=96 type={subformat}\n'
-                        f'select vdisk file="{image}"\nattach vdisk\nconvert mbr\n'
+    create_command = f'create vdisk file="{image}" maximum=96 type={subformat}\n'
+    style = 'mbr'
+    if subformat == '4kn':
+        from create_vhdx_4kn import create
+        create(image, SIZE)
+        create_command = ''
+        style = 'gpt'
+    diskpart.write_text(create_command +
+                        f'select vdisk file="{image}"\nattach vdisk\nconvert {style}\n'
                         'create partition primary\nformat fs=ntfs quick label=RSC_VHDX\nassign\n',
                         encoding='ascii')
     subprocess.run(['diskpart.exe', '/s', diskpart], check=True, timeout=180)
@@ -64,9 +71,11 @@ def generate(root, out, subformat):
         owned = json.loads(powershell("""
             $d=Get-DiskImage -ImagePath $env:RESCUE_TEST_VHDX|Get-Disk
             if(-not $d.IsReadOnly){throw 'test image not read-only'}
-            @{n=$d.Number; size=[int64]$d.Size} | ConvertTo-Json -Compress
+            @{n=$d.Number; size=[int64]$d.Size; logical=$d.LogicalSectorSize; physical=$d.PhysicalSectorSize} | ConvertTo-Json -Compress
         """))
         check(owned['size'] == SIZE and isinstance(owned['n'], int) and owned['n'] > 0, owned)
+        if subformat == '4kn':
+            check(owned['logical'] == owned['physical'] == 4096, owned)
         digest = hashlib.sha256()
         blocks = []
         with open(r'\\.\PhysicalDrive' + str(owned['n']), 'rb', buffering=0) as device:
@@ -85,7 +94,7 @@ def generate(root, out, subformat):
     with image.open('rb') as src:
         source_hash = hashlib.file_digest(src, 'sha256').hexdigest()
     meta = dict(subformat=subformat, originals=originals, guest_bytes=SIZE, guest_sha256=digest.hexdigest(),
-                guest_mib_sha256=blocks, container_bytes=image.stat().st_size, container_sha256=source_hash,
+                logical_sector=owned['logical'], physical_sector=owned['physical'], guest_mib_sha256=blocks, container_bytes=image.stat().st_size, container_sha256=source_hash,
                 packed_sha256=hashlib.sha256(packed.read_bytes()).hexdigest(), platform=platform.platform())
     (out / 'manifest.json').write_text(json.dumps(meta, indent=2) + '\n')
     print(subformat, 'seven NTFS deletions, read-only Windows guest SHA-256', digest.hexdigest(), flush=True)
@@ -95,5 +104,6 @@ if __name__ == '__main__':
     check(platform.system() == 'Windows', 'requires Windows virtual disk driver')
     out = Path('windows-vhdx-proof').resolve()
     with tempfile.TemporaryDirectory() as tmp:
-        for kind in ('fixed', 'expandable'):
+        import sys
+        for kind in (('4kn',) if '--4kn' in sys.argv else ('fixed', 'expandable')):
             generate(Path(tmp), out / kind, kind)
