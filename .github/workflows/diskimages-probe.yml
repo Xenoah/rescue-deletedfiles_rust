@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   apple:
-    runs-on: macos-26
+    runs-on: macos-26-intel
     steps:
       - uses: actions/checkout@v4
       - uses: actions/cache/restore@v4
@@ -15,10 +15,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: macos-26-arm64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
-          restore-keys: macos-26-arm64-rust-1.99.1-
+          key: macos-26-intel-x64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: macos-26-intel-x64-rust-1.99.1-
       - run: rustup toolchain install 1.99.1 --profile minimal
-      - run: cargo build -p rescue-cli --locked --target aarch64-apple-darwin
+      - run: cargo build -p rescue-cli --locked --target x86_64-apple-darwin
       - run: mkdir apple-media
       - name: Convert Apple-encoded media and restore deleted originals
         run: |
@@ -27,7 +27,7 @@ jobs:
           import sys
           sys.path.insert(0,'scripts')
           from e2e_udif import apple_images
-          apple_images(Path('target/aarch64-apple-darwin/debug/rescue').resolve(),Path('apple-media').resolve())
+          apple_images(Path('target/x86_64-apple-darwin/debug/rescue').resolve(),Path('apple-media').resolve())
           PY
       - name: Save encoder output for diagnosis
         if: failure()
