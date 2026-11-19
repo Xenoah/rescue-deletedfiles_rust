@@ -16,6 +16,8 @@ cap-std.workspace = true
 png = "0.18.1"
 crc32fast = "1"
 flate2 = "1"
+ruzstd = "0.9.1"
+lz4_flex = "0.14.2"
 bzip2 = "0.6.1"
 lzma-rust2 = {version = "0.25.0", default-features = false, features = ["std", "xz", "lzip"]}
 quick-xml = "0.41.0"
