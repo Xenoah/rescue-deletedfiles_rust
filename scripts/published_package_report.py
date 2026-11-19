@@ -60,6 +60,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 16, 0):
+        for key in ('ext4_journal','ext4_journal_extent_trees'):
+            assert set(run[key]) == {'1024','4096'} and run[key]['1024'] == run[key]['4096'] and len(run[key]['1024']) == 7
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 15, 0):
         originals = run['btrfs_extents']['zstd']
         assert len(originals) == 7
