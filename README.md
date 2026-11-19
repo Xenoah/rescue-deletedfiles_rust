@@ -2,11 +2,11 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**最新公開版はv1.8.0です。** GUIのイメージ取り込み、Apple DMGの内蔵展開、OpenDocument・EPUB・JSONの内容検索を追加しました。
+**最新公開版はv1.9.0です。** 5種類の圧縮RAWディスク、AppleのLZFSE・LZMAディスクイメージ、配置表と原本SHA-256による任意形式の復元を追加しました。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/latest) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.8.0/docs/RELEASE-v1.8.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44578498358)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/latest) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.9.0/docs/RELEASE-v1.9.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44589420194)
 
-![v1.8.0で復元したファイル](docs/images/v1.8.0/structures-recovered.png)
+![v1.9.0で復元したファイル](docs/images/v1.9.0/structures-recovered.png)
 
 ## ダウンロード
 
@@ -14,18 +14,18 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 | 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-windows-x64-portable.zip) |
-| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/rescue-1.8.0-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/rescue-1.9.0-macos-x64-portable.zip) |
 
-リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.8.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.9.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
-## v1.8.0の対応範囲
+## v1.9.0の対応範囲
 
-GUIで8形式のイメージをRAWに変換し、各ext4上で削除した7ファイルを復元しました。DMGからはFAT32の削除済み7ファイル、文書・電子書籍・JSON計33原本からは通常・索引の両方で66件を復元しました。管理情報を消した35形式・36原本で、連続配置は31/36件、断片化配置は11/36件の原本が一致しました。[利用手順と実測結果](docs/RELEASE-v1.8.0.md)
+GUIで5種類の圧縮RAWディスクを変換してFAT32の削除ファイル35件を復元しました。配置表と原本ハッシュがある場合は、内容形式が不明なファイルも復元できます。実際のext4削除8件と、断片化・独自形式を含む11原本を照合しました。[利用手順と実測結果](docs/RELEASE-v1.9.0.md)
 
 ## できること
 
@@ -73,6 +73,6 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
 ```
 
-標準の統合試験は52群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。[v1.8.0の検証結果と制限](docs/RELEASE-v1.8.0.md)。
+標準の統合試験は55群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。[v1.9.0の検証結果と制限](docs/RELEASE-v1.9.0.md)。
 
 過去の記録: [v1.0リリース](docs/RELEASE-v1.0.md) · [v1.0受入](docs/V1_ACCEPTANCE.md) · [1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md) · [v1.1以降のバックログ](docs/BACKLOG_V1_1.md)。過去の画像や計測を現行版の実績として数えません。

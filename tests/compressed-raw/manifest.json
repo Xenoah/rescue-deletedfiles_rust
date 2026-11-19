@@ -1,0 +1,13 @@
+{
+  "logical_sha256": "f47ac493bc18a2b9158c7a99dd2e05e996288a952f7a97f0288e2e56c2126b9a",
+  "files": {
+    "seven-files.raw.zst": {
+      "sha256": "c59559bdcd73b30ead0a1bf60462e7055615016d07e5d4629e13e3d9b276db73",
+      "generator": "zstd -q --check -c"
+    },
+    "seven-files.raw.lz4": {
+      "sha256": "44a0a188e17466272788341720dad023534ae5287f2e80303f38afda1ef9bc6f",
+      "generator": "lz4 -q -BX -c"
+    }
+  }
+}

@@ -178,7 +178,7 @@ def apple_images(binary,root):
     truth=json.loads((GOLDEN/'manifest.json').read_text())
     # Convert the independent libdmg UDIF directly. Bare sectors have no
     # container type for the DiskImages framework to recognize.
-    for kind in ('UDRO','UDZO','UDBZ','UDCO'):
+    for kind in ('UDRO','UDZO','UDBZ','UDCO','ULFO','ULMO'):
         image=root/(kind+'.dmg')
         subprocess.run(['hdiutil','convert',str(gold),'-format',kind,'-o',str(image)],check=True)
         out=root/(kind+'.raw')
@@ -192,7 +192,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary',type=Path,required=True)
     parser.add_argument('--independent',action='store_true')
-    parser.add_argument('--hdiutil',action='store_true',help='Test four actual Apple DiskImages encoders on macOS')
+    parser.add_argument('--hdiutil',action='store_true',help='Test six actual Apple DiskImages encoders on macOS')
     args=parser.parse_args()
     with tempfile.TemporaryDirectory() as temp:
         if args.hdiutil:

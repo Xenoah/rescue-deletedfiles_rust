@@ -22,6 +22,9 @@ from e2e_rtf import verify as rtf_documents
 from e2e_open_documents import verify as open_documents
 from e2e_json import verify as json_documents
 from e2e_udif import verify as udif_images
+from e2e_compressed_raw import verify as compressed_disks
+from e2e_udif_codecs import verify as modern_udif_codecs
+from e2e_known_extents import verify as known_extents
 from e2e_xml import verify as xml_documents
 from e2e_mp3 import verify as mp3_audio
 from e2e_flac import verify as flac_audio
@@ -159,6 +162,10 @@ def main():
                 result['media_document_verification'][family] = test(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 8, 0):
         for key, test in [('open_documents', open_documents), ('json_documents', json_documents), ('udif_images', udif_images)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 9, 0):
+        for key, test in [('compressed_disks', compressed_disks), ('modern_udif', modern_udif_codecs), ('known_extents', known_extents)]:
             with tempfile.TemporaryDirectory() as tmp:
                 result[key] = test(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)

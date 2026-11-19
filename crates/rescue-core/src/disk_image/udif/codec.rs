@@ -42,6 +42,25 @@ fn adc(encoded: &[u8], out: &mut [u8]) -> Result<()> {
     Ok(())
 }
 
+fn xz(encoded: &[u8], out: &mut [u8], length: usize) -> Result<bool> {
+    use lzma_rust2::{Action, Status, XzStream};
+    let mut decoder = XzStream::new_mem_limit(false, 64 * 1024);
+    let (mut input, mut output) = (0, 0);
+    loop {
+        let step = decoder
+            .process(&encoded[input..], &mut out[output..], Action::Finish)
+            .map_err(|_| invalid("LZMA/XZ stream"))?;
+        input += step.bytes_consumed;
+        output += step.bytes_produced;
+        if step.status == Status::StreamEnd {
+            return Ok(input == encoded.len() && output == length);
+        }
+        if output > length || (step.bytes_consumed == 0 && step.bytes_produced == 0) {
+            return Ok(false);
+        }
+    }
+}
+
 pub(super) fn decode(kind: u32, encoded: &[u8], length: usize) -> Result<Vec<u8>> {
     // One spare byte lets the codec consume its trailer and distinguishes
     // oversized runs from an exactly full output buffer.
@@ -69,6 +88,14 @@ pub(super) fn decode(kind: u32, encoded: &[u8], length: usize) -> Result<Vec<u8>
                 && codec.total_in() == encoded.len() as u64
                 && codec.total_out() == length as u64
         }
+        super::LZFSE => {
+            // A fixed-size output slice also bounds streams whose own header claims more data.
+            let (used, produced) = lzfse_rust::LzfseRingDecoder::default()
+                .decode(&mut &encoded[..], &mut &mut out[..])
+                .map_err(|_| invalid("LZFSE stream"))?;
+            used == encoded.len() as u64 && produced == length as u64
+        }
+        super::LZMA => xz(encoded, &mut out, length)?,
         _ => return Err(invalid("unexpected codec")),
     };
     if !valid {

@@ -7,6 +7,7 @@ mod acquisition_ui;
 mod appearance;
 mod columns;
 mod discovery_ui;
+mod extent_ui;
 mod hash_ui;
 mod image_import_ui;
 #[cfg(any(windows, test))]
@@ -52,6 +53,7 @@ enum Stage {
     Imaging,
     Migrating,
     Importing,
+    RestoringExtents,
     Selecting,
     Recovering,
     Finished,
@@ -77,6 +79,7 @@ enum Message {
     RaidSearched(Box<rescue_core::RaidSearchResult>),
     ImagingProgress(rescue_core::AcquisitionProgress),
     Imaged(rescue_core::AcquisitionResult),
+    ExtentsRecovered(rescue_core::Result<rescue_core::disk_image::ImportedFile>),
     ImageImported(rescue_core::Result<rescue_core::disk_image::ImportedFile>),
     Progress(Progress),
     Discovered(Box<rescue_core::DiscoveryResult>),
@@ -119,6 +122,7 @@ struct App {
     map_messages: Option<mpsc::Receiver<Result<rescue_core::ReadMapPage, String>>>,
     image_dialog: bool,
     image_import: image_import_ui::State,
+    extent_recovery: extent_ui::State,
     image_destination: String,
     image_resume: bool,
     image_original: Option<(String, String, String)>,
@@ -278,6 +282,7 @@ impl App {
             map_messages: None,
             image_dialog: false,
             image_import: image_import_ui::State::default(),
+            extent_recovery: extent_ui::State::default(),
             image_destination: String::new(),
             image_resume: false,
             image_original: None,
@@ -352,6 +357,7 @@ impl App {
                 | Stage::Imaging
                 | Stage::Migrating
                 | Stage::Importing
+                | Stage::RestoringExtents
         )
     }
     fn settings(&self) -> Result<SearchSettings, Text> {
@@ -898,6 +904,7 @@ impl App {
                     };
                     self.image_progress = Some(p);
                 }
+                Message::ExtentsRecovered(result) => self.finish_extent_recovery(result),
                 Message::ImageImported(result) => self.finish_image_import(result),
                 Message::Imaged(result) => {
                     if let Some(origin) = &mut self.image_original {
@@ -1187,6 +1194,18 @@ impl App {
                     self.map_page = None;
                     self.map_dialog = true;
                     self.load_map_page(0, None);
+                }
+                if ui
+                    .add_enabled(
+                        !self.source.trim().is_empty(),
+                        egui::Button::new(tr!(
+                            "配置表からファイルを復元",
+                            "Recover a file from a layout"
+                        )),
+                    )
+                    .clicked()
+                {
+                    self.extent_recovery.show();
                 }
                 self.discovery_controls(ui);
             });
@@ -2380,6 +2399,7 @@ enum Picker {
     Open,
     Session,
     Folder,
+    File,
     Zip,
     Raw,
 }
@@ -2416,6 +2436,7 @@ fn path_row(ui: &mut egui::Ui, label: &str, value: &mut String, picker: Picker) 
                     .add_filter("Rescue session / index", &["json", "sqlite", "db"])
                     .pick_file(),
                 Picker::Folder => dialog.pick_folder(),
+                Picker::File => dialog.save_file(),
                 Picker::Raw => dialog
                     .add_filter("RAW", &["raw"])
                     .set_file_name("disk.raw")
@@ -2673,7 +2694,11 @@ impl App {
             });
             let _language = self.language.enter();
             let current_step = match self.stage {
-                Stage::Settings | Stage::Imaging | Stage::Migrating | Stage::Importing => 1,
+                Stage::Settings
+                | Stage::Imaging
+                | Stage::Migrating
+                | Stage::Importing
+                | Stage::RestoringExtents => 1,
                 Stage::Scanning => 2,
                 Stage::Selecting => 3,
                 Stage::Recovering | Stage::Finished => 4,
@@ -2722,7 +2747,10 @@ impl App {
                     } else {
                         0.0
                     };
-                    if !matches!(self.stage, Stage::Scanning | Stage::Importing) {
+                    if !matches!(
+                        self.stage,
+                        Stage::Scanning | Stage::Importing | Stage::RestoringExtents
+                    ) {
                         ui.add(
                             egui::ProgressBar::new(fraction)
                                 .desired_width(ui.available_width().min(360.0))
@@ -2802,6 +2830,7 @@ impl App {
                         Stage::Settings => self.setup_ui(ui),
                         Stage::Scanning => self.scan_status_ui(ui),
                         Stage::Imaging => self.imaging_status(ui),
+                        Stage::RestoringExtents => {ui.heading(tr!("配置表からファイルを復元中", "Recovering from the layout")); ui.label(&self.extent_recovery.output);},
                         Stage::Importing => {ui.heading(tr!("イメージを変換中", "Converting disk image")); ui.label(&self.image_import.first); ui.label(&self.image_import.output);},
                         Stage::Migrating => {
                             ui.heading(tr!("セッションをコピー移行しています", "Migrating a session copy"));
@@ -2816,6 +2845,9 @@ impl App {
             );
             if !self.busy() { self.actions_ui(ui); }
         });
+        if self.extent_recovery.open && !self.busy() {
+            self.extent_dialog(ctx);
+        }
         if self.image_import.open && !self.busy() {
             self.import_image_dialog(ctx);
         }
@@ -2875,6 +2907,7 @@ impl Drop for App {
     fn drop(&mut self) {
         self.cancel.store(true, Ordering::Relaxed);
         self.image_import.join();
+        self.extent_recovery.join();
     }
 }
 fn launch_options(

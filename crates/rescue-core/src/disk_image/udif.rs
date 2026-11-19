@@ -16,6 +16,8 @@ use std::{
 const ADC: u32 = 0x8000_0004;
 const ZLIB: u32 = 0x8000_0005;
 const BZIP: u32 = 0x8000_0006;
+const LZFSE: u32 = 0x8000_0007;
+const LZMA: u32 = 0x8000_0008;
 const COMMENT: u32 = 0x7fff_fffe;
 const END: u32 = u32::MAX;
 const MAX_PACKED_RUN: u64 = 64 << 20;
@@ -108,11 +110,11 @@ impl Table {
             match kind {
                 0 | 2 if packed == 0 => {}
                 1 if logical_bytes == packed => {}
-                ADC | ZLIB | BZIP
+                ADC | ZLIB | BZIP | LZFSE | LZMA
                     if packed > 0
                         && packed <= MAX_PACKED_RUN
                         && logical_bytes <= MAX_PACKED_RUN => {}
-                0 | 1 | 2 | ADC | ZLIB | BZIP => {
+                0 | 1 | 2 | ADC | ZLIB | BZIP | LZFSE | LZMA => {
                     return Err(invalid("invalid or oversized data run"));
                 }
                 _ => {
@@ -254,7 +256,7 @@ fn write_tables(
         for run in &table.runs {
             check(cancel)?;
             source.seek(SeekFrom::Start(run.offset))?;
-            if matches!(run.kind, ADC | ZLIB | BZIP) {
+            if matches!(run.kind, ADC | ZLIB | BZIP | LZFSE | LZMA) {
                 let mut packed = vec![0; run.packed as usize];
                 source.read_exact(&mut packed)?;
                 let decoded = codec::decode(run.kind, &packed, run.logical_bytes as usize)?;

@@ -1,0 +1,20 @@
+{
+  "source": "apm-fat32.dmg",
+  "generator": "macOS hdiutil convert -format ULFO or ULMO, followed by hdiutil verify",
+  "generator_run": "https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44571336099",
+  "independent_decode": "Python block placement and Apple LZFSE C reference or Python liblzma",
+  "images": {
+    "ULFO.dmg": {
+      "container_sha256": "c9c83b1e2b2d676c9c3d387bb4a17eba78787b15a9b3aa0be3e10f03fe131445",
+      "logical_sha256": "01795973103fcce3c9443284f881ee6d8396d9c130ab126bb3f752713a091b6a",
+      "logical_bytes": 71303168,
+      "deleted_files": 7
+    },
+    "ULMO.dmg": {
+      "container_sha256": "f95b161632d93f92c2a29ccc509b263f7eb61d702667295976350a487738d10a",
+      "logical_sha256": "01795973103fcce3c9443284f881ee6d8396d9c130ab126bb3f752713a091b6a",
+      "logical_bytes": 71303168,
+      "deleted_files": 7
+    }
+  }
+}

@@ -341,8 +341,7 @@ impl Image {
     pub fn is_device(&self) -> bool {
         self.device.is_some()
     }
-    #[cfg(windows)]
-    pub(crate) fn read_grant_paths(&self) -> Vec<PathBuf> {
+    pub(crate) fn backing_paths(&self) -> Vec<PathBuf> {
         if let Some(raid) = &self.raid {
             raid.evidence
                 .config
