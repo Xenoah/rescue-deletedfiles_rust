@@ -291,6 +291,19 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Restore a file from ordered byte extents, verifying the supplied original SHA-256.
+    RecoverExtents {
+        #[arg(long)]
+        source: PathBuf,
+        /// JSON layout with schema_version, sha256, and ordered extents.
+        #[arg(long)]
+        layout: PathBuf,
+        /// New output file. Keep existing files and reject missing source ranges.
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     /// Write unrecoverable candidates' raw bytes (unreadable media zero-filled) with a JSON map.
     /// Output is unverified raw data, never presented as the original file.
     ExportRaw {
@@ -415,7 +428,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
     }
     if cli.request_read_access {
         let source=match &cli.command {
-            Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
+            Command::RecoverExtents{source,..}|Command::Scan{source,..}|Command::Image{source,..}|Command::Inspect{source,..}|Command::Discover{source,..}|Command::CheckDestination{source,..}|Command::Restore{source,..}=>source.clone(),
             Command::Recover{session,..}|Command::Resume{session,..}|Command::Preview{session,..}|Command::ExportRaw{session,..}=> {
                 if rescue_core::CandidateIndex::is_index(session)? {rescue_core::CandidateIndex::open(session)?.session()?.source}
                 else {Session::load(session)?.source}
@@ -431,6 +444,20 @@ fn run(cli: Cli) -> Result<i32, Error> {
             output,
             json,
         } => sleuthkit::import(image, &output, json, &cancel),
+        Command::RecoverExtents {
+            source,
+            layout,
+            output,
+            json: compact,
+        } => {
+            let file =
+                rescue_core::disk_image::recover_extents(&source, &layout, &output, &cancel)?;
+            print(
+                json!({"schema_version":1,"original_sha256_verified":true,"file":file}),
+                compact,
+            );
+            Ok(0)
+        }
         Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
         Command::ExportRaw {

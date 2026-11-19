@@ -235,7 +235,7 @@ impl Worker {
         };
         #[cfg(windows)]
         let handles = {
-            let paths = source.read_grant_paths();
+            let paths = source.backing_paths();
             crate::read_access::transfer_sources(
                 &paths.iter().collect::<Vec<_>>(),
                 worker.child.as_ref().unwrap(),

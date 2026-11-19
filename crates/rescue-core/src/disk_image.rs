@@ -1,5 +1,7 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
 mod ewf;
+mod extents;
+pub use extents::recover_extents;
 mod udif;
 mod virtual_image;
 use crate::{Error, Result};
