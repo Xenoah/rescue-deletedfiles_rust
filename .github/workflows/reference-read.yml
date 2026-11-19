@@ -1,0 +1,31 @@
+name: Preserve independent Apple codec fixtures
+on:
+  push:
+    branches: [testing/codec-fixture-validation]
+    paths: ['.github/workflows/reference-read.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  fixtures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: apple-encoder-output
+          run-id: 44571336099
+          github-token: ${{ github.token }}
+          path: tests/udif/apple-reference/
+      - name: Keep the two checksummed outputs in this fixture branch
+        working-directory: tests/udif/apple-reference
+        run: |
+          sha256sum -c <<'SUMS'
+          c9c83b1e2b2d676c9c3d387bb4a17eba78787b15a9b3aa0be3e10f03fe131445  ULFO.dmg
+          f95b161632d93f92c2a29ccc509b263f7eb61d702667295976350a487738d10a  ULMO.dmg
+          SUMS
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -f -- ULFO.dmg ULMO.dmg
+          git commit -m 'Preserve the two hdiutil reference disk images for reproducible recovery tests'
+          git push origin HEAD:testing/codec-fixture-validation
