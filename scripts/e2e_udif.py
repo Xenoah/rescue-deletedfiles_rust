@@ -71,7 +71,7 @@ def fixture(logical, kind, prefix=b''):
         table = bytearray(204)
         base = len(fork) if prefix else 0
         struct.pack_into('>4sIQQQ',table,0,b'mish',1,start//512,len(data)//512,base)
-        table[64:76] = crc_header(data)
+        checked = bytearray()
         rows = []
         packed_part = bytearray()
         for pos in range(0,len(data),4096):
@@ -80,10 +80,12 @@ def fixture(logical, kind, prefix=b''):
             if kind=='mixed' and not any(chunk):
                 codec = 0 if pos//4096 % 2 else 2
             encode = {0:lambda _:b'',2:lambda _:b'',1:bytes,ZLIB:zlib.compress,BZIP:bz2.compress,ADC:adc_encode}
+            if codec != 2: checked.extend(chunk)
             packed = encode[codec](chunk)
             rows.append(struct.pack('>IIQQQQ',codec,0,pos//512,len(chunk)//512,len(fork)-base+len(packed_part),len(packed)))
             packed_part.extend(packed)
         rows.append(struct.pack('>IIQQQQ',END,0,len(data)//512,0,len(fork)-base+len(packed_part),0))
+        table[64:76] = crc_header(checked)
         struct.pack_into('>I',table,200,len(rows))
         parts.append(table+b''.join(rows))
         fork.extend(packed_part)
