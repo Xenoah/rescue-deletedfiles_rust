@@ -1,19 +1,17 @@
-//! Restore historical inline files from a retained, read-only Btrfs snapshot.
+//! Restore historical files from a retained, read-only Btrfs snapshot.
 mod chunks;
+mod extent;
 mod tree;
 use super::{ImageInput, publish_output};
 use crate::{Error, Result};
-use flate2::{Decompress, FlushDecompress, Status};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fs,
-    io::Write,
     path::{Path, PathBuf},
     sync::atomic::AtomicBool,
 };
-use tree::{Item, Key, Node, Volume};
+use tree::{Key, Node, Volume};
 pub struct BtrfsRequest {
     pub source: PathBuf,
     pub current_root: Option<u64>,
@@ -44,7 +42,7 @@ struct Root {
 fn roots(volume: &mut Volume) -> Result<BTreeMap<u64, Root>> {
     let mut roots = BTreeMap::new();
     volume.walk(volume.root, |Key(id, kind, _), _, b| {
-        if kind != 132 || (id != 5 && !(256..=i64::MAX as u64).contains(&id)) {
+        if kind != 132 || (id != 5 && id != 7 && !(256..=i64::MAX as u64).contains(&id)) {
             return Ok(());
         }
         if b.len() < 279 {
@@ -80,11 +78,13 @@ struct Entry {
 struct FileInfo {
     size: u64,
     mode: u32,
+    allocated: u64,
+    flags: u64,
 }
 struct Namespace {
     files: BTreeMap<u64, FileInfo>,
     paths: BTreeMap<Vec<u8>, Option<u64>>,
-    extents: BTreeMap<u64, Option<Item>>,
+    extents: BTreeMap<u64, Vec<extent::Record>>,
 }
 fn namespace(volume: &mut Volume, root: &Root, history: bool) -> Result<Namespace> {
     let mut files = BTreeMap::new();
@@ -109,6 +109,8 @@ fn namespace(volume: &mut Volume, root: &Root, history: bool) -> Result<Namespac
                         FileInfo {
                             size: u64le(b, 16),
                             mode: u32le(b, 52),
+                            allocated: u64le(b, 24),
+                            flags: u64le(b, 64),
                         },
                     )
                     .is_some()
@@ -140,8 +142,14 @@ fn namespace(volume: &mut Volume, root: &Root, history: bool) -> Result<Namespac
                 if b.len() < 21 {
                     return Err(bad("truncated file extent"));
                 }
-                let value = (offset == 0 && b[20] == 0).then_some(item);
-                extents.entry(id).and_modify(|v| *v = None).or_insert(value);
+                extents
+                    .entry(id)
+                    .or_insert_with(Vec::new)
+                    .push(extent::Record {
+                        start: offset,
+                        kind: b[20],
+                        item,
+                    });
             }
             _ => {}
         }
@@ -189,43 +197,6 @@ fn namespace(volume: &mut Volume, root: &Root, history: bool) -> Result<Namespac
         extents,
     })
 }
-fn contents(volume: &mut Volume, item: Item, size: u64) -> Result<Vec<u8>> {
-    let raw = volume.item(item)?;
-    let size = usize::try_from(size).map_err(|_| bad("oversized inline file"))?;
-    if raw.len() < 21
-        || u64le(&raw, 8) != size as u64
-        || size > 65536
-        || raw[17..21] != [0, 0, 0, 0]
-    {
-        return Err(bad("inconsistent inline length or encoding"));
-    }
-    let stored = &raw[21..];
-    match raw[16] {
-        0 if stored.len() == size => Ok(stored.to_vec()),
-        0 => Err(bad("short inline file")),
-        1 => {
-            let padded = size.div_ceil(volume.sector) * volume.sector;
-            let mut decoded = vec![0; padded + 1];
-            let mut stream = Decompress::new(true);
-            let status = stream
-                .decompress(stored, &mut decoded, FlushDecompress::Finish)
-                .map_err(|_| bad("invalid inline zlib stream"))?;
-            let n = stream.total_out() as usize;
-            if status != Status::StreamEnd
-                || stream.total_in() != stored.len() as u64
-                || !(n == size || n == padded)
-                || decoded[size..n].iter().any(|&b| b != 0)
-            {
-                return Err(bad("invalid compressed inline data or padding"));
-            }
-            decoded.truncate(size);
-            Ok(decoded)
-        }
-        _ => Err(Error::Unsupported(
-            "this inline compression codec is unsupported".into(),
-        )),
-    }
-}
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|b| format!("{b:02x}")).collect()
 }
@@ -238,7 +209,8 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
     };
     let (_, paths) = image.arguments(req.destination.as_deref())?;
     let mut vol = Volume::open(Path::new(&paths[0]), cancel)?;
-    let roots = roots(&mut vol)?;
+    let mut roots = roots(&mut vol)?;
+    let checksum_root = roots.remove(&7).map(|r| r.node);
     let inventory=roots.iter().map(|(id,r)|json!({"id":id,"readonly":r.readonly,"uuid":hex(&r.uuid),"parent_uuid":hex(&r.parent)})).collect::<Vec<_>>();
     let mut result = json!({"roots":inventory});
     let (current_id, snapshot_id) = match (req.current_root, req.snapshot_root) {
@@ -278,7 +250,7 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
     for (&id, names) in &removed {
         let size = historical.files[&id].size;
         candidates.push(json!({"id":id,"size":size,"original_paths":names.iter().map(|p|String::from_utf8_lossy(p)).collect::<Vec<_>>(),
-            "original_paths_hex":names.iter().map(|p|hex(p)).collect::<Vec<_>>(),"inline_extent":matches!(historical.extents.get(&id),Some(Some(_))) }));
+            "original_paths_hex":names.iter().map(|p|hex(p)).collect::<Vec<_>>(),"inline_extent":historical.extents.get(&id).is_some_and(|r| matches!(r.as_slice(), [e] if e.kind == 0)) }));
     }
     result["candidates"] = json!(candidates);
     let Some(dest) = req.destination else {
@@ -297,6 +269,19 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
             "ID is absent from historical-only results".into(),
         ));
     }
+    let checksums = if ids.iter().any(|id| {
+        historical
+            .extents
+            .get(id)
+            .is_some_and(|list| list.iter().any(|r| r.kind == 1))
+    }) {
+        checksum_root
+            .map(|node| extent::Checksums::load(&mut vol, node))
+            .transpose()?
+            .unwrap_or_default()
+    } else {
+        extent::Checksums::default()
+    };
     fs::create_dir_all(&dest)?;
     let mut rows = Vec::new();
     let mut failed = false;
@@ -310,16 +295,13 @@ pub fn btrfs(req: BtrfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> {
         if !ext.is_empty() && ext.len() <= 32 && ext.bytes().all(|b| b.is_ascii_alphanumeric()) {
             out.set_extension(ext);
         }
-        let size = historical.files[&id].size;
+        let records = historical
+            .extents
+            .get(&id)
+            .map(Vec::as_slice)
+            .unwrap_or_default();
         let saved = publish_output(&out, cancel, |dst| {
-            let bytes=match historical.extents.get(&id){
-                Some(Some(item))=>contents(&mut vol,*item,size)?,
-                None if size==0=>Vec::new(),
-                _=>return Err(Error::Unsupported("file uses external Btrfs extents; a mounted snapshot or another reader is required".into())),
-            };
-            dst.write_all(&bytes)?;
-            vol.unchanged()?;
-            Ok((size, Sha256::new_with_prefix(bytes)))
+            extent::write_file(&mut vol, &historical.files[&id], records, &checksums, dst)
         });
         match saved{
             Ok(f)=>rows.push(json!({"id":id,"original_paths":names,"path":f.path,"bytes":f.bytes,"sha256":f.sha256})),
