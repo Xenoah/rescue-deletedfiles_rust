@@ -1,0 +1,7 @@
+{
+  "encoder": "lzfse 0.4.2.post1 Python bindings to the Apple reference C implementation",
+  "logical_sha256": "f47ac493bc18a2b9158c7a99dd2e05e996288a952f7a97f0288e2e56c2126b9a",
+  "lzfse_sha256": "de5dc10ee1203283f2969d9ef690b705cd616305690713a7ac2386ede2b32e76",
+  "logical_bytes": 16896,
+  "stream_header": "bvx2"
+}

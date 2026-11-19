@@ -2044,6 +2044,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "lzfse_rust"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5edeac3ec657925dececc672bdd58fa2212291886ddcb3e08aa46924c78340c6"
+
+[[package]]
 name = "lzma-rust2"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2871,6 +2877,7 @@ dependencies = [
  "flate2",
  "libc",
  "lz4_flex",
+ "lzfse_rust",
  "lzma-rust2",
  "md-5",
  "png",

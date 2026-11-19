@@ -86,7 +86,7 @@ jobs:
       - name: Cross-check Apple disk images with dmg2img and QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --independent --binary target/${{ matrix.target }}/debug/rescue
-      - name: Convert Apple-generated raw, zlib, bzip2 and ADC disk images
+      - name: Convert Apple-generated raw, zlib, bzip2, ADC, LZFSE and LZMA disk images
         if: runner.os == 'macOS' && matrix.arch == 'arm64'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --hdiutil --binary target/${{ matrix.target }}/debug/rescue
       - name: Reopen carved MP3, FLAC and TIFF with FFmpeg and ImageMagick
