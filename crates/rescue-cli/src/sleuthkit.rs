@@ -16,7 +16,7 @@ use std::{
 
 #[derive(Args)]
 pub struct ImageArgs {
-    /// First regular disk image (or first segment).
+    /// Read-only disk, volume, or first image segment.
     #[arg(long)]
     source: PathBuf,
     /// Additional image segments in logical order, for explicitly split images.
@@ -31,7 +31,7 @@ pub struct ImageArgs {
 }
 
 impl ImageArgs {
-    fn arguments(&self) -> Result<(Vec<OsString>, Vec<OsString>)> {
+    fn arguments(&self, destination: Option<&Path>) -> Result<(Vec<OsString>, Vec<OsString>)> {
         let mut options = Vec::new();
         if let Some(kind) = &self.image_type {
             options.extend([OsString::from("-i"), kind.into()]);
@@ -44,7 +44,24 @@ impl ImageArgs {
         }
         let mut paths = Vec::new();
         for path in std::iter::once(&self.source).chain(&self.segment) {
-            let path = path.canonicalize()?;
+            let path = rescue_core::canonical_source_path(path)?;
+            if rescue_core::is_device(&path) {
+                if !self.segment.is_empty()
+                    || self.image_type.as_deref().is_some_and(|t| t != "raw")
+                {
+                    return Err(Error::Request(
+                        "native disks require a single raw source".into(),
+                    ));
+                }
+                if let Some(output) = destination {
+                    rescue_core::guard_output_path(&path, output)?;
+                }
+                if self.image_type.is_none() {
+                    options.extend([OsString::from("-i"), "raw".into()]);
+                }
+                paths.push(path.into_os_string());
+                continue;
+            }
             let mut map = path.as_os_str().to_owned();
             map.push(".rmap");
             if !path.is_file()
@@ -54,7 +71,7 @@ impl ImageArgs {
                     .file_name()
                     .is_some_and(|n| n.to_string_lossy().ends_with(".rescue.raw"))
             {
-                return Err(Error::Request("extended readers require regular disk images without a Rescue read map or RAID manifest".into()));
+                return Err(Error::Request("choose a native disk or regular image without a Rescue read map or RAID manifest".into()));
             }
             let name = path.into_os_string();
             if paths.contains(&name) {
@@ -200,7 +217,7 @@ fn write_output(
 }
 
 pub fn import(image: ImageArgs, output: &Path, json: bool, cancel: &AtomicBool) -> Result<i32> {
-    let (mut args, paths) = image.arguments()?;
+    let (mut args, paths) = image.arguments(Some(output))?;
     args.extend(paths);
     let result = write_output("img_cat", &args, output, None, cancel)?;
     super::print(result, json);
@@ -236,7 +253,7 @@ pub fn filesystem(request: FilesystemArgs, cancel: &AtomicBool) -> Result<i32> {
             "choose --id or --all when specifying a destination".into(),
         ));
     }
-    let (mut args, paths) = request.image.arguments()?;
+    let (mut args, paths) = request.image.arguments(request.destination.as_deref())?;
     if let Some(kind) = request.fs_type {
         args.extend([OsString::from("-f"), kind.into()]);
     }

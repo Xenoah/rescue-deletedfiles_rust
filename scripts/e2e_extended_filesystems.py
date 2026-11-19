@@ -32,7 +32,7 @@ def make_deleted(root, filesystem, samples):
     return raw
 
 
-def verify(binary, root):
+def verify(binary, root, native):
     samples = {f'sample.{ext}': (CORPUS / f'sample.{ext}').read_bytes()
                for ext in ['gif', 'bmp', 'webp', 'wav', 'sqlite', 'txt']}
     samples['vendor_format'] = bytes(range(256)) * 37
@@ -62,6 +62,20 @@ def verify(binary, root):
     for fs in ['ext2', 'ext3', 'ext4']:
         raw = make_deleted(root, fs, samples)
         recover(fs, [raw], ['--fs-type', fs])
+    if native:
+        from e2e_disks import native_source
+        before = sha(raw.read_bytes())
+        dest = root / 'native-out'
+        dest.mkdir()
+        with native_source(raw, root) as (prefix, device, _):
+            rows = json.loads(command(*prefix, binary, 'filesystem', '--source', device, '--all',
+                                      '--destination', dest, '--json').stdout)['results']
+            check(len(rows) == len(samples), rows)
+            for row in rows:
+                data = command(*prefix, 'cat', row['path']).stdout
+                check(data == samples[row['original_path']] and sha(data) == row['sha256'], row)
+        check(sha(raw.read_bytes()) == before, 'loop device source changed')
+        print('read-only Linux loop device', len(rows), 'deleted files byte-exact', flush=True)
     expected = raw.read_bytes()
     for fmt, suffix in [('vpc', 'vhd'), ('vmdk', 'vmdk')]:
         image = root / ('disk.' + suffix)
@@ -94,5 +108,7 @@ def verify(binary, root):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--binary', type=Path, required=True)
+    parser.add_argument('--native', action='store_true', help='Linux CI: attach an owned image on a read-only loop device')
+    args = parser.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
-        verify(parser.parse_args().binary.resolve(), Path(tmp))
+        verify(args.binary.resolve(), Path(tmp), args.native)
