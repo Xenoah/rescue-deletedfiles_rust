@@ -1,0 +1,42 @@
+name: Inspect recorded native composition events
+on:
+  push:
+    branches: ['testing/ime-cancellation-analysis']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-ime-input-events
+          path: trace
+          run-id: 44585971651
+          github-token: ${{ github.token }}
+      - name: Summarize actual Escape and composition event order
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          root=Path('trace');files=list(root.rglob('stderr.txt'));assert len(files)==1
+          log=files[0].read_text(errors='replace').splitlines()
+          proof=json.loads(next(root.rglob('ime-event-results.json')).read_text(encoding='utf-8-sig'))
+          cycles=proof['uia']['native_ime']['cycles'];assert len(cycles)==8
+          def note(label,message):
+              escaped=message.replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print(f'::notice title={label}::{escaped}')
+          for i,c in enumerate(cycles):
+              note(f'Observed cancellation cycle {i+1}', str(c['cancel_trace']))
+          lines=[(i,l) for i,l in enumerate(log) if 'IME_RAW' in l and ('Ime(' in l or 'Escape' in l)]
+          events=[]
+          for i,l in lines:
+              match=re.search(r'events=(.*)',l)
+              if not match:continue
+              event=match[1]
+              if 'Escape' in event or 'とりけし' in event or 'Disabled' in event:
+                  detail=re.search(r'value=(.*?) cursor=',l)
+                  events.append((str(i)+' '+(detail[1] if detail else '')+' '+event)[:440])
+          for i in range(0,len(events),9): note(f'Input events {i+1}', '\n'.join(events[i:i+9]))
+          PY
