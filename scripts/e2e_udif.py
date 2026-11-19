@@ -174,14 +174,11 @@ def apple_images(binary,root):
     """Generate Apple UDIF images with the system DiskImages framework."""
     gold=GOLDEN/'apm-fat32.dmg'
     truth=json.loads((GOLDEN/'manifest.json').read_text())
-    # Give hdiutil the same known logical media for every encoder.
-    original=root/'apple-original.raw'
-    run(binary,'import-image','--source',gold,'--output',original,'--json')
-    check(file_hash(original)==truth['disk_sha256'],'Apple input disk')
+    # Convert the independent libdmg UDIF directly. Bare sectors have no
+    # container type for the DiskImages framework to recognize.
     for kind in ('UDRO','UDZO','UDBZ','UDCO'):
         image=root/(kind+'.dmg')
-        subprocess.run(['hdiutil','convert',str(original),'-imagekey','diskimage-class=CRawDiskImage',
-                        '-format',kind,'-o',str(image)],check=True)
+        subprocess.run(['hdiutil','convert',str(gold),'-format',kind,'-o',str(image)],check=True)
         out=root/(kind+'.raw')
         report=run(binary,'import-image','--source',image,'--image-type','dmg','--output',out,'--json')
         check(file_hash(out)==report['sha256']==truth['disk_sha256'],kind)
