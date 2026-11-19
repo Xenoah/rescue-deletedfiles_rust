@@ -27,6 +27,7 @@ def verify(binary):
         root = Path(tmp)
         image = root / 'no-filesystem.raw'
         contents = bytearray(b'\xa5' * (1024 * 1024 - 3))
+        proofs = {}
         offsets = {}
         for ext, data in files.items():
             offsets[ext] = len(contents)
@@ -44,6 +45,7 @@ def verify(binary):
                               '--destination', root / (mode + '-out'), '--json')['results']
                 check(Path(result['path']).read_bytes() == data
                       and result['sha256'] == hashlib.sha256(data).hexdigest(), result)
+                proofs.setdefault(mode, {})[ext] = result['sha256']
                 print(mode, ext, len(data), result['sha256'])
         for ext, data in files.items():
             cut = root / (ext + '-cut.raw')
@@ -91,6 +93,7 @@ def verify(binary):
             (0, len(member), hashlib.sha256(member).hexdigest()),
             (len(member), len(second), hashlib.sha256(second).hexdigest())], found)
         check(image.read_bytes() == contents, 'source changed')
+        return proofs
 
 
 if __name__ == '__main__':

@@ -37,6 +37,7 @@ def verify(binary, root):
     disk = root / 'guest.bin'
     container = vdi(blocks)
     disk.write_bytes(container)
+    proofs = {}
     for fmt, flags in [('automatic', []), ('explicit', ['--image-type', 'vdi'])]:
         out = root / (fmt + '.raw')
         result = run(binary, 'import-image', '--source', disk, '--output', out, '--json', *flags)
@@ -56,6 +57,7 @@ def verify(binary, root):
         check(sorted(digests) == sorted(hashlib.sha256(b).hexdigest() for b in files), fmt)
         run(binary, 'import-image', '--source', disk, '--output', out, '--json', *flags, expected=2)
         check(out.read_bytes() == original and disk.read_bytes() == container, 'source/collision')
+        proofs[fmt] = {'guest_sha256': result['sha256'], 'restored_sha256': sorted(digests)}
         print(fmt, '5 of 5 restored, logical RAW SHA-256', result['sha256'])
     def altered(offset, value):
         data = bytearray(container)
@@ -72,6 +74,7 @@ def verify(binary, root):
         damaged.write_bytes(data)
         run(binary, 'import-image', '--source', damaged, '--output', out, '--json', expected=code)
         check(not out.exists() and damaged.read_bytes() == data, name)
+    return proofs
 
 
 if __name__ == '__main__':

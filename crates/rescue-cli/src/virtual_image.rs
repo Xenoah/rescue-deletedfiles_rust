@@ -81,8 +81,8 @@ impl Vdi {
         let mut blocks = vec![0; count as usize * 4];
         read_at(source, map_offset, &mut blocks)?;
         let mut seen = vec![false; used as usize];
-        for bytes in blocks.chunks_exact(4) {
-            let slot = le32(bytes, 0);
+        for &bytes in blocks.as_chunks::<4>().0 {
+            let slot = u32::from_le_bytes(bytes);
             if matches!(slot, 0xffff_fffe | 0xffff_ffff) {
                 if le32(&h, 76) == 2 {
                     return Err(invalid("unallocated fixed VDI block"));

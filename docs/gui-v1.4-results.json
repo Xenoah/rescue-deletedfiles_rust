@@ -1,0 +1,144 @@
+{
+  "files_byte_exact": 5,
+  "bytes_exact": 14244,
+  "source_unchanged": true,
+  "source_sha256": "e1b258b45c22e17d751ae6df569919183ed35e0ef7278e417f12f9e74d1d03d5",
+  "archive_sha256": "aebbc15d383d84a2ab37e5f096be4c9e7d9d585354faa1e7135ff54faaf7f212",
+  "status": "passed",
+  "application_version": "1.4.0",
+  "time_utc": "2026-11-19T14:34:57.273553+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "1ffdd9185c525c06a1c5f2e07ed49956f8196bc6389c2ea4b0d3b449c2c4d2c5",
+  "cli_binary_sha256": "21789108f8ed0e023a3cf9d8a2dd47912ac2802e160ce01a082dd452a726e4e3",
+  "files": [
+    {
+      "archive_entry": "avi_0000000000000400.avi",
+      "bytes": 7356,
+      "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+    },
+    {
+      "archive_entry": "gz_0000000000003c87.gz",
+      "bytes": 81,
+      "sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+    },
+    {
+      "archive_entry": "mkv_0000000000002109.mkv",
+      "bytes": 1915,
+      "sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413"
+    },
+    {
+      "archive_entry": "ogg_0000000000002db5.ogg",
+      "bytes": 3717,
+      "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+    },
+    {
+      "archive_entry": "webm_00000000000028d1.webm",
+      "bytes": 1175,
+      "sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 5,
+    "html_sha256": "69dc8a8ef97ce4f4d23f54328f4e4ded81cdb162e4d47faaf5f10bba32eeaf45",
+    "csv_sha256": "62df1afcc3d7c3a214f5f3ffe259386fd497ad5d4ad3106dac1af73423d61547",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 5
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "15258173004cdb912caefb4826939d74660c14efab704d25f5119db2384f8d73",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "8071c9c07143010ae4a29c4a115f1fb9501ba8e3d8f6453fd2d060554a55f0fe",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "dc145698b86800cbe1139a8784504835233837d572c4005db14a7feee244823a"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "b657cc05d0fd0554bc13d559c3a66d2444f46878ad77da776c2b833a617a2064"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.4.0/structures-selected.png",
+      "sha256": "63f6a0f490ccf905a416c77e453fbc9532ceaa3a97d0e5358763f55753000bd6",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/structures-recovered.png",
+      "sha256": "261160e2e0e902f0247be3b56175807a482b66522d9643d488893f706f276b8b",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/custom-recovered.png",
+      "sha256": "1193c267ae2294aa5897fe5638f7ece1cf8f24a57c3d49aee4d8a0001ee032ff",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/cp932-recovered.png",
+      "sha256": "c29e7ad4e0883ac2cd62574ef1ba1af05ae3771102c7447f07f1b3ce9577fa36",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/exfat-recovered.png",
+      "sha256": "3b3c4d30c25da5006810f8664fe11c1e2119acc2edb47b624c1ed9786dd9a4d2",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/hash-saved.png",
+      "sha256": "f45a1b119713176d8d6a04e51476b76ed131838eea6a2bbf252748fff98e0b90",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/acq-interrupted.png",
+      "sha256": "233145f78d051d06ce06685dd189763f71ae0b14442832d759ab64d987444b3f",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.4.0/acq-resumed.png",
+      "sha256": "deaa7cb0f8e521440474cf83cb4cad0f73582fa472bda05a602978fbdc0953a6",
+      "width": 1260,
+      "height": 820
+    }
+  ]
+}

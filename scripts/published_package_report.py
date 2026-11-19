@@ -10,6 +10,14 @@ p=argparse.ArgumentParser();p.add_argument('--input-dir',type=Path,required=True
 runs=[];lines=[f'# {a.tag}: actual public package verification','','All four native platforms downloaded and checksum-verified the published portable, then executed its exact CLI bytes after packaging and macOS ad-hoc signing.','','| Platform | Metadata byte-exact | Native disk exact | All observations | CLI SHA-256 |','| --- | --- | --- | --- | --- |']
 for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos','arm64')]:
     name=f'published-format-{platform}-{arch}.json';path=a.input_dir/name;run=json.loads(path.read_text(encoding='utf-8'));pub=run['published_release'];assert pub['tag']==a.tag and pub['tested_after_packaging_and_signing'] and pub['executable_sha256']==run['binary_sha256']
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 4, 0):
+        expected_types = {'avi', 'mkv', 'webm', 'ogg', 'gz'}
+        structures = run['file_structure_verification']
+        assert expected_types <= structures['session'].keys() and structures['session'] == structures['index']
+        expected_hashes = sorted(structures['session'][e] for e in expected_types)
+        virtual = run['virtual_image_verification']
+        assert virtual['automatic'] == virtual['explicit'] and virtual['automatic']['restored_sha256'] == expected_hashes
+
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')

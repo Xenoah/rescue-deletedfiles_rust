@@ -214,7 +214,7 @@ if modern:
         upcase=proof['exfat_damage'];assert upcase['files_byte_exact']==8 and upcase['source_unchanged'] and upcase['unverified_candidates']==11
     if tuple(map(int,VERSION.split('-')[0].split('.'))) >= (1,2,0) and VERSION not in ['1.2.0-alpha.1','1.2.0-alpha.2','1.2.0-alpha.3']:
         known=proof['known_hashes'];assert known['matched']==2 and known['not_listed']==6 and known['not_comparable']==0 and known['original_evidence_preserved'] and known['source_unchanged']
-    if series == '1.3':
+    if tuple(map(int, series.split('.'))) >= (1, 3):
         assert proof['files_byte_exact'] >= 5 and proof['custom_rule']['files_byte_exact'] >= 1 and proof['custom_rule']['source_unchanged']
     for shot in proof['screenshots']:
         path=ROOT/'docs'/shot['file']

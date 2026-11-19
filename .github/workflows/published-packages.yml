@@ -197,3 +197,25 @@ jobs:
           path: report/*
           retention-days: 90
           if-no-files-found: error
+      - name: Promote verified stable releases
+        if: github.event_name == 'workflow_dispatch' && github.ref_type == 'tag' && github.ref_name == inputs.release_tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json, os, re, subprocess
+          tag = os.environ['RELEASE_TAG']
+          def version(name):
+              match = re.fullmatch(r'v(\d+)\.(\d+)\.(\d+)', name)
+              return tuple(map(int, match.groups())) if match else None
+          target = version(tag)
+          if target is None:
+              raise SystemExit(0)
+          release = json.loads(subprocess.check_output(['gh', 'release', 'view', tag, '--json', 'isPrerelease']))
+          if release['isPrerelease']:
+              latest = subprocess.check_output(['gh', 'release', 'view', '--json', 'tagName', '--jq', '.tagName'], text=True).strip()
+              make_latest = target >= (version(latest) or (0, 0, 0))
+              subprocess.run(['gh', 'release', 'edit', tag, '--prerelease=false',
+                              '--latest=' + str(make_latest).lower()], check=True)
+          PY

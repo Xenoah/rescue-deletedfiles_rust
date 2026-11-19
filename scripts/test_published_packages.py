@@ -7,11 +7,14 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import tarfile
 import time
 import urllib.error
 import urllib.request
 import zipfile
+from e2e_file_structures import verify as file_structures
+from e2e_virtual_images import verify as virtual_images
 from e2e_release_fixes import main as release_fixes
 from e2e_acquisition import main as acquisition
 from e2e_cp932 import main as cp932
@@ -113,6 +116,10 @@ def main():
     if version_output!='rescue '+version:raise RuntimeError('released CLI version mismatch')
     features(binary)
     result=formats(binary,Path(__file__).resolve().parent.parent/'tests/corpus',a.output,a.independent)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 4, 0):
+        result['file_structure_verification'] = file_structures(binary)
+        with tempfile.TemporaryDirectory() as tmp:
+            result['virtual_image_verification'] = virtual_images(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
