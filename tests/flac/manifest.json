@@ -1,0 +1,37 @@
+{
+  "mono16": {
+    "rate": 16000,
+    "channels": 1,
+    "samples": 4480,
+    "sha256": "db604b8b3c28694d4d049a389030174c3e186b3d3cbda09000e5c041094355e6",
+    "pcm_s32_sha256": "04ea0fe63a38aa835df8f5f1d023ba673a2d1bb72fde538db20046c568e9f2af"
+  },
+  "stereo16": {
+    "rate": 44100,
+    "channels": 2,
+    "samples": 12348,
+    "sha256": "5c7397b04ad6e01b123e9b122f26ebd21e6a479e177908ddb00921dcdfa17ea1",
+    "pcm_s32_sha256": "d1e9665659dfdb84a884501902055553f4937e546bc68e37dda5e562fe261790"
+  },
+  "mono24": {
+    "rate": 48000,
+    "channels": 1,
+    "samples": 13440,
+    "sha256": "72a81919e2338f0af1d245a86ee193d5b521bfede7d013d14cf1afb4694411b5",
+    "pcm_s32_sha256": "ff63ca3892e48065add29f39c7c254ead42e1236af9aff7a5d1f7b268762d65f"
+  },
+  "stereo24": {
+    "rate": 32000,
+    "channels": 2,
+    "samples": 8960,
+    "sha256": "29c61aef54ad84d9c079342ecb2d4648918d531a3929b9bcc86b5ce443800796",
+    "pcm_s32_sha256": "c8bd681ef3b49aecce4839fae941b120a888523f39d567928b8cb6b3d171f898"
+  },
+  "surround": {
+    "rate": 48000,
+    "channels": 6,
+    "samples": 13440,
+    "sha256": "67affffb45c0c6ddf754157016b914f3685c89ca1e52854e8cd8ce57594120b6",
+    "pcm_s32_sha256": "274e43015ae52053e8abfadcb5f1cfd69481360608aaf191dada2dc6b22acb1f"
+  }
+}

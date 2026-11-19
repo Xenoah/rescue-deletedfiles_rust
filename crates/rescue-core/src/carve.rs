@@ -4,6 +4,7 @@ mod compressed;
 mod container;
 mod ebml;
 mod extra;
+mod flac;
 mod frame_archive;
 mod icon;
 mod indexed;
@@ -65,6 +66,7 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "flac" => Some(Format::Flac),
         "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
         "rtf" => Some(Format::Rtf),
@@ -133,6 +135,7 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Flac,
     Mp3,
     Xml,
     Rtf,
@@ -168,6 +171,7 @@ impl<'a> Format<'a> {
             Self::Png => "png",
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
+            Self::Flac => "flac",
             Self::Mp3 => "mp3",
             Self::Xml => "xml",
             Self::Rtf => "rtf",
@@ -227,7 +231,8 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Mp3
+            Self::Flac
+            | Self::Mp3
             | Self::Xml
             | Self::Rtf
             | Self::Ico
@@ -288,9 +293,13 @@ impl<'a> Format<'a> {
                 };
                 Ok((self, input.finish(end)?, internal))
             }
-            Self::Rtf => {
+            Self::Rtf | Self::Flac => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
-                let end = rtf::parse(&mut input)?;
+                let end = if self == Self::Rtf {
+                    rtf::parse(&mut input)?
+                } else {
+                    flac::parse(&mut input)?
+                };
                 Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
@@ -358,6 +367,8 @@ fn detect<'a>(
         && Format::Mp3.allowed(extensions)
     {
         Some(Format::Mp3)
+    } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
+        Some(Format::Flac)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -392,6 +403,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Flac => &[
+            "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
         ],
         Format::Mp3 => &[
             "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
@@ -479,7 +493,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut internal_headers = std::collections::BTreeSet::new();
@@ -658,6 +672,7 @@ pub(crate) fn recovery_data(
         Format::Apng,
         Format::Jpeg,
         Format::Pdf,
+        Format::Flac,
         Format::Mp3,
         Format::Xml,
         Format::Rtf,

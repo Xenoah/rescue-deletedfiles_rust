@@ -1,8 +1,7 @@
 //! Delimit a declared UTF-8 XML document at its root end, then validate the bounded document.
-use super::container::Input;
+use super::container::{Input, InputCursor};
 use crate::{Error, Result};
 use quick_xml::{Reader, events::Event};
-use std::io::{self, BufRead, Read};
 
 const MAX_BYTES: usize = 8 * 1024 * 1024;
 const BOM: &[u8] = b"\xef\xbb\xbf";
@@ -16,40 +15,10 @@ pub(super) fn signature(bytes: &[u8]) -> bool {
         .is_some_and(|b| matches!(b, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
-struct Source<'a, 'b> {
-    input: &'a mut Input<'b>,
-    cursor: usize,
-    failure: Option<Error>,
-}
-impl BufRead for Source<'_, '_> {
-    fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        let limit = self.input.limit().min(MAX_BYTES);
-        if self.cursor >= limit {
-            return Ok(&[]);
-        }
-        if self.cursor == self.input.bytes.len()
-            && let Err(err) = self.input.ensure(self.cursor + 1)
-        {
-            self.failure = Some(err);
-            return Err(io::Error::other("cannot read XML input"));
-        }
-        Ok(&self.input.bytes[self.cursor..self.input.bytes.len().min(limit)])
-    }
-    fn consume(&mut self, n: usize) {
-        self.cursor += n;
-    }
-}
-impl Read for Source<'_, '_> {
-    fn read(&mut self, dest: &mut [u8]) -> io::Result<usize> {
-        let n = self.fill_buf()?.read(dest)?;
-        self.consume(n);
-        Ok(n)
-    }
-}
-
 fn boundary(input: &mut Input<'_>, bom: usize) -> Result<usize> {
     // Start after the BOM so the event reader's offsets have the same meaning on every build.
-    let mut reader = Reader::from_reader(Source {
+    let mut reader = Reader::from_reader(InputCursor {
+        limit: MAX_BYTES,
         input,
         cursor: bom,
         failure: None,
