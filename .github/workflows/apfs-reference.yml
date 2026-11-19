@@ -1,0 +1,19 @@
+name: Create reference APFS snapshot with real deletions
+on:
+  push:
+    branches: [testing/apfs-snapshot]
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: macos-26
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create a new Apple volume, take a snapshot and remove seven files
+        run: python3 scripts/apfs_reference_fixture.py reference-media
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apfs-snapshot-reference
+          path: reference-media
+          retention-days: 5
