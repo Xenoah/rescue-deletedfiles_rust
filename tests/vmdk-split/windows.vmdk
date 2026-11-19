@@ -1,0 +1,10 @@
+# Disk DescriptorFile
+version=1
+CID=4c867a7
+parentCID=ffffffff
+createType="twoGbMaxExtentSparse"
+
+# Extent description
+RW 32768 SPARSE "windows-s001.vmdk"
+RW 65536 SPARSE "windows-s002.vmdk"
+RW 98304 SPARSE "windows-s003.vmdk"

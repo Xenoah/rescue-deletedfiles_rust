@@ -122,6 +122,9 @@ jobs:
       - name: Compare standalone VMDK imports and real deleted Windows files with QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vmdk.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Compare split and flat VMware descriptors with independent QEMU images
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk_split.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Import Windows and QEMU VHDX and recover genuine NTFS deletions
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx.py --native --binary target/${{ matrix.target }}/debug/rescue

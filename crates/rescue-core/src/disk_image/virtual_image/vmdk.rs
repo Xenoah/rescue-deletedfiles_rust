@@ -1,5 +1,7 @@
 //! Self-contained hosted sparse VMDK. Descriptor strings never select a host path.
+mod descriptor;
 use super::{Block, Error, File, Result, invalid, le32, read_at};
+use descriptor::{Descriptor, Extent, Storage};
 use std::{
     ops::Range,
     sync::atomic::{AtomicBool, Ordering},
@@ -70,7 +72,7 @@ struct Header {
     grain_size: u64,
     entries: usize,
     flags: u32,
-    descriptor: Range<u64>,
+    descriptor: Option<Range<u64>>,
     directory: u64,
     backup: u64,
     overhead: u64,
@@ -115,10 +117,14 @@ impl Header {
         }
         let ds = sectors(u64le(&h, 28))?;
         let dl = sectors(u64le(&h, 36))?;
-        if ds < SECTOR || dl > 1 << 20 {
+        if (ds == 0) != (dl == 0) || dl > 1 << 20 {
             return Err(invalid("missing or excessive VMDK descriptor"));
         }
-        let descriptor = region(ds, dl, overhead)?;
+        let descriptor = if ds == 0 {
+            None
+        } else {
+            Some(region(ds, dl, overhead)?)
+        };
         let (directory, footer) = select_directory(file, &h, length, compressed)?;
         if footer.is_some_and(|f| f < overhead || directory < overhead) {
             return Err(invalid("VMDK streamed metadata placement"));
@@ -142,77 +148,37 @@ impl Header {
     }
 }
 
-fn descriptor(file: &mut File, h: &Header) -> Result<()> {
-    let mut bytes = vec![0; (h.descriptor.end - h.descriptor.start) as usize];
-    read_at(file, h.descriptor.start, &mut bytes)?;
-    let end = bytes.iter().position(|&c| c == 0).unwrap_or(bytes.len());
-    if bytes[end..].iter().any(|&c| c != 0) {
-        return Err(invalid("VMDK descriptor has data after NUL"));
-    }
-    let text =
-        std::str::from_utf8(&bytes[..end]).map_err(|_| invalid("non-UTF-8 VMDK descriptor"))?;
-    let (mut version, mut cid, mut parent, mut kind, mut extent) = (None, None, None, None, None);
-    for line in text
-        .lines()
-        .map(str::trim)
-        .filter(|s| !s.is_empty() && !s.starts_with('#'))
-    {
-        if let Some((key, value)) = line
-            .split_once('=')
-            .filter(|(k, _)| !k.trim().contains(char::is_whitespace))
-        {
-            let value = value.trim();
-            let slot = match key.trim() {
-                "version" => &mut version,
-                "CID" => &mut cid,
-                "parentCID" => &mut parent,
-                "createType" => &mut kind,
-                "parentFileNameHint" => {
-                    return Err(Error::Unsupported("VMDK parent reference".into()));
-                }
-                _ => continue,
-            };
-            if slot.replace(value).is_some() {
-                return Err(invalid("duplicate VMDK descriptor field"));
-            }
+fn validate_descriptor(file: &mut File, h: &Header, external_size: Option<u64>) -> Result<()> {
+    let Some(region) = &h.descriptor else {
+        return if external_size == Some(h.capacity) && !h.compressed {
+            Ok(())
         } else {
-            let (prefix, rest) = line
-                .split_once('"')
-                .ok_or_else(|| invalid("VMDK extent descriptor"))?;
-            let name = rest
-                .strip_suffix('"')
-                .ok_or_else(|| invalid("VMDK extent name"))?;
-            let mut fields = prefix.split_ascii_whitespace();
-            let access = fields.next();
-            let count = fields.next().and_then(|v| v.parse::<u64>().ok());
-            if !matches!(access, Some("RW" | "RDONLY"))
-                || count != Some(h.capacity / SECTOR)
-                || fields.next() != Some("SPARSE")
-                || fields.next().is_some()
-                || name.is_empty()
-                || name.contains(['"', '/', '\\', ':'])
-                || matches!(name, "." | "..")
-                || extent.replace(()).is_some()
-            {
-                return Err(Error::Unsupported(
-                    "VMDK requires one standalone sparse extent".into(),
-                ));
-            }
-        }
+            Err(invalid("missing matching external VMDK extent descriptor"))
+        };
+    };
+    let mut bytes = vec![0; (region.end - region.start) as usize];
+    read_at(file, region.start, &mut bytes)?;
+    if let Some(size) = external_size {
+        // QEMU reserves the descriptor sectors in split components and leaves them zero.
+        return if size == h.capacity && !h.compressed && bytes.iter().all(|&b| b == 0) {
+            Ok(())
+        } else {
+            Err(invalid(
+                "split VMDK extent capacity, encoding or embedded descriptor conflict",
+            ))
+        };
     }
-    if version != Some("1")
-        || !cid.is_some_and(|s| s.len() == 8 && s.bytes().all(|c| c.is_ascii_hexdigit()))
-        || !parent.is_some_and(|s| s.eq_ignore_ascii_case("ffffffff"))
-        || kind
-            != Some(if h.compressed {
-                "\"streamOptimized\""
-            } else {
-                "\"monolithicSparse\""
-            })
-        || extent.is_none()
+    let desc = Descriptor::parse(&bytes)?;
+    let kind = if h.compressed {
+        "streamOptimized"
+    } else {
+        "monolithicSparse"
+    };
+    if desc.kind != kind
+        || !matches!(desc.extents.as_slice(),[Extent{size,storage:Storage::Sparse(_)}] if *size==h.capacity)
     {
-        return Err(Error::Unsupported(
-            "VMDK descriptor conflicts with standalone extent type".into(),
+        return Err(invalid(
+            "VMDK descriptor conflicts with standalone extent type or size",
         ));
     }
     Ok(())
@@ -346,13 +312,20 @@ pub(super) struct Vmdk {
     grains: Vec<Grain>,
 }
 impl Vmdk {
-    pub fn open(file: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
+    pub fn open(
+        file: &mut File,
+        length: u64,
+        external_size: Option<u64>,
+        cancel: &AtomicBool,
+    ) -> Result<Self> {
         let h = Header::read(file, length)?;
-        descriptor(file, &h)?;
+        validate_descriptor(file, &h, external_size)?;
         let mut maps = Maps {
             length,
-            regions: vec![0..SECTOR, h.descriptor.clone()],
+            regions: Vec::new(),
         };
+        maps.regions.push(0..SECTOR);
+        maps.regions.extend(h.descriptor.clone());
         Ok(Self {
             size: h.capacity,
             grain_size: h.grain_size,
@@ -377,3 +350,6 @@ impl Vmdk {
         (block, self.grain_size - within)
     }
 }
+
+pub(in crate::disk_image) use segments::import_segments;
+mod segments;

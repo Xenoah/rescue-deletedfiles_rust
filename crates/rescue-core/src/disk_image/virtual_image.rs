@@ -13,6 +13,7 @@ use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
+pub(super) use vmdk::import_segments;
 
 fn invalid(reason: &str) -> Error {
     Error::Invalid(format!("virtual disk image: {reason}"))
@@ -138,6 +139,7 @@ enum Disk {
     Vhd(vhd::Vhd),
     Vhdx(vhdx::Vhdx),
     Vmdk(vmdk::Vmdk),
+    Flat { size: u64, at: Option<u64> },
 }
 impl Disk {
     fn size(&self) -> u64 {
@@ -147,6 +149,7 @@ impl Disk {
             Self::Vhd(v) => v.size,
             Self::Vhdx(v) => v.size,
             Self::Vmdk(v) => v.size,
+            Self::Flat { size, .. } => *size,
         }
     }
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
@@ -156,6 +159,10 @@ impl Disk {
             Self::Vhd(v) => v.block(source, offset),
             Self::Vhdx(v) => Ok(v.block(offset)),
             Self::Vmdk(v) => Ok(v.block(offset)),
+            Self::Flat { size, at } => Ok((
+                at.map_or(Block::Zero, |at| Block::Data(at + offset)),
+                *size - offset,
+            )),
         }
     }
     fn write_raw(
@@ -166,6 +173,19 @@ impl Disk {
     ) -> Result<(u64, Sha256)> {
         let size = self.size();
         let mut digest = Sha256::new();
+        self.write_at(source, file, 0, &mut digest, cancel)?;
+        file.set_len(size)?;
+        Ok((size, digest))
+    }
+    fn write_at(
+        &mut self,
+        source: &mut File,
+        file: &mut File,
+        base: u64,
+        digest: &mut Sha256,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
+        let size = self.size();
         let mut buffer = vec![0; 256 * 1024];
         let zeros = vec![0; buffer.len()];
         let mut encoded = Vec::new();
@@ -194,14 +214,14 @@ impl Disk {
                     {
                         return Err(invalid("compressed virtual disk block length"));
                     }
-                    file.seek(SeekFrom::Start(offset))?;
+                    file.seek(SeekFrom::Start(base + offset))?;
                     file.write_all(&decoded[..count as usize])?;
                     digest.update(&decoded[..count as usize]);
                 }
                 block => {
                     let data = if let Block::Data(at) = block {
                         source.seek(SeekFrom::Start(at))?;
-                        file.seek(SeekFrom::Start(offset))?;
+                        file.seek(SeekFrom::Start(base + offset))?;
                         true
                     } else {
                         false
@@ -214,7 +234,11 @@ impl Disk {
                         let n = remaining.min(buffer.len() as u64) as usize;
                         if data {
                             source.read_exact(&mut buffer[..n])?;
-                            file.write_all(&buffer[..n])?;
+                            if buffer[..n].iter().all(|&b| b == 0) {
+                                file.seek_relative(n as i64)?;
+                            } else {
+                                file.write_all(&buffer[..n])?;
+                            }
                             digest.update(&buffer[..n]);
                         } else {
                             digest.update(&zeros[..n]);
@@ -225,8 +249,7 @@ impl Disk {
             }
             offset += count;
         }
-        file.set_len(size)?;
-        Ok((size, digest))
+        Ok(())
     }
 }
 
@@ -274,7 +297,7 @@ pub(super) fn import(
         return Err(invalid("signature differs from requested image type"));
     }
     let mut disk = match kind {
-        Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), cancel)?),
+        Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), None, cancel)?),
         Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),

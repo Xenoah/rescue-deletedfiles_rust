@@ -87,7 +87,7 @@ impl Format {
     }
 
     fn split(self) -> bool {
-        matches!(self, Self::Raw | Self::Ewf)
+        matches!(self, Self::Raw | Self::Ewf | Self::Vmdk)
     }
 }
 
@@ -149,12 +149,17 @@ impl App {
                         Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
-                        Format::Vmdk => {ui.small(tr!("単独のmonolithicSparse・streamOptimizedを内蔵読み取りで変換します。ほかの形式には対応する外部ドライバーが必要です。", "Standalone monolithicSparse and streamOptimized disks use the built-in reader. Other variants need a compatible external driver."));}
+                        Format::Vmdk => {ui.small(tr!("単独の疎・圧縮VMDK、または記述ファイルと明示指定したフラット・分割エクステントを変換します。", "Import standalone sparse or compressed VMDK, or a descriptor and explicitly selected flat or split extent files."));}
                         Format::Vdi | Format::Qcow2 | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format.split() {
-                        let label = ui.label(tr!("追加セグメント（順番どおり、1行1パス）", "Additional segments in order (one path per line)")).id;
+                        let caption = if format == Format::Vmdk {
+                            tr!("記述ファイルにある構成ファイル（1行1パス）", "Extent files named in the descriptor (one path per line)")
+                        } else {
+                            tr!("追加セグメント（順番どおり、1行1パス）", "Additional segments in order (one path per line)")
+                        };
+                        let label = ui.label(caption).id;
                         ui.add(egui::TextEdit::multiline(&mut state.segments).desired_rows(2).desired_width(f32::INFINITY)).labelled_by(label);
                         if ui.button(tr!("セグメントを追加", "Append segment")).clicked()
                             && let Some(p) = rfd::FileDialog::new().pick_file() {

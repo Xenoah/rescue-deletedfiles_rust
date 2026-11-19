@@ -45,7 +45,7 @@ pub struct EwfVerification {
 pub struct ImageInput {
     /// Read-only disk, volume, or first image segment.
     pub source: PathBuf,
-    /// Additional image segments in logical order, for explicitly split images.
+    /// Additional image segments in logical order, or named extent files for a VMDK descriptor.
     pub segment: Vec<PathBuf>,
     /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
@@ -266,6 +266,9 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
     let kind = image.image_type.as_deref();
     if !crate::is_device(first) {
         if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
+            return Ok(result);
+        }
+        if let Some(result) = virtual_image::import_segments(&paths, kind, output, cancel)? {
             return Ok(result);
         }
         if paths.len() == 1 {
