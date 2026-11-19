@@ -14,6 +14,7 @@ mod indexed;
 mod rtf;
 mod rule;
 mod scope;
+mod sevenz;
 mod streams;
 mod tar;
 mod tiff;
@@ -106,6 +107,7 @@ pub(crate) fn validate_estimated_extent(
         "mkv" => Some(Format::Mkv),
         "webm" => Some(Format::Webm),
         "ogg" => Some(Format::Ogg),
+        "7z" => Some(Format::SevenZ),
         "gz" => Some(Format::Gzip),
         "ico" => Some(Format::Ico),
         "cur" => Some(Format::Cur),
@@ -219,6 +221,7 @@ enum Format<'a> {
     Webm,
     Ogg,
     Gzip,
+    SevenZ,
     Ico,
     Cur,
     Zstd,
@@ -271,6 +274,7 @@ impl<'a> Format<'a> {
             Self::Webm => "webm",
             Self::Ogg => "ogg",
             Self::Gzip => "gz",
+            Self::SevenZ => "7z",
             Self::Ico => "ico",
             Self::Cur => "cur",
             Self::Zstd => "zst",
@@ -343,6 +347,7 @@ impl<'a> Format<'a> {
             | Self::Mkv
             | Self::Webm
             | Self::Ogg
+            | Self::SevenZ
             | Self::Gzip
             | Self::Wav
             | Self::Webp
@@ -408,6 +413,9 @@ impl<'a> Format<'a> {
                     _ => mp3::parse(&mut input)?,
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::SevenZ => {
+                sevenz::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
             }
             Self::Tar(factor) => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -553,6 +561,8 @@ fn detect<'a>(
         Some(format)
     } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
         Some(Format::Flac)
+    } else if bytes.starts_with(sevenz::MAGIC) && Format::SevenZ.allowed(extensions) {
+        Some(Format::SevenZ)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -601,6 +611,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
+        ],
+        Format::SevenZ => &[
+            "The contiguous 7z start and next headers and the decoded stream entries were CRC-checked. This does not establish deletion or the original filename.",
         ],
         Format::Tar(_) => &[
             "Member header checksums, stored lengths, padding and two terminating blocks were checked. TAR has no payload checksum. The blocking factor determines trailing record padding; files with different writer settings may have different byte lengths.",
@@ -907,6 +920,7 @@ pub(crate) fn recovery_data(
         .unwrap_or(1);
     let format = [
         Format::Tar(blocking),
+        Format::SevenZ,
         Format::Png,
         Format::Apng,
         Format::Jpeg,

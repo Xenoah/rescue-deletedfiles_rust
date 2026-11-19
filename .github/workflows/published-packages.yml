@@ -64,7 +64,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
+          sudo apt-get install -y p7zip-full ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
       - name: Install Japanese input support for public GUI verification
         if: runner.os == 'Windows'
         shell: powershell

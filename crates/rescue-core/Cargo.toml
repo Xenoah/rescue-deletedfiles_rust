@@ -41,6 +41,7 @@ zip = { version = "2.4", default-features = false }
 tempfile.workspace = true
 rusqlite = { version = "0.41", features = ["bundled", "limits", "hooks"] }
 encoding_rs = "=0.8.35"
+sevenz-rust2 = { version = "0.25.0", default-features = false, features = ["bzip2", "deflate"] }
 
 [dev-dependencies]
 tempfile.workspace = true

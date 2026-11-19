@@ -1,0 +1,109 @@
+{
+  "stored.7z": {
+    "sha256": "528400b195f850d551e96f67a1f90744bc56a14488a91616abb290682439a98d",
+    "bytes": 196,
+    "options": [
+      "-m0=Copy",
+      "-mhc=off"
+    ],
+    "members": {
+      "data.bin": "sample.png"
+    }
+  },
+  "lzma.7z": {
+    "sha256": "1327b9f1f40c42ab17d25e52c10663f17d8d8d485b08c9eadc1e3917039560d3",
+    "bytes": 172,
+    "options": [
+      "-m0=LZMA:d=1m",
+      "-mhc=off"
+    ],
+    "members": {
+      "manual.rtf": "sample.rtf"
+    }
+  },
+  "solid.7z": {
+    "sha256": "0864b6cd13b3816ddea301e6519aa4dcf34b0e873c1d2bfd763cf8fba6c84c00",
+    "bytes": 349,
+    "options": [
+      "-m0=LZMA2:d=1m",
+      "-ms=on",
+      "-mhc=on"
+    ],
+    "members": {
+      "payload.txt": "sample.txt",
+      "日本語.xml": "sample.xml",
+      "manual.rtf": "sample.rtf",
+      "empty": null
+    }
+  },
+  "separate.7z": {
+    "sha256": "47ea6ecc16c1ea542b2aa671c5136e9653c421e0143268d6c5d4671a55d1aa85",
+    "bytes": 1079,
+    "options": [
+      "-m0=LZMA2:d=1m",
+      "-ms=off"
+    ],
+    "members": {
+      "track.wav": "sample.wav",
+      "data.bin": "sample.png",
+      "日本語.xml": "sample.xml"
+    }
+  },
+  "branch-filter.7z": {
+    "sha256": "fc32ea3065237d4f830a5f948e2eb8eb720a87d9dd9b84501fe6aa4ea5b2b8f6",
+    "bytes": 326,
+    "options": [
+      "-m0=BCJ",
+      "-m1=LZMA2:d=1m"
+    ],
+    "members": {
+      "data.bin": "sample.png",
+      "manual.rtf": "sample.rtf"
+    }
+  },
+  "delta-filter.7z": {
+    "sha256": "a0e454c5a28d32d5eb3b6a727e33786b423ace7c3119819cc82109f97c5f65c5",
+    "bytes": 911,
+    "options": [
+      "-m0=Delta:4",
+      "-m1=LZMA2:d=1m"
+    ],
+    "members": {
+      "track.wav": "sample.wav"
+    }
+  },
+  "deflate.7z": {
+    "sha256": "23616861257873f9be068f6ab264f9ab789e7f1b229309c079e3dae6aee98437",
+    "bytes": 307,
+    "options": [
+      "-m0=Deflate",
+      "-mhc=off"
+    ],
+    "members": {
+      "日本語.xml": "sample.xml",
+      "data.bin": "sample.png"
+    }
+  },
+  "bzip2.7z": {
+    "sha256": "842d54143548e704bbb3a00a40b021c3346bdd6827f40e51a0a7aa1d1e1838e9",
+    "bytes": 310,
+    "options": [
+      "-m0=BZip2",
+      "-mhc=on"
+    ],
+    "members": {
+      "manual.rtf": "sample.rtf",
+      "payload.txt": "sample.txt"
+    }
+  },
+  "empty-only.7z": {
+    "sha256": "43c2515c5c57f4e08aea76a75cff6dd6de2a7b8f4e72a5b435c85b0e8e9df96e",
+    "bytes": 70,
+    "options": [
+      "-mhc=off"
+    ],
+    "members": {
+      "empty": null
+    }
+  }
+}
