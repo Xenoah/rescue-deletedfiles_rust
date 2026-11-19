@@ -18,6 +18,7 @@ mod jpeg;
 mod movie;
 mod pdf;
 mod png;
+mod xml;
 mod zip;
 use crate::{
     AllocationStatus, Candidate, Error, ExtentEvidence, FileSystem, Progress, ProgressUnit,
@@ -61,6 +62,7 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "xml" => Some(Format::Xml),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
@@ -127,6 +129,7 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Xml,
     Rtf,
     Pdf,
     Zip,
@@ -160,6 +163,7 @@ impl<'a> Format<'a> {
             Self::Png => "png",
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
+            Self::Xml => "xml",
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
@@ -217,7 +221,8 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Rtf
+            Self::Xml
+            | Self::Rtf
             | Self::Ico
             | Self::Cur
             | Self::Avi
@@ -266,6 +271,11 @@ impl<'a> Format<'a> {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = compressed::parse(self, &mut input)?;
                 Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Xml => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, internal) = xml::parse(&mut input)?;
+                Ok((self, input.finish(end)?, internal))
             }
             Self::Rtf => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -327,6 +337,11 @@ fn detect<'a>(
         Some(Format::Jpeg)
     } else if bytes.starts_with(b"{\\rtf1") && Format::Rtf.allowed(extensions) {
         Some(Format::Rtf)
+    } else if matches!(bytes.first(), Some(0x3c | 0xef))
+        && xml::signature(bytes)
+        && Format::Xml.allowed(extensions)
+    {
+        Some(Format::Xml)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -361,6 +376,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Xml => &[
+            "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
         ],
         Format::Rtf => &[
             "RTF extent ends at the matching outer group. Control words, hexadecimal escapes, nested groups and counted binary payloads are checked. Document rendering and bytes after the closing brace are unverified.",
@@ -442,10 +460,10 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/XML/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
-    let mut zip_records = std::collections::BTreeSet::new();
+    let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
     let mut budget = VALIDATION_BUDGET;
@@ -477,7 +495,9 @@ pub(crate) fn scan_range(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if format == Format::Zip && zip_records.remove(&(offset + index as u64)) {
+            if matches!(format, Format::Zip | Format::Xml)
+                && internal_headers.remove(&(offset + index as u64))
+            {
                 continue;
             }
             if cancel.load(Ordering::Relaxed) {
@@ -535,15 +555,15 @@ pub(crate) fn scan_range(
                             .map(|s| s.to_string()),
                     );
                     for record in records.into_iter().filter(|r| *r > 0) {
-                        if zip_records.len() >= 1_048_576 {
+                        if internal_headers.len() >= 1_048_576 {
                             session.truncated = true;
                             session.warnings.push(
-                                "ZIP local-record index limit; remaining source was not scanned"
+                                "Internal signature index limit; remaining source was not scanned"
                                     .into(),
                             );
                             break;
                         }
-                        zip_records.insert(at + record as u64);
+                        internal_headers.insert(at + record as u64);
                     }
                     candidate.size = Some(bytes.len() as u64);
                     candidate.supported = true;
@@ -617,6 +637,7 @@ pub(crate) fn recovery_data(
         Format::Apng,
         Format::Jpeg,
         Format::Pdf,
+        Format::Xml,
         Format::Rtf,
         Format::Zip,
         Format::Docx,
