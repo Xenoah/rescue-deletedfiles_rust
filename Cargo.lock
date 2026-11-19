@@ -2743,6 +2743,7 @@ version = "1.4.0"
 dependencies = [
  "clap",
  "ctrlc",
+ "flate2",
  "rescue-core",
  "rescue-mcp",
  "serde_json",

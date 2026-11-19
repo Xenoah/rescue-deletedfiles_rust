@@ -101,6 +101,24 @@ def verify(binary, root, native):
         check(result['bytes'] == len(expected) and result['sha256'] == sha(expected)
               and imported.read_bytes() == expected and sha(image.read_bytes()) == before, fmt)
         recover(fmt, [imported], ['--fs-type', 'ext4'])
+    for label, options in [('qcow2-v2', ['-o', 'compat=0.10']),
+                           ('qcow2-v3', []), ('qcow2-deflate', ['-c']),
+                           ('qcow2-4k', ['-o', 'cluster_size=4096']),
+                           ('qcow2-2m', ['-o', 'cluster_size=2M'])]:
+        image = root / (label + '.img')
+        command('qemu-img', 'convert', '-f', 'raw', '-O', 'qcow2', *options, raw, image)
+        before = sha(image.read_bytes())
+        imported = root / (label + '.raw')
+        flags = [] if options else ['--image-type', 'qcow2']
+        result = run(binary, 'import-image', '--source', image, '--output', imported, '--json', *flags)
+        check(result['bytes'] == len(expected) and result['sha256'] == sha(expected)
+              and imported.read_bytes() == expected and sha(image.read_bytes()) == before, label)
+        recover(label, [imported], ['--fs-type', 'ext4'])
+    overlay = root / 'overlay.qcow2'
+    command('qemu-img', 'create', '-f', 'qcow2', '-F', 'raw', '-b', raw, overlay)
+    rejected = root / 'overlay.raw'
+    run(binary, 'import-image', '--source', overlay, '--output', rejected, '--json', expected=4)
+    check(not rejected.exists() and sha(raw.read_bytes()) == sha(expected), 'external backing file')
     parts = [root / 'split.first', root / 'split.second']
     parts[0].write_bytes(expected[:len(expected)//2])
     parts[1].write_bytes(expected[len(expected)//2:])

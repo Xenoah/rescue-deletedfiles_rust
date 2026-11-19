@@ -22,7 +22,7 @@ pub struct ImageArgs {
     /// Additional image segments in logical order, for explicitly split images.
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Sleuth Kit image type, such as raw, ewf, vhd or vmdk. import-image also accepts standalone vdi. Default: auto-detect.
+    /// Sleuth Kit image type, such as raw, ewf, vhd or vmdk. import-image also accepts standalone vdi and qcow2. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
