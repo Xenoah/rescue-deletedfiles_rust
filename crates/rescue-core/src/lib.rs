@@ -143,6 +143,8 @@ pub enum ExtentEvidence {
     PdfStructure,
     ZipCrcValidated,
     MediaStructure,
+    /// Extent validated against the file structure; payload contents are unverified.
+    FileStructure,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]

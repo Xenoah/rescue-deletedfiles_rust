@@ -156,7 +156,7 @@ pub fn scan_source(
     }
     if session.volumes.is_empty() && !session.cancelled {
         return Err(Error::Unsupported(
-            "no readable NTFS/FAT32/exFAT partition; select PNG carving to search raw bytes".into(),
+            "no readable NTFS/FAT/exFAT partition; select carving to search raw bytes".into(),
         ));
     }
     if image.fingerprint()? != session.fingerprint {

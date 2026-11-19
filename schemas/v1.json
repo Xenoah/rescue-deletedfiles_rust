@@ -259,6 +259,7 @@
         "pdf_structure",
         "zip_crc_validated",
         "media_structure",
+        "file_structure",
         "estimated_contiguous"
       ]
     },

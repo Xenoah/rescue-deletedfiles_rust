@@ -1,5 +1,6 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
 mod container;
+mod extra;
 mod indexed;
 mod scope;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
@@ -53,6 +54,11 @@ pub(crate) fn validate_estimated_extent(
         "pdf" => Some(Format::Pdf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
+        "wav" => Some(Format::Wav),
+        "webp" => Some(Format::Webp),
+        "bmp" => Some(Format::Bmp),
+        "gif" => Some(Format::Gif),
+        "sqlite" => Some(Format::Sqlite),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
         _ if head.starts_with(b"%PDF-") => Some(Format::Pdf),
@@ -104,6 +110,11 @@ enum Format {
     Pptx,
     Mp4,
     Mov,
+    Wav,
+    Webp,
+    Bmp,
+    Gif,
+    Sqlite,
 }
 impl Format {
     fn prefix(self) -> &'static str {
@@ -117,6 +128,11 @@ impl Format {
             Self::Pptx => "pptx",
             Self::Mp4 => "mp4",
             Self::Mov => "mov",
+            Self::Wav => "wav",
+            Self::Webp => "webp",
+            Self::Bmp => "bmp",
+            Self::Gif => "gif",
+            Self::Sqlite => "sqlite",
         }
     }
     fn extension(self) -> &'static str {
@@ -138,6 +154,9 @@ impl Format {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
+            Self::Wav | Self::Webp | Self::Bmp | Self::Gif | Self::Sqlite => {
+                ExtentEvidence::FileStructure
+            }
         }
     }
     fn allowed(self, extensions: &[String]) -> bool {
@@ -165,6 +184,10 @@ impl Format {
         boundary: u64,
     ) -> Result<(Format, Vec<u8>, Vec<usize>)> {
         match self {
+            Self::Wav | Self::Webp | Self::Bmp | Self::Gif | Self::Sqlite => {
+                extra::validate(self, image, at, cancel, budget, boundary)
+                    .map(|b| (self, b, Vec::new()))
+            }
             Self::Png => {
                 png::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
             }
@@ -183,6 +206,30 @@ impl Format {
     }
 }
 
+fn detect(bytes: &[u8], extensions: &[String]) -> Option<Format> {
+    if bytes.starts_with(SIGNATURE) && Format::Png.allowed(extensions) {
+        Some(Format::Png)
+    } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
+        Some(Format::Jpeg)
+    } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
+        Some(Format::Pdf)
+    } else if (bytes.starts_with(b"PK\x03\x04")
+        || (bytes.len() >= 22 && bytes.starts_with(b"PK\x05\x06") && bytes[4..20] == [0; 16]))
+        && [Format::Zip, Format::Docx, Format::Xlsx, Format::Pptx]
+            .iter()
+            .any(|f| f.allowed(extensions))
+    {
+        Some(Format::Zip)
+    } else if bytes.len() >= 8
+        && &bytes[4..8] == b"ftyp"
+        && (Format::Mp4.allowed(extensions) || Format::Mov.allowed(extensions))
+    {
+        Some(Format::Mp4)
+    } else {
+        extra::signature(bytes).filter(|format| format.allowed(extensions))
+    }
+}
+
 fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Pdf => &[
@@ -193,6 +240,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Mp4 | Format::Mov => &[
             "Non-fragmented MP4/QuickTime container, complete sample tables and mdat ranges validated. Encoded video/audio frames are not decoded; original content is unknown. ftyp required, no zero-sized boxes, 1048576 samples, 256 tracks.",
+        ],
+        Format::Wav | Format::Webp | Format::Bmp | Format::Gif | Format::Sqlite => &[
+            "Contiguous extent determined from format structure. Payload decoding, database integrity and original content are unverified.",
         ],
         _ => &[],
     }
@@ -238,16 +288,9 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
-    let png_allowed = Format::Png.allowed(extensions);
-    let jpeg_allowed = Format::Jpeg.allowed(extensions);
-    let pdf_allowed = Format::Pdf.allowed(extensions);
-    let zip_allowed = [Format::Zip, Format::Docx, Format::Xlsx, Format::Pptx]
-        .iter()
-        .any(|f| f.allowed(extensions));
-    let movie_allowed = Format::Mp4.allowed(extensions) || Format::Mov.allowed(extensions);
     let mut zip_records = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
@@ -264,22 +307,7 @@ pub(crate) fn scan_range(
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
-            let format = if png_allowed && rest.starts_with(SIGNATURE) {
-                Format::Png
-            } else if jpeg_allowed && rest.starts_with(&[0xff, 0xd8, 0xff]) {
-                Format::Jpeg
-            } else if pdf_allowed && rest.starts_with(b"%PDF-") {
-                Format::Pdf
-            } else if zip_allowed
-                && (rest.starts_with(b"PK\x03\x04")
-                    || (rest.len() >= 22
-                        && rest.starts_with(b"PK\x05\x06")
-                        && rest[4..20] == [0; 16]))
-            {
-                Format::Zip
-            } else if movie_allowed && rest.len() >= 8 && &rest[4..8] == b"ftyp" {
-                Format::Mp4
-            } else {
+            let Some(format) = detect(rest, extensions) else {
                 continue;
             };
             let at = offset + index as u64;
@@ -439,6 +467,11 @@ pub(crate) fn recovery_data(
         Format::Pptx,
         Format::Mp4,
         Format::Mov,
+        Format::Wav,
+        Format::Webp,
+        Format::Bmp,
+        Format::Gif,
+        Format::Sqlite,
     ]
     .into_iter()
     .find(|f| candidate.id == f.id(candidate.record))

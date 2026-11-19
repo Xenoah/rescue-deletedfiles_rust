@@ -431,7 +431,7 @@ pub(crate) fn inspect_image(image: &mut Image) -> Result<SourceLayout> {
     layout.regions = mbr(image, &boot, u64::from(layout.sector_size))?;
     if layout.regions.is_empty() {
         return Err(Error::Unsupported(
-            "no supported volume or partition table; select carving for raw PNG search".into(),
+            "no supported volume or partition table; select carving to search raw bytes".into(),
         ));
     }
     Ok(layout)

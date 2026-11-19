@@ -1220,7 +1220,7 @@ impl App {
                 ui.horizontal_wrapped(|ui| {
                     ui.label(tr!("検索方式", "Search method"));
                     ui.selectable_value(&mut self.carve, false, tr!("管理情報 / Quick", "Metadata / Quick"));
-                    ui.selectable_value(&mut self.carve, true, tr!("写真・文書・動画 / Carving", "Photos, documents and videos / Carving"));
+                    ui.selectable_value(&mut self.carve, true, tr!("ファイル構造 / Carving", "File structures / Carving"));
                 });
                 checked_text_row(ui, tr!("探す拡張子", "File extensions to find"), &mut self.extensions, tr!("空欄: すべて / 例: jpg, pdf, docx, zip", "Blank: all / Example: jpg, pdf, docx, zip"), error(Field::Extensions).as_deref());
                 if self.carve {
@@ -1230,7 +1230,7 @@ impl App {
                         ui.selectable_value(&mut self.carve_all,true,tr!("全領域", "All regions"));
                     });
                     ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
-                    ui.label(tr!("PNG/JPEG、PDF、ZIP/Office、MP4/MOVを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。", "Find PNG/JPEG, PDF, ZIP/Office and MP4/MOV. Validate structure, CRC or references as appropriate. Original names and deletion status are unknown."));
+                    ui.label(tr!("PNG/JPEG/GIF/BMP/WebP、PDF、ZIP/Office、MP4/MOV、WAV、SQLiteを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。", "Find PNG/JPEG/GIF/BMP/WebP, PDF, ZIP/Office, MP4/MOV, WAV and SQLite. Validate structure, CRC or references as appropriate. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
                 } else {
@@ -2100,6 +2100,7 @@ impl App {
                     rescue_core::ExtentEvidence::JpegValidated => tr!("JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。", "JPEG structure, compressed-data completeness and pixels verified. Equality with the original content is unknown."),
                     rescue_core::ExtentEvidence::PdfStructure => tr!("PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。", "PDF reference tables, page tree and stream bounds verified. Rendering and whitespace after the terminator are unverified."),
                     rescue_core::ExtentEvidence::ZipCrcValidated => tr!("ZIPの管理情報・展開長・全エントリーCRCを検証。Officeの表示内容は未確認です。", "ZIP metadata, expanded lengths and every entry CRC verified. Office rendering is unverified."),
+                    rescue_core::ExtentEvidence::FileStructure => tr!("形式の構造からファイルの範囲を確認。内容の完全性は未確認です。", "The file structure establishes its extent. Payload integrity is unverified."),
                     rescue_core::ExtentEvidence::MediaStructure => tr!("動画のコンテナー・サンプル位置を検証。映像・音声の全フレーム復号は未実施です。", "Media container and sample locations verified. Full video and audio decoding has not been performed."),
                     rescue_core::ExtentEvidence::Unknown => tr!("配置と形式の検証は未完了です。候補の警告を確認してください。", "Extent and format verification is incomplete. Check the candidate warnings."),
                     _ => tr!("管理情報から配置を取得。形式の内容検証は未実施。", "Extents come from metadata. File-format content has not been validated."),

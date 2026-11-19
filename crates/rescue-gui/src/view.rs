@@ -102,7 +102,8 @@ pub fn extent_label(evidence: rescue_core::ExtentEvidence) -> &'static str {
             "連続配置を示すexFAT管理情報",
             "exFAT metadata declares a contiguous extent"
         ),
-        PngValidated | JpegValidated | PdfStructure | ZipCrcValidated | MediaStructure => tr!(
+        PngValidated | JpegValidated | PdfStructure | ZipCrcValidated | MediaStructure
+        | FileStructure => tr!(
             "形式の構造を検証・元の内容との一致は未確認",
             "Format structure checked; original content unverified"
         ),

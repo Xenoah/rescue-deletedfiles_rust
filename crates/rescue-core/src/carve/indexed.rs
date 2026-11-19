@@ -281,29 +281,6 @@ pub(crate) fn resume(
     notify(&path, &header, committed, &mut progress);
     Ok(path)
 }
-fn detect(bytes: &[u8], extensions: &[String]) -> Option<Format> {
-    if bytes.starts_with(SIGNATURE) && Format::Png.allowed(extensions) {
-        Some(Format::Png)
-    } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
-        Some(Format::Jpeg)
-    } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
-        Some(Format::Pdf)
-    } else if (bytes.starts_with(b"PK\x03\x04")
-        || (bytes.len() >= 22 && bytes.starts_with(b"PK\x05\x06") && bytes[4..20] == [0; 16]))
-        && [Format::Zip, Format::Docx, Format::Xlsx, Format::Pptx]
-            .iter()
-            .any(|f| f.allowed(extensions))
-    {
-        Some(Format::Zip)
-    } else if bytes.len() >= 8
-        && &bytes[4..8] == b"ftyp"
-        && (Format::Mp4.allowed(extensions) || Format::Mov.allowed(extensions))
-    {
-        Some(Format::Mp4)
-    } else {
-        None
-    }
-}
 fn commit(
     writer: &mut IndexWriter,
     image: &Image,
