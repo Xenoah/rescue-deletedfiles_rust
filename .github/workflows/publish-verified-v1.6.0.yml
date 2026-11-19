@@ -1,0 +1,63 @@
+name: Publish verified Rescue v1.6.0
+on:
+  push:
+    branches: ['release/publish-v1.6.0']
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: publish-verified-v1.6.0
+  cancel-in-progress: false
+env:
+  GH_TOKEN: ${{ github.token }}
+  GH_REPO: ${{ github.repository }}
+  NATIVE_RUN: '44555450198'
+  RELEASE_COMMIT: 9b4bc50bfcffadfe1ccb3a489503061a14988334
+  RELEASE_TAG: v1.6.0
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_COMMIT }}
+      - name: Check the release candidate CI and exact commit
+        run: |
+          python - <<'PY'
+          import json, os, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', 'repos/' + os.environ['GH_REPO'] + '/' + path]))
+          run = api('actions/runs/' + os.environ['NATIVE_RUN'])
+          assert run['conclusion'] == 'success' and run['path'] == '.github/workflows/ci.yml'
+          assert run['head_branch'] == 'v1-6-release-candidate' and run['head_sha'] == os.environ['RELEASE_COMMIT']
+          jobs = api('actions/runs/' + os.environ['NATIVE_RUN'] + '/jobs?per_page=100')['jobs']
+          assert len(jobs) == 5 and all(job['conclusion'] == 'success' for job in jobs)
+          PY
+          python scripts/package.py --validate-tag "$RELEASE_TAG"
+      - uses: actions/download-artifact@v4
+        with:
+          name: verified-all-platforms
+          path: packages
+          run-id: ${{ env.NATIVE_RUN }}
+          github-token: ${{ github.token }}
+      - name: Recheck every distribution and publish the verified bytes
+        run: |
+          python - <<'PY'
+          import os, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from release_assets import package_names
+          version = os.environ['RELEASE_TAG'].removeprefix('v')
+          expected = set(package_names(version))
+          assert {p.name for p in Path('packages').iterdir()} == expected | {'SHA256SUMS.txt'}
+          assert {line.split('  ', 1)[1] for line in Path('packages/SHA256SUMS.txt').read_text().splitlines()} == expected
+          notes = Path('docs/RELEASE-' + os.environ['RELEASE_TAG'] + '.md').read_text(encoding='utf-8')
+          link = 'https://github.com/' + os.environ['GH_REPO'] + '/blob/' + os.environ['RELEASE_TAG'] + '/docs/gui-v1.6-results.json'
+          Path('notes.md').write_text(notes.replace('(gui-v1.6-results.json)', '(' + link + ')'), encoding='utf-8')
+          PY
+          (cd packages && sha256sum --check SHA256SUMS.txt)
+          git -c user.name=github-actions -c user.email=41898282+github-actions[bot]@users.noreply.github.com tag -a "$RELEASE_TAG" "$RELEASE_COMMIT" -m "Rescue $RELEASE_TAG"
+          git push origin "refs/tags/$RELEASE_TAG"
+          gh release create "$RELEASE_TAG" packages/* --verify-tag --prerelease --latest=false --title "Rescue $RELEASE_TAG" --notes-file notes.md
+      - name: Start the public download verification on all four platforms
+        run: gh workflow run published-packages.yml --ref "$RELEASE_TAG" -f release_tag="$RELEASE_TAG" -f native_run_id="$NATIVE_RUN"
