@@ -1,0 +1,14 @@
+name: Verify reference snapshot with Apple's APFS reader
+on:
+  push:
+    branches: [testing/apple-snapshot-read]
+permissions:
+  contents: read
+jobs:
+  apple:
+    runs-on: macos-26-intel
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mount the current APFS volume and the existing snapshot read-only
+        run: python3 scripts/apfs_native_reader.py
