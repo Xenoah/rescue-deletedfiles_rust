@@ -119,8 +119,10 @@ pub(crate) fn resume(
         }
         let start = saved.next;
         let count = WINDOW.min(saved.end - start);
-        let (buffer, gaps) =
-            image.read_available(start, (count + 21).min(saved.end - start) as usize)?;
+        let (buffer, gaps) = image.read_available(
+            start,
+            (count + SIGNATURE_LOOKAHEAD).min(saved.end - start) as usize,
+        )?;
         saved.missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let at = start + index as u64;
@@ -146,7 +148,9 @@ pub(crate) fn resume(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if matches!(format, Format::Zip | Format::Xml) && saved.internal_headers.remove(&at) {
+            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
+                && saved.internal_headers.remove(&at)
+            {
                 continue;
             }
             saved.next = at;

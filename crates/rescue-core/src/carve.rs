@@ -16,6 +16,7 @@ pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
 mod movie;
+mod mp3;
 mod pdf;
 mod png;
 mod xml;
@@ -33,6 +34,8 @@ use uuid::Uuid;
 
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
+// A tagless MP3 signature may end 42 bytes after the start of a stereo frame.
+const SIGNATURE_LOOKAHEAD: u64 = 41;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
 const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
@@ -62,6 +65,7 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
@@ -129,6 +133,7 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Mp3,
     Xml,
     Rtf,
     Pdf,
@@ -163,6 +168,7 @@ impl<'a> Format<'a> {
             Self::Png => "png",
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
+            Self::Mp3 => "mp3",
             Self::Xml => "xml",
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
@@ -221,7 +227,8 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Xml
+            Self::Mp3
+            | Self::Xml
             | Self::Rtf
             | Self::Ico
             | Self::Cur
@@ -272,9 +279,13 @@ impl<'a> Format<'a> {
                 let end = compressed::parse(self, &mut input)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
-            Self::Xml => {
+            Self::Xml | Self::Mp3 => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
-                let (end, internal) = xml::parse(&mut input)?;
+                let (end, internal) = if self == Self::Xml {
+                    xml::parse(&mut input)?
+                } else {
+                    mp3::parse(&mut input)?
+                };
                 Ok((self, input.finish(end)?, internal))
             }
             Self::Rtf => {
@@ -342,6 +353,11 @@ fn detect<'a>(
         && Format::Xml.allowed(extensions)
     {
         Some(Format::Xml)
+    } else if matches!(bytes.first(), Some(0xff | b'I'))
+        && mp3::signature(bytes)
+        && Format::Mp3.allowed(extensions)
+    {
+        Some(Format::Mp3)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -376,6 +392,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Mp3 => &[
+            "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
         ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
@@ -460,7 +479,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/XML/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut internal_headers = std::collections::BTreeSet::new();
@@ -474,8 +493,10 @@ pub(crate) fn scan_range(
             break;
         }
         let count = WINDOW.min(boundary - offset);
-        let (buffer, gaps) =
-            image.read_available(offset, (count + 21).min(boundary - offset) as usize)?;
+        let (buffer, gaps) = image.read_available(
+            offset,
+            (count + SIGNATURE_LOOKAHEAD).min(boundary - offset) as usize,
+        )?;
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
@@ -495,7 +516,7 @@ pub(crate) fn scan_range(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if matches!(format, Format::Zip | Format::Xml)
+            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
                 && internal_headers.remove(&(offset + index as u64))
             {
                 continue;
@@ -637,6 +658,7 @@ pub(crate) fn recovery_data(
         Format::Apng,
         Format::Jpeg,
         Format::Pdf,
+        Format::Mp3,
         Format::Xml,
         Format::Rtf,
         Format::Zip,

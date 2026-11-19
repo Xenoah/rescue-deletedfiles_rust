@@ -1,0 +1,32 @@
+{
+  "stereo-cbr": {
+    "rate": 44100,
+    "channels": 2,
+    "decoded_samples": 9702,
+    "sha256": "7b19efa5d2e03742c20d55fada073af7fd203afd485f9159996226af42bccaa7"
+  },
+  "stereo-vbr": {
+    "rate": 48000,
+    "channels": 2,
+    "decoded_samples": 10560,
+    "sha256": "b4741b0d77ef01fa45481f83acd7994154d959ee11624264793496cce27df67e"
+  },
+  "mono-vbr": {
+    "rate": 32000,
+    "channels": 1,
+    "decoded_samples": 7040,
+    "sha256": "a7ad466b773b1346fa0406ce6065635e6b6d7011f01da1b96fbe54dd56a737dd"
+  },
+  "mpeg2": {
+    "rate": 22050,
+    "channels": 2,
+    "decoded_samples": 4851,
+    "sha256": "008d3827acf1ad09e99c490b9a6b9038b8135dd002d29b3088bfd58bbda15597"
+  },
+  "mpeg25": {
+    "rate": 11025,
+    "channels": 1,
+    "decoded_samples": 2426,
+    "sha256": "d02a818ea279652afe3d7957069db326eeda8f9e51707b2fc89c7158bfa8ebf8"
+  }
+}
