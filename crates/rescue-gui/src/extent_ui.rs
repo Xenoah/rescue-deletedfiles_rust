@@ -7,12 +7,110 @@ enum Mode {
     #[default]
     Layout,
     FindChunks,
+    WholeHash,
     CreateManifest,
 }
 pub(super) enum Outcome {
     File(ImportedFile),
     Manifest(FingerprintedFile),
+    WholeHash(disk_image::HashMatch),
 }
+#[derive(Clone, Default)]
+struct HashFields {
+    digest: String,
+    length: String,
+    first: String,
+    block_size: String,
+    start: String,
+    end: String,
+    work: String,
+}
+
+impl HashFields {
+    fn show(&mut self, ui: &mut egui::Ui) {
+        text_row(
+            ui,
+            tr!("原本のSHA-256", "Original SHA-256"),
+            &mut self.digest,
+            tr!("16進数64桁", "64 hexadecimal digits"),
+        );
+        ui.columns(2, |c| {
+            text_row(
+                &mut c[0],
+                tr!("原本のバイト数", "Original length in bytes"),
+                &mut self.length,
+                "",
+            );
+            text_row(
+                &mut c[1],
+                tr!("既知の先頭位置（任意）", "Known first offset (optional)"),
+                &mut self.first,
+                "",
+            );
+        });
+        ui.collapsing(
+            tr!("検索範囲と上限", "Search range and limits"),
+            |ui| {
+                ui.columns(2, |c| {
+                    text_row(
+                        &mut c[0],
+                        tr!("開始バイト", "Start byte"),
+                        &mut self.start,
+                        "0",
+                    );
+                    text_row(
+                        &mut c[1],
+                        tr!("終了バイト（含まない）", "Exclusive end byte"),
+                        &mut self.end,
+                        tr!("ディスクの末尾", "End of source"),
+                    );
+                });
+                ui.columns(2, |c| {
+                    text_row(
+                        &mut c[0],
+                        tr!("ブロックのバイト数", "Block size in bytes"),
+                        &mut self.block_size,
+                        "512",
+                    );
+                    text_row(
+                        &mut c[1],
+                        tr!("検索の上限バイト数", "Search byte budget"),
+                        &mut self.work,
+                        "536870912",
+                    );
+                });
+            },
+        );
+    }
+
+    fn request(&self) -> rescue_core::Result<disk_image::HashSearch<'_>> {
+        fn number<T: std::str::FromStr>(s: &str, name: &str) -> rescue_core::Result<Option<T>> {
+            if s.trim().is_empty() {
+                Ok(None)
+            } else {
+                s.trim().parse().map(Some).map_err(|_| {
+                    rescue_core::Error::Request(format!(
+                        "{name}: {}",
+                        tr!("整数を入力してください", "enter an unsigned integer")
+                    ))
+                })
+            }
+        }
+        Ok(disk_image::HashSearch {
+            sha256: self.digest.trim(),
+            file_bytes: number(&self.length, tr!("原本のバイト数", "Original length"))?
+                .unwrap_or(0),
+            first_offset: number(&self.first, tr!("先頭位置", "First offset"))?,
+            start: number(&self.start, tr!("開始バイト", "Start byte"))?.unwrap_or(0),
+            end: number(&self.end, tr!("終了バイト", "End byte"))?,
+            block_size: number(&self.block_size, tr!("ブロックのバイト数", "Block size"))?
+                .unwrap_or(512),
+            max_work: number(&self.work, tr!("検索の上限バイト数", "Search byte budget"))?
+                .unwrap_or(disk_image::DEFAULT_HASH_WORK),
+        })
+    }
+}
+
 #[derive(Default)]
 pub(super) struct State {
     pub open: bool,
@@ -22,6 +120,7 @@ pub(super) struct State {
     original: String,
     chunk_size: Option<u32>,
     sector_aligned: bool,
+    hash: HashFields,
     output: String,
     error: Option<Text>,
     worker: Option<thread::JoinHandle<()>>,
@@ -29,6 +128,11 @@ pub(super) struct State {
 impl State {
     pub fn show(&mut self) {
         self.mode = Mode::Layout;
+        self.error = None;
+        self.open = true;
+    }
+    pub fn show_whole_hash(&mut self) {
+        self.mode = Mode::WholeHash;
         self.error = None;
         self.open = true;
     }
@@ -48,6 +152,7 @@ impl State {
     }
     pub fn working_title(&self) -> &'static str {
         match self.mode {
+            Mode::WholeHash => tr!("SHA-256を照合中", "Searching for the original SHA-256"),
             Mode::Layout => tr!("配置表からファイルを復元中", "Recovering from the layout"),
             Mode::FindChunks => tr!(
                 "一致する断片をディスク上で検索中",
@@ -67,6 +172,12 @@ impl State {
     }
     fn ready(&self, source: &str) -> bool {
         match self.mode {
+            Mode::WholeHash => {
+                !source.trim().is_empty()
+                    && !self.output.trim().is_empty()
+                    && !self.hash.digest.trim().is_empty()
+                    && !self.hash.length.trim().is_empty()
+            }
             Mode::CreateManifest => {
                 !self.original.trim().is_empty() && !self.manifest.trim().is_empty()
             }
@@ -83,7 +194,7 @@ impl State {
         }
     }
     fn inputs(&mut self, ui: &mut egui::Ui, source: &str) {
-        if self.mode != Mode::Layout {
+        if matches!(self.mode, Mode::FindChunks | Mode::CreateManifest) {
             ui.horizontal_wrapped(|ui| {
                 ui.selectable_value(
                     &mut self.mode,
@@ -98,6 +209,11 @@ impl State {
             });
         }
         match self.mode {
+            Mode::WholeHash => {
+                ui.label(source);
+                ui.small(tr!("連続したファイルを検索します。先頭位置が分かる場合は、2つの領域に分かれたファイルも検索します。位置とサイズはすべてバイト単位です。", "Search for a contiguous file. A known first offset also enables a search for two runs. Enter all positions and sizes in bytes."));
+                self.hash.show(ui);
+            }
             Mode::Layout => {
                 ui.label(source);
                 ui.small(tr!("元ファイルのSHA-256と、ディスク先頭からのバイト位置を記したJSON配置表を選んでください。", "Choose a JSON layout containing the original SHA-256 and byte offsets from the start of this source."));
@@ -182,6 +298,11 @@ impl App {
             ui.set_width((ctx.content_rect().width() - 48.0).clamp(240.0, 620.0));
             ui.heading(if state.mode == Mode::Layout {
                 tr!("配置表からファイルを復元", "Recover a file from a layout")
+            } else if state.mode == Mode::WholeHash {
+                tr!(
+                    "原本のSHA-256でファイルを復元",
+                    "Recover by whole-file SHA-256"
+                )
             } else {
                 tr!("断片ハッシュによる復元", "File fingerprints")
             });
@@ -223,6 +344,10 @@ impl App {
         let state = &mut self.extent_recovery;
         state.error = None;
         self.status = match state.mode {
+            Mode::WholeHash => message!(
+                "原本のサイズとSHA-256に一致する領域を探しています。",
+                "Searching for the original length and SHA-256."
+            ),
             Mode::Layout => message!(
                 "配置表の領域を読み取っています。",
                 "Reading the ranges in the layout."
@@ -242,10 +367,17 @@ impl App {
         let original = PathBuf::from(&state.original);
         let output = PathBuf::from(&state.output);
         let mode = state.mode;
+        let hash = state.hash.clone();
         let alignment = if state.sector_aligned { 512 } else { 1 };
         let size = state.chunk_size.unwrap_or(4096);
         state.worker = Some(thread::spawn(move || {
             let result = match mode {
+                Mode::WholeHash => hash
+                    .request()
+                    .and_then(|request| {
+                        disk_image::recover_by_hash(&source, &output, &request, &cancel)
+                    })
+                    .map(Outcome::WholeHash),
                 Mode::Layout => disk_image::recover_extents(&source, &layout, &output, &cancel)
                     .map(Outcome::File),
                 Mode::FindChunks => disk_image::recover_fingerprinted(
@@ -266,6 +398,16 @@ impl App {
         self.stage = Stage::Settings;
         self.status_error = false;
         match result {
+            Ok(Outcome::WholeHash(result)) => {
+                self.status = message!(
+                    "{} に {} バイトを保存しました。使用した領域は {} 個です。SHA-256 {}",
+                    "Saved {} ({} bytes, {} source runs). SHA-256 {}",
+                    result.file.path.display(),
+                    result.file.bytes,
+                    result.extents.len(),
+                    result.file.sha256
+                );
+            }
             Ok(Outcome::File(file)) => {
                 self.status = message!(
                     "照合したファイルを {} に保存しました（{} バイト）。SHA-256 {}",

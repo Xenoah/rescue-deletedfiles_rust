@@ -1230,6 +1230,18 @@ impl App {
                     self.extent_recovery
                         .show_fingerprints(!self.source.trim().is_empty());
                 }
+                if ui
+                    .add_enabled(
+                        !self.source.trim().is_empty(),
+                        egui::Button::new(tr!(
+                            "原本のSHA-256でファイルを復元",
+                            "Recover by whole-file SHA-256"
+                        )),
+                    )
+                    .clicked()
+                {
+                    self.extent_recovery.show_whole_hash();
+                }
                 self.discovery_controls(ui);
                 if self.source_mode == SourceMode::Image
                     && ui
