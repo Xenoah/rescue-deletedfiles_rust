@@ -26,15 +26,6 @@ jobs:
           - os: ubuntu-22.04
             platform: linux
             arch: x64
-          - os: windows-2022
-            platform: windows
-            arch: x64
-          - os: macos-26-intel
-            platform: macos
-            arch: x64
-          - os: macos-26
-            platform: macos
-            arch: arm64
     runs-on: ${{ matrix.os }}
     steps:
       - name: Select an immutable QA tag's published release
@@ -64,7 +55,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
+          sudo apt-get install -y ffmpeg ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
       - name: Install Japanese input support for public GUI verification
         if: runner.os == 'Windows'
         shell: powershell
@@ -177,6 +168,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Verify the three previous successful public package jobs for the identical release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PYTHON'
+          import json, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh','api','repos/${{ github.repository }}/'+path]))
+          run=api('actions/runs/44613276791')
+          assert run['head_sha']=='693fb4f6b009004bbfd9b798d006c2444d806caf' and run['head_branch']=='v1.15.0' and run['name']=='Verify actual published packages'
+          jobs=api('actions/runs/44613276791/jobs')['jobs']
+          assert {j['name'] for j in jobs if j['conclusion']=='success'}=={'test (macos-26, macos, arm64)','test (macos-26-intel, macos, x64)','test (windows-2022, windows, x64)'}
+          arts=api('actions/runs/44613276791/artifacts')['artifacts']
+          assert {v['name'] for v in arts if not v['expired'] and v['name'].startswith('published-native-')}=={'published-native-macos-x64','published-native-macos-arm64','published-native-windows-x64'}
+          PYTHON
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          run-id: 44613276791
+          pattern: published-native-*
+          merge-multiple: true
+          path: evidence
       - uses: actions/download-artifact@v4
         with:
           pattern: published-native-*
