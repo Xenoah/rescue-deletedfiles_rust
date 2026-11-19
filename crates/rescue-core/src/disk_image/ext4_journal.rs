@@ -1,4 +1,5 @@
 //! Recover ext4 inode layouts from committed internal JBD2 transactions after unlink.
+mod directory;
 mod journal;
 mod volume;
 use super::extents::{Extent, guard_image_output, write_layout};
@@ -82,6 +83,7 @@ struct Historical {
     generation: u32,
     size: u64,
     runs: Vec<Run>,
+    names: Vec<Value>,
 }
 fn candidates(
     vol: &mut Volume,
@@ -92,8 +94,8 @@ fn candidates(
     let mut files = BTreeMap::new();
     // Inspect the newest inode-table copy first; an older layout cannot supersede an unsupported newer one.
     let mut seen = std::collections::BTreeSet::new();
-    for tx in history.into_iter().rev() {
-        for (target, slot) in tx.blocks {
+    for tx in history.iter().rev() {
+        for (&target, &slot) in &tx.blocks {
             let Some(numbers) = vol.inode_numbers(target) else {
                 continue;
             };
@@ -145,11 +147,13 @@ fn candidates(
                         generation,
                         size,
                         runs: extents,
+                        names: Vec::new(),
                     },
                 );
             }
         }
     }
+    directory::attach(vol, bytes, &history, &mut files, cancel)?;
     Ok(files)
 }
 
@@ -206,7 +210,7 @@ pub fn ext4_journal(req: Ext4JournalRequest, cancel: &AtomicBool) -> Result<Valu
     let mut rows = Vec::new();
     for (&ino, f) in &files {
         if req.inode.is_none_or(|n| n == ino) {
-            rows.push(json!({"inode":ino,"inode_generation":f.generation,"journal_sequence":f.sequence,"size":f.size}));
+            rows.push(json!({"inode":ino,"inode_generation":f.generation,"journal_sequence":f.sequence,"size":f.size,"historical_names":f.names}));
         }
     }
     if req.inode.is_some() && rows.is_empty() {

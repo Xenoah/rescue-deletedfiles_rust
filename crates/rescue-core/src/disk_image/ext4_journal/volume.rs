@@ -158,17 +158,31 @@ impl Volume {
         Some(u32::try_from(begin).ok()?..=u32::try_from(end).ok()?)
     }
 
-    pub fn current_inode(&mut self, ino: u32) -> Result<Vec<u8>> {
+    pub fn inode_address(&self, ino: u32) -> Option<(u64, usize)> {
         if ino == 0 || ino > self.inodes {
-            return Err(bad("inode outside filesystem"));
+            return None;
         }
         let local = ino - 1;
         let table = self.groups[(local / self.inodes_per) as usize].table;
+        let bytes = u64::from(local % self.inodes_per) * self.inode_size as u64;
+        Some((
+            table + bytes / self.block_size as u64,
+            (bytes % self.block_size as u64) as usize,
+        ))
+    }
+
+    pub fn current_inode(&mut self, ino: u32) -> Result<Vec<u8>> {
+        let (block, offset) = self
+            .inode_address(ino)
+            .ok_or_else(|| bad("inode outside filesystem"))?;
         self.image.read(
-            table * self.block_size as u64
-                + u64::from(local % self.inodes_per) * self.inode_size as u64,
+            block * self.block_size as u64 + offset as u64,
             self.inode_size,
         )
+    }
+
+    pub fn inode_seed(&self, ino: u32, inode: &[u8]) -> u32 {
+        update(update(self.seed, &ino.to_le_bytes()), &inode[100..104])
     }
 
     pub fn valid_inode(&self, ino: u32, inode: &[u8]) -> bool {
@@ -176,7 +190,7 @@ impl Volume {
         if extra < 4 || extra > self.inode_size - 128 {
             return false;
         }
-        let seed = update(update(self.seed, &ino.to_le_bytes()), &inode[100..104]);
+        let seed = self.inode_seed(ino, inode);
         let crc = update(
             update(
                 update(

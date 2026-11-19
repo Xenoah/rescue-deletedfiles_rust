@@ -31,5 +31,8 @@
   "journal_descriptor_byte": 126976,
   "journal_inode_payload_byte": 135168,
   "journal_commit_byte": 139264,
-  "journal_superblock_byte": 77824
+  "journal_superblock_byte": 77824,
+  "name_descriptor_byte": 81920,
+  "name_payload_byte": 102400,
+  "name_tag_offset": 92
 }

@@ -5,13 +5,14 @@ import json
 import lzma
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import tempfile
 
 from btrfs_large_samples import samples
 from e2e import run, check
 from e2e_btrfs_extents import flip
-from e2e_btrfs_snapshots import sha
+from e2e_btrfs_snapshots import crc32c, sha
 
 GOLD = Path(__file__).resolve().parents[1]/'tests/ext4-journal-reference'
 
@@ -41,6 +42,9 @@ def verify(binary, root, independent=False):
             args = base + ['--inode', str(ids[name])]
             listed, = run(binary, *args)['candidates']
             check(listed['size'] == len(data), listed)
+            label, = listed['historical_names']
+            check(label['directory_inode']==meta['parent_inode'] and label['name']==name
+                  and bytes.fromhex(label['name_hex'])==name.encode(), label)
             for mode,options in [('known',['--sha256',expected[name]]),('metadata',['--allow-unverified-content'])]:
                 output=folder/(mode+'-'+name)
                 result=run(binary,*args,'--output',output,*options)
@@ -61,6 +65,23 @@ def verify(binary, root, independent=False):
             run(binary,*args,'--output',rejected,'--sha256',expected['log.txt'],expected=4)
             check(not rejected.exists(),field)
             flip(disk,meta[field]+delta)
+        # Preserve valid journal checksums but damage the independent directory checksum.
+        # Listing must not attribute names from that block to otherwise valid inodes.
+        with disk.open('r+b') as source:
+            source.seek(1024+104);uuid=source.read(16)
+            source.seek(meta['name_descriptor_byte']);descriptor=source.read(block)
+            source.seek(meta['name_payload_byte']);payload=source.read(block)
+            damaged=bytearray(payload);damaged[-1]^=1
+            repaired=bytearray(descriptor)
+            def jcrc(data):return crc32c(data)^0xffffffff
+            struct.pack_into('>I',repaired,meta['name_tag_offset']+12,jcrc(uuid+descriptor[8:12]+damaged))
+            repaired[-4:]=bytes(4);struct.pack_into('>I',repaired,block-4,jcrc(uuid+repaired))
+            source.seek(meta['name_descriptor_byte']);source.write(repaired)
+            source.seek(meta['name_payload_byte']);source.write(damaged);source.flush()
+            error=run(binary,*base,expected=4)
+            check('directory checksum' in str(error),error)
+            source.seek(meta['name_descriptor_byte']);source.write(descriptor)
+            source.seek(meta['name_payload_byte']);source.write(payload)
         flip(disk,1024+1020)
         run(binary,*base,expected=4)
         flip(disk,1024+1020)
