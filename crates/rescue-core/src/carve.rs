@@ -113,6 +113,7 @@ fn charge(budget: &mut u64, amount: usize) -> Result<()> {
 enum Format<'a> {
     Rule(&'a SignatureRule),
     Png,
+    Apng,
     Jpeg,
     Pdf,
     Zip,
@@ -137,6 +138,7 @@ impl<'a> Format<'a> {
         match self {
             Self::Rule(_) => "rule",
             Self::Png => "png",
+            Self::Apng => "apng",
             Self::Jpeg => "jpeg",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
@@ -179,7 +181,7 @@ impl<'a> Format<'a> {
     fn evidence(self) -> ExtentEvidence {
         match self {
             Self::Rule(_) => ExtentEvidence::SignatureRule,
-            Self::Png => ExtentEvidence::PngValidated,
+            Self::Png | Self::Apng => ExtentEvidence::PngValidated,
             Self::Jpeg => ExtentEvidence::JpegValidated,
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
@@ -207,6 +209,7 @@ impl<'a> Format<'a> {
                 ext == "*"
                     || match self {
                         Self::Png => ext == "png",
+                        Self::Apng => matches!(ext.as_str(), "apng" | "png"),
                         Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
                         other => ext == other.extension(),
                     }
@@ -238,9 +241,8 @@ impl<'a> Format<'a> {
             Self::Rule(rule) => rule
                 .extract(image, at, cancel, budget, boundary)
                 .map(|b| (self, b, Vec::new())),
-            Self::Png => {
-                png::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
-            }
+            Self::Png | Self::Apng => png::validate(image, at, cancel, budget, boundary)
+                .map(|(format, b)| (format, b, Vec::new())),
             Self::Jpeg => {
                 jpeg::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
             }
@@ -267,8 +269,10 @@ fn detect<'a>(
             .then_some(Format::Rule(rule))
             .filter(|format| format.allowed(extensions));
     }
-    if bytes.starts_with(SIGNATURE) && Format::Png.allowed(extensions) {
-        Some(Format::Png)
+    if bytes.starts_with(SIGNATURE) {
+        [Format::Png, Format::Apng]
+            .into_iter()
+            .find(|f| f.allowed(extensions))
     } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
         Some(Format::Jpeg)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
@@ -368,7 +372,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut zip_records = std::collections::BTreeSet::new();
@@ -540,6 +544,7 @@ pub(crate) fn recovery_data(
 ) -> Result<RecoveryData> {
     let format = [
         Format::Png,
+        Format::Apng,
         Format::Jpeg,
         Format::Pdf,
         Format::Zip,
