@@ -1,0 +1,324 @@
+{
+  "12": {
+    "NOTE.TXT": {
+      "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+      "runs": 9,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 512,
+      "offsets": [
+        16896,
+        17920,
+        18944,
+        19968,
+        20992,
+        22016,
+        23040,
+        24064,
+        25088
+      ]
+    },
+    "DATA.CSV": {
+      "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+      "runs": 4,
+      "run_blocks": 2,
+      "stride_blocks": 4,
+      "cluster_bytes": 512,
+      "offsets": [
+        26112,
+        28160,
+        30208,
+        32256
+      ]
+    },
+    "PAGE.HTM": {
+      "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+      "runs": 8,
+      "run_blocks": 1,
+      "stride_blocks": 4,
+      "cluster_bytes": 512,
+      "offsets": [
+        33792,
+        35840,
+        37888,
+        39936,
+        41984,
+        44032,
+        46080,
+        48128
+      ]
+    },
+    "SONG.WAV": {
+      "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+      "runs": 3,
+      "run_blocks": 2,
+      "stride_blocks": 3,
+      "cluster_bytes": 512,
+      "offsets": [
+        50176,
+        51712,
+        53248
+      ]
+    },
+    "FILES.ZIP": {
+      "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+      "runs": 9,
+      "run_blocks": 1,
+      "stride_blocks": 3,
+      "cluster_bytes": 512,
+      "offsets": [
+        54784,
+        56320,
+        57856,
+        59392,
+        60928,
+        62464,
+        64000,
+        65536,
+        67072
+      ]
+    },
+    "VENDOR.BIN": {
+      "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+      "runs": 6,
+      "run_blocks": 2,
+      "stride_blocks": 5,
+      "cluster_bytes": 512,
+      "offsets": [
+        68608,
+        71168,
+        73728,
+        76288,
+        78848,
+        81408
+      ]
+    },
+    "DUP.DAT": {
+      "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+      "runs": 10,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 512,
+      "offsets": [
+        83968,
+        84992,
+        86016,
+        87040,
+        88064,
+        89088,
+        90112,
+        91136,
+        92160,
+        93184
+      ]
+    }
+  },
+  "16": {
+    "NOTE.TXT": {
+      "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+      "runs": 5,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 1024,
+      "offsets": [
+        147968,
+        150016,
+        152064,
+        154112,
+        156160
+      ]
+    },
+    "DATA.CSV": {
+      "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+      "runs": 4,
+      "run_blocks": 1,
+      "stride_blocks": 3,
+      "cluster_bytes": 1024,
+      "offsets": [
+        158208,
+        161280,
+        164352,
+        167424
+      ]
+    },
+    "PAGE.HTM": {
+      "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+      "runs": 4,
+      "run_blocks": 1,
+      "stride_blocks": 4,
+      "cluster_bytes": 1024,
+      "offsets": [
+        170496,
+        174592,
+        178688,
+        182784
+      ]
+    },
+    "SONG.WAV": {
+      "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+      "runs": 3,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 1024,
+      "offsets": [
+        186880,
+        188928,
+        190976
+      ]
+    },
+    "FILES.ZIP": {
+      "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+      "runs": 5,
+      "run_blocks": 1,
+      "stride_blocks": 3,
+      "cluster_bytes": 1024,
+      "offsets": [
+        193024,
+        196096,
+        199168,
+        202240,
+        205312
+      ]
+    },
+    "VENDOR.BIN": {
+      "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+      "runs": 3,
+      "run_blocks": 2,
+      "stride_blocks": 5,
+      "cluster_bytes": 1024,
+      "offsets": [
+        208384,
+        213504,
+        218624
+      ]
+    },
+    "DUP.DAT": {
+      "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+      "runs": 5,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 1024,
+      "offsets": [
+        223744,
+        225792,
+        227840,
+        229888,
+        231936
+      ]
+    }
+  },
+  "32": {
+    "NOTE.TXT": {
+      "sha256": "b46fd62a288a578cb9a3d8f212959acdaa0e8e2c2d59e3476187a0f27d7f0270",
+      "runs": 9,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 512,
+      "offsets": [
+        667648,
+        668672,
+        669696,
+        670720,
+        671744,
+        672768,
+        673792,
+        674816,
+        675840
+      ]
+    },
+    "DATA.CSV": {
+      "sha256": "cccb62d49c0d7bd169345e6c0bc5a3ca41ee7e65289a0691871a123cd5c473e6",
+      "runs": 4,
+      "run_blocks": 2,
+      "stride_blocks": 4,
+      "cluster_bytes": 512,
+      "offsets": [
+        676864,
+        678912,
+        680960,
+        683008
+      ]
+    },
+    "PAGE.HTM": {
+      "sha256": "6d99ecd13baef0dfb982ea9aee29bcb0f3bfc47a5e8dc85e2c74573a3acd2b22",
+      "runs": 8,
+      "run_blocks": 1,
+      "stride_blocks": 4,
+      "cluster_bytes": 512,
+      "offsets": [
+        684544,
+        686592,
+        688640,
+        690688,
+        692736,
+        694784,
+        696832,
+        698880
+      ]
+    },
+    "SONG.WAV": {
+      "sha256": "0274f9049277d1df8f45f64f948816954254377a2a901a4f4a8968133b471a4a",
+      "runs": 3,
+      "run_blocks": 2,
+      "stride_blocks": 3,
+      "cluster_bytes": 512,
+      "offsets": [
+        700928,
+        702464,
+        704000
+      ]
+    },
+    "FILES.ZIP": {
+      "sha256": "80182053394c013081124a8530a16f3a07905575f5c0a5c36ff204a8162712c7",
+      "runs": 9,
+      "run_blocks": 1,
+      "stride_blocks": 3,
+      "cluster_bytes": 512,
+      "offsets": [
+        705536,
+        707072,
+        708608,
+        710144,
+        711680,
+        713216,
+        714752,
+        716288,
+        717824
+      ]
+    },
+    "VENDOR.BIN": {
+      "sha256": "14370b55037df88fd198357dc5c727d38917f938b42522846d63ff35c6c68555",
+      "runs": 6,
+      "run_blocks": 2,
+      "stride_blocks": 5,
+      "cluster_bytes": 512,
+      "offsets": [
+        719360,
+        721920,
+        724480,
+        727040,
+        729600,
+        732160
+      ]
+    },
+    "DUP.DAT": {
+      "sha256": "bc7ddb3649d0bcc7cae1392f86f134fcabefc8d11e546af168edec0c61e34e99",
+      "runs": 10,
+      "run_blocks": 1,
+      "stride_blocks": 2,
+      "cluster_bytes": 512,
+      "offsets": [
+        734720,
+        735744,
+        736768,
+        737792,
+        738816,
+        739840,
+        740864,
+        741888,
+        742912,
+        743936
+      ]
+    }
+  }
+}

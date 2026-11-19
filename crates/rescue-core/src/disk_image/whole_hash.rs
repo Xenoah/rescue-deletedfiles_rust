@@ -1,4 +1,5 @@
 //! Find byte-exact copies when only the original size and whole-file digest survive.
+mod stride;
 use super::{
     ImportedFile,
     extents::{Extent, Layout, guard_image_output, restore_layout},
@@ -11,6 +12,7 @@ use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
+pub use stride::{MatchedStride, StrideSearch, StrideSpacing};
 
 pub const DEFAULT_HASH_WORK: u64 = 512 << 20;
 const MAX_CANDIDATES: u64 = 1_000_000;
@@ -35,6 +37,8 @@ pub struct HashMatch {
     pub candidates_tried: u64,
     pub search_bytes: u64,
     pub reads_with_gaps: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub matched_stride: Option<MatchedStride>,
 }
 
 #[derive(Clone, Copy, Serialize)]
@@ -83,13 +87,18 @@ impl Search<'_> {
         Ok(true)
     }
 
-    fn matches(&mut self, prefix: &Sha256, tail: HashExtent) -> Result<bool> {
+    fn start_candidate(&mut self) -> Result<()> {
         if self.candidates >= MAX_CANDIDATES {
             return Err(Error::Limit(format!(
                 "SHA-256 search candidate limit ({MAX_CANDIDATES}) exhausted"
             )));
         }
         self.candidates += 1;
+        Ok(())
+    }
+
+    fn matches(&mut self, prefix: &Sha256, tail: HashExtent) -> Result<bool> {
+        self.start_candidate()?;
         let mut digest = prefix.clone();
         Ok(self.append(&mut digest, tail)? && <[u8; 32]>::from(digest.finalize()) == self.target)
     }
@@ -155,10 +164,14 @@ impl Search<'_> {
                 split += step;
             }
         }
-        Err(Error::Invalid(format!(
+        Err(self.no_match())
+    }
+
+    fn no_match(&self) -> Error {
+        Error::Invalid(format!(
             "no whole-file SHA-256 match in the selected layouts: {} candidates tried, {} reads intersected missing ranges",
             self.candidates, self.gaps
-        )))
+        ))
     }
 }
 
@@ -166,6 +179,27 @@ pub fn recover_by_hash(
     source: &Path,
     output: &Path,
     req: &HashSearch<'_>,
+    cancel: &AtomicBool,
+) -> Result<HashMatch> {
+    search_and_restore(source, output, req, None, cancel)
+}
+
+/// Search only the requested regularly spaced layouts; every output is independently re-read and hashed.
+pub fn recover_by_stride(
+    source: &Path,
+    output: &Path,
+    req: &HashSearch<'_>,
+    stride: StrideSearch,
+    cancel: &AtomicBool,
+) -> Result<HashMatch> {
+    search_and_restore(source, output, req, Some(stride), cancel)
+}
+
+fn search_and_restore(
+    source: &Path,
+    output: &Path,
+    req: &HashSearch<'_>,
+    stride: Option<StrideSearch>,
     cancel: &AtomicBool,
 ) -> Result<HashMatch> {
     let target = strong(req.sha256)?;
@@ -216,7 +250,12 @@ pub fn recover_by_hash(
         candidates: 0,
         gaps: 0,
     };
-    let extents = search.find(req, end)?;
+    let (extents, matched_stride) = if let Some(pattern) = stride {
+        let (found, matched) = search.find_strided(req, end, pattern)?;
+        (found, Some(matched))
+    } else {
+        (search.find(req, end)?, None)
+    };
     let layout = Layout {
         schema_version: 1,
         sha256: req.sha256.to_owned(),
@@ -236,5 +275,6 @@ pub fn recover_by_hash(
         candidates_tried: search.candidates,
         search_bytes: search.bytes,
         reads_with_gaps: search.gaps,
+        matched_stride,
     })
 }

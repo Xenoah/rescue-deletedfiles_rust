@@ -236,6 +236,15 @@ struct RecoverByHashArgs {
     /// Known first byte offset. Also searches two non-overlapping runs when supplied.
     #[arg(long)]
     first_offset: Option<u64>,
+    /// Signed distance in blocks between successive runs. Negative values read toward the disk start.
+    #[arg(long, allow_hyphen_values = true, conflicts_with = "max_stride_blocks")]
+    stride_blocks: Option<i32>,
+    /// Try both directions up to this distance (at most 256 blocks). Requires a known first offset.
+    #[arg(long, requires = "first_offset")]
+    max_stride_blocks: Option<u32>,
+    /// Contiguous blocks per regularly spaced run, default 1.
+    #[arg(long)]
+    run_blocks: Option<u32>,
     /// Logical search byte budget, excluding the final verified copy.
     #[arg(long, default_value_t = rescue_core::disk_image::DEFAULT_HASH_WORK)]
     max_work: u64,
@@ -583,12 +592,32 @@ fn run(cli: Cli) -> Result<i32, Error> {
                 first_offset: args.first_offset,
                 max_work: args.max_work,
             };
-            let report = rescue_core::disk_image::recover_by_hash(
-                &args.source,
-                &args.output,
-                &request,
-                &cancel,
-            )?;
+            use rescue_core::disk_image::{
+                StrideSearch, StrideSpacing, recover_by_hash, recover_by_stride,
+            };
+            let spacing = args
+                .stride_blocks
+                .map(StrideSpacing::Fixed)
+                .or_else(|| args.max_stride_blocks.map(StrideSpacing::UpTo));
+            let report = if let Some(spacing) = spacing {
+                recover_by_stride(
+                    &args.source,
+                    &args.output,
+                    &request,
+                    StrideSearch {
+                        run_blocks: args.run_blocks.unwrap_or(1),
+                        spacing,
+                    },
+                    &cancel,
+                )?
+            } else {
+                if args.run_blocks.is_some() {
+                    return Err(Error::Request(
+                        "--run-blocks requires --stride-blocks or --max-stride-blocks".into(),
+                    ));
+                }
+                recover_by_hash(&args.source, &args.output, &request, &cancel)?
+            };
             print(json!(report), args.json);
             Ok(0)
         }

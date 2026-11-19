@@ -14,7 +14,10 @@ mod fingerprint;
 pub use extents::recover_extents;
 pub use fingerprint::{FingerprintedFile, MatchedFile, fingerprint_file, recover_fingerprinted};
 mod whole_hash;
-pub use whole_hash::{DEFAULT_HASH_WORK, HashExtent, HashMatch, HashSearch, recover_by_hash};
+pub use whole_hash::{
+    DEFAULT_HASH_WORK, HashExtent, HashMatch, HashSearch, MatchedStride, StrideSearch,
+    StrideSpacing, recover_by_hash, recover_by_stride,
+};
 mod udif;
 mod virtual_image;
 use crate::{Error, Result};
