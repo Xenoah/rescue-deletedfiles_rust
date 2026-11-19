@@ -20,6 +20,10 @@ ruzstd = "0.9.1"
 lz4_flex = "0.14.2"
 bzip2 = "0.6.1"
 lzma-rust2 = {version = "0.25.0", default-features = false, features = ["std", "xz", "lzip"]}
+claxon = "0.4.3"
+md-5 = "0.10"
+tiff = "0.11.3"
+roxmltree = { version = "0.21.2", default-features = false, features = ["std"] }
 quick-xml = "0.41.0"
 zune-core = "0.5.3"
 zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }

@@ -18,6 +18,11 @@ from e2e_virtual_images import verify as virtual_images
 from e2e_qcow2 import verify as qcow2
 from e2e_apng import verify as animations
 from e2e_icons import verify as icons
+from e2e_rtf import verify as rtf_documents
+from e2e_xml import verify as xml_documents
+from e2e_mp3 import verify as mp3_audio
+from e2e_flac import verify as flac_audio
+from e2e_tiff import verify as tiff_images
 from e2e_archive_streams import verify as archive_streams
 from e2e_frame_archives import verify as frame_archives, golden_frames
 from e2e_apple_partitions import verify as apple_partitions
@@ -142,6 +147,13 @@ def main():
         if a.platform == 'linux':
             with tempfile.TemporaryDirectory() as tmp:
                 result['forensic_images'] = forensic_images(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 7, 0):
+        types = [('rtf', rtf_documents), ('xml', xml_documents), ('mp3', mp3_audio),
+                 ('flac', flac_audio), ('tif', tiff_images)]
+        result['media_document_verification'] = {}
+        for family, test in types:
+            with tempfile.TemporaryDirectory() as tmp:
+                result['media_document_verification'][family] = test(binary, Path(tmp))
     disks(binary,(a.output/'native-disk-proof').resolve(),True)
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())

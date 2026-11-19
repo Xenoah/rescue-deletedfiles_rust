@@ -17,7 +17,8 @@ struct Checkpoint {
     next: u64,
     attempts: u64,
     validation_budget: u64,
-    zip_records: BTreeSet<u64>,
+    #[serde(rename = "zip_records")] // Preserve existing indexed checkpoints.
+    internal_headers: BTreeSet<u64>,
     missing: bool,
 }
 pub(crate) fn scan(
@@ -53,7 +54,7 @@ pub(crate) fn scan(
         next: settings.range_start,
         attempts: 0,
         validation_budget: VALIDATION_BUDGET,
-        zip_records: BTreeSet::new(),
+        internal_headers: BTreeSet::new(),
         missing: false,
     };
     let writer = IndexWriter::create(work, &header, "carve_signatures_v1", &checkpoint)?;
@@ -86,9 +87,9 @@ pub(crate) fn resume(
         || saved.options.max_candidates > 10_000_000
         || saved.attempts > saved.options.max_records
         || saved.validation_budget > VALIDATION_BUDGET
-        || saved.zip_records.len() > 1_048_576
+        || saved.internal_headers.len() > 1_048_576
         || saved
-            .zip_records
+            .internal_headers
             .iter()
             .any(|n| *n < saved.next || *n >= saved.end)
         || settings.method != crate::ScanMethod::Carve
@@ -118,8 +119,10 @@ pub(crate) fn resume(
         }
         let start = saved.next;
         let count = WINDOW.min(saved.end - start);
-        let (buffer, gaps) =
-            image.read_available(start, (count + 21).min(saved.end - start) as usize)?;
+        let (buffer, gaps) = image.read_available(
+            start,
+            (count + SIGNATURE_LOOKAHEAD).min(saved.end - start) as usize,
+        )?;
         saved.missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let at = start + index as u64;
@@ -145,7 +148,9 @@ pub(crate) fn resume(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if format == Format::Zip && saved.zip_records.remove(&at) {
+            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
+                && saved.internal_headers.remove(&at)
+            {
                 continue;
             }
             saved.next = at;
@@ -206,10 +211,10 @@ pub(crate) fn resume(
                     candidate.record_sha256 = format!("{:x}", Sha256::digest(&bytes));
                     candidate.extent_evidence = found.evidence();
                     for record in records.into_iter().filter(|r| *r > 0) {
-                        if saved.zip_records.len() >= 1_048_576 {
+                        if saved.internal_headers.len() >= 1_048_576 {
                             limited = true;
                             header.warnings.push(
-                                "ZIP local-record index limit; remaining source was not scanned"
+                                "Internal signature index limit; remaining source was not scanned"
                                     .into(),
                             );
                             break;
@@ -218,9 +223,9 @@ pub(crate) fn resume(
                             .checked_add(record as u64)
                             .filter(|r| *r < saved.end)
                             .ok_or_else(|| {
-                                Error::Invalid("ZIP record outside selected range".into())
+                                Error::Invalid("Internal signature outside selected range".into())
                             })?;
-                        saved.zip_records.insert(address);
+                        saved.internal_headers.insert(address);
                     }
                 }
                 Err(Error::Cancelled) => {

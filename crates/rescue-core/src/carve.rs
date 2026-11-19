@@ -4,19 +4,24 @@ mod compressed;
 mod container;
 mod ebml;
 mod extra;
+mod flac;
 mod frame_archive;
 mod icon;
 mod indexed;
+mod rtf;
 mod rule;
 mod scope;
 mod streams;
+mod tiff;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
 mod movie;
+mod mp3;
 mod pdf;
 mod png;
+mod xml;
 mod zip;
 use crate::{
     AllocationStatus, Candidate, Error, ExtentEvidence, FileSystem, Progress, ProgressUnit,
@@ -31,6 +36,8 @@ use uuid::Uuid;
 
 const SIGNATURE: &[u8; 8] = b"\x89PNG\r\n\x1a\n";
 const WINDOW: u64 = 1024 * 1024;
+// A tagless MP3 signature may end 42 bytes after the start of a stereo frame.
+const SIGNATURE_LOOKAHEAD: u64 = 41;
 const VALIDATION_BUDGET: u64 = 4 * 1024 * 1024 * 1024;
 const PROVENANCE: &str = "Contiguous carving: original name, path and deletion status are unknown. Allocation status describes the current allocation map only; it does not prove deletion or original content. Live files and embedded images may also be found.";
 
@@ -60,6 +67,11 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "tif" | "tiff" => Some(Format::Tiff),
+        "flac" => Some(Format::Flac),
+        "mp3" => Some(Format::Mp3),
+        "xml" => Some(Format::Xml),
+        "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
         "wav" => Some(Format::Wav),
@@ -125,6 +137,11 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Tiff,
+    Flac,
+    Mp3,
+    Xml,
+    Rtf,
     Pdf,
     Zip,
     Docx,
@@ -157,6 +174,11 @@ impl<'a> Format<'a> {
             Self::Png => "png",
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
+            Self::Tiff => "tif",
+            Self::Flac => "flac",
+            Self::Mp3 => "mp3",
+            Self::Xml => "xml",
+            Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
             Self::Docx => "docx",
@@ -213,7 +235,12 @@ impl<'a> Format<'a> {
             Self::Pdf => ExtentEvidence::PdfStructure,
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
-            Self::Ico
+            Self::Tiff
+            | Self::Flac
+            | Self::Mp3
+            | Self::Xml
+            | Self::Rtf
+            | Self::Ico
             | Self::Cur
             | Self::Avi
             | Self::Mkv
@@ -237,6 +264,7 @@ impl<'a> Format<'a> {
                     .to_ascii_lowercase();
                 ext == "*"
                     || match self {
+                        Self::Tiff => matches!(ext.as_str(), "tif" | "tiff"),
                         Self::Png => ext == "png",
                         Self::Apng => matches!(ext.as_str(), "apng" | "png"),
                         Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
@@ -260,6 +288,27 @@ impl<'a> Format<'a> {
             Self::Bzip | Self::Xz | Self::Lzip => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = compressed::parse(self, &mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Xml | Self::Mp3 => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, internal) = if self == Self::Xml {
+                    xml::parse(&mut input)?
+                } else {
+                    mp3::parse(&mut input)?
+                };
+                Ok((self, input.finish(end)?, internal))
+            }
+            Self::Tiff => {
+                tiff::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
+            }
+            Self::Rtf | Self::Flac => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = if self == Self::Rtf {
+                    rtf::parse(&mut input)?
+                } else {
+                    flac::parse(&mut input)?
+                };
                 Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
@@ -315,6 +364,25 @@ fn detect<'a>(
             .find(|f| f.allowed(extensions))
     } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
         Some(Format::Jpeg)
+    } else if bytes.starts_with(b"{\\rtf1") && Format::Rtf.allowed(extensions) {
+        Some(Format::Rtf)
+    } else if matches!(bytes.first(), Some(0x3c | 0xef))
+        && xml::signature(bytes)
+        && Format::Xml.allowed(extensions)
+    {
+        Some(Format::Xml)
+    } else if matches!(bytes.first(), Some(0xff | b'I'))
+        && mp3::signature(bytes)
+        && Format::Mp3.allowed(extensions)
+    {
+        Some(Format::Mp3)
+    } else if matches!(bytes.first(), Some(b'I' | b'M'))
+        && tiff::signature(bytes)
+        && Format::Tiff.allowed(extensions)
+    {
+        Some(Format::Tiff)
+    } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
+        Some(Format::Flac)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
         Some(Format::Pdf)
     } else if (bytes.starts_with(b"PK\x03\x04")
@@ -349,6 +417,21 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Tiff => &[
+            "Classic TIFF/BigTIFF through the last referenced byte. Each supported page is pixel-decoded. Private pointer tags, subsidiary IFDs and unreferenced trailing padding are excluded. Up to 256 pages and 128 MiB decoded across all pages.",
+        ],
+        Format::Flac => &[
+            "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
+        ],
+        Format::Mp3 => &[
+            "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
+        ],
+        Format::Xml => &[
+            "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
+        ],
+        Format::Rtf => &[
+            "RTF extent ends at the matching outer group. Control words, hexadecimal escapes, nested groups and counted binary payloads are checked. Document rendering and bytes after the closing brace are unverified.",
         ],
         Format::Pdf => &[
             "Classic-xref PDF: references, page tree and declared stream extents validated. Encrypted/xref-stream PDFs are unsupported. Stream codecs, scripts and page rendering are not executed. EOF-based extent is an estimate; trailing padding cannot be established.",
@@ -427,10 +510,10 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
-    let mut zip_records = std::collections::BTreeSet::new();
+    let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
     let mut budget = VALIDATION_BUDGET;
@@ -441,8 +524,10 @@ pub(crate) fn scan_range(
             break;
         }
         let count = WINDOW.min(boundary - offset);
-        let (buffer, gaps) =
-            image.read_available(offset, (count + 21).min(boundary - offset) as usize)?;
+        let (buffer, gaps) = image.read_available(
+            offset,
+            (count + SIGNATURE_LOOKAHEAD).min(boundary - offset) as usize,
+        )?;
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
@@ -462,7 +547,9 @@ pub(crate) fn scan_range(
             if allocation == AllocationStatus::Conflict {
                 continue;
             }
-            if format == Format::Zip && zip_records.remove(&(offset + index as u64)) {
+            if matches!(format, Format::Zip | Format::Xml | Format::Mp3)
+                && internal_headers.remove(&(offset + index as u64))
+            {
                 continue;
             }
             if cancel.load(Ordering::Relaxed) {
@@ -520,15 +607,15 @@ pub(crate) fn scan_range(
                             .map(|s| s.to_string()),
                     );
                     for record in records.into_iter().filter(|r| *r > 0) {
-                        if zip_records.len() >= 1_048_576 {
+                        if internal_headers.len() >= 1_048_576 {
                             session.truncated = true;
                             session.warnings.push(
-                                "ZIP local-record index limit; remaining source was not scanned"
+                                "Internal signature index limit; remaining source was not scanned"
                                     .into(),
                             );
                             break;
                         }
-                        zip_records.insert(at + record as u64);
+                        internal_headers.insert(at + record as u64);
                     }
                     candidate.size = Some(bytes.len() as u64);
                     candidate.supported = true;
@@ -602,6 +689,11 @@ pub(crate) fn recovery_data(
         Format::Apng,
         Format::Jpeg,
         Format::Pdf,
+        Format::Tiff,
+        Format::Flac,
+        Format::Mp3,
+        Format::Xml,
+        Format::Rtf,
         Format::Zip,
         Format::Docx,
         Format::Xlsx,

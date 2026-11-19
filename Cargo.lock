@@ -763,6 +763,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
+name = "claxon"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bfbf56724aa9eca8afa4fcfadeb479e722935bb2a0900c2d37e0cc477af0688"
+
+[[package]]
 name = "clipboard-win"
 version = "5.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2047,6 +2053,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4facc753ae494aeb6e3c22f839b158aebd4f9270f55cd3c79906c45476c47ab4"
 
 [[package]]
+name = "md-5"
+version = "0.10.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d89e7ee0cfbedfc4da3340218492196241d89eefb6dab27de5df917a6d2e78cf"
+dependencies = [
+ "cfg-if",
+ "digest 0.10.7",
+]
+
+[[package]]
 name = "memchr"
 version = "2.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2825,7 +2841,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2839,18 +2855,21 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "bzip2",
  "cap-std",
+ "claxon",
  "crc32fast",
  "encoding_rs",
  "flate2",
  "libc",
  "lz4_flex",
  "lzma-rust2",
+ "md-5",
  "png",
  "quick-xml",
+ "roxmltree",
  "rusqlite",
  "ruzstd",
  "same-file",
@@ -2859,6 +2878,7 @@ dependencies = [
  "sha2 0.10.9",
  "tempfile",
  "thiserror 2.0.21",
+ "tiff",
  "uuid",
  "windows-sys 0.61.2",
  "zip",
@@ -2868,7 +2888,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2880,7 +2900,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "1.6.0"
+version = "1.7.0"
 dependencies = [
  "rescue-core",
  "serde_json",
@@ -2910,6 +2930,15 @@ dependencies = [
  "wasm-bindgen-futures",
  "web-sys",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "roxmltree"
+version = "0.21.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9da7f59328b09405b181fee1018925fad50f157afb43c0c0f5c522c256dd5907"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]

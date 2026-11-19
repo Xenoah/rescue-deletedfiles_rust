@@ -1,6 +1,7 @@
 //! Bounded read-ahead shared by document/container parsers. No parser follows URLs.
 use super::charge;
 use crate::{Error, Result, source::Image};
+use std::io::{self, BufRead, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 pub(super) const MAX_ENCODED: usize = 64 * 1024 * 1024;
@@ -85,6 +86,38 @@ impl<'a> Input<'a> {
         self.ensure(end)?;
         self.bytes.truncate(end);
         Ok(self.bytes)
+    }
+}
+
+pub(super) struct InputCursor<'a, 'b> {
+    pub input: &'a mut Input<'b>,
+    pub limit: usize,
+    pub cursor: usize,
+    pub failure: Option<Error>,
+}
+impl BufRead for InputCursor<'_, '_> {
+    fn fill_buf(&mut self) -> io::Result<&[u8]> {
+        let limit = self.input.limit().min(self.limit);
+        if self.cursor >= limit {
+            return Ok(&[]);
+        }
+        if self.cursor == self.input.bytes.len()
+            && let Err(err) = self.input.ensure(self.cursor + 1)
+        {
+            self.failure = Some(err);
+            return Err(io::Error::other("cannot read source extent"));
+        }
+        Ok(&self.input.bytes[self.cursor..self.input.bytes.len().min(limit)])
+    }
+    fn consume(&mut self, n: usize) {
+        self.cursor += n;
+    }
+}
+impl Read for InputCursor<'_, '_> {
+    fn read(&mut self, dest: &mut [u8]) -> io::Result<usize> {
+        let n = self.fill_buf()?.read(dest)?;
+        self.consume(n);
+        Ok(n)
     }
 }
 

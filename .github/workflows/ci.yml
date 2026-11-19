@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd
+          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -80,6 +80,12 @@ jobs:
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Reopen carved MP3, FLAC and TIFF with FFmpeg and ImageMagick
+        if: runner.os == 'Linux'
+        run: |
+          python scripts/ci_command.py python scripts/e2e_mp3.py --independent --binary target/${{ matrix.target }}/debug/rescue
+          python scripts/ci_command.py python scripts/e2e_flac.py --independent --binary target/${{ matrix.target }}/debug/rescue
+          python scripts/ci_command.py python scripts/e2e_tiff.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Verify independently encoded Zstandard and LZ4 frames
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_frame_archives.py --independent --binary target/${{ matrix.target }}/debug/rescue
