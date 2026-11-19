@@ -141,6 +141,8 @@ fn read_tool<T>(
     let program = executable_in_path(name).ok_or_else(|| {
         let package = if name.starts_with("ewf") {
             "libewf tools"
+        } else if name == "xorriso" {
+            "xorriso"
         } else {
             "The Sleuth Kit"
         };
@@ -291,5 +293,7 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
 }
 
 mod filesystem;
+mod iso_sessions;
 mod optical;
 pub use filesystem::{FilesystemRequest, filesystem};
+pub use iso_sessions::{IsoRequest, iso_sessions};

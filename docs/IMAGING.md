@@ -197,3 +197,15 @@ rescue scan --source data.iso --mode carve --work-dir optical-scan --json
 ```
 
 単一のMode 1またはMode 2 XA Form 1データトラックを読み取ります。2352バイトのセクターと、後ろに96バイトのサブチャンネルが付いた2448バイトのセクターに対応します。アドレスの連続性、EDC、P/Qパリティを各セクターで照合し、2048バイトのユーザーデータを取り出します。サブチャンネルは破棄します。CD-DA音声、XA Form 2、混在トラック、スクランブルされたセクター、損傷したセクターの訂正は対象外です。CUEを使う複数トラックでは、対象のデータトラックをあらかじめ切り出してください。
+
+### 追記前のISOセッションから取り出す
+
+`xorriso` が利用できる場合、標準のISO 9660またはRock Ridgeイメージのセッションを一覧にし、古いセッションにあり、現在のディレクトリでは消えている通常ファイルを復元できます。圧縮されたzisofsファイルも展開して保存します。
+
+```sh
+rescue iso-sessions --source data.iso --json
+rescue iso-sessions --source data.iso --session 1 --json
+rescue iso-sessions --source data.iso --session 1 --all --destination old-files --json
+```
+
+個別のファイルは `--all` の代わりに一覧の `--path '/Removed/example.bin'` を指定します。復元先では安全な名前を新しく付け、レポートの `original_path` に元の名前を残します。以前のセッションが残り、イメージのセッション表から読み取れることが条件です。名前変更や移動も候補になります。同じパスに現在も項目がある場合は候補から外れます。現在のセッションだけをコピーしたISOや、再利用され上書きされた媒体からは過去の内容を取り出せません。

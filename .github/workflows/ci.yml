@@ -98,6 +98,9 @@ jobs:
       - name: Restore deleted files from QEMU fixed and dynamic classic VHD
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhd.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Restore all historical file types from a multisession ISO with xorriso
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_iso_sessions.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Cross-check two-session CD-ROM data tracks with bchunk and xorriso
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_optical.py --independent --binary target/${{ matrix.target }}/debug/rescue

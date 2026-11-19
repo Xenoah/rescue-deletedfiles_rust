@@ -44,6 +44,8 @@ enum Command {
     Filesystem(sleuthkit::FilesystemArgs),
     /// List APFS snapshots and recover historical regular files whose paths have disappeared.
     Apfs(sleuthkit::ApfsArgs),
+    /// List retained ISO 9660 sessions or recover historical files through xorriso.
+    IsoSessions(sleuthkit::IsoArgs),
     /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
     /// Writes a derived PNG/text under destination; never opens a viewer.
     Preview {
@@ -518,6 +520,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
         }
         Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
+        Command::IsoSessions(request) => sleuthkit::iso_sessions(request, &cancel),
         Command::Apfs(request) => sleuthkit::apfs(request, &cancel),
         Command::ExportRaw {
             session,

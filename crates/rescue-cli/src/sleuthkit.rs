@@ -119,3 +119,36 @@ pub fn apfs(request: ApfsArgs, cancel: &AtomicBool) -> Result<i32> {
     super::print(report, request.json);
     Ok(if failed { 5 } else { 0 })
 }
+
+#[derive(Args)]
+pub struct IsoArgs {
+    /// Cooked 2048-byte-sector ISO image. Convert raw CD tracks with import-image first.
+    #[arg(long)]
+    source: PathBuf,
+    /// Historical session number to compare with the latest session.
+    #[arg(long)]
+    session: Option<u32>,
+    /// Exact historical file path from the candidate list. Repeat to select more.
+    #[arg(long = "path", requires = "destination", conflicts_with = "all")]
+    paths: Vec<String>,
+    #[arg(long, requires = "destination")]
+    all: bool,
+    #[arg(long, requires = "session")]
+    destination: Option<PathBuf>,
+    #[arg(long)]
+    json: bool,
+}
+pub fn iso_sessions(args: IsoArgs, cancel: &AtomicBool) -> Result<i32> {
+    let (result, failed) = disk_image::iso_sessions(
+        disk_image::IsoRequest {
+            source: args.source,
+            session: args.session,
+            paths: args.paths,
+            all: args.all,
+            destination: args.destination,
+        },
+        cancel,
+    )?;
+    super::print(result, args.json);
+    Ok(if failed { 5 } else { 0 })
+}
