@@ -29,10 +29,20 @@ jobs:
           from e2e_udif import apple_images
           apple_images(Path('target/x86_64-apple-darwin/debug/rescue').resolve(),Path('apple-media').resolve())
           PY
-      - name: Save encoder output for diagnosis
-        if: failure()
+      - name: Create native LZFSE and LZMA images for independent decoder validation
+        run: |
+          for codec in ULFO ULMO; do
+            hdiutil convert tests/udif/apm-fat32.dmg -format "$codec" -o "apple-media/$codec.dmg"
+            hdiutil verify "apple-media/$codec.dmg"
+            hdiutil convert "apple-media/$codec.dmg" -format UDTO -o "apple-media/$codec.cdr"
+            shasum -a 256 "apple-media/$codec.dmg" "apple-media/$codec.cdr"
+          done
+      - name: Save the independent DiskImages outputs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: apple-encoder-output
-          path: apple-media/*.dmg
-          retention-days: 2
+          path: |
+            apple-media/ULFO.dmg
+            apple-media/ULMO.dmg
+          retention-days: 3
