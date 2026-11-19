@@ -17,7 +17,9 @@ from e2e_html import make_deleted_fat
 from e2e_vhdx import CORPUS, GOLD, digest, native_import, recover, verify_guest
 
 
-def invoke(binary, first, output, *options, segments=(), expected=0, auto=False):
+def invoke(
+    binary, first, output, *options, segments=(), expected=0, auto=False, timeout=180
+):
     args = [binary, "import-image", "--source", first, "--output", output, "--json"]
     if not auto:
         args += ["--image-type", "raw"]
@@ -28,7 +30,7 @@ def invoke(binary, first, output, *options, segments=(), expected=0, auto=False)
         env=dict(os.environ, PATH=""),
         text=True,
         encoding="utf-8",
-        timeout=180,
+        timeout=timeout,
     )
     if expected is None:
         return proc.returncode
@@ -270,13 +272,78 @@ def native(binary, root):
     return proof
 
 
+def large(binary, root):
+    from e2e_vhdx_chunk import relocated_guest
+
+    boundary = 4 << 30
+    image, windows = relocated_guest(binary, root, boundary)
+    size = image.stat().st_size
+    cuts = [0, boundary + 257, size]
+    parts = []
+    for i, (a, b) in enumerate(zip(cuts, cuts[1:])):
+        part = root / f"guest.{i + 1:03}"
+        parts.append(part)
+        subprocess.run(
+            [
+                "dd",
+                "if=" + str(image),
+                "of=" + str(part),
+                "bs=4M",
+                "iflag=skip_bytes,count_bytes",
+                "skip=" + str(a),
+                "count=" + str(b - a),
+                "conv=sparse",
+                "status=none",
+            ],
+            check=True,
+        )
+    expected = digest(image)
+    out = root / "restored.raw"
+    report = invoke(
+        binary,
+        parts[0],
+        out,
+        "--raw-bytes",
+        size,
+        "--raw-sha256",
+        expected,
+        timeout=600,
+    )
+    check(
+        report["bytes"] == size and report["sha256"] == expected == digest(out), report
+    )
+    for row, part, offset in zip(report["raw"]["segments"], parts, cuts):
+        check(
+            row["offset"] == offset
+            and row["bytes"] == part.stat().st_size
+            and row["sha256"] == digest(part),
+            row,
+        )
+    subprocess.run(["cmp", "-s", image, out], check=True)
+    result = recover(binary, out, root / "recovery", windows)
+    check(result == windows["originals"], result)
+    print(
+        f"{size} logical bytes matched across a {cuts[1]}-byte first segment; recovered seven genuine Windows NTFS deletions spanning the 4 GiB boundary",
+        flush=True,
+    )
+    return dict(
+        logical_bytes=size,
+        first_segment_bytes=cuts[1],
+        logical_sha256=expected,
+        originals=result,
+    )
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
-    parser.add_argument("--native", action="store_true")
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument("--native", action="store_true")
+    modes.add_argument("--large", action="store_true")
     parser.add_argument("--evidence", type=Path)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
-        proof = (native if args.native else portable)(args.binary.resolve(), Path(tmp))
+        suite = large if args.large else native if args.native else portable
+        proof = suite(args.binary.resolve(), Path(tmp))
     if args.evidence:
         args.evidence.write_text(json.dumps(proof, indent=2) + "\n")

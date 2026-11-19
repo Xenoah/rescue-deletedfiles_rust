@@ -7,7 +7,7 @@ use std::{
     collections::{BTreeMap, HashSet},
     ffi::OsString,
     fs::{self, File},
-    io::{Read, Write},
+    io::Read,
     path::{Path, PathBuf},
     sync::atomic::{AtomicBool, Ordering},
     time::SystemTime,
@@ -209,7 +209,7 @@ pub(super) fn import(
                 }
                 let n = left.min(buf.len() as u64) as usize;
                 input.read_exact(&mut buf[..n])?;
-                out.write_all(&buf[..n])?;
+                super::write_sparse_chunk(out, &buf[..n])?;
                 logical.update(&buf[..n]);
                 part.update(&buf[..n]);
                 left -= n as u64;
@@ -230,6 +230,7 @@ pub(super) fn import(
                 "RAW SHA-256 differs from the expected digest".into(),
             ));
         }
+        out.set_len(total)?;
         Ok((total, logical))
     })?;
     result.raw = Some(RawVerification {

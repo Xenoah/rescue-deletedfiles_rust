@@ -27,7 +27,7 @@ use sha2::{Digest, Sha256};
 use std::{
     ffi::OsString,
     fs,
-    io::{self, Read, Write},
+    io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     process::{ChildStdout, Command, Stdio},
     sync::atomic::{AtomicBool, Ordering},
@@ -242,6 +242,16 @@ fn write_output(
         }
         Ok((bytes, digest))
     })
+}
+
+// Called only on the new, empty temporary output; callers set its final logical length.
+fn write_sparse_chunk(output: &mut fs::File, bytes: &[u8]) -> Result<()> {
+    if bytes.iter().all(|&b| b == 0) {
+        output.seek(SeekFrom::Current(bytes.len() as i64))?;
+    } else {
+        output.write_all(bytes)?;
+    }
+    Ok(())
 }
 
 fn publish_output(
