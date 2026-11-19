@@ -43,6 +43,11 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         assert len(run['open_documents']) == 21 and len(run['json_documents']) == 12
         assert set(run['udif_images']) == {'raw', 'zlib', 'bzip2', 'adc', 'mixed', 'data-fork-offset', 'libdmg-apm-fat32'}
         assert all(count == 7 for count in run['udif_images'].values())
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 9, 0):
+        assert set(run['compressed_disks']) == {'gz', 'bz2', 'xz', 'zst', 'lz4'}
+        assert all(n == 7 for n in run['compressed_disks'].values())
+        assert len(run['modern_udif']) == 8 and all(n == 7 for n in run['modern_udif'].values())
+        assert len(run['known_extents']) == 11
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')
