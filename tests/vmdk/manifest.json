@@ -1,0 +1,17 @@
+{
+  "sparse": {
+    "windows_guest": "fixed",
+    "creator": "QEMU",
+    "vmdk_sha256": "6f34f58061658eeb238c98900ee2b7c60c1aba0ee9e1486cb54ab8b6339e89aa",
+    "packed_sha256": "61a9fa964ef7a960e8ed650306b84ef8ec392bbc1ce3cce22b4e7fa004d9e480",
+    "guest_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0"
+  },
+  "zero-grain": {
+    "windows_guest": "expandable",
+    "creator": "QEMU",
+    "vmdk_sha256": "4815cda79851e0b3c5936ad6bddd30c3b305302c36ae0781a4fdd7f86202ee8a",
+    "packed_sha256": "b6c92a46f2b698a4cf1e6db22ffcdd27a04accebb45dce9baa7647abcdd150f4",
+    "guest_sha256": "472d06ed71972ad97d0347748a4bbff0f52ee6849ddb28696375cb849001cf0c",
+    "zero_guest_offset": 62914560
+  }
+}

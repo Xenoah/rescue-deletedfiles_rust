@@ -2,6 +2,7 @@
 mod qcow;
 mod vhd;
 mod vhdx;
+mod vmdk;
 use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
@@ -126,6 +127,7 @@ enum Disk {
     Qcow(qcow::Qcow),
     Vhd(vhd::Vhd),
     Vhdx(vhdx::Vhdx),
+    Vmdk(vmdk::Vmdk),
 }
 impl Disk {
     fn size(&self) -> u64 {
@@ -134,6 +136,7 @@ impl Disk {
             Self::Qcow(q) => q.size,
             Self::Vhd(v) => v.size,
             Self::Vhdx(v) => v.size,
+            Self::Vmdk(v) => v.size,
         }
     }
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
@@ -142,6 +145,7 @@ impl Disk {
             Self::Qcow(q) => Ok((q.block(source, offset)?, q.cluster)),
             Self::Vhd(v) => v.block(source, offset),
             Self::Vhdx(v) => Ok(v.block(offset)),
+            Self::Vmdk(v) => Ok(v.block(offset)),
         }
     }
     fn write_raw(
@@ -217,7 +221,7 @@ pub(super) fn import(
     output: &Path,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
-    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx")) {
+    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx" | "vmdk")) {
         return Ok(None);
     }
     let mut source = File::open(path)?;
@@ -233,6 +237,8 @@ pub(super) fn import(
     }
     let kind = if tail == *b"conectix" || head[..8] == *b"conectix" {
         Some("vhd")
+    } else if head[..4] == *b"KDMV" {
+        Some("vmdk")
     } else if head[..8] == *b"vhdxfile" {
         Some("vhdx")
     } else if head[..4] == *b"QFI\xfb" {
@@ -242,6 +248,15 @@ pub(super) fn import(
     } else {
         None
     };
+    if requested == Some("vmdk") && kind.is_none() {
+        return Ok(None); // Other VMDK variants can use the external driver.
+    }
+    if kind == Some("vmdk")
+        && matches!(requested, None | Some("vmdk"))
+        && le32(&head, 8) & (1 << 16) != 0
+    {
+        return Ok(None); // Compressed VMDK currently uses the external driver.
+    }
     // Historically the external VHD reader also accepted VHDX under the vhd alias.
     if requested.is_some()
         && kind != requested
@@ -250,6 +265,7 @@ pub(super) fn import(
         return Err(invalid("signature differs from requested image type"));
     }
     let mut disk = match kind {
+        Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), cancel)?),
         Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),

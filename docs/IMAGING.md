@@ -110,7 +110,13 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、VMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+
+## VMDKの内蔵読み取り
+
+`rescue import-image --source guest.vmdk --image-type vmdk --output guest.raw --json` は、クリーンな単独のmonolithicSparseを読み取ります。ディスクリプターの容量・親の有無・単一エクステントの宣言、グレインディレクトリと割り当て表の範囲を検証します。冗長な表が存在する場合は両方を比較し、同じ物理領域を複数のグレインが参照する場合は拒否します。ホスト上でイメージを改名しても読み取れます。ディスクリプター中のパスは開きません。
+
+未割り当てグレインと明示的なゼログレインはゼロとして読みます。通常のグレインにはデータのチェックサムがなく、内部の文字や画素が別の有効な値に変わった場合は、独立した原本のハッシュで照合します。差分、分割、フラット、古いCOWD形式はこの内蔵処理の対象外です。
 
 ## VHDXの内蔵読み取り
 
