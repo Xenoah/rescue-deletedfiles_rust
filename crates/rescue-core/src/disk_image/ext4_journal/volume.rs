@@ -261,43 +261,101 @@ pub(super) struct Run {
     pub unwritten: bool,
 }
 pub(super) fn runs(inode: &[u8], blocks: u64) -> Result<Vec<Run>> {
+    extent_tree(inode, blocks, 0, |_| {
+        Err(Error::Unsupported(
+            "external blocks are unavailable for this inode".into(),
+        ))
+    })
+}
+
+/// Only accept external index and leaf blocks supplied by the selected committed transaction.
+pub(super) fn extent_tree<'a>(
+    inode: &'a [u8],
+    blocks: u64,
+    seed: u32,
+    mut external: impl FnMut(u64) -> Result<&'a [u8]>,
+) -> Result<Vec<Run>> {
     let flags = le32(inode, 32);
-    if flags & 0x80000 == 0
-        || flags & (0x4 | 0x800 | 0x100000 | 0x10000000) != 0
-        || le16(inode, 40) != 0xf30a
-        || le16(inode, 46) != 0
-        || le16(inode, 44) != 4
-        || le16(inode, 42) > 4
-    {
+    let depth = le16(inode, 46);
+    if flags & 0x80000 == 0 || flags & (0x4 | 0x800 | 0x100000 | 0x10000000) != 0 || depth > 5 {
         return Err(Error::Unsupported(
-            "ext4 inode needs a resident extent root with up to four extents".into(),
+            "unsupported ext4 file layout or extent-tree depth".into(),
         ));
     }
-    let mut runs = Vec::new();
-    let mut end = 0;
-    for i in 0..usize::from(le16(inode, 42)) {
-        let at = 52 + i * 12;
-        let len = le16(inode, at + 4);
-        let unwritten = len > 0x8000;
-        let count = u64::from(if unwritten { len - 0x8000 } else { len });
-        let start = u64::from(le32(inode, at));
-        let physical = u64::from(le32(inode, at + 8)) | (u64::from(le16(inode, at + 6)) << 32);
-        if count == 0
-            || physical == 0
-            || physical.checked_add(count).is_none_or(|n| n > blocks)
-            || start < end
+    let mut output = Vec::new();
+    let mut stack = vec![(&inode[40..100], depth, 0u64, 1u64 << 32, true)];
+    let mut seen = std::collections::BTreeSet::new();
+    while let Some((node, level, min, max, root)) = stack.pop() {
+        let count = usize::from(le16(node, 2));
+        let capacity = usize::from(le16(node, 4));
+        if le16(node, 0) != 0xf30a
+            || le16(node, 6) != level
+            || capacity != (node.len() - 12) / 12
+            || count > capacity
+            || level != 0 && count == 0
         {
-            return Err(bad("invalid historical extent range"));
+            return Err(bad("invalid ext4 extent tree header"));
         }
-        end = start + count;
-        runs.push(Run {
-            start,
-            physical,
-            count,
-            unwritten,
-        });
+        if !root {
+            let tail = 12 + capacity * 12;
+            if node.len() != tail + 4 || update(seed, &node[..tail]) != le32(node, tail) {
+                return Err(bad("extent tree checksum mismatch"));
+            }
+        }
+        let mut children = Vec::new();
+        let mut end = min;
+        for i in 0..count {
+            let at = 12 + i * 12;
+            let start = u64::from(le32(node, at));
+            if start < end || start >= max {
+                return Err(bad("inconsistent extent logical range"));
+            }
+            if level > 0 {
+                let child = u64::from(le32(node, at + 4)) | (u64::from(le16(node, at + 8)) << 32);
+                if child == 0 || child >= blocks || !seen.insert(child) {
+                    return Err(bad("invalid or duplicate extent tree child"));
+                }
+                if seen.len() > 4096 {
+                    return Err(Error::Limit("ext4 extent tree exceeds 4096 blocks".into()));
+                }
+                let upper = if i + 1 < count {
+                    u64::from(le32(node, at + 12))
+                } else {
+                    max
+                };
+                if upper <= start || upper > max {
+                    return Err(bad("unordered extent tree index"));
+                }
+                children.push((external(child)?, level - 1, start, upper, false));
+                end = start + 1;
+            } else {
+                let len = le16(node, at + 4);
+                let unwritten = len > 0x8000;
+                let count = u64::from(if unwritten { len - 0x8000 } else { len });
+                let physical =
+                    u64::from(le32(node, at + 8)) | (u64::from(le16(node, at + 6)) << 32);
+                if count == 0
+                    || physical == 0
+                    || physical.checked_add(count).is_none_or(|n| n > blocks)
+                    || start + count > max
+                {
+                    return Err(bad("invalid historical extent range"));
+                }
+                if output.len() >= 65536 {
+                    return Err(Error::Limit("ext4 file exceeds 65536 extents".into()));
+                }
+                output.push(Run {
+                    start,
+                    physical,
+                    count,
+                    unwritten,
+                });
+                end = start + count;
+            }
+        }
+        stack.extend(children.into_iter().rev());
     }
-    Ok(runs)
+    Ok(output)
 }
 
 pub(super) fn file_size(inode: &[u8]) -> u64 {

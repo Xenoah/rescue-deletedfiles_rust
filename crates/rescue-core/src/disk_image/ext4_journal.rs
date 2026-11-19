@@ -91,10 +91,11 @@ fn candidates(
     cancel: &AtomicBool,
 ) -> Result<BTreeMap<u32, Historical>> {
     let history = journal::read(bytes, vol.block_size, &vol.uuid, vol.blocks, cancel)?;
+    let versions = journal::Versions::new(&history);
     let mut files = BTreeMap::new();
     // Inspect the newest inode-table copy first; an older layout cannot supersede an unsupported newer one.
     let mut seen = std::collections::BTreeSet::new();
-    for tx in history.iter().rev() {
+    for (index, tx) in history.iter().enumerate().rev() {
         for (&target, &slot) in &tx.blocks {
             let Some(numbers) = vol.inode_numbers(target) else {
                 continue;
@@ -133,8 +134,22 @@ fn candidates(
                 {
                     continue;
                 }
-                let Ok(extents) = runs(inode, vol.blocks) else {
-                    continue;
+                let extents = match volume::extent_tree(
+                    inode,
+                    vol.blocks,
+                    vol.inode_seed(ino, inode),
+                    |addr| {
+                        let pos = versions.slot(addr,index).ok_or_else(|| {
+                            Error::Unsupported(
+                                "extent block is unavailable in contiguous committed journal history".into(),
+                            )
+                        })?;
+                        Ok(&bytes[pos * vol.block_size..(pos + 1) * vol.block_size])
+                    },
+                ) {
+                    Ok(runs) => runs,
+                    Err(Error::Unsupported(_)) => continue,
+                    Err(e) => return Err(e),
                 };
                 let size = file_size(inode);
                 if size > 16 << 40 {

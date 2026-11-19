@@ -1,0 +1,42 @@
+{
+  "filesystem": "ext4",
+  "allocated_extents": {
+    "bands.wav": 16,
+    "bands.bmp": 16,
+    "gray.pgm": 16,
+    "color.ppm": 16,
+    "bundle.zip": 17,
+    "bundle.tar": 16,
+    "measurements.dat": 16
+  },
+  "block_size": 4096,
+  "originals": {
+    "bands.wav": "9da1c801f7956bec9db51094a6ef4d0032b62e5f6414b706ff8952208ea9a087",
+    "bands.bmp": "30ff213eec5691291262db8e157b2acb3c7f87b378a9ce65261ea9418ea25ee9",
+    "gray.pgm": "2ec28346ffa5264ef7c15a918b56aea99a1015c2a028dd7e24120f63fbe5c911",
+    "color.ppm": "a2965492e7a71ded6588984256653c43e29ae5880fbc06ec861242efd39bef86",
+    "bundle.zip": "acd20f066676d2cfdfe332448ccb7a61943cc7e58813a5872c9478be191adc29",
+    "bundle.tar": "68e12f61eaa10ed76d54e98bffe677ef13af7497b6bd1aa405927ab025a4aa72",
+    "measurements.dat": "905a38f835000b47167d4e75a3d6a5e7970547051bec5ed47de059b820426ba9"
+  },
+  "unlinked_inodes": {
+    "bands.wav": 13,
+    "bands.bmp": 14,
+    "gray.pgm": 15,
+    "color.ppm": 16,
+    "bundle.zip": 17,
+    "bundle.tar": 18,
+    "measurements.dat": 19
+  },
+  "parent_inode": 12,
+  "sha256": "973b46eb683d3c4cdbfda4c223233c83322145c091a507b638898ab859f994e0",
+  "compressed_sha256": "3464944b4197ffd4aa2d28f78dc92ac1f88197ae938b650a41c173ca0d43bf57",
+  "bytes": 100663296,
+  "journal_sha256": "0439dd9a122c0241b5517f61ecf622a404025c007581acc178321bf6eaa2909d",
+  "filesystem_features": "has_journal ext_attr resize_inode dir_index filetype extent 64bit flex_bg sparse_super large_file huge_file dir_nlink extra_isize metadata_csum",
+  "journal_features": "journal_incompat_revoke journal_64bit journal_checksum_v3",
+  "tree_descriptor_byte": 81920,
+  "tree_payload_byte": 122880,
+  "tree_tag_offset": 156,
+  "tree_original_lba": 3670
+}

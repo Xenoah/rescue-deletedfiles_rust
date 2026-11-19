@@ -12,6 +12,7 @@ const REVOKE: u32 = 5;
 pub(super) struct Transaction {
     pub sequence: u32,
     pub blocks: BTreeMap<u64, usize>,
+    unavailable: BTreeSet<u64>,
 }
 
 fn checked_field(block: &[u8], at: usize, seed: u32) -> bool {
@@ -139,7 +140,9 @@ pub(super) fn read(
                     return Err(bad("journal payload checksum mismatch"));
                 }
                 // Escaped payloads start with JBD2 magic; inodes and extent roots cannot be decoded as such.
-                if flags & 1 == 0 && targets.insert(target, pos).is_some() {
+                if flags & 1 != 0 {
+                    revoked.insert(target);
+                } else if targets.insert(target, pos).is_some() {
                     return Err(bad("duplicate target in journal transaction"));
                 }
                 pos = advance(pos);
@@ -150,8 +153,8 @@ pub(super) fn read(
         }
         if complete {
             // A wrapped transaction may be discovered first at a later descriptor. Keep the complete superset.
-            for id in revoked {
-                targets.remove(&id);
+            for id in &revoked {
+                targets.remove(id);
             }
             if let Some(existing) = ordered.get(&age) {
                 let old: &Transaction = existing;
@@ -165,9 +168,43 @@ pub(super) fn read(
                 Transaction {
                     sequence,
                     blocks: targets,
+                    unavailable: revoked,
                 },
             );
         }
     }
     Ok(ordered.into_values().rev().collect())
+}
+
+/// Resolve an extent block at a transaction boundary. Uncommitted gaps, revocation
+/// records and newer copies never supply data for an older inode.
+pub(super) struct Versions {
+    blocks: BTreeMap<u64, Vec<(usize, Option<usize>)>>,
+    earliest: Vec<usize>,
+}
+impl Versions {
+    pub fn new(history: &[Transaction]) -> Self {
+        let mut blocks: BTreeMap<_, Vec<_>> = BTreeMap::new();
+        let mut earliest = Vec::new();
+        let mut begin = 0;
+        for (idx, tx) in history.iter().enumerate() {
+            if idx > 0 && history[idx - 1].sequence.wrapping_add(1) != tx.sequence {
+                begin = idx;
+            }
+            earliest.push(begin);
+            for (&block, &slot) in &tx.blocks {
+                blocks.entry(block).or_default().push((idx, Some(slot)));
+            }
+            for &block in &tx.unavailable {
+                blocks.entry(block).or_default().push((idx, None));
+            }
+        }
+        Self { blocks, earliest }
+    }
+    pub fn slot(&self, block: u64, at: usize) -> Option<usize> {
+        let versions = self.blocks.get(&block)?;
+        let end = versions.partition_point(|(i, _)| *i <= at);
+        let &(idx, slot) = versions[..end].last()?;
+        if idx < self.earliest[at] { None } else { slot }
+    }
 }
