@@ -260,7 +260,12 @@ fn read_volume(
             }
             Err(error) => return Err(error),
         },
-        FileSystem::Raw => RecoverySource::Carved,
+        FileSystem::Raw => RecoverySource::Carved(
+            session
+                .search
+                .as_ref()
+                .and_then(|s| s.signature_rule.clone()),
+        ),
         _ => {
             let ids = candidates
                 .iter()

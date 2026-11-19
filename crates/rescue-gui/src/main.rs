@@ -143,6 +143,7 @@ struct App {
     fat_short_name_encoding: rescue_core::FatShortNameEncoding,
     exfat_allow_damaged_upcase: bool,
     extensions: String,
+    signature_rule: String,
     path_prefix: String,
     depth: String,
     range_start: String,
@@ -300,6 +301,7 @@ impl App {
             fat_short_name_encoding: rescue_core::FatShortNameEncoding::Ascii,
             exfat_allow_damaged_upcase: false,
             extensions: String::new(),
+            signature_rule: String::new(),
             path_prefix: String::new(),
             depth: String::new(),
             range_start: String::new(),
@@ -357,6 +359,9 @@ impl App {
             }
         };
         let s = SearchSettings {
+            signature_rule: (self.carve && !self.signature_rule.trim().is_empty())
+                .then(|| self.signature_rule.trim().parse())
+                .transpose()?,
             carve_scope: if self.carve_all {
                 rescue_core::CarveScope::All
             } else {
@@ -456,6 +461,11 @@ impl App {
         self.exfat_allow_damaged_upcase = settings.exfat_allow_damaged_upcase;
         self.recovered_volume = settings.recovered_volume.clone();
         self.discovery_source = self.source.clone();
+        self.signature_rule = settings
+            .signature_rule
+            .as_ref()
+            .map(ToString::to_string)
+            .unwrap_or_default();
         self.extensions = settings.extensions.join(", ");
         self.path_prefix = settings.path_prefix;
         self.depth = settings
@@ -1230,6 +1240,7 @@ impl App {
                         ui.selectable_value(&mut self.carve_all,true,tr!("全領域", "All regions"));
                     });
                     ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
+                    checked_text_row(ui, tr!("独自形式のルール", "Custom signature rule"), &mut self.signature_rule, tr!("空欄で標準形式 / 例 dat:41424344:end=454e44", "Blank for built-ins / e.g. dat:41424344:end=454e44"), error(Field::SignatureRule).as_deref());
                     ui.label(tr!("PNG/JPEG/GIF/BMP/WebP、PDF、ZIP/Office、MP4/MOV、WAV、SQLiteを探索します。形式ごとに構造・CRC・参照位置を確認します。元の名前・削除状態は不明です。", "Find PNG/JPEG/GIF/BMP/WebP, PDF, ZIP/Office, MP4/MOV, WAV and SQLite. Validate structure, CRC or references as appropriate. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
@@ -2100,6 +2111,7 @@ impl App {
                     rescue_core::ExtentEvidence::JpegValidated => tr!("JPEGの構造・圧縮データの過不足・画素を検証済み。削除前の内容との一致は不明です。", "JPEG structure, compressed-data completeness and pixels verified. Equality with the original content is unknown."),
                     rescue_core::ExtentEvidence::PdfStructure => tr!("PDFの参照表・ページ階層・ストリーム範囲を検証。描画内容と終端後の余白は未確認です。", "PDF reference tables, page tree and stream bounds verified. Rendering and whitespace after the terminator are unverified."),
                     rescue_core::ExtentEvidence::ZipCrcValidated => tr!("ZIPの管理情報・展開長・全エントリーCRCを検証。Officeの表示内容は未確認です。", "ZIP metadata, expanded lengths and every entry CRC verified. Office rendering is unverified."),
+                    rescue_core::ExtentEvidence::SignatureRule => tr!("指定ルールで推定した範囲。形式・内容は未確認です。", "Extent estimated from the supplied rule. Format and contents are unverified."),
                     rescue_core::ExtentEvidence::FileStructure => tr!("形式の構造からファイルの範囲を確認。内容の完全性は未確認です。", "The file structure establishes its extent. Payload integrity is unverified."),
                     rescue_core::ExtentEvidence::MediaStructure => tr!("動画のコンテナー・サンプル位置を検証。映像・音声の全フレーム復号は未実施です。", "Media container and sample locations verified. Full video and audio decoding has not been performed."),
                     rescue_core::ExtentEvidence::Unknown => tr!("配置と形式の検証は未完了です。候補の警告を確認してください。", "Extent and format verification is incomplete. Check the candidate warnings."),

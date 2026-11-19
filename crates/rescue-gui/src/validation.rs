@@ -9,6 +9,7 @@ pub enum Field {
     Work,
     OriginalRoot,
     Extensions,
+    SignatureRule,
     Folder,
     Depth,
     RangeStart,
@@ -38,6 +39,7 @@ impl App {
             Field::Destination => &self.destination,
             Field::Work => &self.work,
             Field::OriginalRoot => &self.original_root,
+            Field::SignatureRule => &self.signature_rule,
             Field::Extensions => &self.extensions,
             Field::Folder => &self.path_prefix,
             Field::Depth => &self.depth,
@@ -90,6 +92,21 @@ impl App {
         }
         let number = |text: &str| text.trim().parse::<u64>();
         if self.carve {
+            if !self.signature_rule.trim().is_empty()
+                && self
+                    .signature_rule
+                    .trim()
+                    .parse::<rescue_core::SignatureRule>()
+                    .is_err()
+            {
+                add(
+                    Field::SignatureRule,
+                    message!(
+                        "拡張子:先頭の16進数:size=バイト数 または 拡張子:先頭の16進数:end=末尾の16進数 で指定してください。",
+                        "Use EXT:HEADERHEX:size=BYTES or EXT:HEADERHEX:end=FOOTERHEX."
+                    ),
+                );
+            }
             for (field, value) in [
                 (Field::RangeStart, &self.range_start),
                 (Field::RangeEnd, &self.range_end),

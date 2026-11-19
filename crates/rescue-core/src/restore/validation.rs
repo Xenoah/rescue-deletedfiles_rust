@@ -101,8 +101,8 @@ pub(crate) fn candidate(
             .ok_or(Error::SourceChanged)?
             .candidate
             .clone(),
-        RecoverySource::Carved => {
-            let mut candidate = carve::revalidate_candidate(image, old, cancel)?;
+        RecoverySource::Carved(rule) => {
+            let mut candidate = carve::revalidate_candidate(image, old, cancel, rule.as_ref())?;
             // Saved lengths are untrusted: derive the complete extent from the
             // bounded format parser before consulting its current allocation.
             candidate.allocation_status = old.allocation_status;

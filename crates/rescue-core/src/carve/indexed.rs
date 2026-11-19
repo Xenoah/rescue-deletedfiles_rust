@@ -40,7 +40,11 @@ pub(crate) fn scan(
     };
     image.annotate_coverage(&mut header)?;
     let checkpoint = Checkpoint {
-        version: 2,
+        version: if settings.signature_rule.is_some() {
+            3
+        } else {
+            2
+        },
         scope: settings.carve_scope,
         identity: image.acquisition_identity()?,
         options,
@@ -69,7 +73,8 @@ pub(crate) fn resume(
         .ok_or_else(|| Error::Request("missing carving settings".into()))?;
     settings.validate()?;
     let mut image = Image::open(&header.source)?;
-    if ![1, 2].contains(&saved.version)
+    if ![1, 2, 3].contains(&saved.version)
+        || (saved.version == 3) != settings.signature_rule.is_some()
         || saved.scope != settings.carve_scope
         || (saved.version == 1 && saved.scope != crate::CarveScope::All)
         || saved.start > saved.next
@@ -124,7 +129,8 @@ pub(crate) fn resume(
                 break 'scan;
             }
             let rest = &buffer[index..];
-            let Some(format) = detect(rest, &settings.extensions) else {
+            let Some(format) = detect(rest, &settings.extensions, settings.signature_rule.as_ref())
+            else {
                 continue;
             };
             let allocation = match scope.status(at, 1, cancel) {

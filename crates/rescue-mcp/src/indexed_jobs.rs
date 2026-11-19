@@ -4,7 +4,7 @@ pub(super) enum Task {
     Scan {
         source: PathBuf,
         options: ScanOptions,
-        settings: SearchSettings,
+        settings: Box<SearchSettings>,
     },
     Resume(PathBuf),
     Import(PathBuf),

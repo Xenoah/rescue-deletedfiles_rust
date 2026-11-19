@@ -180,7 +180,11 @@ fn directory(input: &mut Input<'_>, eocd: usize) -> Result<(Vec<Entry>, usize, u
     Ok((entries, start, end))
 }
 
-fn validate_entries(input: &mut Input<'_>, entries: &[Entry], central: usize) -> Result<Format> {
+fn validate_entries(
+    input: &mut Input<'_>,
+    entries: &[Entry],
+    central: usize,
+) -> Result<Format<'static>> {
     let mut spans = Vec::new();
     let mut names = BTreeSet::new();
     let mut types = Vec::new();
@@ -322,7 +326,7 @@ fn validate_entries(input: &mut Input<'_>, entries: &[Entry], central: usize) ->
 
 /// Namespace-aware classification, bounded to the already CRC-checked 1 MiB manifest.
 /// A malformed or ambiguous manifest remains a ZIP, never a verified Office document.
-fn office_type(types: &[u8], names: &BTreeSet<&[u8]>) -> Option<Format> {
+fn office_type(types: &[u8], names: &BTreeSet<&[u8]>) -> Option<Format<'static>> {
     use quick_xml::{NsReader, events::Event, name::ResolveResult};
     let variants = [
         (
@@ -431,7 +435,7 @@ pub(super) fn validate(
     cancel: &AtomicBool,
     budget: &mut u64,
     boundary: u64,
-) -> Result<(Format, Vec<u8>, Vec<usize>)> {
+) -> Result<(Format<'static>, Vec<u8>, Vec<usize>)> {
     let mut input = Input::new(image, at, boundary, cancel, budget)?;
     input.ensure(4)?;
     if input.bytes[..4] != *b"PK\x03\x04" && input.bytes[..4] != *b"PK\x05\x06" {

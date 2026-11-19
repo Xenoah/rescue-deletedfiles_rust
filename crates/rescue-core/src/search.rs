@@ -29,6 +29,8 @@ pub struct SearchSettings {
     pub method: ScanMethod,
     #[serde(default = "CarveScope::legacy_all")]
     pub carve_scope: CarveScope,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signature_rule: Option<crate::SignatureRule>,
     pub extensions: Vec<String>,
     pub path_prefix: String,
     /// Maximum folder levels below the selected path. None has no extra limit.
@@ -50,6 +52,11 @@ pub struct SearchSettings {
 }
 impl SearchSettings {
     pub fn validate(&self) -> Result<()> {
+        if self.signature_rule.is_some() && self.method != ScanMethod::Carve {
+            return Err(Error::Request(
+                "signature rules require a carving scan".into(),
+            ));
+        }
         if self.exfat_allow_damaged_upcase && self.method != ScanMethod::Quick {
             return Err(Error::Request(
                 "damaged exFAT upcase handling requires a metadata scan".into(),

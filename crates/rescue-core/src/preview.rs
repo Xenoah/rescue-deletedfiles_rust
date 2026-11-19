@@ -409,7 +409,12 @@ fn render(mut session: Session) -> Result<Preview> {
             Err(_) if old.fragment_offset.is_some() => RecoverySource::NtfsFragments,
             Err(e) => return Err(e),
         },
-        FileSystem::Raw => RecoverySource::Carved,
+        FileSystem::Raw => RecoverySource::Carved(
+            session
+                .search
+                .as_ref()
+                .and_then(|s| s.signature_rule.clone()),
+        ),
         FileSystem::Fat12 | FileSystem::Fat16 | FileSystem::Fat32 | FileSystem::Exfat => {
             let fresh = restore::validation::fat_selection(
                 &mut image,

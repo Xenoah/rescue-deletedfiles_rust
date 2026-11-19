@@ -7,7 +7,7 @@ fn invalid() -> Error {
     Error::Invalid("invalid or unsupported contiguous file structure".into())
 }
 
-pub(super) fn signature(bytes: &[u8]) -> Option<Format> {
+pub(super) fn signature(bytes: &[u8]) -> Option<Format<'static>> {
     match bytes.first()? {
         b'R' if bytes.starts_with(b"RIFF") => match bytes.get(8..12)? {
             b"WAVE" => Some(Format::Wav),

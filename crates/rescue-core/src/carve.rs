@@ -2,8 +2,10 @@
 mod container;
 mod extra;
 mod indexed;
+mod rule;
 mod scope;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
+pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
 mod movie;
@@ -100,7 +102,8 @@ fn charge(budget: &mut u64, amount: usize) -> Result<()> {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Format {
+enum Format<'a> {
+    Rule(&'a SignatureRule),
     Png,
     Jpeg,
     Pdf,
@@ -116,9 +119,10 @@ enum Format {
     Gif,
     Sqlite,
 }
-impl Format {
+impl<'a> Format<'a> {
     fn prefix(self) -> &'static str {
         match self {
+            Self::Rule(_) => "rule",
             Self::Png => "png",
             Self::Jpeg => "jpeg",
             Self::Pdf => "pdf",
@@ -135,13 +139,20 @@ impl Format {
             Self::Sqlite => "sqlite",
         }
     }
-    fn extension(self) -> &'static str {
+    fn extension(self) -> &'a str {
         match self {
+            Self::Rule(rule) => &rule.extension,
             Self::Jpeg => "jpg",
             other => other.prefix(),
         }
     }
     fn id(self, offset: u64) -> String {
+        if let Self::Rule(rule) = self {
+            return format!(
+                "rule-{offset:016x}-{:x}",
+                Sha256::digest(rule.to_string().as_bytes())
+            );
+        }
         format!("{}-{offset:016x}", self.prefix())
     }
     fn name(self, offset: u64) -> String {
@@ -149,6 +160,7 @@ impl Format {
     }
     fn evidence(self) -> ExtentEvidence {
         match self {
+            Self::Rule(_) => ExtentEvidence::SignatureRule,
             Self::Png => ExtentEvidence::PngValidated,
             Self::Jpeg => ExtentEvidence::JpegValidated,
             Self::Pdf => ExtentEvidence::PdfStructure,
@@ -182,12 +194,15 @@ impl Format {
         cancel: &AtomicBool,
         budget: &mut u64,
         boundary: u64,
-    ) -> Result<(Format, Vec<u8>, Vec<usize>)> {
+    ) -> Result<(Format<'a>, Vec<u8>, Vec<usize>)> {
         match self {
             Self::Wav | Self::Webp | Self::Bmp | Self::Gif | Self::Sqlite => {
                 extra::validate(self, image, at, cancel, budget, boundary)
                     .map(|b| (self, b, Vec::new()))
             }
+            Self::Rule(rule) => rule
+                .extract(image, at, cancel, budget, boundary)
+                .map(|b| (self, b, Vec::new())),
             Self::Png => {
                 png::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
             }
@@ -206,7 +221,17 @@ impl Format {
     }
 }
 
-fn detect(bytes: &[u8], extensions: &[String]) -> Option<Format> {
+fn detect<'a>(
+    bytes: &[u8],
+    extensions: &[String],
+    rule: Option<&'a SignatureRule>,
+) -> Option<Format<'a>> {
+    if let Some(rule) = rule {
+        return bytes
+            .starts_with(&rule.header)
+            .then_some(Format::Rule(rule))
+            .filter(|format| format.allowed(extensions));
+    }
     if bytes.starts_with(SIGNATURE) && Format::Png.allowed(extensions) {
         Some(Format::Png)
     } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) && Format::Jpeg.allowed(extensions) {
@@ -232,6 +257,9 @@ fn detect(bytes: &[u8], extensions: &[String]) -> Option<Format> {
 
 fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
+        Format::Rule(_) => &[
+            "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
         Format::Pdf => &[
             "Classic-xref PDF: references, page tree and declared stream extents validated. Encrypted/xref-stream PDFs are unsupported. Stream codecs, scripts and page rendering are not executed. EOF-based extent is an estimate; trailing padding cannot be established.",
         ],
@@ -307,7 +335,7 @@ pub(crate) fn scan_range(
         missing |= !gaps.is_empty();
         for index in 0..count as usize {
             let rest = &buffer[index..];
-            let Some(format) = detect(rest, extensions) else {
+            let Some(format) = detect(rest, extensions, settings.signature_rule.as_ref()) else {
                 continue;
             };
             let at = offset + index as u64;
@@ -456,6 +484,7 @@ pub(crate) fn recovery_data(
     image: &mut Image,
     candidate: &Candidate,
     cancel: &AtomicBool,
+    rule: Option<&SignatureRule>,
 ) -> Result<RecoveryData> {
     let format = [
         Format::Png,
@@ -474,6 +503,8 @@ pub(crate) fn recovery_data(
         Format::Sqlite,
     ]
     .into_iter()
+    .filter(|_| rule.is_none())
+    .chain(rule.map(Format::Rule))
     .find(|f| candidate.id == f.id(candidate.record))
     .ok_or(Error::SourceChanged)?;
     if candidate.id != format.id(candidate.record)
@@ -508,8 +539,9 @@ pub(crate) fn revalidate_candidate(
     image: &mut Image,
     candidate: &Candidate,
     cancel: &AtomicBool,
+    rule: Option<&SignatureRule>,
 ) -> Result<Candidate> {
-    let data = recovery_data(image, candidate, cancel)?;
+    let data = recovery_data(image, candidate, cancel, rule)?;
     Ok(Candidate {
         id: candidate.id.clone(),
         record: candidate.record,

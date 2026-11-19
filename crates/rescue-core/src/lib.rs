@@ -103,7 +103,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const MAX_SESSION_BYTES: u64 = 128 * 1024 * 1024;
 // Keep room for source identity, session fields, bounded warnings and separators.
 const CANDIDATE_BYTES: u64 = MAX_SESSION_BYTES - 1024 * 1024;
-pub use carve::scan_carving;
+pub use carve::{SignatureRule, scan_carving};
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -145,6 +145,7 @@ pub enum ExtentEvidence {
     MediaStructure,
     /// Extent validated against the file structure; payload contents are unverified.
     FileStructure,
+    SignatureRule,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
@@ -853,7 +854,7 @@ enum RecoverySource {
     Ntfs(Box<Ntfs>),
     NtfsFragments,
     Fat(BTreeMap<String, fat::RecoveredEntry>),
-    Carved,
+    Carved(Option<SignatureRule>),
 }
 
 fn candidate_data(
@@ -865,7 +866,9 @@ fn candidate_data(
     match source {
         RecoverySource::Ntfs(ntfs) => ntfs_recovery_data(ntfs, image, candidate),
         RecoverySource::NtfsFragments => ntfs_remnants::recovery_data(image, None, candidate),
-        RecoverySource::Carved => carve::recovery_data(image, candidate, cancel),
+        RecoverySource::Carved(rule) => {
+            carve::recovery_data(image, candidate, cancel, rule.as_ref())
+        }
         RecoverySource::Fat(entries) => {
             let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
             if candidate.record != entry.candidate.record
@@ -970,7 +973,12 @@ pub fn recover_to(
             Err(error) => return Err(error),
         }
     } else if session.filesystem == FileSystem::Raw {
-        RecoverySource::Carved
+        RecoverySource::Carved(
+            session
+                .search
+                .as_ref()
+                .and_then(|s| s.signature_rule.clone()),
+        )
     } else {
         let wanted = selected.iter().map(|c| c.id.clone()).collect();
         let fresh = restore::validation::fat_selection(
@@ -1067,7 +1075,9 @@ pub fn recover_to(
                 RecoverySource::NtfsFragments => {
                     ntfs_remnants::recovery_data(&mut image, None, &candidate)?
                 }
-                RecoverySource::Carved => carve::recovery_data(&mut image, &candidate, cancel)?,
+                RecoverySource::Carved(rule) => {
+                    carve::recovery_data(&mut image, &candidate, cancel, rule.as_ref())?
+                }
                 RecoverySource::Fat(entries) => {
                     let entry = entries.get(&candidate.id).ok_or(Error::SourceChanged)?;
                     if candidate.record != entry.candidate.record

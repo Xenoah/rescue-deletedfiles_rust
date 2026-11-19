@@ -368,7 +368,7 @@ pub(super) fn validate(
     cancel: &AtomicBool,
     budget: &mut u64,
     boundary: u64,
-) -> Result<(Format, Vec<u8>)> {
+) -> Result<(Format<'static>, Vec<u8>)> {
     let mut input = Input::new(image, at, boundary, cancel, budget)?;
     let mut p = 0;
     let mut moov = None;

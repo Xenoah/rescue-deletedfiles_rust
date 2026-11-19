@@ -260,6 +260,7 @@
         "zip_crc_validated",
         "media_structure",
         "file_structure",
+        "signature_rule",
         "estimated_contiguous"
       ]
     },
@@ -443,6 +444,10 @@
             "quick",
             "carve"
           ]
+        },
+        "signature_rule": {
+          "type": "string",
+          "description": "Explicit custom carving rule, EXT:HEADERHEX:size=BYTES or EXT:HEADERHEX:end=FOOTERHEX."
         },
         "carve_scope": {
           "enum": [

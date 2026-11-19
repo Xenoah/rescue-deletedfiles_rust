@@ -180,6 +180,9 @@ enum Command {
         /// Search unallocated clusters by default; unreadable maps fall back explicitly.
         #[arg(long, default_value = "unallocated", value_parser = ["unallocated", "all"])]
         carve_scope: String,
+        /// Only carve this rule, e.g. dat:41424344:size=128 or dat:41424344:end=454e44.
+        #[arg(long)]
+        signature_rule: Option<rescue_core::SignatureRule>,
         #[arg(long = "extension", value_delimiter = ',')]
         extensions: Vec<String>,
         #[arg(long, default_value = "")]
@@ -689,6 +692,7 @@ fn run() -> Result<i32, Error> {
             json: compact,
             mode,
             carve_scope,
+            signature_rule,
             extensions,
             path_prefix,
             max_depth,
@@ -729,6 +733,7 @@ fn run() -> Result<i32, Error> {
                 _ => rescue_core::FatShortNameEncoding::Ascii,
             };
             let settings = SearchSettings {
+                signature_rule,
                 carve_scope: if carve_scope == "all" {
                     rescue_core::CarveScope::All
                 } else {
