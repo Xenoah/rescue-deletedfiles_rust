@@ -91,6 +91,7 @@ pub(crate) fn validate_estimated_extent(
         "xz" => Some(Format::Xz),
         "lz" => Some(Format::Lzip),
         "sqlite" => Some(Format::Sqlite),
+        ext if zip::package::formats().any(|kind| kind.extension() == ext) => Some(Format::Zip),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
         _ if head.starts_with(b"%PDF-") => Some(Format::Pdf),
@@ -124,6 +125,11 @@ pub(crate) fn validate_estimated_extent(
     Ok(true)
 }
 
+pub(crate) fn is_open_package_id(id: &str) -> bool {
+    id.split_once('-')
+        .is_some_and(|(ext, _)| zip::package::formats().any(|format| format.extension() == ext))
+}
+
 fn charge(budget: &mut u64, amount: usize) -> Result<()> {
     *budget = budget
         .checked_sub(amount as u64)
@@ -144,6 +150,7 @@ enum Format<'a> {
     Rtf,
     Pdf,
     Zip,
+    Package(&'static str),
     Docx,
     Xlsx,
     Pptx,
@@ -181,6 +188,7 @@ impl<'a> Format<'a> {
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
+            Self::Package(ext) => ext,
             Self::Docx => "docx",
             Self::Xlsx => "xlsx",
             Self::Pptx => "pptx",
@@ -233,7 +241,9 @@ impl<'a> Format<'a> {
             Self::Png | Self::Apng => ExtentEvidence::PngValidated,
             Self::Jpeg => ExtentEvidence::JpegValidated,
             Self::Pdf => ExtentEvidence::PdfStructure,
-            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => ExtentEvidence::ZipCrcValidated,
+            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
+                ExtentEvidence::ZipCrcValidated
+            }
             Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
             | Self::Flac
@@ -268,6 +278,7 @@ impl<'a> Format<'a> {
                         Self::Png => ext == "png",
                         Self::Apng => matches!(ext.as_str(), "apng" | "png"),
                         Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
+                        Self::Package(subtype) => ext == subtype || ext == "zip",
                         other => ext == other.extension(),
                     }
             })
@@ -338,7 +349,7 @@ impl<'a> Format<'a> {
             Self::Pdf => {
                 pdf::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
             }
-            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx => {
+            Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
                 zip::validate(image, at, cancel, budget, boundary)
             }
             Self::Mp4 | Self::Mov => movie::validate(image, at, cancel, budget, boundary)
@@ -388,7 +399,8 @@ fn detect<'a>(
     } else if (bytes.starts_with(b"PK\x03\x04")
         || (bytes.len() >= 22 && bytes.starts_with(b"PK\x05\x06") && bytes[4..20] == [0; 16]))
         && [Format::Zip, Format::Docx, Format::Xlsx, Format::Pptx]
-            .iter()
+            .into_iter()
+            .chain(zip::package::formats())
             .any(|f| f.allowed(extensions))
     {
         Some(Format::Zip)
@@ -435,6 +447,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Pdf => &[
             "Classic-xref PDF: references, page tree and declared stream extents validated. Encrypted/xref-stream PDFs are unsupported. Stream codecs, scripts and page rendering are not executed. EOF-based extent is an estimate; trailing padding cannot be established.",
+        ],
+        Format::Package(_) => &[
+            "ZIP entries and every entry CRC checked. The stored leading MIME type and package manifest identify the document family. Document rendering, embedded objects and encryption inside the package are unverified.",
         ],
         Format::Zip | Format::Docx | Format::Xlsx | Format::Pptx => &[
             "ZIP central/local records, decoded lengths and every entry CRC validated. Office classification identifies a container, not document rendering or macro safety. Stored/DEFLATE only, no encryption/multi-volume; 4096 entries, 128 MiB decoded total, 64 MiB per entry.",
@@ -719,6 +734,7 @@ pub(crate) fn recovery_data(
         Format::Sqlite,
     ]
     .into_iter()
+    .chain(zip::package::formats())
     .filter(|_| rule.is_none())
     .chain(rule.map(Format::Rule))
     .find(|f| candidate.id == f.id(candidate.record))
@@ -733,7 +749,8 @@ pub(crate) fn recovery_data(
     let boundary = image.length;
     let (actual, bytes, _) =
         format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
-    if actual != format {
+    // Sessions made before package classification recorded ODF/EPUB as generic ZIP.
+    if actual != format && !(format == Format::Zip && matches!(actual, Format::Package(_))) {
         return Err(Error::SourceChanged);
     }
     if candidate.record_sha256 != format!("{:x}", Sha256::digest(&bytes)) {

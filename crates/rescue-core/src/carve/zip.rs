@@ -1,5 +1,6 @@
 //! ZIP carving validates central/local records and every decoded entry CRC.
 //! ZIP64, stored and DEFLATE are supported; encryption and split archives are not.
+pub(super) mod package;
 use super::{Format, container::*};
 use crate::{Error, Result, source::Image};
 use flate2::{Decompress, FlushDecompress, Status};
@@ -321,7 +322,16 @@ fn validate_entries(
     if end != central {
         return Err(invalid("unreferenced local records"));
     }
-    Ok(office_type(&types, &names).unwrap_or(Format::Zip))
+    let office = office_type(&types, &names);
+    let other = if names.len() == entries.len() {
+        package::identify(input, entries)?
+    } else {
+        None
+    };
+    Ok(match (office, other) {
+        (Some(kind), None) | (None, Some(kind)) => kind,
+        _ => Format::Zip,
+    })
 }
 
 /// Namespace-aware classification, bounded to the already CRC-checked 1 MiB manifest.

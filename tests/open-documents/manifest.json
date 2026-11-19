@@ -1,0 +1,114 @@
+{
+  "generators": {
+    "odfpy": "1.4.1",
+    "ebooklib": "0.21",
+    "pandoc": "pandoc 3.1.11.1"
+  },
+  "files": {
+    "ebooklib.epub": {
+      "sha256": "df12876df8fa727ecf77fbc1ebb7588de66c3c1da08daf9d95789b5df6ce790f",
+      "media_type": "application/epub+zip",
+      "entries": 6
+    },
+    "odfpy.odb": {
+      "sha256": "a1d9c7bad6a29cdb10ad32b8c079886a4627af5a23a4c0f2cb2361eba3885a1f",
+      "media_type": "application/vnd.oasis.opendocument.database",
+      "entries": 5
+    },
+    "odfpy.odc": {
+      "sha256": "b2cd59113400e38105d91b6c4f4c53c75ea860e62ce7a16e8f2acdd0b3c2b5e5",
+      "media_type": "application/vnd.oasis.opendocument.chart",
+      "entries": 5
+    },
+    "odfpy.odf": {
+      "sha256": "8107b7266cc842c303dd74c5113945a61603c95c3d0bb8510323b2c42aa30f49",
+      "media_type": "application/vnd.oasis.opendocument.formula",
+      "entries": 5
+    },
+    "odfpy.odg": {
+      "sha256": "ca8a92a7564354cbe69f85430a401d6cdef66304ac09bde804a4fb0e3c965f2f",
+      "media_type": "application/vnd.oasis.opendocument.graphics",
+      "entries": 5
+    },
+    "odfpy.odi": {
+      "sha256": "14ed43349afedbfa3ed2709b92f26166c39de6f81378739d30ceafdfa1c7bfd1",
+      "media_type": "application/vnd.oasis.opendocument.image",
+      "entries": 5
+    },
+    "odfpy.odm": {
+      "sha256": "908952a7f497bf41c38e31964a63f94a06909015f6d6e9022f322e9bcfdbb3d8",
+      "media_type": "application/vnd.oasis.opendocument.text-master",
+      "entries": 5
+    },
+    "odfpy.odp": {
+      "sha256": "a1ad1cdf149b1b1c6c776738459a2015b7fb5d53fe09f2b913a9a2b5b1627e46",
+      "media_type": "application/vnd.oasis.opendocument.presentation",
+      "entries": 5
+    },
+    "odfpy.ods": {
+      "sha256": "30018a1b5343f1708e316392d9b5443c020d7b3d60041c8d4206a5318a43b5b3",
+      "media_type": "application/vnd.oasis.opendocument.spreadsheet",
+      "entries": 5
+    },
+    "odfpy.odt": {
+      "sha256": "2a7c3c2fd4caef98d520f7aa76421b67d4e255ef8a7384459001ef4c29c6a5fd",
+      "media_type": "application/vnd.oasis.opendocument.text",
+      "entries": 5
+    },
+    "odfpy.otc": {
+      "sha256": "1a7c45477b46cac5243152085887adcff790ace1b32cd72d4b206fd204dc6b7e",
+      "media_type": "application/vnd.oasis.opendocument.chart-template",
+      "entries": 5
+    },
+    "odfpy.otf": {
+      "sha256": "9e122fc89aa85bb8813a65e9ba6fc83171dbbe1a66c099155c8fe7c30d6d7815",
+      "media_type": "application/vnd.oasis.opendocument.formula-template",
+      "entries": 5
+    },
+    "odfpy.otg": {
+      "sha256": "4346a8e5284c5e8d5b5bb096b00595e9647cb34eb078dc9bb1668d5056d06aeb",
+      "media_type": "application/vnd.oasis.opendocument.graphics-template",
+      "entries": 5
+    },
+    "odfpy.oth": {
+      "sha256": "dc8ebddce392566baf770d298867c4e0de3f927cd4ae00e378ca6e8830c8950d",
+      "media_type": "application/vnd.oasis.opendocument.text-web",
+      "entries": 5
+    },
+    "odfpy.oti": {
+      "sha256": "54ac775940a854d8a6aa3ba2215bec1c6374d64b24d601e3e030c4257b264675",
+      "media_type": "application/vnd.oasis.opendocument.image-template",
+      "entries": 5
+    },
+    "odfpy.otp": {
+      "sha256": "0d968803b014b227e8387edf958711d082267c805aa07dc7ead1b17b0d66527a",
+      "media_type": "application/vnd.oasis.opendocument.presentation-template",
+      "entries": 5
+    },
+    "odfpy.ots": {
+      "sha256": "95e92a67b4a3d3020620ed45e009996f0d0f43d3ae14b6dc35b3eabd9944750b",
+      "media_type": "application/vnd.oasis.opendocument.spreadsheet-template",
+      "entries": 5
+    },
+    "odfpy.ott": {
+      "sha256": "f1fc48256830adaaa9551ab3ae0e34a9003cadb0dff42fc5fb742bc536d161c6",
+      "media_type": "application/vnd.oasis.opendocument.text-template",
+      "entries": 5
+    },
+    "pandoc-epub2.epub": {
+      "sha256": "72b17a6e471ba9e971603a93595c7e7b47d155edc8ee6b081119b20ec63bcb8e",
+      "media_type": "application/epub+zip",
+      "entries": 9
+    },
+    "pandoc-epub3.epub": {
+      "sha256": "257eedba992fc45bbcc9ecf06de39060e60599bba7d6249edb6f6dceaf2acfbe",
+      "media_type": "application/epub+zip",
+      "entries": 9
+    },
+    "pandoc-odt.odt": {
+      "sha256": "dc2c9fe91ea87a3f737d40b067bb8e645bd8730101231dfde2353a3b750eb60f",
+      "media_type": "application/vnd.oasis.opendocument.text",
+      "entries": 6
+    }
+  }
+}

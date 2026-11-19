@@ -180,6 +180,9 @@ impl SearchSettings {
                 && matches!(ext.as_str(), "jpeg" | "jpe"))
                 || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")
                 || (candidate.id.starts_with("apng-") && name.ends_with(".apng") && ext == "png")
+                || (ext == "zip"
+                    && candidate.extent_evidence == crate::ExtentEvidence::ZipCrcValidated
+                    && crate::carve::is_open_package_id(&candidate.id))
                 || ext == "*"
                 || name.ends_with(&(".".to_owned() + &ext))
         })
