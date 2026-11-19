@@ -16,6 +16,8 @@ cap-std.workspace = true
 png = "0.18.1"
 crc32fast = "1"
 flate2 = "1"
+bzip2 = "0.6.1"
+lzma-rust2 = {version = "0.25.0", default-features = false, features = ["std", "xz", "lzip"]}
 quick-xml = "0.41.0"
 zune-core = "0.5.3"
 zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }

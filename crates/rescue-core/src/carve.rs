@@ -1,5 +1,6 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
 mod avi;
+mod compressed;
 mod container;
 mod ebml;
 mod extra;
@@ -71,6 +72,9 @@ pub(crate) fn validate_estimated_extent(
         "gz" => Some(Format::Gzip),
         "ico" => Some(Format::Ico),
         "cur" => Some(Format::Cur),
+        "bz2" => Some(Format::Bzip),
+        "xz" => Some(Format::Xz),
+        "lz" => Some(Format::Lzip),
         "sqlite" => Some(Format::Sqlite),
         _ if head.starts_with(SIGNATURE) => Some(Format::Png),
         _ if head.starts_with(b"\xff\xd8\xff") => Some(Format::Jpeg),
@@ -136,6 +140,9 @@ enum Format<'a> {
     Gzip,
     Ico,
     Cur,
+    Bzip,
+    Xz,
+    Lzip,
     Sqlite,
 }
 impl<'a> Format<'a> {
@@ -163,6 +170,9 @@ impl<'a> Format<'a> {
             Self::Gzip => "gz",
             Self::Ico => "ico",
             Self::Cur => "cur",
+            Self::Bzip => "bz2",
+            Self::Xz => "xz",
+            Self::Lzip => "lz",
             Self::Sqlite => "sqlite",
         }
     }
@@ -187,6 +197,7 @@ impl<'a> Format<'a> {
     }
     fn evidence(self) -> ExtentEvidence {
         match self {
+            Self::Bzip | Self::Xz | Self::Lzip => ExtentEvidence::FileStructure,
             Self::Rule(_) => ExtentEvidence::SignatureRule,
             Self::Png | Self::Apng => ExtentEvidence::PngValidated,
             Self::Jpeg => ExtentEvidence::JpegValidated,
@@ -233,6 +244,11 @@ impl<'a> Format<'a> {
         boundary: u64,
     ) -> Result<(Format<'a>, Vec<u8>, Vec<usize>)> {
         match self {
+            Self::Bzip | Self::Xz | Self::Lzip => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = compressed::parse(self, &mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
             Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
                 .map(|b| (self, b, Vec::new())),
             Self::Avi | Self::Mkv | Self::Webm | Self::Ogg | Self::Gzip => {
@@ -309,7 +325,9 @@ fn detect<'a>(
         if bytes.first() == Some(&0) {
             return icon::signature(bytes).filter(|f| f.allowed(extensions));
         }
-        extra::signature(bytes).filter(|format| format.allowed(extensions))
+        extra::signature(bytes)
+            .or_else(|| compressed::signature(bytes))
+            .filter(|format| format.allowed(extensions))
     }
 }
 
@@ -329,6 +347,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Ico | Format::Cur => &[
             "ICO/CUR directory and contiguous resources checked. Embedded PNG pixels are decoded. Classic uncompressed DIB color data and AND mask must fit the recorded dimensions.",
+        ],
+        Format::Bzip | Format::Xz | Format::Lzip => &[
+            "Extent covers one decoded stream/member. Container checksums are validated when present. Adjacent members are separate candidates; optional XZ padding is excluded. Decoder memory limit for XZ/lzip is 64 MiB; decoded output limit is 128 MiB.",
         ],
         Format::Ogg => &[
             "Each candidate covers one Ogg logical stream from BOS to EOS. Page CRCs, serial, sequence and packet lacing verified. Chained streams are reported individually; interleaving is unsupported.",
@@ -389,7 +410,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/PDF/ZIP/Office/MP4/MOV/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut zip_records = std::collections::BTreeSet::new();
@@ -581,6 +602,9 @@ pub(crate) fn recovery_data(
         Format::Gzip,
         Format::Ico,
         Format::Cur,
+        Format::Bzip,
+        Format::Xz,
+        Format::Lzip,
         Format::Sqlite,
     ]
     .into_iter()

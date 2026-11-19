@@ -1241,7 +1241,7 @@ impl App {
                     });
                     ui.small(tr!("割当情報が不明・破損している範囲は全領域へ切り替え、結果に理由を表示します。", "Regions with unavailable or damaged allocation data are searched in full, with the reason shown in the results."));
                     checked_text_row(ui, tr!("独自形式のルール", "Custom signature rule"), &mut self.signature_rule, tr!("空欄で標準形式 / 例 dat:41424344:end=454e44", "Blank for built-ins / e.g. dat:41424344:end=454e44"), error(Field::SignatureRule).as_deref());
-                    ui.label(tr!("PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR、PDF、ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR, PDF, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip and SQLite by structure. Original names and deletion status are unknown."));
+                    ui.label(tr!("PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR、PDF、ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR, PDF, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
                 } else {
