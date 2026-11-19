@@ -1,0 +1,55 @@
+name: Verify seven unlinks on Btrfs with no user snapshot using old transaction roots
+on:
+  push:
+    branches: ['testing/btrfs-previous-roots']
+    paths: ['.github/workflows/btrfs-previous-roots.yml', 'scripts/generate_btrfs_previous.py', 'scripts/btrfs_large_samples.py']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y btrfs-progs
+      - name: Unlink seven files without a snapshot and compare older trees with the current tree
+        run: python scripts/ci_command.py python scripts/generate_btrfs_previous.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btrfs-previous-roots
+          path: previous-fixture/
+          retention-days: 5
+  preserve:
+    needs: reference
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: btrfs-previous-roots
+          path: tests/btrfs-previous-roots
+      - name: Preserve verified synthetic bytes for portable testing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma
+          for mode in ('plain','zstd'):
+              folder=Path('tests/btrfs-previous-roots')/mode
+              meta=json.loads((folder/'manifest.json').read_text())
+              packed=(folder/'volume.raw.xz').read_bytes()
+              assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
+              disk=lzma.decompress(packed)
+              assert len(disk)==meta['bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
+              assert len(meta['originals'])==7 and meta['snapshots']==0
+              assert meta['verified_roots']
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/btrfs-previous-roots/zstd/manifest.json tests/btrfs-previous-roots/zstd/volume.raw.xz tests/btrfs-previous-roots/plain/manifest.json tests/btrfs-previous-roots/plain/volume.raw.xz
+          git commit -m "Preserve independently verified Btrfs previous roots without user snapshots"
+          git push origin HEAD:testing/btrfs-previous-roots
