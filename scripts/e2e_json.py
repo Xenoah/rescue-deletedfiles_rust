@@ -35,7 +35,7 @@ def verify(binary,root):
     offsets={}
     for name,b in files.items():
         offsets[len(encoded)]=name
-        encoded.extend(b+b' \r\n\xf0\x8a')
+        encoded.extend(b+b' \r\n\xf0\x8a[t\x90t[fX[nx')
     disk.write_bytes(encoded)
     for engine,flags in [('session',[]),('index',['--indexed'])]:
         scan=run(binary,'scan','--source',disk,'--mode','carve','--extension','json',

@@ -22,10 +22,13 @@ pub(super) fn signature(bytes: &[u8], explicit: bool) -> bool {
     if explicit {
         return match open {
             b'{' => matches!(inner.first(), Some(b'"' | b'}')),
-            b'[' => matches!(
-                inner.first(),
-                Some(b']' | b'[' | b'{' | b'"' | b'-' | b'0'..=b'9' | b't' | b'f' | b'n')
-            ),
+            b'[' => match inner.first() {
+                Some(b't' | b'f' | b'n') => [b"true".as_slice(), b"false", b"null"]
+                    .iter()
+                    .any(|literal| inner.starts_with(literal) || literal.starts_with(inner)),
+                Some(b']' | b'[' | b'{' | b'"' | b'-' | b'0'..=b'9') => true,
+                _ => false,
+            },
             _ => false,
         };
     }
