@@ -194,3 +194,39 @@ pub fn btrfs(a: BtrfsArgs, cancel: &AtomicBool) -> Result<i32> {
     super::print(report, a.json);
     Ok(if failed { 5 } else { 0 })
 }
+
+#[derive(Args)]
+pub struct Ext4JournalArgs {
+    /// Read-only ext4 filesystem image.
+    #[arg(long)]
+    source: PathBuf,
+    /// Inode from the historical listing.
+    #[arg(long)]
+    inode: Option<u32>,
+    /// New file to write. Omitting this lists prior inode layouts.
+    #[arg(long, requires = "inode")]
+    output: Option<PathBuf>,
+    /// Require the recovered bytes to match this original SHA-256.
+    #[arg(long, requires = "output", conflicts_with = "allow_unverified_content")]
+    sha256: Option<String>,
+    /// Save bytes reconstructed from metadata without an independent original digest.
+    #[arg(long, requires = "output")]
+    allow_unverified_content: bool,
+    #[arg(long)]
+    json: bool,
+}
+
+pub fn ext4_journal(args: Ext4JournalArgs, cancel: &AtomicBool) -> Result<i32> {
+    let report = disk_image::ext4_journal(
+        disk_image::Ext4JournalRequest {
+            source: args.source,
+            inode: args.inode,
+            output: args.output,
+            sha256: args.sha256,
+            allow_unverified_content: args.allow_unverified_content,
+        },
+        cancel,
+    )?;
+    super::print(report, args.json);
+    Ok(0)
+}

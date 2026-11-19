@@ -140,37 +140,48 @@ pub(super) fn restore_layout(
 ) -> Result<ImportedFile> {
     let size = layout.size(image)?;
     publish_output(output, cancel, |file| {
-        let mut digest = Sha256::new();
-        let zeros = vec![0; CHUNK];
-        for extent in layout.extents {
-            let (offset, length) = match extent {
-                Extent::Source { offset, length } => (Some(offset), length),
-                Extent::Hole { zero_bytes } => (None, zero_bytes),
-            };
-            let mut done = 0;
-            while done < length {
-                if cancel.load(Ordering::Relaxed) {
-                    return Err(Error::Cancelled);
-                }
-                let n = (length - done).min(CHUNK as u64) as usize;
-                if let Some(offset) = offset {
-                    let data = image.read(offset + done, n)?;
-                    digest.update(&data);
-                    file.write_all(&data)?;
-                } else {
-                    digest.update(&zeros[..n]);
-                    file.seek(SeekFrom::Current(n as i64))?;
-                }
-                done += n as u64;
-            }
-        }
+        let digest = write_layout(image, &layout.extents, size, file, cancel)?;
         let actual = format!("{:x}", digest.clone().finalize());
         if !layout.sha256.eq_ignore_ascii_case(&actual) {
             return Err(Error::Invalid(
                 "file SHA-256 differs from the supplied original digest".into(),
             ));
         }
-        file.set_len(size)?;
         Ok((size, digest))
     })
+}
+
+pub(super) fn write_layout(
+    image: &mut Image,
+    extents: &[Extent],
+    size: u64,
+    file: &mut File,
+    cancel: &AtomicBool,
+) -> Result<Sha256> {
+    let mut digest = Sha256::new();
+    let zeros = vec![0; CHUNK];
+    for extent in extents {
+        let (offset, length) = match *extent {
+            Extent::Source { offset, length } => (Some(offset), length),
+            Extent::Hole { zero_bytes } => (None, zero_bytes),
+        };
+        let mut done = 0;
+        while done < length {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
+            let n = (length - done).min(CHUNK as u64) as usize;
+            if let Some(offset) = offset {
+                let data = image.read(offset + done, n)?;
+                digest.update(&data);
+                file.write_all(&data)?;
+            } else {
+                digest.update(&zeros[..n]);
+                file.seek(SeekFrom::Current(n as i64))?;
+            }
+            done += n as u64;
+        }
+    }
+    file.set_len(size)?;
+    Ok(digest)
 }

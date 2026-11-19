@@ -276,6 +276,8 @@ enum Command {
     Apfs(sleuthkit::ApfsArgs),
     /// Restore files from a Btrfs snapshot or a retained historical transaction.
     Btrfs(sleuthkit::BtrfsArgs),
+    /// Recover unlinked ext4 files using checksummed historical journal transactions.
+    Ext4Journal(sleuthkit::Ext4JournalArgs),
     /// List retained ISO 9660 sessions or recover historical files through xorriso.
     IsoSessions(sleuthkit::IsoArgs),
     /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
@@ -553,6 +555,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
         Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
         Command::IsoSessions(request) => sleuthkit::iso_sessions(request, &cancel),
+        Command::Ext4Journal(request) => sleuthkit::ext4_journal(request, &cancel),
         Command::Btrfs(request) => sleuthkit::btrfs(request, &cancel),
         Command::Apfs(request) => sleuthkit::apfs(request, &cancel),
         Command::ExportRaw(ExportRawArgs {

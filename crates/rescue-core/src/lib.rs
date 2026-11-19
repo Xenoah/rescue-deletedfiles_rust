@@ -4,6 +4,7 @@ mod acquisition_worker;
 mod archive;
 mod carve;
 mod contract;
+mod crc32c;
 mod destination;
 mod device;
 mod discovery;

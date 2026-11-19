@@ -1,0 +1,35 @@
+{
+  "filesystem": "ext4",
+  "block_size": 4096,
+  "originals": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37"
+  },
+  "unlinked_inodes": {
+    "log.txt": 13,
+    "readings.csv": 14,
+    "image.bmp": 15,
+    "tone.wav": 16,
+    "bundle.zip": 17,
+    "private.bin": 18,
+    "sparse.dat": 19
+  },
+  "parent_inode": 12,
+  "sha256": "60dad8a3c6073b8743e6a48361efa4884aa89177cf84805b7cee3012813f8cd8",
+  "compressed_sha256": "8e81084bb15c1d6d41909e9bcbdbd2bff4404a883a955004663c8532ec4c8412",
+  "bytes": 100663296,
+  "journal_sha256": "104c1fb573d8f74a7dd52e985680c036df5ba3f68386fe5addcb4b8956caa4db",
+  "filesystem_features": "has_journal ext_attr resize_inode dir_index filetype extent 64bit flex_bg sparse_super large_file huge_file dir_nlink extra_isize metadata_csum",
+  "journal_features": "journal_64bit journal_checksum_v3",
+  "first_data_block": 3606,
+  "prior_sequence": 3,
+  "journal_descriptor_byte": 126976,
+  "journal_inode_payload_byte": 135168,
+  "journal_commit_byte": 139264,
+  "journal_superblock_byte": 77824
+}
