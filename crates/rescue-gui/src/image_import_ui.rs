@@ -149,7 +149,7 @@ impl App {
                         Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
-                        Format::Vdi | Format::Qcow2 | Format::Vhd => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
+                        Format::Vdi | Format::Qcow2 | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format.split() {

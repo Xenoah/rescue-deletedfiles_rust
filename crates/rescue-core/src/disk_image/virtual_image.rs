@@ -1,6 +1,7 @@
 //! Read logical sectors from self-contained virtual disks. No host path stored in an image is opened.
 mod qcow;
 mod vhd;
+mod vhdx;
 use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
@@ -124,6 +125,7 @@ enum Disk {
     Vdi(Vdi),
     Qcow(qcow::Qcow),
     Vhd(vhd::Vhd),
+    Vhdx(vhdx::Vhdx),
 }
 impl Disk {
     fn size(&self) -> u64 {
@@ -131,6 +133,7 @@ impl Disk {
             Self::Vdi(v) => v.size,
             Self::Qcow(q) => q.size,
             Self::Vhd(v) => v.size,
+            Self::Vhdx(v) => v.size,
         }
     }
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
@@ -138,6 +141,7 @@ impl Disk {
             Self::Vdi(v) => Ok((v.block(offset), v.block_size)),
             Self::Qcow(q) => Ok((q.block(source, offset)?, q.cluster)),
             Self::Vhd(v) => v.block(source, offset),
+            Self::Vhdx(v) => Ok(v.block(offset)),
         }
     }
     fn write_raw(
@@ -213,7 +217,7 @@ pub(super) fn import(
     output: &Path,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
-    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd")) {
+    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx")) {
         return Ok(None);
     }
     let mut source = File::open(path)?;
@@ -227,11 +231,10 @@ pub(super) fn import(
     if before.len() >= 512 {
         read_at(&mut source, before.len() - 512, &mut tail)?;
     }
-    if requested == Some("vhd") && head[..8] == *b"vhdxfile" && tail != *b"conectix" {
-        return Ok(None); // The external VHD driver also reads VHDX.
-    }
     let kind = if tail == *b"conectix" || head[..8] == *b"conectix" {
         Some("vhd")
+    } else if head[..8] == *b"vhdxfile" {
+        Some("vhdx")
     } else if head[..4] == *b"QFI\xfb" {
         Some("qcow2")
     } else if head[64..68] == *b"\x7f\x10\xda\xbe" {
@@ -239,10 +242,15 @@ pub(super) fn import(
     } else {
         None
     };
-    if requested.is_some() && kind != requested {
+    // Historically the external VHD reader also accepted VHDX under the vhd alias.
+    if requested.is_some()
+        && kind != requested
+        && !(kind == Some("vhdx") && requested == Some("vhd"))
+    {
         return Err(invalid("signature differs from requested image type"));
     }
     let mut disk = match kind {
+        Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),
         Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),

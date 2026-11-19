@@ -60,6 +60,12 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 18, 0):
+        vhdx = run['windows_vhdx']
+        assert vhdx['fixed'] == vhdx['expandable'] and len(vhdx['fixed']) == 7
+        if platform == 'linux':
+            assert set(run['qemu_vhdx']) == {'fixed', 'expandable', 'qemu-fixed', 'qemu-dynamic'}
+            assert all(items == vhdx['fixed'] for items in run['qemu_vhdx'].values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 17, 0):
         assert len(run['html_documents']) == 7 and len(run['netpbm_images']) == 9
         if platform == 'linux':

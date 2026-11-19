@@ -36,6 +36,7 @@ from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
+from e2e_vhdx import verify as native_vhdx
 from e2e_html import verify as html_documents
 from e2e_ext4_journal import verify as ext4_journal
 from e2e_ext4_journal_extents import verify as ext4_external_extents
@@ -213,6 +214,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 18, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['windows_vhdx'] = native_vhdx(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['qemu_vhdx'] = native_vhdx(binary, Path(tmp), native=True)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 17, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['html_documents'] = html_documents(binary, Path(tmp))
