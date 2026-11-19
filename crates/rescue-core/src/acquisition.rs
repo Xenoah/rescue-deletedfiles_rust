@@ -688,6 +688,93 @@ mod tests {
         assert_eq!(actual, data[1024..]);
     }
     #[test]
+    fn carved_files_may_end_at_but_never_cross_a_missing_sector() {
+        let cancel = AtomicBool::new(false);
+        let samples: &[(&str, &[u8])] = &[
+            (
+                "bmp",
+                include_bytes!("../../../tests/corpus/files/sample.bmp"),
+            ),
+            (
+                "gif",
+                include_bytes!("../../../tests/corpus/files/sample.gif"),
+            ),
+            (
+                "webp",
+                include_bytes!("../../../tests/corpus/files/sample.webp"),
+            ),
+            (
+                "wav",
+                include_bytes!("../../../tests/corpus/files/sample.wav"),
+            ),
+            (
+                "sqlite",
+                include_bytes!("../../../tests/corpus/files/sample.sqlite"),
+            ),
+        ];
+        for &(extension, original) in samples {
+            for missing_last_byte in [false, true] {
+                let gap = original.len().next_multiple_of(512);
+                let offset = gap - original.len() + usize::from(missing_last_byte);
+                let mut data = vec![0x55; gap + 512];
+                data[offset..offset + original.len()].copy_from_slice(original);
+                let (dir, mut journal, mut image, mut map) = fixture(data.len() as u64, 512);
+                run_passes(
+                    &mut map,
+                    &mut journal,
+                    &mut image,
+                    0,
+                    &cancel,
+                    &mut |_| {},
+                    &mut |pos, len| {
+                        let pos = pos as usize;
+                        if pos >= gap {
+                            return Err(std::io::Error::other("unread sector").into());
+                        }
+                        Ok(data[pos..pos + len].to_vec())
+                    },
+                    || Ok(()),
+                )
+                .unwrap();
+                drop(journal);
+                drop(image);
+                let path = dir.path().join(IMAGE_NAME);
+                let settings = crate::SearchSettings {
+                    method: crate::ScanMethod::Carve,
+                    extensions: vec![extension.to_owned()],
+                    carve_scope: crate::CarveScope::All,
+                    ..Default::default()
+                };
+                let session =
+                    crate::carve::scan_range(&path, Default::default(), &settings, &cancel, |_| {})
+                        .unwrap();
+                let found = session
+                    .candidates
+                    .iter()
+                    .find(|c| c.record == offset as u64)
+                    .unwrap();
+                assert_eq!(
+                    found.supported, !missing_last_byte,
+                    "{extension} {missing_last_byte}"
+                );
+                if !missing_last_byte {
+                    assert_eq!(found.size, Some(original.len() as u64));
+                    assert_eq!(
+                        found.record_sha256,
+                        format!("{:x}", Sha256::digest(original))
+                    );
+                    let mut source = Image::open(&path).unwrap();
+                    let recovered =
+                        crate::carve::recovery_data(&mut source, found, &cancel, None).unwrap();
+                    let crate::ntfs::Data::Resident(bytes) = recovered.data else {
+                        panic!("expected resident carve")
+                    };
+                    assert_eq!(bytes, original);
+                }
+            }
+        }
+    }
+    #[test]
     fn retries_preserve_permanent_gaps_and_recover_transient_sectors() {
         let (dir, mut journal, mut image, mut map) = fixture(8192, 2048);
         let data = (0..8192).map(|n| (n % 251) as u8).collect::<Vec<_>>();

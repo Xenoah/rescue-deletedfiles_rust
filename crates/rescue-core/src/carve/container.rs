@@ -44,8 +44,26 @@ impl<'a> Input<'a> {
                 .clamp(4096, 64 * 1024)
                 .min(self.limit - self.bytes.len());
             charge(self.budget, n)?;
-            self.bytes
-                .extend(self.image.read(self.start + self.bytes.len() as u64, n)?);
+            let offset = self.start + self.bytes.len() as u64;
+            let chunk = match self.image.read(offset, n) {
+                Err(Error::MissingRanges(gaps)) if n > end - self.bytes.len() => {
+                    // Read-ahead may encounter a later missing sector after the file ends.
+                    let absolute = self.image.absolute_offset(offset);
+                    let prefix = gaps
+                        .iter()
+                        .map(|g| g.source_offset.saturating_sub(absolute))
+                        .min()
+                        .unwrap_or(0)
+                        .min(n as u64) as usize;
+                    if prefix < end - self.bytes.len() || prefix == n {
+                        return Err(Error::MissingRanges(gaps));
+                    }
+                    charge(self.budget, prefix)?;
+                    self.image.read(offset, prefix)?
+                }
+                result => result?,
+            };
+            self.bytes.extend(chunk);
         }
         Ok(())
     }
