@@ -86,6 +86,9 @@ jobs:
       - name: Recover deleted FAT32 files from five independently compressed RAW images
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_compressed_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Carve ten actually unlinked audio and font files from ext4
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_deleted_audio_fonts.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Restore deleted files from QEMU fixed and dynamic classic VHD
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhd.py --native --binary target/${{ matrix.target }}/debug/rescue

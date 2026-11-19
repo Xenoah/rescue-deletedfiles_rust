@@ -48,6 +48,12 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         assert all(n == 7 for n in run['compressed_disks'].values())
         assert len(run['modern_udif']) == 8 and all(n == 7 for n in run['modern_udif'].values())
         assert len(run['known_extents']) == 11
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 10, 0):
+        assert run['classic_vhd'] == {'fixed': 7, 'dynamic': 7}
+        assert len(run['aiff_audio']) == 10 and len(run['font_files']) == 10
+        if platform == 'linux':
+            assert run['qemu_vhd'] == {'qemu-fixed': 7, 'qemu-dynamic': 7}
+            assert len(run['actual_deleted_audio_fonts']) == 10
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')
