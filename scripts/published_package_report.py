@@ -60,6 +60,10 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 12, 0):
+        assert run['cdrom_tracks'] == {f'{mode}-{stride}': 7 for mode in ('mode1', 'xa-form1') for stride in (2352, 2448)}
+        if platform == 'linux':
+            assert len(run['historical_iso_files']) == 11
     assert run['formats']==35 and run['corpus_files']==36
     cases={'ntfs-contiguous','ntfs-fragmented','ntfs-compressed','ntfs-ads','fat32-contiguous','fat32-fragmented','exfat-contiguous','exfat-fragmented'};rows=[r for r in run['rows'] if r['case'] in cases];assert len(rows)==576 and all(r['byte_exact'] for r in rows)
     assert all(r['byte_exact'] for r in run['rows'] if r['expected']=='byte_exact')
