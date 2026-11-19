@@ -172,6 +172,9 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
+      - name: Restore seven Windows NTFS deletions across a 4 GiB VHDX BAT chunk boundary
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vhdx_chunk.py --binary target/${{ matrix.target }}/release/rescue
       - name: Release CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --index-reports index-results
       - name: Independent FAT12 and FAT16 deletion

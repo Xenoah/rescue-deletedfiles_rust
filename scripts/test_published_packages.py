@@ -36,6 +36,7 @@ from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
+from e2e_vhdx_chunk import verify as vhdx_chunk
 from e2e_vhdx_4kn import verify as native_4kn
 from e2e_vhdx import verify as native_vhdx
 from e2e_html import verify as html_documents
@@ -223,6 +224,8 @@ def main():
         if a.platform == 'linux':
             with tempfile.TemporaryDirectory() as tmp:
                 result['qemu_vhdx'] = native_vhdx(binary, Path(tmp), native=True)
+            with tempfile.TemporaryDirectory() as tmp:
+                result['vhdx_chunk'] = vhdx_chunk(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 17, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['html_documents'] = html_documents(binary, Path(tmp))

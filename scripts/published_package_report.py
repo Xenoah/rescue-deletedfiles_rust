@@ -65,6 +65,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         assert vhdx['fixed'] == vhdx['expandable'] and len(vhdx['fixed']) == 7
         assert run['windows_4kn']['session'] == run['windows_4kn']['index'] == vhdx['fixed']
         if platform == 'linux':
+            cross = run['vhdx_chunk']
+            assert cross['before_boundary'] == 3 and cross['after_boundary'] == 4 and cross['bytes'] > (4 << 30)
+            assert cross['originals'] == vhdx['fixed'] and len(cross['guest_sha256']) == 64
             assert set(run['qemu_vhdx']) == {'fixed', 'expandable', 'qemu-fixed', 'qemu-dynamic'}
             assert all(items == vhdx['fixed'] for items in run['qemu_vhdx'].values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 17, 0):
