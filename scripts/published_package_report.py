@@ -60,6 +60,13 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 23, 0):
+        assert run['strided_files'] == run['whole_file_hashes']
+        if platform == 'linux':
+            assert set(run['deleted_strided_files']) == {'12', '16', '32'}
+            for files in run['deleted_strided_files'].values():
+                assert {name: row['sha256'] for name,row in files.items()} == run['strided_files']
+                assert all(row['runs'] == len(row['offsets']) >= 3 for row in files.values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 22, 0):
         truth=json.loads((Path(__file__).resolve().parents[1]/'tests/android-sparse/manifest.json').read_text())
         assert run['android_sparse'] == truth['originals'] and len(truth['originals']) == 7
