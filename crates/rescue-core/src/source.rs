@@ -35,7 +35,7 @@ pub(crate) fn map_path(image: &Path) -> PathBuf {
     name.push(".rmap");
     PathBuf::from(name)
 }
-fn regular_file_identity(file: &File) -> Result<String> {
+pub(crate) fn regular_file_identity(file: &File) -> Result<String> {
     #[cfg(unix)]
     {
         use std::os::unix::fs::MetadataExt;

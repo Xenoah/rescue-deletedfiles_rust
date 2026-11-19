@@ -302,6 +302,12 @@ enum Command {
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
+        /// Confirm the complete logical length before importing regular RAW segments.
+        #[arg(long)]
+        raw_bytes: Option<u64>,
+        /// Confirm the complete logical SHA-256 before publishing a regular RAW image.
+        #[arg(long)]
+        raw_sha256: Option<String>,
         #[arg(long)]
         output: PathBuf,
         #[arg(long)]
@@ -570,7 +576,18 @@ fn run(cli: Cli) -> Result<i32, Error> {
             image,
             output,
             json,
-        } => sleuthkit::import(image, &output, json, &cancel),
+            raw_bytes,
+            raw_sha256,
+        } => sleuthkit::import(
+            image,
+            &output,
+            rescue_core::disk_image::RawExpectation {
+                bytes: raw_bytes,
+                sha256: raw_sha256.as_deref(),
+            },
+            json,
+            &cancel,
+        ),
         Command::FingerprintFile {
             source,
             output,

@@ -345,6 +345,7 @@ pub fn import_android(
         return Err(Error::SourceChanged);
     }
     let report = ImportedFile {
+        raw: None,
         path: out.join(IMAGE_NAME),
         bytes: decoder.offset,
         sha256: format!("{:x}", decoder.logical.finalize()),

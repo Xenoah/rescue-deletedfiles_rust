@@ -110,7 +110,18 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。複数ファイルのVMDKでは記述ファイルを先頭にし、構成ファイルを1行ずつ指定します。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFF・分割RAWには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+単独VDI・QCOW2・クラシックVHD・VHDX（固定容量型・可変容量型）はアプリ内で読み取ります。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFFには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+
+### 分割RAWを元の順番に結合する
+
+`.000` または `.001` から始まる連番の先頭を選ぶと、同じフォルダー内の同じ名前のセグメントを数字順に読み取ります。桁を増やした連番（例 `.0001`）にも対応します。GUIの「イメージをRAWに変換」で形式を「RAW」にすると、異なる名前のセグメントを1行ずつ指定することもできます。追加ツールは不要です。
+
+```sh
+rescue import-image --source disk.001 --image-type raw --output joined.raw --raw-bytes 100663296 --raw-sha256 "$DISK_SHA256" --json
+rescue import-image --source xaa --segment xab --segment xac --image-type raw --output joined.raw --json
+```
+
+各セグメントの長さ、論理ディスク上の開始位置、SHA-256と、結合後のSHA-256を記録します。境界はセクターの途中でも構いません。取得時の長さやSHA-256があれば指定してください。任意名のセグメントの順序や末尾の欠落は、元の記録なしには判別できません。連番の途中が抜けている場合、同じ実体を二度指定した場合、指定のハッシュと一致しない場合は出力しません。読取マップ付きRAWにはマップを保持したまま既存のスキャンを使います。物理デバイスの取得は `rescue image` から行えます。
 
 ## Android sparseイメージ
 
