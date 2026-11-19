@@ -1,0 +1,55 @@
+name: Validate Btrfs LZO and Zstandard inline, reflink slices and preallocated files
+on:
+  push:
+    branches: ['testing/btrfs-lzo-reference']
+    paths: ['.github/workflows/btrfs-lzo-reference.yml', 'scripts/generate_btrfs_lzo_reference.py', 'scripts/btrfs_large_samples.py', 'scripts/btrfs_layout_samples.py']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y btrfs-progs
+      - name: Create disposable subvolumes, snapshot, unlink and independently recover seven files
+        run: python scripts/ci_command.py python scripts/generate_btrfs_lzo_reference.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: btrfs-lzo-reference
+          path: large-fixture/
+          retention-days: 5
+  preserve:
+    needs: reference
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: btrfs-lzo-reference
+          path: tests/btrfs-lzo-reference
+      - name: Preserve verified synthetic bytes for portable testing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma
+          for mode in ('lzo','zstd'):
+              folder=Path('tests/btrfs-lzo-reference')/mode
+              meta=json.loads((folder/'manifest.json').read_text())
+              packed=(folder/'snapshot.raw.xz').read_bytes()
+              assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
+              disk=lzma.decompress(packed)
+              assert len(disk)==meta['raw_bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
+              assert len(meta['original_files'])==13 and meta['subvolume']!=meta['snapshot']
+              assert meta['native_mounted_matches']==13
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/btrfs-lzo-reference/zstd/manifest.json tests/btrfs-lzo-reference/zstd/snapshot.raw.xz tests/btrfs-lzo-reference/lzo/manifest.json tests/btrfs-lzo-reference/lzo/snapshot.raw.xz
+          git commit -m "Preserve independently verified Btrfs regular, compressed and sparse snapshot extents"
+          git push origin HEAD:testing/btrfs-lzo-reference
