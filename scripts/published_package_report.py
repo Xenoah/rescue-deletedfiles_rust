@@ -60,6 +60,11 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 15, 0):
+        originals = run['btrfs_extents']['zstd']
+        assert len(originals) == 7
+        for key, modes in [('btrfs_previous', ('plain', 'zstd')), ('btrfs_checksums', ('xxhash', 'sha256', 'blake2'))]:
+            assert set(run[key]) == set(modes) and all(run[key][mode] == originals for mode in modes)
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 14, 0):
         assert len(run['aac_recordings']) == 7 and len(run['tar_archives']) == 9
         if platform == 'linux':

@@ -35,6 +35,8 @@ from e2e_tar import verify as tar_archives
 from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
+from e2e_btrfs_previous import verify as btrfs_previous
+from e2e_btrfs_checksums import verify as btrfs_checksums
 from e2e_optical import verify as optical_tracks
 from e2e_iso_sessions import verify as iso_history
 from e2e_apfs_snapshots import verify as apfs_snapshot_files
@@ -207,6 +209,10 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 15, 0):
+        for key, test in [('btrfs_previous', btrfs_previous), ('btrfs_checksums', btrfs_checksums)]:
+            with tempfile.TemporaryDirectory() as tmp:
+                result[key] = test(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 13, 0):
         for key, test in [('btrfs_inline', btrfs_inline), ('btrfs_extents', btrfs_extents), ('btrfs_layouts', btrfs_layouts)]:
             with tempfile.TemporaryDirectory() as tmp:
