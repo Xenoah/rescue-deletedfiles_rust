@@ -41,8 +41,15 @@ def generate(mode):
                 assert all(not(live/n).exists() for n in originals)
                 assert not cmd('sudo','btrfs','subvolume','list','-s',mnt).strip()
                 cmd('sudo','btrfs','filesystem','sync',mnt)
+                # Freeze and acquire the already-committed post-deletion device. A later clean unmount can retire another backup slot.
+                acquired=work/'acquired.raw'
+                cmd('sudo','fsfreeze','--freeze',mnt)
+                try:cmd('sudo','dd','if='+dev,'of='+str(acquired),'bs=4M','status=none')
+                finally:cmd('sudo','fsfreeze','--unfreeze',mnt)
+                cmd('sudo','chown',f'{os.getuid()}:{os.getgid()}',acquired)
             finally:cmd('sudo','umount',mnt)
         finally:cmd('sudo','losetup','--detach',dev)
+        disk=acquired
         cmd('btrfs','check','--readonly',disk)
         present=work/'present';present.mkdir()
         cmd('btrfs','restore','-r',str(rootid),disk,present)
@@ -54,17 +61,22 @@ def generate(mode):
         for gen,addr,level in sorted(set(roots),reverse=True):
             if gen>=current or not addr:continue
             out=work/f'previous-{gen}';out.mkdir(exist_ok=True)
-            result=subprocess.run(['btrfs','restore','-t',str(addr),'-r',str(rootid),str(disk),str(out)],capture_output=True,timeout=60)
+            block=subprocess.run(['btrfs','inspect-internal','dump-tree','--block',str(addr),str(disk)],capture_output=True,text=True,timeout=30)
+            sub=re.search(rf'key \({rootid} ROOT_ITEM \d+\) [^\n]+\n\s+generation (\d+) root_dirid \d+ bytenr (\d+)',block.stdout)
+            if not sub:
+                print(mode,gen,'no prior subvolume root item',block.stderr.strip()[:240],flush=True)
+                continue
+            fs_gen,fs_addr=map(int,sub.groups())
+            result=subprocess.run(['btrfs','restore','-t',str(addr),'-f',str(fs_addr),str(disk),str(out)],capture_output=True,text=True,timeout=60)
             matched=[n for n in originals if (out/n).is_file() and (out/n).read_bytes()==originals[n] and sha(out/n)==hashes[n]]
-            print(mode,gen,'matches',len(matched),'of',len(originals),flush=True)
+            print(mode,gen,'subvolume',fs_gen,fs_addr,'matches',len(matched),'of',len(originals),result.stderr.strip()[:240],flush=True)
             if len(matched)==len(originals):
-                verified.append({'generation':gen,'tree_root':addr,'level':level})
-        assert verified, ('No readable historical generation found',mode,prior,roots)
+                verified.append({'generation':gen,'tree_root':addr,'level':level,'fs_root':fs_addr,'fs_generation':fs_gen})
         packed=folder/'volume.raw.xz'
         with disk.open('rb') as r,lzma.open(packed,'wb',preset=6) as w:shutil.copyfileobj(r,w)
         assert packed.stat().st_size<2<<20
         report=dict(filesystem='Btrfs',subvolume=rootid,mode=mode,snapshots=0,current_generation=current,
-                    before_unlink_generation=prior,verified_roots=verified,sha256=sha(disk),
+                    before_unlink_generation=prior,backup_roots=roots,verified_roots=verified,sha256=sha(disk),
                     compressed_sha256=sha(packed),bytes=disk.stat().st_size,originals=hashes)
         (folder/'manifest.json').write_text(json.dumps(report,indent=2)+'\n')
 

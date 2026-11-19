@@ -46,10 +46,10 @@ jobs:
               disk=lzma.decompress(packed)
               assert len(disk)==meta['bytes']==160<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
               assert len(meta['originals'])==7 and meta['snapshots']==0
-              assert meta['verified_roots']
+              assert meta['backup_roots'] and isinstance(meta['verified_roots'],list)
           PY
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
           git add tests/btrfs-previous-roots/zstd/manifest.json tests/btrfs-previous-roots/zstd/volume.raw.xz tests/btrfs-previous-roots/plain/manifest.json tests/btrfs-previous-roots/plain/volume.raw.xz
-          git commit -m "Preserve independently verified Btrfs previous roots without user snapshots"
+          git commit -m "Preserve native post-deletion images and independently measured backup-root results"
           git push origin HEAD:testing/btrfs-previous-roots
