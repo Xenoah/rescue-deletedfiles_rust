@@ -1,3 +1,4 @@
+mod photorec;
 mod sleuthkit;
 mod virtual_image;
 
@@ -38,6 +39,8 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Carve a disk or RAW image using the installed PhotoRec file-format families.
+    Photorec(photorec::Args),
     /// List or recover deleted regular files using Sleuth Kit filesystem metadata.
     Filesystem(sleuthkit::FilesystemArgs),
     /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
@@ -429,6 +432,7 @@ fn run(cli: Cli) -> Result<i32, Error> {
             output,
             json,
         } => sleuthkit::import(image, &output, json, &cancel),
+        Command::Photorec(request) => photorec::run(request, &cancel),
         Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
         Command::ExportRaw {
             session,

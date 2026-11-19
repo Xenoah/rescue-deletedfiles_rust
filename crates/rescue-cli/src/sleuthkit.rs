@@ -106,6 +106,25 @@ pub struct FilesystemArgs {
     json: bool,
 }
 
+pub(super) fn executable_in_path(name: &str) -> Option<PathBuf> {
+    let executable = format!("{name}{}", std::env::consts::EXE_SUFFIX);
+    std::env::split_paths(&std::env::var_os("PATH")?)
+        .filter(|p| p.is_absolute())
+        .map(|p| p.join(&executable))
+        .find(|p| p.is_file())
+}
+
+pub(super) fn single_raw_source(source: &Path, destination: &Path) -> Result<PathBuf> {
+    let raw = ImageArgs {
+        source: source.to_owned(),
+        segment: vec![],
+        image_type: Some("raw".into()),
+        sector_size: None,
+    };
+    let (_, paths) = raw.arguments(Some(destination))?;
+    Ok(PathBuf::from(&paths[0]))
+}
+
 // Consume the child's stdout concurrently with waiting, so cancellation also
 // interrupts a reader blocked on a slow input. stderr stays out of binary output.
 fn read_tool<T>(
@@ -117,19 +136,9 @@ fn read_tool<T>(
     if cancel.load(Ordering::Relaxed) {
         return Err(Error::Cancelled);
     }
-    let executable = format!("{name}{}", std::env::consts::EXE_SUFFIX);
-    let program = std::env::var_os("PATH")
-        .and_then(|path| {
-            std::env::split_paths(&path)
-                .filter(|p| p.is_absolute())
-                .map(|p| p.join(&executable))
-                .find(|p| p.is_file())
-        })
-        .ok_or_else(|| {
-            Error::Unsupported(format!(
-                "install The Sleuth Kit and put {executable} on PATH"
-            ))
-        })?;
+    let program = executable_in_path(name).ok_or_else(|| {
+        Error::Unsupported(format!("install The Sleuth Kit and put {name} on PATH"))
+    })?;
     let mut child = Command::new(program)
         .args(args)
         .stdin(Stdio::null())
