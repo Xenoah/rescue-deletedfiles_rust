@@ -1,0 +1,27 @@
+{
+  "guest_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0",
+  "parts": [
+    {
+      "name": "windows-s001.vmdk",
+      "start": 0,
+      "bytes": 16777216,
+      "sha256": "3e3833958a17529d4780d9f0a572f53bc8c3cb5f28ab3038ea6d7e20ad5d7c5b",
+      "packed_sha256": "5505815abc0333114765ce47d18b2b81aadedbaf2f2bc9c7c68417567c477bb5"
+    },
+    {
+      "name": "windows-s002.vmdk",
+      "start": 16777216,
+      "bytes": 33554432,
+      "sha256": "5d1961a6f6024ffb4ff135c5f0a9ab9cc7e2d884563e6a5065d87b6c832158ab",
+      "packed_sha256": "53639959e848e2bb7f9eb4eb4e02bf153961d9f026f6b4f83abafb2aaee52f51"
+    },
+    {
+      "name": "windows-s003.vmdk",
+      "start": 50331648,
+      "bytes": 50331648,
+      "sha256": "36670ec0b74a3e50227eda132cfb95c36011c318d8aa043b109e3154f7d2d1b2",
+      "packed_sha256": "56683edefa8140a7bc79485d56051cfb20eff8e3b0ef2c78286b156c15761ed0"
+    }
+  ],
+  "descriptor_sha256": "4b5009343706e547bef08ad6bf156bae2a0937568e906be11d2270d82516c4c7"
+}

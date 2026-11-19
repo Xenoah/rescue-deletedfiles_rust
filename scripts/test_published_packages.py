@@ -36,6 +36,9 @@ from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
+from e2e_vmdk import verify as native_vmdk
+from e2e_vmdk_split import verify as split_vmdk
+from e2e_vmdk_boundary import verify as vmdk_boundary
 from e2e_vhdx_chunk import verify as vhdx_chunk
 from e2e_vhdx_4kn import verify as native_4kn
 from e2e_vhdx import verify as native_vhdx
@@ -216,6 +219,14 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 19, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['standalone_vmdk'] = native_vmdk(binary, Path(tmp), independent=a.platform == 'linux')
+        with tempfile.TemporaryDirectory() as tmp:
+            result['split_vmdk'] = split_vmdk(binary, Path(tmp), independent=a.platform == 'linux')
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['vmdk_boundary'] = vmdk_boundary(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 18, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['windows_vhdx'] = native_vhdx(binary, Path(tmp))

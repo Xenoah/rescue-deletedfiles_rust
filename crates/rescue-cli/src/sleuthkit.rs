@@ -12,7 +12,7 @@ pub struct ImageArgs {
     /// Read-only disk, volume, or first image segment.
     #[arg(long)]
     source: PathBuf,
-    /// Additional image segments in logical order, for explicitly split images.
+    /// Additional image segments in logical order, or named extent files for a VMDK descriptor.
     #[arg(long)]
     segment: Vec<PathBuf>,
     /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.

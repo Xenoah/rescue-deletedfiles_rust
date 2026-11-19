@@ -119,6 +119,12 @@ jobs:
       - name: Compare Windows 4Kn GPT and seven native NTFS unlinks with libvhdi and Sleuth Kit
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_4kn.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Compare standalone VMDK imports and real deleted Windows files with QEMU
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Compare split and flat VMware descriptors with independent QEMU images
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk_split.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Import Windows and QEMU VHDX and recover genuine NTFS deletions
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx.py --native --binary target/${{ matrix.target }}/debug/rescue
@@ -175,6 +181,9 @@ jobs:
       - name: Restore seven Windows NTFS deletions across a 4 GiB VHDX BAT chunk boundary
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_chunk.py --binary target/${{ matrix.target }}/release/rescue
+      - name: Recover across QEMU's actual 2 GiB flat and sparse VMDK split
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk_boundary.py --binary target/${{ matrix.target }}/release/rescue
       - name: Release CLI and MCP integration (all integration suites)
         run: python scripts/ci_command.py python scripts/run_integration.py --binary target/${{ matrix.target }}/release/${{ matrix.executable }} --index-reports index-results
       - name: Independent FAT12 and FAT16 deletion

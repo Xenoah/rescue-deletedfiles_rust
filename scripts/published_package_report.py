@@ -60,6 +60,21 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 19, 0):
+        vmdk = run['standalone_vmdk']
+        assert set(vmdk) == {'sparse', 'zero-grain', 'stream', 'footer', 'footer-only', 'tail'} and all(rows == run['windows_vhdx']['fixed'] for rows in vmdk.values())
+        split = run['split_vmdk']
+        expected = {'flat', 'flat-split', 'sparse-split'}
+        if platform == 'linux':
+            expected.update(('monolithicFlat', 'twoGbMaxExtentFlat', 'twoGbMaxExtentSparse'))
+            crossing = run['vmdk_boundary']
+            assert set(crossing) == {'twoGbMaxExtentFlat','twoGbMaxExtentSparse'}
+            assert crossing['twoGbMaxExtentFlat'] == crossing['twoGbMaxExtentSparse']
+            for evidence in crossing.values():
+                assert evidence['bytes'] > 2 << 30 and len(evidence['guest_sha256']) == 64
+                assert evidence['before'] == 3 and evidence['after'] == 4
+                assert evidence['originals'] == run['windows_vhdx']['fixed']
+        assert set(split) == expected and all(rows == run['windows_vhdx']['fixed'] for rows in split.values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 18, 0):
         vhdx = run['windows_vhdx']
         assert vhdx['fixed'] == vhdx['expandable'] and len(vhdx['fixed']) == 7

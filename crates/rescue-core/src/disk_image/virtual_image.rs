@@ -2,6 +2,7 @@
 mod qcow;
 mod vhd;
 mod vhdx;
+mod vmdk;
 use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
@@ -12,6 +13,7 @@ use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
+pub(super) use vmdk::import_segments;
 
 fn invalid(reason: &str) -> Error {
     Error::Invalid(format!("virtual disk image: {reason}"))
@@ -116,16 +118,28 @@ impl Vdi {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Compression {
+    QcowDeflate,
+    VmdkZlib,
+}
+
 enum Block {
     Zero,
     Data(u64),
-    Deflate { at: u64, bytes: usize },
+    Compressed {
+        at: u64,
+        bytes: usize,
+        codec: Compression,
+    },
 }
 enum Disk {
     Vdi(Vdi),
     Qcow(qcow::Qcow),
     Vhd(vhd::Vhd),
     Vhdx(vhdx::Vhdx),
+    Vmdk(vmdk::Vmdk),
+    Flat { size: u64, at: Option<u64> },
 }
 impl Disk {
     fn size(&self) -> u64 {
@@ -134,6 +148,8 @@ impl Disk {
             Self::Qcow(q) => q.size,
             Self::Vhd(v) => v.size,
             Self::Vhdx(v) => v.size,
+            Self::Vmdk(v) => v.size,
+            Self::Flat { size, .. } => *size,
         }
     }
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
@@ -142,6 +158,11 @@ impl Disk {
             Self::Qcow(q) => Ok((q.block(source, offset)?, q.cluster)),
             Self::Vhd(v) => v.block(source, offset),
             Self::Vhdx(v) => Ok(v.block(offset)),
+            Self::Vmdk(v) => Ok(v.block(offset)),
+            Self::Flat { size, at } => Ok((
+                at.map_or(Block::Zero, |at| Block::Data(at + offset)),
+                *size - offset,
+            )),
         }
     }
     fn write_raw(
@@ -152,6 +173,19 @@ impl Disk {
     ) -> Result<(u64, Sha256)> {
         let size = self.size();
         let mut digest = Sha256::new();
+        self.write_at(source, file, 0, &mut digest, cancel)?;
+        file.set_len(size)?;
+        Ok((size, digest))
+    }
+    fn write_at(
+        &mut self,
+        source: &mut File,
+        file: &mut File,
+        base: u64,
+        digest: &mut Sha256,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
+        let size = self.size();
         let mut buffer = vec![0; 256 * 1024];
         let zeros = vec![0; buffer.len()];
         let mut encoded = Vec::new();
@@ -164,25 +198,30 @@ impl Disk {
             let (block, cluster) = self.block(source, offset)?;
             let count = cluster.min(size - offset);
             match block {
-                Block::Deflate { at, bytes } => {
+                Block::Compressed { at, bytes, codec } => {
                     encoded.resize(bytes, 0);
                     read_at(source, at, &mut encoded)?;
                     decoded.resize(cluster as usize + 1, 0);
-                    let mut stream = Decompress::new(false);
+                    let wrapped = codec == Compression::VmdkZlib;
+                    let mut stream = Decompress::new(wrapped);
                     let status = stream
                         .decompress(&encoded, &mut decoded, FlushDecompress::Finish)
-                        .map_err(|_| invalid("QCOW2 compressed cluster"))?;
-                    if status != Status::StreamEnd || stream.total_out() != cluster {
-                        return Err(invalid("QCOW2 compressed cluster length"));
+                        .map_err(|_| invalid("invalid compressed virtual disk block"))?;
+                    let decoded_length = stream.total_out();
+                    if status != Status::StreamEnd
+                        || (decoded_length != cluster && !(wrapped && decoded_length == count))
+                        || (wrapped && stream.total_in() != bytes as u64)
+                    {
+                        return Err(invalid("compressed virtual disk block length"));
                     }
-                    file.seek(SeekFrom::Start(offset))?;
+                    file.seek(SeekFrom::Start(base + offset))?;
                     file.write_all(&decoded[..count as usize])?;
                     digest.update(&decoded[..count as usize]);
                 }
                 block => {
                     let data = if let Block::Data(at) = block {
                         source.seek(SeekFrom::Start(at))?;
-                        file.seek(SeekFrom::Start(offset))?;
+                        file.seek(SeekFrom::Start(base + offset))?;
                         true
                     } else {
                         false
@@ -195,7 +234,11 @@ impl Disk {
                         let n = remaining.min(buffer.len() as u64) as usize;
                         if data {
                             source.read_exact(&mut buffer[..n])?;
-                            file.write_all(&buffer[..n])?;
+                            if buffer[..n].iter().all(|&b| b == 0) {
+                                file.seek_relative(n as i64)?;
+                            } else {
+                                file.write_all(&buffer[..n])?;
+                            }
                             digest.update(&buffer[..n]);
                         } else {
                             digest.update(&zeros[..n]);
@@ -206,8 +249,7 @@ impl Disk {
             }
             offset += count;
         }
-        file.set_len(size)?;
-        Ok((size, digest))
+        Ok(())
     }
 }
 
@@ -217,7 +259,7 @@ pub(super) fn import(
     output: &Path,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
-    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx")) {
+    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx" | "vmdk")) {
         return Ok(None);
     }
     let mut source = File::open(path)?;
@@ -233,6 +275,8 @@ pub(super) fn import(
     }
     let kind = if tail == *b"conectix" || head[..8] == *b"conectix" {
         Some("vhd")
+    } else if head[..4] == *b"KDMV" {
+        Some("vmdk")
     } else if head[..8] == *b"vhdxfile" {
         Some("vhdx")
     } else if head[..4] == *b"QFI\xfb" {
@@ -242,6 +286,9 @@ pub(super) fn import(
     } else {
         None
     };
+    if requested == Some("vmdk") && kind.is_none() {
+        return Ok(None); // Other VMDK variants can use the external driver.
+    }
     // Historically the external VHD reader also accepted VHDX under the vhd alias.
     if requested.is_some()
         && kind != requested
@@ -250,6 +297,7 @@ pub(super) fn import(
         return Err(invalid("signature differs from requested image type"));
     }
     let mut disk = match kind {
+        Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), None, cancel)?),
         Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),

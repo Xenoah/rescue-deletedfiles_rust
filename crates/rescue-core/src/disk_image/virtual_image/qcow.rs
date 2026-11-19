@@ -165,7 +165,8 @@ impl Qcow {
             let sectors = ((entry >> shift) & ((1u64 << size_bits) - 1)) + 1;
             let bytes = sectors * 512 - (at % 512);
             self.check_data(at, bytes)?;
-            return Ok(Block::Deflate {
+            return Ok(Block::Compressed {
+                codec: super::Compression::QcowDeflate,
                 at,
                 bytes: bytes as usize,
             });

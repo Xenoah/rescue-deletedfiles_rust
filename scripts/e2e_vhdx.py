@@ -24,8 +24,10 @@ def digest(path):
         return hashlib.file_digest(src, 'sha256').hexdigest()
 
 
-def native_import(binary, src, out, image_type=None, expected=0):
+def native_import(binary, src, out, image_type=None, expected=0, segments=()):
     args = [binary, 'import-image', '--source', src, '--output', out, '--json']
+    for part in segments:
+        args.extend(['--segment', part])
     if image_type:
         args += ['--image-type', image_type]
     p = subprocess.run(list(map(str, args)), env=dict(os.environ, PATH=''), capture_output=True,
