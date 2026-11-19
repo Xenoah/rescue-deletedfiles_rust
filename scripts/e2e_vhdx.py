@@ -37,8 +37,9 @@ def native_import(binary, src, out, image_type=None, expected=0):
     return json.loads(p.stdout)
 
 
-def recover(binary, raw, root, manifest):
-    scan = run(binary, 'scan', '--source', raw, '--work-dir', root / 'scan', '--json', timeout=180)
+def recover(binary, raw, root, manifest, indexed=False):
+    scan = run(binary, 'scan', '--source', raw, '--work-dir', root / 'scan', '--json',
+               *(['--indexed'] if indexed else []), timeout=180)
     rows = run(binary, 'results', '--session', scan['session'], '--json')['candidates']
     rows = [r for r in rows if r['name'] in manifest['originals']]
     check({r['name'] for r in rows} == set(manifest['originals']) and len(rows) == 7, rows)

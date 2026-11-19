@@ -36,6 +36,7 @@ from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
+from e2e_vhdx_4kn import verify as native_4kn
 from e2e_vhdx import verify as native_vhdx
 from e2e_html import verify as html_documents
 from e2e_ext4_journal import verify as ext4_journal
@@ -217,6 +218,8 @@ def main():
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 18, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['windows_vhdx'] = native_vhdx(binary, Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp:
+            result['windows_4kn'] = native_4kn(binary, Path(tmp), independent=a.platform == 'linux')
         if a.platform == 'linux':
             with tempfile.TemporaryDirectory() as tmp:
                 result['qemu_vhdx'] = native_vhdx(binary, Path(tmp), native=True)

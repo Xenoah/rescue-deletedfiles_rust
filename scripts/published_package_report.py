@@ -63,6 +63,7 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 18, 0):
         vhdx = run['windows_vhdx']
         assert vhdx['fixed'] == vhdx['expandable'] and len(vhdx['fixed']) == 7
+        assert run['windows_4kn']['session'] == run['windows_4kn']['index'] == vhdx['fixed']
         if platform == 'linux':
             assert set(run['qemu_vhdx']) == {'fixed', 'expandable', 'qemu-fixed', 'qemu-dynamic'}
             assert all(items == vhdx['fixed'] for items in run['qemu_vhdx'].values())
