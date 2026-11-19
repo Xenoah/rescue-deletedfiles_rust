@@ -1,0 +1,217 @@
+{
+  "files_byte_exact": 16,
+  "bytes_exact": 95596,
+  "source_unchanged": true,
+  "source_sha256": "ebeca590802f035ef532dfe4e529330b90757a0573b499b8e344ccf37d4bf877",
+  "archive_sha256": "ffabc1bb0512c297156267b8a7ae56a9eacdca2af822219bbaa1f7ce0ead7561",
+  "actual_fat_unlinks": {
+    "bom.html": "58e8c3ef274b4978b6ae003b21b71189ad4c1a868198b031c105bfadb543c389",
+    "corpus.htm": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+    "script.html": "bec006a9f35c7425957736243b9d4d81df0c7b726bba948e518e8878562c2b9b",
+    "notes.html": "2b10bb0e670e887115cb39efdc9d06fa439a2f8060c41e097fa8bb5411722680",
+    "textarea.htm": "641b603d01c3c3a07ea1ff658f9720e2dfad68d848c24b5fc2890264b1082661",
+    "table.html": "09ab8490aef4c10d6b575f7e49693ea20c1adea0f52267fcc47281ef4705cb32",
+    "style.htm": "750bc96a97c339e40d1c6626c5f898268b1c3eeb2c97287218457dd043c3b1d6",
+    "alpha.pam": "a0a83a9ad7cb29e4295440689bd27c66544eaac668f1b9b12db593c4a5dafc58",
+    "alpha16.pam": "dfe48709a9d192e1d88a6121e6ec7213f0244b1a2e7909038ec7cb1c6748e0a1",
+    "plain-bitmap.pbm": "d4ce90e0136359686ccfb2c68864494dd83f59099d3cdfd8edbf5c33136aea6e",
+    "packed.pbm": "7f08ba6f9b3e9108b5609019dbf3bde4409487cb487a9d0b0668fff29afaf900",
+    "plain-gray.pgm": "b8738d253fff9b3c624865c08f320bac4cbe02fff3c477522ea990e519d49d44",
+    "gray16.pgm": "75220864ddf2624937bf1f934ffec612dc890dd48538d9351ce1090edf6086b0",
+    "plain-rgb.ppm": "cc116d7929e86b24248f10f516783b444b432b69bf8354ba9b827882daa7de4b",
+    "rgb8.ppm": "62c68b967d609e5f8ad888b2031618e03ad31c6e8e5a499e44f7cc97322371b4",
+    "rgb16.ppm": "1f77f13e952b6c20ecdb8bbc3356861d4d6325cc10f5af249319202af84a2e1f"
+  },
+  "status": "passed",
+  "application_version": "1.17.0",
+  "time_utc": "2026-11-19T20:17:35.566082+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "e97e7f15eeedf4a11f5fabe84785e62d7bdcd2b99df204f4921a89ffaa03ada4",
+  "cli_binary_sha256": "8bbb44a43cf24f2aad76b73f7e1f810f3ebe89fa57550a5640877bfc39674c33",
+  "files": [
+    {
+      "archive_entry": "html_00000000000a1a00.html",
+      "bytes": 142,
+      "sha256": "58e8c3ef274b4978b6ae003b21b71189ad4c1a868198b031c105bfadb543c389"
+    },
+    {
+      "archive_entry": "html_00000000000a1c00.html",
+      "bytes": 80,
+      "sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1"
+    },
+    {
+      "archive_entry": "html_00000000000a1e00.html",
+      "bytes": 167,
+      "sha256": "bec006a9f35c7425957736243b9d4d81df0c7b726bba948e518e8878562c2b9b"
+    },
+    {
+      "archive_entry": "html_00000000000a2000.html",
+      "bytes": 165,
+      "sha256": "2b10bb0e670e887115cb39efdc9d06fa439a2f8060c41e097fa8bb5411722680"
+    },
+    {
+      "archive_entry": "html_00000000000a2200.html",
+      "bytes": 162,
+      "sha256": "641b603d01c3c3a07ea1ff658f9720e2dfad68d848c24b5fc2890264b1082661"
+    },
+    {
+      "archive_entry": "html_00000000000a2400.html",
+      "bytes": 74122,
+      "sha256": "09ab8490aef4c10d6b575f7e49693ea20c1adea0f52267fcc47281ef4705cb32"
+    },
+    {
+      "archive_entry": "html_00000000000b4600.html",
+      "bytes": 178,
+      "sha256": "750bc96a97c339e40d1c6626c5f898268b1c3eeb2c97287218457dd043c3b1d6"
+    },
+    {
+      "archive_entry": "pam_00000000000b8000.pam",
+      "bytes": 2175,
+      "sha256": "a0a83a9ad7cb29e4295440689bd27c66544eaac668f1b9b12db593c4a5dafc58"
+    },
+    {
+      "archive_entry": "pam_00000000000b8a00.pam",
+      "bytes": 6877,
+      "sha256": "dfe48709a9d192e1d88a6121e6ec7213f0244b1a2e7909038ec7cb1c6748e0a1"
+    },
+    {
+      "archive_entry": "pbm_00000000000b4800.pbm",
+      "bytes": 464,
+      "sha256": "d4ce90e0136359686ccfb2c68864494dd83f59099d3cdfd8edbf5c33136aea6e"
+    },
+    {
+      "archive_entry": "pbm_00000000000b5c00.pbm",
+      "bytes": 42,
+      "sha256": "7f08ba6f9b3e9108b5609019dbf3bde4409487cb487a9d0b0668fff29afaf900"
+    },
+    {
+      "archive_entry": "pgm_00000000000b4a00.pgm",
+      "bytes": 1052,
+      "sha256": "b8738d253fff9b3c624865c08f320bac4cbe02fff3c477522ea990e519d49d44"
+    },
+    {
+      "archive_entry": "pgm_00000000000b5e00.pgm",
+      "bytes": 1717,
+      "sha256": "75220864ddf2624937bf1f934ffec612dc890dd48538d9351ce1090edf6086b0"
+    },
+    {
+      "archive_entry": "ppm_00000000000b5200.ppm",
+      "bytes": 2240,
+      "sha256": "cc116d7929e86b24248f10f516783b444b432b69bf8354ba9b827882daa7de4b"
+    },
+    {
+      "archive_entry": "ppm_00000000000b6600.ppm",
+      "bytes": 2692,
+      "sha256": "62c68b967d609e5f8ad888b2031618e03ad31c6e8e5a499e44f7cc97322371b4"
+    },
+    {
+      "archive_entry": "ppm_00000000000b7200.ppm",
+      "bytes": 3321,
+      "sha256": "1f77f13e952b6c20ecdb8bbc3356861d4d6325cc10f5af249319202af84a2e1f"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 16,
+    "html_sha256": "fb4b0e406f722856a03d09bd3be896783da4ebd642cddc24eaf2d8baff4b58b1",
+    "csv_sha256": "d9b3bc895dcbb2c5f743a4304c3d94bf1fc1eb38157d30f6d54cb943af7a18fa",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 16
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "a9c7d84f430df50af6b29c77a56ded34fe4c9f12c6fb59029fa63111cdee1bbd",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "2c9cfe7532acf1c7bad47b797d5427b6ea42168499e6c7b299353b97ffefd921",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "aa7b9ebaaab7569effcf631ac27797e3a45822db933ac0a35b28526673fcd023"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "710daa5ce21009318feef2bf11a3abb6c04bb9f53729c4cdb5aaed2ab5ab9069"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.17.0/structures-selected.png",
+      "sha256": "f3db544723986f760ca1b9259b4af305145c987b7b5e4becafc0fc18889e4a66",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/structures-recovered.png",
+      "sha256": "9b2ae215267e2800e617c280efbc09091a123a102a9f12aa9037d29150b88c7d",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/custom-recovered.png",
+      "sha256": "e2c8c992ac2ce11adf81440fc8481c2dd83d72552cf7cc1c1ec3048e14df38f3",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/cp932-recovered.png",
+      "sha256": "00645742b273207b11250568899fe075132647682fd53dd02608fd6158b9ee65",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/exfat-recovered.png",
+      "sha256": "efdc6f221b885eeb2afc1dc9c49b85eb0c012caf5550fe9365ffd14db41e585e",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/hash-saved.png",
+      "sha256": "35f10b9b0ade7e10c23355c543182be2f607f6342a5aa8919b2b8f4a310eb93b",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/acq-interrupted.png",
+      "sha256": "01bbedef6c88062f20d2850a46bc477e7596583d85d7c95724c4d3dce8100847",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.17.0/acq-resumed.png",
+      "sha256": "54928e08d19b6f9fff92df207535a559fa630338f07a9c5913bb37787e62355a",
+      "width": 1260,
+      "height": 820
+    }
+  ]
+}
