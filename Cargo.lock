@@ -2087,6 +2087,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1574f8e322bb9d442095896ff66d126e521f5a85ef7d7343a269bb7d6eeb3f0b"
 
 [[package]]
+name = "lzxd"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c17f346186eccb574ba5581acefc514f0c70a642db4f96e245034a0a158a7168"
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2896,7 +2902,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.19.0"
+version = "1.20.0"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2909,7 +2915,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.19.0"
+version = "1.20.0"
 dependencies = [
  "base64",
  "blake2",
@@ -2925,6 +2931,7 @@ dependencies = [
  "lzfse_rust",
  "lzma-rust2",
  "lzo",
+ "lzxd",
  "md-5",
  "png",
  "quick-xml",
@@ -2934,6 +2941,7 @@ dependencies = [
  "same-file",
  "serde",
  "serde_json",
+ "sevenz-rust2",
  "sha2 0.10.9",
  "symphonia-codec-aac",
  "symphonia-core",
@@ -2951,7 +2959,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.19.0"
+version = "1.20.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -2964,7 +2972,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "1.19.0"
+version = "1.20.0"
 dependencies = [
  "rescue-core",
  "serde_json",
@@ -3180,6 +3188,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 3.0.9",
+]
+
+[[package]]
+name = "sevenz-rust2"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5e465701779cbc6d0d10cf907f175035cfdd50b8d3cb628d7f1f435ef02972f"
+dependencies = [
+ "bzip2",
+ "crc32fast",
+ "flate2",
+ "js-sys",
+ "lzma-rust2",
+ "wasm-bindgen",
 ]
 
 [[package]]

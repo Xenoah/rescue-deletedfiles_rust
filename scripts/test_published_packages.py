@@ -36,6 +36,8 @@ from e2e_btrfs_snapshots import verify as btrfs_inline
 from e2e_btrfs_extents import verify as btrfs_extents
 from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
+from e2e_sevenz import verify as sevenz_archives
+from e2e_cab import verify as cabinet_archives
 from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
 from e2e_vmdk_boundary import verify as vmdk_boundary
@@ -219,6 +221,16 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 20, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['sevenz_archives'] = sevenz_archives(binary, Path(tmp))
+        with tempfile.TemporaryDirectory() as tmp:
+            result['cab_archives'] = cabinet_archives(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['sevenz_deleted'] = sevenz_archives(binary, Path(tmp), native=True)
+            with tempfile.TemporaryDirectory() as tmp:
+                result['cab_deleted'] = cabinet_archives(binary, Path(tmp), native=True)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 19, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['standalone_vmdk'] = native_vmdk(binary, Path(tmp), independent=a.platform == 'linux')

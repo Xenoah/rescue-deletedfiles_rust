@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
+          sudo apt-get install -y p7zip-full cabextract libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -119,6 +119,12 @@ jobs:
       - name: Compare Windows 4Kn GPT and seven native NTFS unlinks with libvhdi and Sleuth Kit
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_4kn.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Restore Windows MakeCAB and gcab files after ext4 unlink and compare all members with libmspack
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_cab.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover nine real FAT32 7z deletions and independently decode every original member
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_sevenz.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Compare standalone VMDK imports and real deleted Windows files with QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vmdk.py --independent --binary target/${{ matrix.target }}/debug/rescue

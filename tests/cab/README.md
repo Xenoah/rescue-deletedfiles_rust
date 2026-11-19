@@ -1,0 +1,7 @@
+# Microsoft Cabinet recovery references
+
+Windows MakeCAB generated four cabinets with MSZIP, 32 KiB and 256 KiB LZX windows, and two LZX folders with a 2 MiB window. Windows Expand verified six members in each cabinet, including an empty file and 137,297 bytes of repeating binary data spanning several 32 KiB blocks. A second Linux job decoded every member independently using libmspack and compared it with the original. [Windows generation and Expand verification](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44616251073) · [Independent Linux verification and reference commit](https://github.com/Xenoah/rescue-deletedfiles_rust/commit/0f02fc2).
+
+GNU gcab generated four more cabinets covering stored blocks, MSZIP, UTF-8 names, an empty member and multi-block files. The fifth gcab reference adds zero-filled optional header, folder and data reservations to its stored image. Each original archive and member is recorded in its producer's JSON manifest.
+
+Run `python scripts/e2e_cab.py --binary PATH` to recover all nine reference files using normal and indexed scans. With `--native`, a real ext4 filesystem is formatted and populated, the archive contents are read back before unlink, both scans recover the deleted cabinet bytes, and cabextract decodes each member against the independent originals. The portable trial also checks missing ranges, 24 invalid or unsupported structures, and early and late archive boundaries.
