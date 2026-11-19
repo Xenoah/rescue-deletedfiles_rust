@@ -101,6 +101,9 @@ jobs:
       - name: Cross-check Apple disk images with dmg2img and QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --independent --binary target/${{ matrix.target }}/debug/rescue
+      - name: Mount both the current APFS volume and its retained snapshot read-only in macOS
+        if: runner.os == 'macOS' && matrix.arch == 'x64'
+        run: python scripts/ci_command.py python scripts/apfs_native_reader.py
       - name: Convert Apple-generated raw, zlib, bzip2, ADC, LZFSE and LZMA disk images
         if: runner.os == 'macOS' && matrix.arch == 'arm64'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --hdiutil --binary target/${{ matrix.target }}/debug/rescue
