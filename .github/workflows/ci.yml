@@ -101,6 +101,9 @@ jobs:
       - name: Recover deleted FAT32 files from five independently compressed RAW images
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_compressed_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Carve seven HTML documents after actual FAT32 deletions
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_html.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Carve seven GNU, PAX and ustar archives actually deleted on FAT32
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_tar.py --native --binary target/${{ matrix.target }}/debug/rescue

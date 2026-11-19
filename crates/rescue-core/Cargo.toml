@@ -32,6 +32,7 @@ md-5 = "0.10"
 tiff = "0.11.3"
 ttf-parser = { version = "0.25.1", default-features = false, features = ["std", "variable-fonts"] }
 roxmltree = { version = "0.21.2", default-features = false, features = ["std"] }
+html5gum = "0.9.2"
 quick-xml = "0.41.0"
 zune-core = "0.5.3"
 zune-jpeg = { version = "0.5.15", default-features = false, features = ["std"] }
