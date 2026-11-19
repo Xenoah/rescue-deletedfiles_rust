@@ -298,6 +298,15 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Expand a standalone Android sparse image into a RAW and a read map in a new directory.
+    ImportAndroid {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        destination: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
     /// Carve a disk or RAW image using the installed PhotoRec file-format families.
     Photorec(photorec::Args),
     /// List or recover deleted regular files using Sleuth Kit filesystem metadata.
@@ -539,6 +548,15 @@ fn run(cli: Cli) -> Result<i32, Error> {
         eprintln!("{}", json!({"read_access":access}));
     }
     match cli.command {
+        Command::ImportAndroid {
+            source,
+            destination,
+            json: compact,
+        } => {
+            let report = rescue_core::disk_image::import_android(&source, &destination, &cancel)?;
+            print(json!(report), compact);
+            Ok(0)
+        }
         Command::ImportImage {
             image,
             output,

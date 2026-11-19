@@ -38,6 +38,7 @@ from e2e_btrfs_layouts import verify as btrfs_layouts
 from e2e_netpbm import verify as netpbm_images
 from e2e_sevenz import verify as sevenz_archives
 from e2e_cab import verify as cabinet_archives
+from e2e_android_sparse import portable as android_sparse, native as aosp_deletions
 from e2e_whole_hash import portable as whole_hash_files, native as deleted_whole_hash_files
 from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
@@ -222,6 +223,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 22, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['android_sparse'] = android_sparse(binary,Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['android_deletions'] = aosp_deletions(binary,Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 21, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['whole_file_hashes'] = whole_hash_files(binary, Path(tmp))

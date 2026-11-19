@@ -47,6 +47,9 @@ lzxd = "0.2.7"
 [dev-dependencies]
 tempfile.workspace = true
 
+[target.'cfg(any(target_os = "linux", target_os = "macos"))'.dependencies]
+rustix = { version = "1", features = ["fs"] }
+
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
 

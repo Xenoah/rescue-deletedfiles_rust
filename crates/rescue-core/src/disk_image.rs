@@ -1,4 +1,6 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
+mod android;
+pub use android::{AndroidVerification, import_android};
 mod apfs;
 mod btrfs;
 pub use apfs::{ApfsRequest, apfs};
@@ -35,6 +37,8 @@ pub struct ImportedFile {
     pub sha256: String,
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub ewf: Option<EwfVerification>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub android_sparse: Option<AndroidVerification>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -259,6 +263,7 @@ fn publish_output(
         bytes,
         sha256: format!("{:x}", digest.finalize()),
         ewf: None,
+        android_sparse: None,
     })
 }
 
@@ -267,6 +272,9 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
     let first = Path::new(&paths[0]);
     let kind = image.image_type.as_deref();
     if !crate::is_device(first) {
+        if kind == Some("android-sparse") || (kind.is_none() && android::has_magic(first)?) {
+            return Err(Error::Request("use import-android with a new destination directory to preserve unrecorded Android sparse ranges".into()));
+        }
         if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
             return Ok(result);
         }
