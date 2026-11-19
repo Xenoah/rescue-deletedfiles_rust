@@ -17,6 +17,7 @@ pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
 mod jpeg;
+mod json;
 mod movie;
 mod mp3;
 mod pdf;
@@ -71,6 +72,7 @@ pub(crate) fn validate_estimated_extent(
         "flac" => Some(Format::Flac),
         "mp3" => Some(Format::Mp3),
         "xml" => Some(Format::Xml),
+        "json" => Some(Format::Json),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
@@ -147,6 +149,7 @@ enum Format<'a> {
     Flac,
     Mp3,
     Xml,
+    Json,
     Rtf,
     Pdf,
     Zip,
@@ -185,6 +188,7 @@ impl<'a> Format<'a> {
             Self::Flac => "flac",
             Self::Mp3 => "mp3",
             Self::Xml => "xml",
+            Self::Json => "json",
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
             Self::Zip => "zip",
@@ -249,6 +253,7 @@ impl<'a> Format<'a> {
             | Self::Flac
             | Self::Mp3
             | Self::Xml
+            | Self::Json
             | Self::Rtf
             | Self::Ico
             | Self::Cur
@@ -309,6 +314,11 @@ impl<'a> Format<'a> {
                     mp3::parse(&mut input)?
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Json => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = json::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Tiff => {
                 tiff::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
@@ -377,6 +387,19 @@ fn detect<'a>(
         Some(Format::Jpeg)
     } else if bytes.starts_with(b"{\\rtf1") && Format::Rtf.allowed(extensions) {
         Some(Format::Rtf)
+    } else if matches!(bytes.first(), Some(b'{' | b'[' | 0xef))
+        && Format::Json.allowed(extensions)
+        && json::signature(
+            bytes,
+            extensions.iter().any(|v| {
+                v.trim()
+                    .trim_start_matches("*.")
+                    .trim_start_matches('.')
+                    .eq_ignore_ascii_case("json")
+            }),
+        )
+    {
+        Some(Format::Json)
     } else if matches!(bytes.first(), Some(0x3c | 0xef))
         && xml::signature(bytes)
         && Format::Xml.allowed(extensions)
@@ -438,6 +461,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Mp3 => &[
             "MPEG Layer III with Xing/Info audio-frame and byte counts. Optional leading ID3v2 metadata retained. MPEG headers, frame lengths, sampling rate, channel count and declared end are checked. No audio decoding or trailing ID3v1/APE tag recovery.",
+        ],
+        Format::Json => &[
+            "UTF-8 JSON object or array validated through its closing delimiter. The value may be embedded in a larger document. Leading and trailing whitespace outside the value is excluded, except whitespace following a UTF-8 BOM. No scalar-root or JSON-with-comments recovery.",
         ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
@@ -528,6 +554,7 @@ pub(crate) fn scan_range(
         warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/PDF/RTF/XML/ZIP/Office/MP4/MOV/MP3/FLAC/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
+    let mut json_end = 0;
     let mut internal_headers = std::collections::BTreeSet::new();
     let mut attempts = 0u64;
     let mut offset = start;
@@ -550,6 +577,9 @@ pub(crate) fn scan_range(
                 continue;
             };
             let at = offset + index as u64;
+            if format == Format::Json && at < json_end {
+                continue;
+            }
             let allocation = match scope.status(at, 1, cancel) {
                 Ok(status) => status,
                 Err(Error::Cancelled) => {
@@ -612,6 +642,9 @@ pub(crate) fn scan_range(
                     };
                     if candidate.allocation_status == AllocationStatus::Conflict {
                         continue;
+                    }
+                    if validated_format == Format::Json {
+                        json_end = at + bytes.len() as u64;
                     }
                     candidate.id = validated_format.id(at);
                     candidate.name = validated_format.name(at);
@@ -708,6 +741,7 @@ pub(crate) fn recovery_data(
         Format::Flac,
         Format::Mp3,
         Format::Xml,
+        Format::Json,
         Format::Rtf,
         Format::Zip,
         Format::Docx,
