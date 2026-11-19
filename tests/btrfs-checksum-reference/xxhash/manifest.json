@@ -1,0 +1,22 @@
+{
+  "filesystem": "Btrfs",
+  "checksum": "xxhash",
+  "compression": "zstd",
+  "offline_errors": [],
+  "subvolume": 256,
+  "snapshot": 257,
+  "raw_bytes": 167772160,
+  "sha256": "e43c1a93cb279b61e93d3f7ee60eb9441cfc42397a604af9a49d3966f83ef1e9",
+  "compressed_sha256": "2162f1f9ed9db351ef767182beef93901df9a38925c86a8357fd84ddf397118f",
+  "original_files": {
+    "log.txt": "a51f84735a140812e819e6c4bbfb8a5550384bd0f944a40ecbbc8f7dda36d44d",
+    "readings.csv": "9c09d9b4e28cde73678402fe61a3383bb49fb33b4dd9b41c14a07e43d8822f87",
+    "image.bmp": "c85866f5d07b3a01beb92659c1c6944c4ee037977f5750a1d76eb3fa76c66b78",
+    "tone.wav": "f3ba039305a183a789ba87365d250cedf25c5da0945bc675facb10f97f2ce869",
+    "bundle.zip": "db26cc0f0b2f99408f220b60b82474ebb65b3c1e0b9007799c1f8d8e2c3ba611",
+    "private.bin": "272a4cdc2b7ba629faef8bde82e88ef9033bac4b802cc3fc62acca7c2365ad08",
+    "sparse.dat": "db9493d94911027fd3271755cb672e27b13e0966095be6596762871b19aecf37"
+  },
+  "survivor": "survivor.txt",
+  "created_later": "created-later.txt"
+}
