@@ -14,7 +14,7 @@ from e2e_vhdx import GOLD, MIB, digest, native_import, recover
 from e2e_vhdx_4kn import find_record
 
 
-def verify(binary, root):
+def relocated_guest(binary, root, boundary):
     fixture = GOLD / 'fixed'
     m = json.loads((fixture / 'manifest.json').read_text())
     base = root / 'windows.vhdx'
@@ -29,8 +29,7 @@ def verify(binary, root):
     records = sorted(find_record(guest, part['offset'], part['length'], r['record_sha256']) - part['offset']
                      for r in rows if r['name'] in m['originals'])
     check(len(records) == 7, records)
-    # The fourth deleted record starts in the first guest block of chunk two.
-    boundary = 4 << 30
+    # Place the fourth original record at the requested guest boundary.
     start = boundary - records[3]
     check(start % 512 == 0 and sum(start+x < boundary for x in records) == 3, records)
     source = root / 'large.raw'
@@ -48,6 +47,12 @@ def verify(binary, root):
             if data.count(0) < len(data):
                 dest.seek(start+pos)
                 dest.write(data)
+    return source, m
+
+
+def verify(binary, root):
+    source, m = relocated_guest(binary, root, 4 << 30)
+    end = source.stat().st_size
     image = root / 'large.vhdx'
     subprocess.run(['qemu-img', 'convert', '-f', 'raw', '-O', 'vhdx', '-o',
                     'subformat=dynamic,block_size=1048576', source, image], check=True)

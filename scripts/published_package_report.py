@@ -67,6 +67,13 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
         expected = {'flat', 'flat-split', 'sparse-split'}
         if platform == 'linux':
             expected.update(('monolithicFlat', 'twoGbMaxExtentFlat', 'twoGbMaxExtentSparse'))
+            crossing = run['vmdk_boundary']
+            assert set(crossing) == {'twoGbMaxExtentFlat','twoGbMaxExtentSparse'}
+            assert crossing['twoGbMaxExtentFlat'] == crossing['twoGbMaxExtentSparse']
+            for evidence in crossing.values():
+                assert evidence['bytes'] > 2 << 30 and len(evidence['guest_sha256']) == 64
+                assert evidence['before'] == 3 and evidence['after'] == 4
+                assert evidence['originals'] == run['windows_vhdx']['fixed']
         assert set(split) == expected and all(rows == run['windows_vhdx']['fixed'] for rows in split.values())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 18, 0):
         vhdx = run['windows_vhdx']
