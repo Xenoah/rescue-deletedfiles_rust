@@ -36,9 +36,6 @@ def main():
                 if volume:break
                 time.sleep(.5)
             assert volume, (dev,attach)
-            reported=plistlib.loads(run('diskutil','apfs','listSnapshots',volume,'-plist'))
-            print('Actual macOS snapshots',reported,flush=True)
-            assert any(s.get('SnapshotName')==meta['snapshot'] or s.get('Name')==meta['snapshot'] for s in reported['Snapshots'])
             for which in ('current','snapshot'):
                 mount=root/which;mount.mkdir()
                 flags=['-s',meta['snapshot']] if which=='snapshot' else []
@@ -46,6 +43,9 @@ def main():
                 try:
                     assert (mount/meta['survivor']).is_file()
                     if which=='current':
+                        reported=plistlib.loads(run('diskutil','apfs','listSnapshots',mount,'-plist'))
+                        print('Actual macOS snapshots',reported,flush=True)
+                        assert any(s.get('SnapshotName')==meta['snapshot'] or s.get('Name')==meta['snapshot'] for s in reported['Snapshots'])
                         assert (mount/meta['created_later']).is_file() and all(not (mount/name).exists() for name in meta['original_files'])
                     else:
                         assert not (mount/meta['created_later']).exists()
