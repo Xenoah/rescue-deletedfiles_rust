@@ -1,3 +1,5 @@
+mod sleuthkit;
+
 use clap::{Parser, Subcommand};
 use rescue_core::{
     CollisionPolicy, Error, RestoreOptions, RestoreTarget, ScanMethod, ScanOptions, SearchSettings,
@@ -14,7 +16,7 @@ use std::{
 #[command(
     name = "rescue",
     version,
-    about = "Read-only NTFS/FAT32/exFAT disk and volume recovery (alpha)"
+    about = "Read-only disk, volume and file recovery"
 )]
 struct Cli {
     /// Explicitly request Windows UAC permission for this command's source disk.
@@ -26,6 +28,17 @@ struct Cli {
 }
 #[derive(Subcommand)]
 enum Command {
+    /// Read a forensic or virtual image into a new RAW file using Sleuth Kit img_cat.
+    ImportImage {
+        #[command(flatten)]
+        image: sleuthkit::ImageArgs,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List or recover deleted regular files using Sleuth Kit filesystem metadata.
+    Filesystem(sleuthkit::FilesystemArgs),
     /// Decode a selected PNG/JPEG or text prefix in a resource-limited worker.
     /// Writes a derived PNG/text under destination; never opens a viewer.
     Preview {
@@ -408,6 +421,12 @@ fn run() -> Result<i32, Error> {
         eprintln!("{}", json!({"read_access":access}));
     }
     match cli.command {
+        Command::ImportImage {
+            image,
+            output,
+            json,
+        } => sleuthkit::import(image, &output, json, &cancel),
+        Command::Filesystem(request) => sleuthkit::filesystem(request, &cancel),
         Command::ExportRaw {
             session,
             id,
