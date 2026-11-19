@@ -15,6 +15,21 @@ def run(*args):
     if p.returncode:raise RuntimeError(f'{args}: '+(p.stdout+p.stderr).decode(errors='replace')[-2000:])
     return p.stdout
 
+def attached_volume(entities, containers, name):
+    # hdiutil may report the synthesized container and volume before their physical store.
+    attached = {item['dev-entry'].removeprefix('/dev/') for item in entities
+                if re.fullmatch(r'/dev/disk\d+(s\d+)?', item.get('dev-entry', ''))}
+    matches = [(store['DeviceIdentifier'], volume['DeviceIdentifier'])
+               for container in containers
+               for store in container.get('PhysicalStores', [])
+               if store.get('DeviceIdentifier') in attached
+               for volume in container.get('Volumes', [])
+               if volume.get('Name') == name and re.fullmatch(r'disk\d+s\d+', volume['DeviceIdentifier'])]
+    if len(matches) > 1:
+        raise ValueError(f'ambiguous attached APFS volume: {matches}')
+    return matches[0] if matches else None
+
+
 def main():
     fixture=Path('tests/apfs-reference')
     meta=json.loads((fixture/'manifest.json').read_text())
@@ -23,19 +38,21 @@ def main():
         with lzma.open(fixture/'snapshot.raw.xz','rb') as src,disk.open('wb') as dst:shutil.copyfileobj(src,dst)
         with disk.open('rb') as f:assert hashlib.file_digest(f,'sha256').hexdigest()==meta['sha256']
         attach=plistlib.loads(run('hdiutil','attach','-nomount','-readonly','-plist','-imagekey','diskimage-class=CRawDiskImage',disk))
-        dev=attach['system-entities'][0]['dev-entry']
-        assert re.fullmatch(r'/dev/disk\d+',dev)
+        entities = attach['system-entities']
+        whole = [item['dev-entry'] for item in entities if re.fullmatch(r'/dev/disk\d+', item.get('dev-entry', ''))]
+        assert whole, attach
+        dev = whole[0]
         try:
-            volume=None
             for _ in range(15):
-                containers=plistlib.loads(run('diskutil','apfs','list','-plist'))['Containers']
-                for c in containers:
-                    stores=[v.get('DeviceIdentifier','') for v in c.get('PhysicalStores',[])]
-                    if dev.removeprefix('/dev/') not in stores:continue
-                    volume=next((v['DeviceIdentifier'] for v in c['Volumes'] if v.get('Name')==meta['volume']),None)
-                if volume:break
+                containers = plistlib.loads(run('diskutil', 'apfs', 'list', '-plist'))['Containers']
+                match = attached_volume(entities, containers, meta['volume'])
+                if match:
+                    store, volume = match
+                    dev = '/dev/' + store
+                    break
                 time.sleep(.5)
-            assert volume, (dev,attach)
+            else:
+                raise AssertionError((attach, containers))
             for which in ('current','snapshot'):
                 mount=root/which;mount.mkdir()
                 flags=['-s',meta['snapshot']] if which=='snapshot' else []
