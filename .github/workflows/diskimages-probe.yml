@@ -1,0 +1,38 @@
+name: Check Apple disk image encoders
+on:
+  push:
+    branches: [testing/apple-udif]
+permissions:
+  contents: read
+jobs:
+  apple:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: macos-26-arm64-rust-1.99.1-${{ hashFiles('Cargo.lock') }}
+          restore-keys: macos-26-arm64-rust-1.99.1-
+      - run: rustup toolchain install 1.99.1 --profile minimal
+      - run: cargo build -p rescue-cli --locked --target aarch64-apple-darwin
+      - run: mkdir apple-media
+      - name: Convert Apple-encoded media and restore deleted originals
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import sys
+          sys.path.insert(0,'scripts')
+          from e2e_udif import apple_images
+          apple_images(Path('target/aarch64-apple-darwin/debug/rescue').resolve(),Path('apple-media').resolve())
+          PY
+      - name: Save encoder output for diagnosis
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apple-encoder-output
+          path: apple-media/*.dmg
+          retention-days: 2
