@@ -95,11 +95,12 @@ jobs:
       - name: Convert Apple-generated raw, zlib, bzip2, ADC, LZFSE and LZMA disk images
         if: runner.os == 'macOS' && matrix.arch == 'arm64'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --hdiutil --binary target/${{ matrix.target }}/debug/rescue
-      - name: Reopen carved MP3, FLAC and TIFF with FFmpeg and ImageMagick
+      - name: Reopen carved MP3, FLAC, AIFF and TIFF with FFmpeg and ImageMagick
         if: runner.os == 'Linux'
         run: |
           python scripts/ci_command.py python scripts/e2e_mp3.py --independent --binary target/${{ matrix.target }}/debug/rescue
           python scripts/ci_command.py python scripts/e2e_flac.py --independent --binary target/${{ matrix.target }}/debug/rescue
+          python scripts/ci_command.py python scripts/e2e_aiff.py --independent --binary target/${{ matrix.target }}/debug/rescue
           python scripts/ci_command.py python scripts/e2e_tiff.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Verify independently encoded Zstandard and LZ4 frames
         if: runner.os == 'Linux'

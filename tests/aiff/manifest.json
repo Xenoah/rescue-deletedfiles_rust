@@ -1,0 +1,56 @@
+{
+  "pcm_alaw.aifc": {
+    "sha256": "7fc3c2cada3ecf4c9015bfe6de87147b641f886f5cf69c28ef213586e1d7e3dd",
+    "frames": 135,
+    "channels": 1,
+    "pcm_s32_sha256": "509643d36eeb5a6c487ffc95e437235e72b8e9d9c378a9ce4558ea150d13b428"
+  },
+  "pcm_f32be.aifc": {
+    "sha256": "6f8686808f56bd174effb147b8621dfe56504c3a2d3fc9466cd9d74158149a1a",
+    "frames": 135,
+    "channels": 2,
+    "pcm_s32_sha256": "cf4ee2c979dab1b7a2bc4fedb1e2158b1a9531a92cfed305a5d060b7947aa638"
+  },
+  "pcm_f64be.aifc": {
+    "sha256": "583e49c3c4e67e8d338ece03a45fc5a846cf4be16e8f260f3c60a8e47d664149",
+    "frames": 135,
+    "channels": 1,
+    "pcm_s32_sha256": "c5660f01ede8a86ad46ee170a38740f7c5d2e8d9d386665bca00b279390aca65"
+  },
+  "pcm_mulaw.aifc": {
+    "sha256": "c456f2da180b99a45ab984e8020dfb5d5f45de8c0211a39021d899b3c060f0a2",
+    "frames": 135,
+    "channels": 2,
+    "pcm_s32_sha256": "95eed30e2d2cd1e3947fe4f8a4d96fbdd592e1f64bdf7a90b78a6f75b4372ef5"
+  },
+  "pcm_s16be.aiff": {
+    "sha256": "9f655812d3af3808e223b6bbd1fc4ce50965393d242d0dde56cec43b79c40b1b",
+    "frames": 135,
+    "channels": 1,
+    "pcm_s32_sha256": "c5660f01ede8a86ad46ee170a38740f7c5d2e8d9d386665bca00b279390aca65"
+  },
+  "pcm_s16le.aifc": {
+    "sha256": "77f2f7f214c4db92f13bcb3424fe6248d99cf97633e1894674a640b36297e577",
+    "frames": 135,
+    "channels": 2,
+    "pcm_s32_sha256": "cf4ee2c979dab1b7a2bc4fedb1e2158b1a9531a92cfed305a5d060b7947aa638"
+  },
+  "pcm_s24be.aiff": {
+    "sha256": "8f4da49d0188799b958a97c5ed215a613ebfbd0accc84717090e045cab5d9b8d",
+    "frames": 135,
+    "channels": 2,
+    "pcm_s32_sha256": "cf4ee2c979dab1b7a2bc4fedb1e2158b1a9531a92cfed305a5d060b7947aa638"
+  },
+  "pcm_s32be.aiff": {
+    "sha256": "4fc142bc17ad4c00c51ec0584af92bee19d5a87e5605daca1f4d34ee18d02965",
+    "frames": 135,
+    "channels": 1,
+    "pcm_s32_sha256": "c5660f01ede8a86ad46ee170a38740f7c5d2e8d9d386665bca00b279390aca65"
+  },
+  "pcm_s8.aiff": {
+    "sha256": "0be09d8414737f61d7344d1152a23cf52dbe2552317992047f1b1a1eee69263a",
+    "frames": 135,
+    "channels": 1,
+    "pcm_s32_sha256": "2d47e3284c49368784cf2842d3a4f1c41ffe7e592029f2328219db1d0b24429e"
+  }
+}
