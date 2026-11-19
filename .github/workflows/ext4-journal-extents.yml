@@ -1,0 +1,55 @@
+name: Verify external ext4 extent trees after seven real sparse file deletions
+on:
+  push:
+    branches: ['testing/ext4-journal-extents']
+    paths: ['.github/workflows/ext4-journal-extents.yml', 'scripts/generate_ext4_journal_extents.py', 'scripts/ext4_sparse_samples.py']
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update -qq && sudo apt-get install -y e2fsprogs
+      - name: Create disposable ext4 volumes, unlink seven files and preserve the post-deletion journal
+        run: python scripts/ci_command.py python scripts/generate_ext4_journal_extents.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ext4-journal-extents
+          path: journal-extents-fixture/
+          retention-days: 5
+  preserve:
+    needs: reference
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: ext4-journal-extents
+          path: tests/ext4-journal-extents
+      - name: Preserve verified synthetic bytes for portable testing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma
+          for mode in ('1024','4096'):
+              folder=Path('tests/ext4-journal-extents')/mode
+              meta=json.loads((folder/'manifest.json').read_text())
+              packed=(folder/'volume.raw.xz').read_bytes()
+              assert len(packed)<2<<20 and hashlib.sha256(packed).hexdigest()==meta['compressed_sha256']
+              disk=lzma.decompress(packed)
+              assert len(disk)==meta['bytes']==96<<20 and hashlib.sha256(disk).hexdigest()==meta['sha256']
+              assert len(meta['originals'])==7 and len(meta['unlinked_inodes'])==7
+              assert str(meta['block_size']) == mode and min(meta['allocated_extents'].values()) > 4
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/ext4-journal-extents/{1024,4096}/{manifest.json,volume.raw.xz}
+          git commit -m "Preserve independently measured multiextent sparse ext4 deletions"
+          git push origin HEAD:testing/ext4-journal-extents
