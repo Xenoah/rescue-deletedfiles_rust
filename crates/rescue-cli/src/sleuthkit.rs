@@ -22,7 +22,7 @@ pub struct ImageArgs {
     /// Additional image segments in logical order, for explicitly split images.
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Sleuth Kit image type, such as raw, ewf, vhd or vmdk. import-image also accepts standalone vdi and qcow2. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi and qcow2. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
@@ -34,7 +34,13 @@ impl ImageArgs {
     fn arguments(&self, destination: Option<&Path>) -> Result<(Vec<OsString>, Vec<OsString>)> {
         let mut options = Vec::new();
         if let Some(kind) = &self.image_type {
-            options.extend([OsString::from("-i"), kind.into()]);
+            // Sleuth Kit names the reader for both Microsoft container versions "vhd".
+            let driver = match kind.as_str() {
+                "vhdx" => "vhd",
+                "e01" | "ewf-verified" => "ewf",
+                v => v,
+            };
+            options.extend([OsString::from("-i"), driver.into()]);
         }
         if let Some(size) = self.sector_size {
             if !size.is_power_of_two() {
@@ -127,7 +133,7 @@ pub(super) fn single_raw_source(source: &Path, destination: &Path) -> Result<Pat
 
 // Consume the child's stdout concurrently with waiting, so cancellation also
 // interrupts a reader blocked on a slow input. stderr stays out of binary output.
-fn read_tool<T>(
+pub(super) fn read_tool<T>(
     name: &str,
     args: &[OsString],
     cancel: &AtomicBool,
@@ -137,9 +143,18 @@ fn read_tool<T>(
         return Err(Error::Cancelled);
     }
     let program = executable_in_path(name).ok_or_else(|| {
-        Error::Unsupported(format!("install The Sleuth Kit and put {name} on PATH"))
+        let package = if name.starts_with("ewf") {
+            "libewf tools"
+        } else {
+            "The Sleuth Kit"
+        };
+        Error::Unsupported(format!("install {package} and put {name} on PATH"))
     })?;
-    let mut child = Command::new(program)
+    let mut command = Command::new(program);
+    if name.starts_with("ewf") {
+        command.env("LC_ALL", "C");
+    }
+    let mut child = command
         .args(args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -240,6 +255,13 @@ pub(super) fn publish_output(
 
 pub fn import(image: ImageArgs, output: &Path, json: bool, cancel: &AtomicBool) -> Result<i32> {
     let (mut args, paths) = image.arguments(Some(output))?;
+    if !rescue_core::is_device(Path::new(&paths[0]))
+        && let Some(result) =
+            super::ewf::import(&paths, image.image_type.as_deref(), output, cancel)?
+    {
+        super::print(result, json);
+        return Ok(0);
+    }
     if paths.len() == 1
         && !rescue_core::is_device(Path::new(&paths[0]))
         && let Some(result) = super::virtual_image::import(
@@ -282,6 +304,9 @@ fn parse_entry(line: &str) -> Option<(&str, Entry)> {
 }
 
 pub fn filesystem(request: FilesystemArgs, cancel: &AtomicBool) -> Result<i32> {
+    if request.image.image_type.as_deref() == Some("ewf-verified") {
+        return Err(Error::Request("use import-image --image-type ewf-verified to verify and export the logical RAW before scanning its filesystem".into()));
+    }
     if request.destination.is_some() && !request.all && request.id.is_empty() {
         return Err(Error::Request(
             "choose --id or --all when specifying a destination".into(),

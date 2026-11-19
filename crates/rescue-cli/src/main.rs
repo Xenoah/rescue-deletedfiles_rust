@@ -1,3 +1,4 @@
+mod ewf;
 mod photorec;
 mod sleuthkit;
 mod virtual_image;

@@ -90,3 +90,16 @@ GUIは秒単位で設定する。MCPは同名のsnake_caseパラメーターを�
 
 `scripts/e2e_acquisition.py`は実プロセスの停止と一時ファイルの移動で待機・取消・再接続・差し替え拒否を検証する。
 物理USB/SDの故障挙動や復旧率の測定ではない。
+
+## VHDX・AFF・E01からの取り込み
+
+固定・可変サイズのVHDXと単一AFFは、対応するドライバーを含むThe Sleuth Kitで直接参照できます。E01ではlibewfの `ewfinfo`、`ewfverify`、`ewfexport` をPATHに置くと、取得時のエラー記録を確認してから、論理ディスクのSHA-256と書き出したRAWのSHA-256を照合します。Debian/Ubuntuでは `sleuthkit` と `ewf-tools` を使用します。
+
+```sh
+rescue filesystem --source guest.vhdx --image-type vhdx --fs-type ext4 --json
+rescue import-image --source evidence.aff --image-type aff --output aff.raw --json
+rescue import-image --source disk.E01 --segment disk.E02 --image-type ewf-verified --output disk.raw --json
+rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered --json
+```
+
+分割E01は同じ取得セットの全セグメントを順番に指定します。既存の出力ファイルは上書きしません。取得エラーが記録されている場合、欠落セグメント、検証失敗、取消の場合は、新しいRAWを確定しません。`--image-type ewf-verified` ではlibewfによる照合が必須です。ツールの構成に応じる自動選択で照合が完了した場合、JSONに `"reader": "libewf"` と `"logical_sha256_verified": true` を記録します。
