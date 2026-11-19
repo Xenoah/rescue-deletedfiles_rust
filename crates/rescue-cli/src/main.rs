@@ -401,8 +401,7 @@ fn recovery_code(results: &[rescue_core::RecoveryResult], cancel: &AtomicBool) -
         0
     }
 }
-fn run() -> Result<i32, Error> {
-    let cli = Cli::parse();
+fn run(cli: Cli) -> Result<i32, Error> {
     let cancel = Arc::new(AtomicBool::new(false));
     let signal = cancel.clone();
     // MCP clients close stdin for a graceful shutdown. Do not intercept SIGINT
@@ -1150,7 +1149,7 @@ fn main() {
     if let Some(code) = rescue_core::preview_worker_entry() {
         std::process::exit(code);
     }
-    let code = match run() {
+    let code = match run(Cli::parse()) {
         Ok(code) => code,
         Err(error) => {
             eprintln!(
