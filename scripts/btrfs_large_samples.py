@@ -17,7 +17,10 @@ def samples():
         wav.setnchannels(1);wav.setsampwidth(2);wav.setframerate(22050)
         wav.writeframes(b''.join(struct.pack('<h',(i%4096)*8-16384) for i in range(80000)))
     archive=io.BytesIO()
-    with zipfile.ZipFile(archive,'w') as z:z.writestr(zipfile.ZipInfo('samples.csv',(2020,1,2,3,4,6)),table)
+    entry=zipfile.ZipInfo('samples.csv',(2020,1,2,3,4,6))
+    # The independent Linux fixture records Unix as its ZIP creator on every host.
+    entry.create_system=3
+    with zipfile.ZipFile(archive,'w') as z:z.writestr(entry,table)
     return {'log.txt':text,'readings.csv':table,'image.bmp':bmp,'tone.wav':sound.getvalue(),
             'bundle.zip':archive.getvalue(),'private.bin':random.Random(371001).randbytes(153600),
             'sparse.dat':b'F'*4096+bytes(1024*1024)+b'Z'*4096}
