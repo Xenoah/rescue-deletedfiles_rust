@@ -45,12 +45,12 @@ def generate(mode):
                         with (live/name).open('wb') as f:
                             f.write(data[:4096]);f.seek(-4096+len(data));f.write(data[-4096:])
                     else:(live/name).write_bytes(data)
-                (live/'survivor.txt').write_bytes(b'survivor')
+                (live/'survivor.txt').write_bytes(b'survivor'*2500)
                 cmd('sudo','btrfs','subvolume','snapshot','-r',live,old)
                 live_id=int(cmd('sudo','btrfs','inspect-internal','rootid',live).strip())
                 old_id=int(cmd('sudo','btrfs','inspect-internal','rootid',old).strip())
                 for name in names:(live/name).unlink()
-                (live/'created-later.txt').write_bytes(b'new file')
+                (live/'created-later.txt').write_bytes(b'new file'*2500)
                 assert all(not (live/name).exists() for name in names)
                 assert all((old/name).read_bytes()==files[name] and sha(old/name)==originals[name] for name in names)
                 assert (old/'survivor.txt').read_bytes()==(live/'survivor.txt').read_bytes()
@@ -64,9 +64,7 @@ def generate(mode):
             out=root/sub;out.mkdir()
             restored=subprocess.run(['btrfs','restore','-r',str(id),str(image),str(out)],capture_output=True,text=True,timeout=90)
             if restored.returncode:
-                assert False,restored.stderr
-                offline_errors.append({'root':sub,'diagnostic':restored.stderr.strip()})
-                continue
+                raise RuntimeError(restored.stderr)
             if sub=='before':
                 for name,digest in originals.items():
                     assert (out/name).read_bytes()==files[name] and sha(out/name)==digest
