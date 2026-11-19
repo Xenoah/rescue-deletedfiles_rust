@@ -2892,6 +2892,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.21",
  "tiff",
+ "ttf-parser",
  "uuid",
  "windows-sys 0.61.2",
  "zip",

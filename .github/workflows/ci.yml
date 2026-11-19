@@ -95,6 +95,11 @@ jobs:
       - name: Convert Apple-generated raw, zlib, bzip2, ADC, LZFSE and LZMA disk images
         if: runner.os == 'macOS' && matrix.arch == 'arm64'
         run: python scripts/ci_command.py python scripts/e2e_udif.py --hdiutil --binary target/${{ matrix.target }}/debug/rescue
+      - name: Verify font tables in fontTools and render recovered glyphs with FreeType
+        if: runner.os == 'Linux'
+        run: |
+          python -m pip install --disable-pip-version-check fonttools==4.61.1
+          python scripts/ci_command.py python scripts/e2e_fonts.py --independent --binary target/${{ matrix.target }}/debug/rescue
       - name: Reopen carved MP3, FLAC, AIFF and TIFF with FFmpeg and ImageMagick
         if: runner.os == 'Linux'
         run: |

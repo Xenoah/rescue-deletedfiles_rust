@@ -25,6 +25,7 @@ lzma-rust2 = {version = "0.25.0", default-features = false, features = ["std", "
 claxon = "0.4.3"
 md-5 = "0.10"
 tiff = "0.11.3"
+ttf-parser = { version = "0.25.1", default-features = false, features = ["std", "variable-fonts"] }
 roxmltree = { version = "0.21.2", default-features = false, features = ["std"] }
 quick-xml = "0.41.0"
 zune-core = "0.5.3"

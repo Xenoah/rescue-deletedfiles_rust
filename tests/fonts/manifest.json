@@ -1,0 +1,96 @@
+{
+  "ttf-1.ttf": {
+    "sha256": "bf327983f20cf8a12d1732cb5d3590c584866cdfce1f8229501e85d60b649af3",
+    "family": "Rescue Fixture 1",
+    "characters": [
+      65
+    ]
+  },
+  "ttf-3.ttf": {
+    "sha256": "db404d0549f19c355eb30e6bc28ade63879998283fa483a645335e488f8720e2",
+    "family": "Rescue Fixture 2",
+    "characters": [
+      65,
+      66,
+      67
+    ]
+  },
+  "ttf-3.woff": {
+    "sha256": "53dc8f8322114c80275896700f24264259ee0c6202db665d7768ff86e0949e68",
+    "family": "Rescue Fixture 2",
+    "characters": [
+      65,
+      66,
+      67
+    ]
+  },
+  "ttf-5.ttf": {
+    "sha256": "2a738670099dfd7bcc9877e601be49a914009d11c6e8aea454b7db24c8d8e74d",
+    "family": "Rescue Fixture 3",
+    "characters": [
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+  },
+  "ttf-5.woff": {
+    "sha256": "95a5fc5d2b6df44fbacfbac5a408a7b1a517eb2c56cd9c3e31e7585d012bf295",
+    "family": "Rescue Fixture 3",
+    "characters": [
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+  },
+  "otf-1.otf": {
+    "sha256": "af5b96eb2a932c288f6eb62c8d27e6015cf40e05e96a51b98bbe5ab19c8f357c",
+    "family": "Rescue Fixture 4",
+    "characters": [
+      65
+    ]
+  },
+  "otf-3.otf": {
+    "sha256": "da117f65ca939a0ecae2752204ef3f29cc0df88923740ed1610a5bc27df8dcc2",
+    "family": "Rescue Fixture 5",
+    "characters": [
+      65,
+      66,
+      67
+    ]
+  },
+  "otf-3.woff": {
+    "sha256": "baf8e92265b95335659cf6cf2c4c72097a18822525af66e002da738da07c1319",
+    "family": "Rescue Fixture 5",
+    "characters": [
+      65,
+      66,
+      67
+    ]
+  },
+  "otf-5.otf": {
+    "sha256": "8e31e1abdee635c2062491ad61650af422195475aefeaa424c67e1451bb5a9c8",
+    "family": "Rescue Fixture 6",
+    "characters": [
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+  },
+  "otf-5.woff": {
+    "sha256": "cdcec5eff3354c29ca4d3c389567b86573a9133805b55e86d6fec1a23bdb596b",
+    "family": "Rescue Fixture 6",
+    "characters": [
+      65,
+      66,
+      67,
+      68,
+      69
+    ]
+  }
+}
