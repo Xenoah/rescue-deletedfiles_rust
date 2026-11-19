@@ -11,8 +11,8 @@ concurrency:
 env:
   GH_TOKEN: ${{ github.token }}
   GH_REPO: ${{ github.repository }}
-  NATIVE_RUN: '44579062675'
-  RELEASE_COMMIT: 045c54812903f56c04dea5e10b274f9c5962eedd
+  NATIVE_RUN: '44591593034'
+  RELEASE_COMMIT: ea56cdadd6762e30429f300f829534d85ae34206
   RELEASE_TAG: v1.10.0
 jobs:
   publish:
