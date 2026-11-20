@@ -16,6 +16,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
 };
 pub(super) use vhd::backing::import_vhd_chain;
+pub(super) use vhdx::import_vhdx_chain;
 pub(super) use vmdk::import_segments;
 
 fn invalid(reason: &str) -> Error {

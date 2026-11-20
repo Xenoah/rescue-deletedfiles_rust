@@ -1,0 +1,215 @@
+{
+  "4kn-child": {
+    "generations": [
+      "25788c0af6df1605371ad02b8fa2ac4fc6e63bd8ea09d080849bbc6e0b73e93a",
+      "5ffdfc43255858a4cb2d035a153955ebcefc50e35cc847b08e9c5c40cd1ca4c0"
+    ],
+    "originals": {
+      "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "4kn-two-children": {
+    "bytes_from_each_generation": {
+      "sample.avi": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 3260
+      },
+      "sample.docx": {
+        "base.vhdx": 28450,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.flac": {
+        "base.vhdx": 1286,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.pptx": {
+        "base.vhdx": 20076,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.sqlite": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.tar": {
+        "base.vhdx": 2048,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.wav": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 2382
+      }
+    },
+    "generations": [
+      "f5d8c156775e3bf99bd53f55c0878b1cb9eb0556c9171f80cfcf80f0fe1c8669",
+      "196b067b1c85ec4926ee441dcdb960f46a4c1f9f20520f7be9ca6dc009ff6c29",
+      "cceb17d376c006b3576a71e7efd1e6f76800903ba8791d3fbe835a7e630a8637"
+    ],
+    "originals": {
+      "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+      "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+      "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    }
+  },
+  "4kn-two-children_refused": [
+    "allocated_padding_slot",
+    "bitmap_overlaps_directory",
+    "bitmap_overlaps_payload",
+    "bitmap_past_end",
+    "bitmap_reserved_bits",
+    "changed_payload_known_hash",
+    "discarded_payload",
+    "extra_parent",
+    "has_parent_inconsistent",
+    "invalid_bitmap_state",
+    "linkage_guid_mismatch",
+    "locator_count",
+    "locator_flags",
+    "locator_invalid_guid",
+    "locator_invalid_utf16",
+    "locator_odd_utf16",
+    "locator_overflow",
+    "locator_overlapping_values",
+    "locator_overlaps_directory",
+    "locator_type",
+    "missing_base",
+    "missing_bitmap",
+    "missing_chain",
+    "partial_payload_without_offset",
+    "repeated_file",
+    "same_basename_wrong_active_write_guid",
+    "undefined_payload",
+    "wrong_basename",
+    "wrong_logical_hash",
+    "wrong_logical_length",
+    "wrong_order",
+    "wrong_page83"
+  ],
+  "dynamic-child": {
+    "generations": [
+      "9aad51e905254998fb8825572787f242578dd600dde2302ff126bd6bff98fa35",
+      "e92aa9ae190be1c6b77b391bdab66f1ff392163f24c7355429574017905554a9"
+    ],
+    "originals": {
+      "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "dynamic-two-children": {
+    "bytes_from_each_generation": {
+      "sample.avi": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 3260
+      },
+      "sample.docx": {
+        "base.vhdx": 28450,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.flac": {
+        "base.vhdx": 1286,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.pptx": {
+        "base.vhdx": 20076,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.sqlite": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.tar": {
+        "base.vhdx": 2048,
+        "child1.vhdx": 4096,
+        "child2.vhdx": 4096
+      },
+      "sample.wav": {
+        "child1.vhdx": 4096,
+        "child2.vhdx": 2382
+      }
+    },
+    "generations": [
+      "5d87c33f8ced42c6a19a4897696ee5f39f02ca2c4601f4366184b2b7a7b6fdab",
+      "d078e3af60d16dce6bb7f24bcc0f2bbce0b0f20bc91f729714a181276c403b0e",
+      "86c5f83d6fb12550944fcb66c7a5b8e8cee4d60fb7b9b8dc865d37fdc3744f63"
+    ],
+    "originals": {
+      "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+      "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+      "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    }
+  },
+  "dynamic-two-children_refused": [
+    "allocated_padding_slot",
+    "bitmap_overlaps_directory",
+    "bitmap_overlaps_payload",
+    "bitmap_past_end",
+    "bitmap_reserved_bits",
+    "changed_payload_known_hash",
+    "discarded_payload",
+    "extra_parent",
+    "has_parent_inconsistent",
+    "invalid_bitmap_state",
+    "linkage_guid_mismatch",
+    "locator_count",
+    "locator_flags",
+    "locator_invalid_guid",
+    "locator_invalid_utf16",
+    "locator_odd_utf16",
+    "locator_overflow",
+    "locator_overlapping_values",
+    "locator_overlaps_directory",
+    "locator_type",
+    "missing_base",
+    "missing_bitmap",
+    "missing_chain",
+    "partial_payload_without_offset",
+    "repeated_file",
+    "same_basename_wrong_active_write_guid",
+    "undefined_payload",
+    "wrong_basename",
+    "wrong_logical_hash",
+    "wrong_logical_length",
+    "wrong_order",
+    "wrong_page83"
+  ],
+  "fixed-child": {
+    "generations": [
+      "ebb963bf08cef159a1a7e36c4c09d364f476433c3e11fb7ae99771f5394a1f4d",
+      "f12c7c8f6f9cf637dfdab3ff624988b7f8cab3843afcbf9225820fe430f573dc"
+    ],
+    "originals": {
+      "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  }
+}

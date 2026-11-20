@@ -1,0 +1,5 @@
+# Native Windows differencing VHDX images
+
+Each case contains the Windows-generated image files, the complete logical byte stream for every generation as read from a read-only driver mount, and a manifest of SHA-256 digests for the containers, logical disks, and original NTFS files. All fixture images were created in a temporary directory under Windows Server 2022.
+
+Windows created three chains with 512-byte logical sectors and two with 4,096-byte logical sectors. The fixed and expandable parents, and both chain depths, were reopened after relocation. In the two three-generation chains, each child wrote a different region of seven larger files and flushed those writes before the final deletion. [512-byte generator](https://github.com/Xenoah/rescue-deletedfiles_rust/tree/qa/windows-vhdx-chain-reference/tests/vhdx-chain) · [512-byte capture](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44673922816) · [4Kn generator and capture files](https://github.com/Xenoah/rescue-deletedfiles_rust/tree/f64039c/tests/vhdx-chain) · [4Kn capture](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44674698342)

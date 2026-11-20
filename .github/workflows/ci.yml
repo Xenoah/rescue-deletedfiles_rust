@@ -240,6 +240,12 @@ jobs:
       - name: Cross-check fixed and dynamic VHD bases with Sleuth Kit
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhd_chain.py --tsk --binary target/${{ matrix.target }}/release/rescue
+      - name: Cross-check all differencing VHDX generations with the native Windows driver
+        if: runner.os == 'Windows'
+        run: python scripts/ci_command.py python scripts/e2e_vhdx_chain.py --windows-driver --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
+      - name: Check VHDX parents and recover the 512-byte and 4Kn NTFS deletions on Linux
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vhdx_chain.py --tsk --binary target/${{ matrix.target }}/release/rescue
       - name: Restore seven Windows NTFS deletions across a 4 GiB VHDX BAT chunk boundary
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_chunk.py --binary target/${{ matrix.target }}/release/rescue
