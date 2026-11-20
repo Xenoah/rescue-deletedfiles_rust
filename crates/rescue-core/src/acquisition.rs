@@ -102,7 +102,7 @@ fn lock_error(e: impl std::fmt::Display) -> Error {
         "acquisition is in use by another reader or writer: {e}"
     ))
 }
-fn now_ms() -> Result<u64> {
+pub(crate) fn now_ms() -> Result<u64> {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_err(|_| Error::Invalid("system clock precedes Unix epoch".into()))?

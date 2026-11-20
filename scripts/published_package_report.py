@@ -60,6 +60,32 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 24, 0):
+        segments = run['split_raw']
+        assert segments['originals'] == run['windows_vhdx']['fixed'] and segments['segments'] == 8
+        if platform == 'linux':
+            assert set(run['gnu_split_raw']) == {'fat32', 'ext4'}
+            for disk in run['gnu_split_raw'].values():
+                assert disk['originals'] == run['android_sparse'] and disk['crossing_segments'] == 8
+            large = run['large_split_raw']
+            assert large['logical_bytes'] > large['first_segment_bytes'] > 4 << 30
+            assert large['originals'] == segments['originals']
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 23, 0):
+        assert run['strided_files'] == run['whole_file_hashes']
+        if platform == 'linux':
+            assert set(run['deleted_strided_files']) == {'12', '16', '32'}
+            for files in run['deleted_strided_files'].values():
+                assert {name: row['sha256'] for name,row in files.items()} == run['strided_files']
+                assert all(row['runs'] == len(row['offsets']) >= 3 for row in files.values())
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 22, 0):
+        truth=json.loads((Path(__file__).resolve().parents[1]/'tests/android-sparse/manifest.json').read_text())
+        assert run['android_sparse'] == truth['originals'] and len(truth['originals']) == 7
+        if platform == 'linux':
+            captures = run['android_deletions']
+            assert set(captures) == {'fat32','ext4','fat32-holes'}
+            assert all(row['originals']==truth['originals'] for row in captures.values())
+            assert captures['fat32-holes']['unrecorded_bytes'] > 0
+            assert captures['fat32']['unrecorded_bytes'] == captures['ext4']['unrecorded_bytes'] == 0
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 21, 0):
         originals = run['whole_file_hashes']
         assert set(originals) == {'NOTE.TXT','DATA.CSV','PAGE.HTM','SONG.WAV','FILES.ZIP','VENDOR.BIN','DUP.DAT'}

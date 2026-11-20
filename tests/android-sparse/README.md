@@ -1,0 +1,7 @@
+# Android sparse recovery reference
+
+The compressed reference contains one AOSP sparse 1.0 image of a 40 MiB FAT32 volume. Seven files from the repository corpus (BMP, GIF, PNG, PDF, WebP, WAV and ZIP) were written with mtools, read back byte-for-byte and deleted with `mdel`. Android platform tools 34.0.5 encoded the volume with `img2simg -s` and 4 KiB blocks. Its independent `simg2img` expansion matched the complete source byte-for-byte. The encoder omitted 41,263,104 bytes. The manifest records the source and container digests, the digest of the XZ transport and each original file digest.
+
+Run `python scripts/e2e_android_sparse.py --binary PATH` to import the reference without external utilities, verify its read map and recover the seven originals in normal and indexed scans. The suite also checks recorded zero fills and omitted ranges, three CRCs, 19 malformed images, an existing directory and competing imports.
+
+On Linux, `--native` creates fresh FAT32 and ext4 filesystems and recovers all seven files after actual deletion. AOSP img2simg writes 1 KiB and 4 KiB images. The AOSP libsparse API separately encodes a FAT32 prefix while explicitly omitting its zero tail. Each output is compared with simg2img and the complete source. This test uses android-sdk-libsparse-utils, mtools, dosfstools and e2fsprogs. To generate another reference under a new directory, run `python scripts/e2e_android_sparse.py --write-reference NEW_DIRECTORY` with the version of img2simg that supports `-s`. The filesystem serial and creation timestamps can differ.

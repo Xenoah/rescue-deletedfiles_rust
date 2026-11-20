@@ -56,9 +56,20 @@ pub struct FilesystemArgs {
     json: bool,
 }
 
-pub fn import(image: ImageArgs, output: &Path, json: bool, cancel: &AtomicBool) -> Result<i32> {
+pub fn import(
+    image: ImageArgs,
+    output: &Path,
+    expected: disk_image::RawExpectation,
+    json: bool,
+    cancel: &AtomicBool,
+) -> Result<i32> {
     super::print(
-        serde_json::json!(disk_image::import(&image.into(), output, cancel)?),
+        serde_json::json!(disk_image::import_with_raw_expectation(
+            &image.into(),
+            output,
+            expected,
+            cancel
+        )?),
         json,
     );
     Ok(0)

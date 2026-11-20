@@ -24,6 +24,24 @@ struct HashFields {
     start: String,
     end: String,
     work: String,
+    regular: bool,
+    detect_spacing: bool,
+    run_blocks: String,
+    step: String,
+    maximum_step: String,
+}
+
+fn number<T: std::str::FromStr>(s: &str, name: &str) -> rescue_core::Result<Option<T>> {
+    if s.trim().is_empty() {
+        Ok(None)
+    } else {
+        s.trim().parse().map(Some).map_err(|_| {
+            rescue_core::Error::Request(format!(
+                "{name}: {}",
+                tr!("整数を入力してください", "enter an integer")
+            ))
+        })
+    }
 }
 
 impl HashFields {
@@ -48,6 +66,45 @@ impl HashFields {
                 "",
             );
         });
+        ui.checkbox(
+            &mut self.regular,
+            tr!("等間隔に分かれた断片を検索", "Search regularly spaced runs"),
+        );
+        if self.regular {
+            ui.checkbox(
+                &mut self.detect_spacing,
+                tr!(
+                    "先頭位置から前後の間隔を探索",
+                    "Detect spacing from the known first offset"
+                ),
+            );
+            ui.columns(2, |c| {
+                text_row(
+                    &mut c[0],
+                    tr!("各断片のブロック数", "Blocks per run"),
+                    &mut self.run_blocks,
+                    "1",
+                );
+                if self.detect_spacing {
+                    text_row(
+                        &mut c[1],
+                        tr!("探索する最大間隔（ブロック）", "Maximum spacing in blocks"),
+                        &mut self.maximum_step,
+                        "8",
+                    );
+                } else {
+                    text_row(
+                        &mut c[1],
+                        tr!(
+                            "先頭間の間隔（ブロック、逆順は負数）",
+                            "Start-to-start spacing (negative for reverse)"
+                        ),
+                        &mut self.step,
+                        "2",
+                    );
+                }
+            });
+        }
         ui.collapsing(
             tr!("検索範囲と上限", "Search range and limits"),
             |ui| {
@@ -84,18 +141,6 @@ impl HashFields {
     }
 
     fn request(&self) -> rescue_core::Result<disk_image::HashSearch<'_>> {
-        fn number<T: std::str::FromStr>(s: &str, name: &str) -> rescue_core::Result<Option<T>> {
-            if s.trim().is_empty() {
-                Ok(None)
-            } else {
-                s.trim().parse().map(Some).map_err(|_| {
-                    rescue_core::Error::Request(format!(
-                        "{name}: {}",
-                        tr!("整数を入力してください", "enter an unsigned integer")
-                    ))
-                })
-            }
-        }
         Ok(disk_image::HashSearch {
             sha256: self.digest.trim(),
             file_bytes: number(&self.length, tr!("原本のバイト数", "Original length"))?
@@ -108,6 +153,35 @@ impl HashFields {
             max_work: number(&self.work, tr!("検索の上限バイト数", "Search byte budget"))?
                 .unwrap_or(disk_image::DEFAULT_HASH_WORK),
         })
+    }
+    fn recover(
+        &self,
+        source: &Path,
+        output: &Path,
+        cancel: &AtomicBool,
+    ) -> rescue_core::Result<disk_image::HashMatch> {
+        let request = self.request()?;
+        if !self.regular {
+            return disk_image::recover_by_hash(source, output, &request, cancel);
+        }
+        let spacing = if self.detect_spacing {
+            disk_image::StrideSpacing::UpTo(
+                number(&self.maximum_step, tr!("最大間隔", "Maximum spacing"))?.unwrap_or(8),
+            )
+        } else {
+            disk_image::StrideSpacing::Fixed(
+                number(&self.step, tr!("間隔", "Spacing"))?.unwrap_or(2),
+            )
+        };
+        let stride = disk_image::StrideSearch {
+            run_blocks: number(
+                &self.run_blocks,
+                tr!("各断片のブロック数", "Blocks per run"),
+            )?
+            .unwrap_or(1),
+            spacing,
+        };
+        disk_image::recover_by_stride(source, output, &request, stride, cancel)
     }
 }
 
@@ -177,6 +251,9 @@ impl State {
                     && !self.output.trim().is_empty()
                     && !self.hash.digest.trim().is_empty()
                     && !self.hash.length.trim().is_empty()
+                    && (!self.hash.regular
+                        || !self.hash.detect_spacing
+                        || !self.hash.first.trim().is_empty())
             }
             Mode::CreateManifest => {
                 !self.original.trim().is_empty() && !self.manifest.trim().is_empty()
@@ -211,7 +288,7 @@ impl State {
         match self.mode {
             Mode::WholeHash => {
                 ui.label(source);
-                ui.small(tr!("連続したファイルを検索します。先頭位置が分かる場合は、2つの領域に分かれたファイルも検索します。位置とサイズはすべてバイト単位です。", "Search for a contiguous file. A known first offset also enables a search for two runs. Enter all positions and sizes in bytes."));
+                ui.small(tr!("連続したファイルを検索します。先頭位置が分かる場合は、2つの領域に分かれたファイルも検索します。等間隔の断片は下で指定できます。", "Search for a contiguous file. A known first offset also enables a search for two runs. For regular fragmentation, select the spacing option below."));
                 self.hash.show(ui);
             }
             Mode::Layout => {
@@ -373,10 +450,7 @@ impl App {
         state.worker = Some(thread::spawn(move || {
             let result = match mode {
                 Mode::WholeHash => hash
-                    .request()
-                    .and_then(|request| {
-                        disk_image::recover_by_hash(&source, &output, &request, &cancel)
-                    })
+                    .recover(&source, &output, &cancel)
                     .map(Outcome::WholeHash),
                 Mode::Layout => disk_image::recover_extents(&source, &layout, &output, &cancel)
                     .map(Outcome::File),

@@ -1,4 +1,8 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
+mod split_raw;
+pub use split_raw::{RawExpectation, RawSegment, RawVerification};
+mod android;
+pub use android::{AndroidVerification, import_android};
 mod apfs;
 mod btrfs;
 pub use apfs::{ApfsRequest, apfs};
@@ -12,7 +16,10 @@ mod fingerprint;
 pub use extents::recover_extents;
 pub use fingerprint::{FingerprintedFile, MatchedFile, fingerprint_file, recover_fingerprinted};
 mod whole_hash;
-pub use whole_hash::{DEFAULT_HASH_WORK, HashExtent, HashMatch, HashSearch, recover_by_hash};
+pub use whole_hash::{
+    DEFAULT_HASH_WORK, HashExtent, HashMatch, HashSearch, MatchedStride, StrideSearch,
+    StrideSpacing, recover_by_hash, recover_by_stride,
+};
 mod udif;
 mod virtual_image;
 use crate::{Error, Result};
@@ -20,7 +27,7 @@ use sha2::{Digest, Sha256};
 use std::{
     ffi::OsString,
     fs,
-    io::{self, Read, Write},
+    io::{self, Read, Seek, SeekFrom, Write},
     path::{Path, PathBuf},
     process::{ChildStdout, Command, Stdio},
     sync::atomic::{AtomicBool, Ordering},
@@ -35,6 +42,10 @@ pub struct ImportedFile {
     pub sha256: String,
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub ewf: Option<EwfVerification>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub android_sparse: Option<AndroidVerification>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub raw: Option<RawVerification>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -74,6 +85,7 @@ impl ImageInput {
             options.extend([OsString::from("-b"), size.to_string().into()]);
         }
         let mut paths = Vec::new();
+        let mut seen = std::collections::HashSet::new();
         for path in std::iter::once(&self.source).chain(&self.segment) {
             let path = crate::canonical_source_path(path)?;
             if crate::is_device(&path) {
@@ -105,7 +117,7 @@ impl ImageInput {
                 return Err(Error::Request("choose a native disk or regular image without a Rescue read map or RAID manifest".into()));
             }
             let name = path.into_os_string();
-            if paths.contains(&name) {
+            if !seen.insert(name.clone()) {
                 return Err(Error::Request("duplicate disk image segment".into()));
             }
             paths.push(name);
@@ -232,6 +244,16 @@ fn write_output(
     })
 }
 
+// Called only on the new, empty temporary output; callers set its final logical length.
+fn write_sparse_chunk(output: &mut fs::File, bytes: &[u8]) -> Result<()> {
+    if bytes.iter().all(|&b| b == 0) {
+        output.seek(SeekFrom::Current(bytes.len() as i64))?;
+    } else {
+        output.write_all(bytes)?;
+    }
+    Ok(())
+}
+
 fn publish_output(
     output: &Path,
     cancel: &AtomicBool,
@@ -259,14 +281,39 @@ fn publish_output(
         bytes,
         sha256: format!("{:x}", digest.finalize()),
         ewf: None,
+        android_sparse: None,
+        raw: None,
     })
 }
 
 pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<ImportedFile> {
+    import_with_raw_expectation(image, output, RawExpectation::default(), cancel)
+}
+
+pub fn import_with_raw_expectation(
+    image: &ImageInput,
+    output: &Path,
+    expected: RawExpectation<'_>,
+    cancel: &AtomicBool,
+) -> Result<ImportedFile> {
     let (mut args, paths) = image.arguments(Some(output))?;
     let first = Path::new(&paths[0]);
     let kind = image.image_type.as_deref();
-    if !crate::is_device(first) {
+    let regular_raw = !crate::is_device(first);
+    if (expected.sha256.is_some() || expected.bytes.is_some())
+        && (kind != Some("raw") || !regular_raw)
+    {
+        return Err(Error::Request(
+            "expected RAW length and SHA-256 require --image-type raw and regular files".into(),
+        ));
+    }
+    if regular_raw {
+        if kind == Some("raw") {
+            return split_raw::import(&paths, output, expected, cancel);
+        }
+        if kind == Some("android-sparse") || (kind.is_none() && android::has_magic(first)?) {
+            return Err(Error::Request("use import-android with a new destination directory to preserve unrecorded Android sparse ranges".into()));
+        }
         if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
             return Ok(result);
         }
@@ -288,6 +335,9 @@ pub fn import(image: &ImageInput, output: &Path, cancel: &AtomicBool) -> Result<
                 return Ok(result);
             }
         }
+    }
+    if regular_raw && kind.is_none() && split_raw::numbered_start(first) {
+        return split_raw::import(&paths, output, expected, cancel);
     }
     if matches!(
         image.image_type.as_deref(),

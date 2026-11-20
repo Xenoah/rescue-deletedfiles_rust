@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y p7zip-full cabextract libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
+          sudo apt-get install -y android-sdk-libsparse-utils p7zip-full cabextract libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
       - name: Verify disposable native fixture setup before compiling
         timeout-minutes: 4
         run: python scripts/ci_command.py python scripts/e2e_restore_native.py --fixture-only --output fixture-setup.json
@@ -92,12 +92,24 @@ jobs:
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover real FAT32 and ext4 unlinks from GNU and unaligned split RAW images
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_split_raw.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover seven NTFS unlinks across a non-aligned split RAW boundary beyond 4 GiB
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_split_raw.py --large --binary target/${{ matrix.target }}/debug/rescue
+      - name: Compare Android sparse captures and real FAT32 and ext4 deletions with AOSP libsparse
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_android_sparse.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Locate fingerprinted fragments of seven actually deleted FAT files
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_fingerprinted.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover 21 actual two-run FAT unlinks with original lengths and whole-file hashes
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_whole_hash.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover 21 actual regularly fragmented FAT unlinks with original lengths and whole-file hashes
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_strided_files.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover eight ext4 unlinks from e2fsprogs block locations
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_known_extents.py --native --binary target/${{ matrix.target }}/debug/rescue

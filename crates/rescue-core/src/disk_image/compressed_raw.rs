@@ -4,7 +4,7 @@ use crate::{Error, Result};
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
-    io::{BufRead, BufReader, Read, Seek, SeekFrom, Write},
+    io::{BufRead, BufReader, Read, Seek, SeekFrom},
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -66,11 +66,7 @@ impl RawDisk {
             }
             let bytes = &buffer[..n];
             self.sha.update(bytes);
-            if bytes.iter().all(|&b| b == 0) {
-                output.seek(SeekFrom::Current(n as i64))?;
-            } else {
-                output.write_all(bytes)?;
-            }
+            super::write_sparse_chunk(output, bytes)?;
         }
     }
 }

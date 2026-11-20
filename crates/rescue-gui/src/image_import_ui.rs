@@ -9,6 +9,7 @@ enum Format {
     CompressedRaw,
     Dmg,
     Optical,
+    Android,
     Ewf,
     Vhd,
     Vhdx,
@@ -18,7 +19,7 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 11] = [
+    const ALL: [Self; 12] = [
         Self::Vdi,
         Self::Qcow2,
         Self::CompressedRaw,
@@ -30,6 +31,7 @@ impl Format {
         Self::Vmdk,
         Self::Aff,
         Self::Raw,
+        Self::Android,
     ];
 
     fn from_path(path: &str) -> Option<Self> {
@@ -44,12 +46,16 @@ impl Format {
             "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
             "qcow2" | "qcow" => Some(Self::Qcow2),
+            "simg" | "sparse" => Some(Self::Android),
             "e01" | "ex01" => Some(Self::Ewf),
             "vhd" => Some(Self::Vhd),
             "vhdx" => Some(Self::Vhdx),
             "vmdk" => Some(Self::Vmdk),
             "aff" => Some(Self::Aff),
-            "raw" | "dd" | "img" | "001" => Some(Self::Raw),
+            "raw" | "dd" | "img" => Some(Self::Raw),
+            ext if (3..=9).contains(&ext.len()) && ext.bytes().all(|c| c.is_ascii_digit()) => {
+                Some(Self::Raw)
+            }
             _ => None,
         }
     }
@@ -58,6 +64,7 @@ impl Format {
         match self {
             Self::CompressedRaw => "compressed-raw",
             Self::Optical => "cd-raw",
+            Self::Android => "android-sparse",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
@@ -73,6 +80,7 @@ impl Format {
     fn label(self) -> &'static str {
         match self {
             Self::CompressedRaw => "Compressed RAW (gzip, bzip2, XZ, Zstd, LZ4)",
+            Self::Android => "Android sparse",
             Self::Optical => "CD-ROM (Mode 1 / XA Form 1)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
@@ -97,6 +105,8 @@ pub(super) struct State {
     pub first: String,
     format: Option<Format>,
     segments: String,
+    raw_sha256: String,
+    raw_bytes: String,
     pub output: String,
     worker: Option<thread::JoinHandle<()>>,
     error: Option<Text>,
@@ -108,6 +118,8 @@ impl State {
             self.first = source.to_owned();
             self.format = Format::from_path(source);
             self.segments.clear();
+            self.raw_sha256.clear();
+            self.raw_bytes.clear();
             self.output.clear();
         }
         self.error = None;
@@ -136,6 +148,8 @@ impl App {
                 if state.first != old {
                     state.format = Format::from_path(&state.first);
                     state.segments.clear();
+                    state.raw_sha256.clear();
+                    state.raw_bytes.clear();
                 }
                 let label = ui.label(tr!("イメージ形式", "Image format")).id;
                 egui::ComboBox::from_id_salt("disk-image-format")
@@ -145,6 +159,8 @@ impl App {
                     }).response.labelled_by(label);
                 if let Some(format) = state.format {
                     match format {
+                        Format::Raw => {ui.small(tr!("連番は.000または.001から自動検出します。他の名前は追加セグメントを順番に指定してください。","Numbered RAW sets starting at .000 or .001 are discovered automatically. For other names, add the segments in order."));}
+                        Format::Android => {ui.small(tr!("新しい保存先フォルダー名を指定してください。RAWと読取マップを一緒に保存し、省略されたブロックを未取得として扱います。","Enter a new directory name. The RAW and read map are saved together, with omitted blocks marked unavailable."));}
                         Format::CompressedRaw => {ui.small(tr!("圧縮ストリームを順に展開し、論理ディスクのSHA-256を計算します。","Expands compressed streams in order and calculates the logical disk SHA-256."));}
                         Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
@@ -168,7 +184,36 @@ impl App {
                         }
                     }
                 }
-                path_row(ui, tr!("新しいRAWファイル", "New RAW file"), &mut state.output, Picker::Raw);
+                if state.format == Some(Format::Raw) {
+                    ui.collapsing(
+                        tr!("元ディスクと照合", "Verify against the original disk"),
+                        |ui| {
+                            text_row(
+                                ui,
+                                tr!(
+                                    "論理ディスクのSHA-256（任意）",
+                                    "Logical disk SHA-256 (optional)"
+                                ),
+                                &mut state.raw_sha256,
+                                "",
+                            );
+                            text_row(
+                                ui,
+                                tr!(
+                                    "論理ディスクのバイト数（任意）",
+                                    "Logical disk length in bytes (optional)"
+                                ),
+                                &mut state.raw_bytes,
+                                "",
+                            );
+                        },
+                    );
+                }
+                if state.format == Some(Format::Android) {
+                    path_row(ui, tr!("新しい保存先フォルダー", "New destination directory"), &mut state.output, Picker::File);
+                } else {
+                    path_row(ui, tr!("新しいRAWファイル", "New RAW file"), &mut state.output, Picker::Raw);
+                }
             });
             if let Some(error) = &state.error { theme::error_banner(ui, &error.to_string()); }
             ui.horizontal_wrapped(|ui| {
@@ -207,6 +252,8 @@ impl App {
             segment: segments,
             sector_size: None,
         };
+        let expected_hash = state.raw_sha256.trim().to_owned();
+        let expected_size = state.raw_bytes.trim().to_owned();
         let output = PathBuf::from(&state.output);
         let (tx, rx) = mpsc::channel();
         self.cancel = Arc::new(AtomicBool::new(false));
@@ -229,7 +276,32 @@ impl App {
                         ));
                     }
                 }
-                rescue_core::disk_image::import(&request, &output, &cancel)
+                if format == Format::Android {
+                    rescue_core::disk_image::import_android(&request.source, &output, &cancel)
+                } else if format == Format::Raw {
+                    let bytes = if expected_size.is_empty() {
+                        None
+                    } else {
+                        Some(expected_size.parse().map_err(|_| {
+                            rescue_core::Error::Request(
+                                tr!(
+                                    "ディスクのバイト数は整数で指定してください。",
+                                    "Enter the disk length as an unsigned integer."
+                                )
+                                .into(),
+                            )
+                        })?)
+                    };
+                    let expected = rescue_core::disk_image::RawExpectation {
+                        bytes,
+                        sha256: (!expected_hash.is_empty()).then_some(expected_hash.as_str()),
+                    };
+                    rescue_core::disk_image::import_with_raw_expectation(
+                        &request, &output, expected, &cancel,
+                    )
+                } else {
+                    rescue_core::disk_image::import(&request, &output, &cancel)
+                }
             })();
             let _ = tx.send(Message::ImageImported(result));
         }));
@@ -248,6 +320,31 @@ impl App {
                 self.image_original = None;
                 self.invalidate_changed_source();
                 self.status_error = false;
+                if let Some(proof) = import.android_sparse {
+                    self.status = message!(
+                        "読取マップ付きRAWを設定しました。記録済み {} バイト、未取得 {} バイト。",
+                        "Mapped RAW selected. {} recorded bytes, {} unavailable bytes.",
+                        proof.recorded_bytes,
+                        proof.unrecorded_bytes
+                    );
+                    return;
+                }
+                if let Some(proof) = import.raw {
+                    let verification = if proof.expected_sha256_verified {
+                        tr!("指定のSHA-256と一致", "original SHA-256 matched")
+                    } else {
+                        tr!("SHA-256を計算", "SHA-256 calculated")
+                    };
+                    self.status = message!(
+                        "{} セグメントから {} バイトのRAWを設定しました。{} {}",
+                        "Selected RAW from {} segments ({} bytes). {} {}",
+                        proof.segments.len(),
+                        import.bytes,
+                        verification,
+                        import.sha256
+                    );
+                    return;
+                }
                 self.status = message!(
                     "RAWをスキャン元に設定しました。{} バイト、SHA-256 {}",
                     "RAW selected for scanning. {} bytes, SHA-256 {}",
@@ -303,6 +400,8 @@ mod tests {
             bytes: 512,
             sha256: "abcd".into(),
             ewf: None,
+            android_sparse: None,
+            raw: None,
         }));
         assert_eq!(Path::new(&app.source), output);
         assert!(app.source_mode == SourceMode::Image && !app.status_error);
