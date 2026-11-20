@@ -56,8 +56,7 @@ def recover(binary, image, work, files, manifest, native):
     print(image.name, len(files), "OpenEXR originals matched in both scan modes", flush=True)
 
 
-def layout(data):
-    pos = 8
+def layout(data, pos=8):
     fields = {}
     while data[pos]:
         name, pos = data[pos:data.index(0, pos)], data.index(0, pos) + 1
@@ -120,6 +119,27 @@ def controls(binary, folder, files):
         "tile_level_id": edit(tile, tile_header+8, le(1)),
         "incomplete_tile": tile[:-9],
     }
+    multi = files["stereo.exr"]
+    first, second = layout(multi)
+    other, stop = layout(multi, second)
+    table_start = stop + 1
+    num_left = struct.unpack_from("<I", multi, first["chunkCount"][0])[0]
+    left = struct.unpack_from("<Q", multi, table_start)[0]
+    right = struct.unpack_from("<Q", multi, table_start + 8*num_left)[0]
+    cases.update({
+        "multipart_unknown_part": edit(multi, left, le(17)),
+        "multipart_wrong_valid_part": edit(multi, right, le(0)),
+        "multipart_aliased_chunk": edit(multi, table_start + 8*num_left, big(left)),
+        "multipart_wrong_chunk_count": edit(multi, first["chunkCount"][0], le(num_left+1)),
+        "multipart_missing_count": multi.replace(b"chunkCount\0", b"otherCount\0", 1),
+        "multipart_name_missing": multi.replace(b"name\0string", b"part\0string", 1),
+        "multipart_invalid_name": edit(multi, first["name"][0], b"\0"),
+        "multipart_type_missing": multi.replace(b"type\0string", b"none\0string", 1),
+        "multipart_deep_part": edit(multi, first["type"][0], b"deepscanline "),
+        "multipart_tiled_file_flag": edit(multi, 4, le(0x1202)),
+        "multipart_unterminated_headers": edit(multi, stop, b"x"),
+        "multipart_outside_final_block": multi[:-13],
+    })
     for label, broken in cases.items():
         p = folder / (label + ".raw")
         p.write_bytes(broken)
@@ -141,6 +161,46 @@ def controls(binary, folder, files):
     return sorted(cases)
 
 
+def sparse_ext4(binary, root, files, manifest):
+    # debugfs omits all-zero 1 KiB blocks while writing these two native files.
+    # The surviving extents are authoritative about both the location and the length of each hole.
+    selected = {n: files[n] for n in ("stereo.exr", "mixedrow.exr")}
+    disk = make_deleted_ext4(root, selected, block_size=1024)
+    before = sha(disk.read_bytes())
+    holes = {n: [pos for pos in range(0, len(b)-1023, 1024) if b[pos:pos+1024] == bytes(1024)]
+             for n,b in selected.items()}
+    check(all(holes.values()) and all(b not in disk.read_bytes() for b in selected.values()), holes)
+    for mode, flags in [("ordinary", []), ("indexed", ["--indexed"])]:
+        _, rows = candidates(binary, disk, root / mode, FILTER + flags, expected=5)
+        check(len(rows) == len(selected) and all(not r["supported"] for r in rows), rows)
+    saved = run(binary, "filesystem", "--source", disk, "--fs-type", "ext4", "--all",
+                "--destination", root / "metadata-files", "--json")["results"]
+    check({r["original_path"] for r in saved} == selected.keys(), saved)
+    for row in saved:
+        n = row["original_path"]
+        path = Path(row["path"])
+        check(path.read_bytes() == selected[n] and row["sha256"] == sha(selected[n]), row)
+        verify_pixels(path, manifest[n]["pixels"])
+    check(sha(disk.read_bytes()) == before, disk)
+    return {"zero_block_offsets": holes, "metadata_restored": {n: sha(b) for n,b in selected.items()}}
+
+
+def changed_metadata(binary, root, source):
+    pos = source.index(b"Rescue OpenEXR reference")
+    altered = edit(source, pos, b"r")
+    path = root / "changed.exr"
+    path.write_bytes(altered)
+    session, rows = candidates(binary, path, root / "changed-scan", FILTER)
+    check(len(rows) == 1 and rows[0]["supported"], rows)
+    saved = run(binary, "recover", "--session", session, "--all", "--destination", root / "changed-out", "--json")
+    check(Path(saved["results"][0]["path"]).read_bytes() == altered, saved)
+    sums = root / "original.sha256"
+    sums.write_text(sha(source) + "  rgbazip.exr\n")
+    match = run(binary, "match-hashes", "--report", saved["report"], "--checksums", sums, "--json")["comparison"]
+    check(match["counts"] == {"matched": 0, "not_listed": 1, "not_comparable": 0}, match)
+    return {"original": sha(source), "changed": sha(altered), "comparison": "not_listed"}
+
+
 def verify(binary, root, native=False):
     manifest = json.loads((GOLD / "manifest.json").read_text())
     files = {n: (GOLD / n).read_bytes() for n in manifest}
@@ -149,15 +209,20 @@ def verify(binary, root, native=False):
     if native:
         for n in manifest:
             verify_pixels(GOLD / n, manifest[n]["pixels"])
-        for label, make in [("fat32", make_deleted_fat), ("ext4", make_deleted_ext4)]:
+        for label in ["fat32", "ext4"]:
             folder = root / label
             folder.mkdir()
-            recover(binary, make(folder, files), folder, files, manifest, True)
-        return {"originals": hashes, "filesystems": ["fat32", "ext4"], "pixels": {n: m["pixels"] for n,m in manifest.items()}}
+            image = make_deleted_fat(folder, files) if label == "fat32" else make_deleted_ext4(folder, files, block_size=4096)
+            recover(binary, image, folder, files, manifest, True)
+        sparse = root / "sparse"
+        sparse.mkdir()
+        return {"originals": hashes, "filesystems": ["fat32", "ext4-4096"], "sparse_ext4": sparse_ext4(binary, sparse, files, manifest),
+                "pixels": {n: m["pixels"] for n,m in manifest.items()}}
     image = root / "adjacent.raw"
     image.write_bytes(b"!" * ((1 << 20) - 2) + b"".join(files.values()))
     recover(binary, image, root, files, manifest, False)
-    return {"originals": hashes, "refused": controls(binary, root, files)}
+    return {"originals": hashes, "refused": controls(binary, root, files),
+            "changed_metadata": changed_metadata(binary, root, files["rgbazip.exr"])}
 
 
 if __name__ == "__main__":

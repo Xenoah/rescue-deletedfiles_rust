@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+import struct
 
 import numpy as np
 import OpenEXR as exr
@@ -84,6 +85,71 @@ def make(folder):
                         "-threads", "1", str(path)], input=data, check=True)
         ffmpeg = subprocess.check_output(["ffmpeg", "-version"], text=True).splitlines()[0]
         originals[path.name] = {"producer": ffmpeg, "compression": compression, "sha256": sha(path.read_bytes()), "pixels": pixels(path)}
+    # Shared display windows allow a smaller data window for an auxiliary pass.
+    for stem, layers in [
+        ("stereo", [("left", ["R", "G", "B"], None), ("right", ["R", "G", "B"], None)]),
+        ("multitil", [("beauty", ["R", "G", "B", "A"], (19, 17)), ("depth", ["Z"], (23, 11)),
+                      ("matte", ["objectID"], None)]),
+        ("cropped", [("full", ["Y"], None), ("detail", ["Z", "objectID"], (13, 19))]),
+        ("fourpart", [("R", ["R"], None), ("G", ["G"], (16, 16)), ("B", ["B"], None),
+                      ("Z", ["Z"], (24, 17))]),
+    ]:
+        parts = []
+        display = (np.array([0, 0], dtype=np.int32), np.array([90, 66], dtype=np.int32))
+        for i, (part_name, channel_names, tile) in enumerate(layers):
+            header = {"displayWindow": display, "type": exr.tiledimage if tile else exr.scanlineimage,
+                      "compression": exr.ZIP_COMPRESSION if i % 2 == 0 else exr.PIZ_COMPRESSION}
+            ch = {name: values(name, i+j+30) for j, name in enumerate(channel_names)}
+            if stem == "cropped" and i:
+                ch = {n: np.ascontiguousarray(a[10:41, 7:53]) for n, a in ch.items()}
+                header["dataWindow"] = (np.array([-3, 5], dtype=np.int32), np.array([42, 35], dtype=np.int32))
+            if tile:
+                t = exr.TileDescription()
+                t.xSize, t.ySize = tile
+                header["tiles"] = t
+            parts.append(exr.Part(header, ch, part_name))
+        path = folder / (stem + ".exr")
+        with exr.File(parts) as image:
+            image.write(str(path))
+        originals[path.name] = {"producer": "OpenEXR " + exr.__version__, "compression": "multipart ZIP/PIZ",
+                                "sha256": sha(path.read_bytes()), "pixels": pixels(path)}
+
+    # Interleave complete chunks of two parts in reverse row order and rebuild the
+    # offset table. Read the saved file with OpenEXR to verify its channel data.
+    original = (folder / "stereo.exr").read_bytes()
+    pos = 8
+    counts = []
+    while original[pos]:
+        while original[pos]:
+            stop = original.index(0, pos)
+            name = original[pos:stop]
+            pos = original.index(0, stop + 1) + 1
+            n = struct.unpack_from("<I", original, pos)[0]
+            pos += 4
+            if name == b"chunkCount":
+                counts.append(struct.unpack_from("<I", original, pos)[0])
+            pos += n
+        pos += 1
+    pos += 1
+    offsets = struct.unpack_from("<" + "Q"*sum(counts), original, pos)
+    chunks = []
+    for offset in offsets:
+        n = struct.unpack_from("<I", original, offset + 8)[0]
+        chunks.append(original[offset:offset + 12 + n])
+    data = bytearray(original[:pos+8*sum(counts)])
+    for row in reversed(range(max(counts))):
+        for part, count in enumerate(counts):
+            if row < count:
+                slot = sum(counts[:part]) + row
+                struct.pack_into("<Q", data, pos + 8*slot, len(data))
+                data.extend(chunks[slot])
+    path = folder / "mixedrow.exr"
+    path.write_bytes(data)
+    observed = pixels(path)
+    assert observed == originals["stereo.exr"]["pixels"]
+    originals[path.name] = {"producer": "OpenEXR " + exr.__version__ + ", interleaved pixel chunks",
+                            "compression": "multipart ZIP/PIZ", "sha256": sha(data), "pixels": observed}
+
     (folder / "manifest.json").write_text(json.dumps(originals, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 

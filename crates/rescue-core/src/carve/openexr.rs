@@ -1,9 +1,13 @@
-//! Validate flat, single-part OpenEXR images before carving their last pixel chunk.
+//! Validate the headers, chunk tables and decoded blocks of flat OpenEXR images.
 use super::container::{Input, u32le, u64le};
 use crate::{Error, Result};
 use exr::block::reader::ChunksReader;
 use flate2::{Decompress, FlushDecompress, Status};
-use std::{collections::BTreeMap, io::Cursor, ops::Range};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    io::Cursor,
+    ops::Range,
+};
 
 pub(super) const MAGIC: &[u8] = b"\x76\x2f\x31\x01";
 const MAX_HEADER: usize = 1 << 20;
@@ -125,6 +129,7 @@ struct Grid {
     y: i32,
     block_width: usize,
     block_height: usize,
+    samples: usize,
     bytes_per_pixel: usize,
     float_channels: usize,
     tiled: bool,
@@ -205,6 +210,7 @@ impl Grid {
             y,
             block_width,
             block_height,
+            samples: width * height * count,
             bytes_per_pixel,
             float_channels,
             tiled,
@@ -212,86 +218,161 @@ impl Grid {
         })
     }
 
-    fn extent(&self, input: &mut Input<'_>, start: usize) -> Result<usize> {
+    fn chunks(&self) -> usize {
+        self.width.div_ceil(self.block_width) * self.height.div_ceil(self.block_height)
+    }
+
+    fn read_chunk(
+        &self,
+        input: &mut Input<'_>,
+        end: usize,
+        index: usize,
+        inflated: &mut Vec<u8>,
+    ) -> Result<usize> {
         let columns = self.width.div_ceil(self.block_width);
-        let count = columns * self.height.div_ceil(self.block_height);
-        let mut end = start + count * 8;
+        let (x, y) = (index % columns, index / columns);
+        let head = if self.tiled { 20 } else { 8 };
+        input.ensure(end + head)?;
+        let chunk = &input.bytes[end..end + head];
+        if self.tiled {
+            if u32le(chunk, 0) as usize != x
+                || u32le(chunk, 4) as usize != y
+                || u64le(chunk, 8) != 0
+            {
+                return Err(invalid("tile identity"));
+            }
+        } else if u32le(chunk, 0) as i32 != self.y + (y * self.block_height) as i32 {
+            return Err(invalid("scan-line identity"));
+        }
+        let raw = (self.width - x * self.block_width).min(self.block_width)
+            * (self.height - y * self.block_height).min(self.block_height)
+            * self.bytes_per_pixel;
+        let packed = u32le(chunk, head - 4) as usize;
+        if packed == 0 || packed > raw || (self.compression == 0 && packed != raw) {
+            return Err(invalid("pixel block length"));
+        }
+        let payload = end + head;
+        let end = payload + packed;
         input.ensure(end)?;
-        let mut offsets = (0..count)
-            .map(|i| (u64le(&input.bytes, start + i * 8), i))
-            .collect::<Vec<_>>();
-        offsets.sort_unstable();
-        let mut inflated = Vec::new();
-        for (offset, index) in offsets {
-            if offset != end as u64 {
-                return Err(invalid("missing, overlapping or discontiguous chunk"));
-            }
-            let (x, y) = (index % columns, index / columns);
-            let head = if self.tiled { 20 } else { 8 };
-            input.ensure(end + head)?;
-            let chunk = &input.bytes[end..end + head];
-            if self.tiled {
-                if u32le(chunk, 0) as usize != x
-                    || u32le(chunk, 4) as usize != y
-                    || u64le(chunk, 8) != 0
-                {
-                    return Err(invalid("tile identity"));
-                }
-            } else if u32le(chunk, 0) as i32 != self.y + (y * self.block_height) as i32 {
-                return Err(invalid("scan-line identity"));
-            }
-            let raw = (self.width - x * self.block_width).min(self.block_width)
-                * (self.height - y * self.block_height).min(self.block_height)
-                * self.bytes_per_pixel;
-            let packed = u32le(chunk, head - 4) as usize;
-            if packed == 0 || packed > raw || (self.compression == 0 && packed != raw) {
-                return Err(invalid("pixel block length"));
-            }
-            let payload = end + head;
-            end = payload + packed;
-            input.ensure(end)?;
-            if matches!(self.compression, 2 | 3 | 5) && packed < raw {
-                // ZIP blocks must consume the entire zlib member, including Adler-32.
-                // PXR24 stores three filtered bytes for each full float sample.
-                let n = if self.compression == 5 {
-                    raw - raw / self.bytes_per_pixel * self.float_channels
-                } else {
-                    raw
-                };
-                input.work(n)?;
-                inflated.resize(n + 1, 0);
-                let mut zlib = Decompress::new(true);
-                let status = zlib
-                    .decompress(
-                        &input.bytes[payload..end],
-                        &mut inflated,
-                        FlushDecompress::Finish,
-                    )
-                    .map_err(|_| invalid("zlib pixel block"))?;
-                if status != Status::StreamEnd
-                    || zlib.total_in() != packed as u64
-                    || zlib.total_out() != n as u64
-                {
-                    return Err(invalid("zlib block length or checksum"));
-                }
+        if matches!(self.compression, 2 | 3 | 5) && packed < raw {
+            // ZIP blocks must consume the entire zlib member, including Adler-32.
+            // PXR24 stores three filtered bytes for each full float sample.
+            let n = if self.compression == 5 {
+                raw - raw / self.bytes_per_pixel * self.float_channels
+            } else {
+                raw
+            };
+            input.work(n)?;
+            inflated.resize(n + 1, 0);
+            let mut zlib = Decompress::new(true);
+            let status = zlib
+                .decompress(
+                    &input.bytes[payload..end],
+                    inflated,
+                    FlushDecompress::Finish,
+                )
+                .map_err(|_| invalid("zlib pixel block"))?;
+            if status != Status::StreamEnd
+                || zlib.total_in() != packed as u64
+                || zlib.total_out() != n as u64
+            {
+                return Err(invalid("zlib block length or checksum"));
             }
         }
         Ok(end)
     }
 }
 
+// Part offset tables are concatenated by header order. Pixel chunks may arrive
+// in another physical order, including interleaved parts and decreasing rows.
+fn extent(input: &mut Input<'_>, grids: &[Grid], mut end: usize, multipart: bool) -> Result<usize> {
+    let count = grids.iter().map(Grid::chunks).sum::<usize>();
+    if count > 65_536 {
+        return Err(invalid("total chunk count"));
+    }
+    input.ensure(end + count * 8)?;
+    let mut offsets = Vec::with_capacity(count);
+    for (part, grid) in grids.iter().enumerate() {
+        for index in 0..grid.chunks() {
+            offsets.push((u64le(&input.bytes, end), part, index));
+            end += 8;
+        }
+    }
+    offsets.sort_unstable();
+    let mut inflated = Vec::new();
+    for (offset, part, index) in offsets {
+        if offset != end as u64 {
+            return Err(invalid("missing, overlapping or discontiguous chunk"));
+        }
+        if multipart {
+            input.ensure(end + 4)?;
+            if u32le(&input.bytes, end) as usize != part {
+                return Err(invalid("chunk part identity"));
+            }
+            end += 4;
+        }
+        end = grids[part].read_chunk(input, end, index, &mut inflated)?;
+    }
+    Ok(end)
+}
+
 pub(super) fn parse(input: &mut Input<'_>) -> Result<usize> {
     input.ensure(8)?;
     let flags = u32le(&input.bytes, 4);
-    if !input.bytes.starts_with(MAGIC) || flags & !0x600 != 2 {
-        return Err(invalid("magic, version or multipart/deep flags"));
+    let multipart = flags & 0x1000 != 0;
+    if !input.bytes.starts_with(MAGIC) || flags & !0x1600 != 2 || (multipart && flags & 0x200 != 0)
+    {
+        return Err(invalid("magic, version or deep flags"));
     }
     let max_name = if flags & 0x400 != 0 { 255 } else { 31 };
     let mut pos = 8;
-    let fields = attributes(input, &mut pos, max_name)?;
-    let grid = Grid::from_header(&input.bytes, &fields, max_name, flags & 0x200 != 0)?;
-    let end = grid.extent(input, pos)?;
-    let expected = grid.width * grid.height * grid.bytes_per_pixel;
+    let mut grids = Vec::new();
+    let mut names = BTreeSet::new();
+    loop {
+        let fields = attributes(input, &mut pos, max_name)?;
+        let tiled = if multipart {
+            let string = |key| {
+                fields
+                    .get(key)
+                    .filter(|(t, _)| t == "string")
+                    .map(|(_, r)| &input.bytes[r.clone()])
+            };
+            let name = string("name")
+                .and_then(|b| std::str::from_utf8(b).ok())
+                .filter(|n| !n.is_empty() && n.len() <= 255 && !n.chars().any(char::is_control))
+                .ok_or_else(|| invalid("part name"))?;
+            if !names.insert(name.to_owned()) || !fields.contains_key("chunkCount") {
+                return Err(invalid("duplicate part name or missing chunk count"));
+            }
+            match string("type") {
+                Some(b"scanlineimage") => false,
+                Some(b"tiledimage") => true,
+                _ => return Err(invalid("non-flat or missing part type")),
+            }
+        } else {
+            flags & 0x200 != 0
+        };
+        grids.push(Grid::from_header(&input.bytes, &fields, max_name, tiled)?);
+        if !multipart {
+            break;
+        }
+        input.ensure(pos + 1)?;
+        if input.bytes[pos] == 0 {
+            pos += 1;
+            break;
+        }
+        if grids.len() >= 8 {
+            return Err(invalid("part count"));
+        }
+    }
+    if grids.iter().map(|g| g.samples).sum::<usize>() > MAX_SAMPLES {
+        return Err(invalid("aggregate sample count"));
+    }
+    let end = extent(input, &grids, pos, multipart)?;
+    let expected = grids
+        .iter()
+        .map(|g| g.width * g.height * g.bytes_per_pixel)
+        .sum::<usize>();
     input.work(expected * 2)?;
     // Validate each compressed block and its decoded size. Keep only one block in memory.
     let decoded = std::panic::catch_unwind(|| -> Result<usize> {
@@ -304,6 +385,9 @@ pub(super) fn parse(input: &mut Input<'_>) -> Result<usize> {
         for block in chunks.sequential_decompressor(true) {
             input.check()?;
             let b = block.map_err(|e| invalid(&e.to_string()))?;
+            let grid = grids
+                .get(b.index.layer)
+                .ok_or_else(|| invalid("decoded part index"))?;
             let n = b.index.pixel_size.area() * grid.bytes_per_pixel;
             if b.data.len() != n {
                 return Err(invalid("decoded block length"));

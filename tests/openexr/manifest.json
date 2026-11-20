@@ -24,6 +24,41 @@
     "producer": "OpenEXR 3.5.4",
     "sha256": "46c9c74e602ff4497634af57b7117c095a95e3eb09636d91691f9366cb2635bf"
   },
+  "cropped.exr": {
+    "compression": "multipart ZIP/PIZ",
+    "pixels": [
+      {
+        "Y": {
+          "dtype": "<f2",
+          "sha256": "ae89c9c538bc836bd98ba2d51ba96be9c09274e4ffa9b37340c6e5a58d07f383",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "Z": {
+          "dtype": "<f4",
+          "sha256": "a45dcc103222a3f1e37a352c0a2ed44d8722d27c4757a5177a1ec2f1f2441917",
+          "shape": [
+            31,
+            46
+          ]
+        },
+        "objectID": {
+          "dtype": "<u4",
+          "sha256": "df4e4ca6462371ba9e3140f655f0946451243b08081e0bc97ba049f90533973d",
+          "shape": [
+            31,
+            46
+          ]
+        }
+      }
+    ],
+    "producer": "OpenEXR 3.5.4",
+    "sha256": "be2d3eaae2c665206d35c01ae138d16f9ba3d15076352089ce0676a5130754e3"
+  },
   "depthpiz.exr": {
     "compression": "PIZ",
     "pixels": [
@@ -214,6 +249,53 @@
     "producer": "OpenEXR 3.5.4",
     "sha256": "ed7828492f954d38efe2de8e024c3f325a819574aa5b0c90d884f631e8258f4e"
   },
+  "fourpart.exr": {
+    "compression": "multipart ZIP/PIZ",
+    "pixels": [
+      {
+        "R": {
+          "dtype": "<f2",
+          "sha256": "ae89c9c538bc836bd98ba2d51ba96be9c09274e4ffa9b37340c6e5a58d07f383",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "G": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "B": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "Z": {
+          "dtype": "<f4",
+          "sha256": "000ee50c0885186f67abf6f4aa500ff689219306a4d9334ff6c05e568bf440d4",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      }
+    ],
+    "producer": "OpenEXR 3.5.4",
+    "sha256": "d96133069782b1136113e363b4af5979e487c86839729d486ebe033bf5c64a51"
+  },
   "halfb44.exr": {
     "compression": "B44",
     "pixels": [
@@ -288,6 +370,126 @@
     ],
     "producer": "OpenEXR 3.5.4",
     "sha256": "86f2d9d9e42979cbdf440bdaffbd010e95175608fb2b279a3c2d79d5748f6526"
+  },
+  "mixedrow.exr": {
+    "compression": "multipart ZIP/PIZ",
+    "pixels": [
+      {
+        "B": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "G": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "R": {
+          "dtype": "<f2",
+          "sha256": "ae89c9c538bc836bd98ba2d51ba96be9c09274e4ffa9b37340c6e5a58d07f383",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "B": {
+          "dtype": "<f2",
+          "sha256": "9ff8da273b175352beb0b6f12b8b902b3f793193ce2aba58f0f9afd150bbc177",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "G": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "R": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      }
+    ],
+    "producer": "OpenEXR 3.5.4, interleaved pixel chunks",
+    "sha256": "ffe687a445ee125652ab3c0ba64af68173afca880841d37948d2b9ec5842630f"
+  },
+  "multitil.exr": {
+    "compression": "multipart ZIP/PIZ",
+    "pixels": [
+      {
+        "A": {
+          "dtype": "<f2",
+          "sha256": "9ff8da273b175352beb0b6f12b8b902b3f793193ce2aba58f0f9afd150bbc177",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "B": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "G": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "R": {
+          "dtype": "<f2",
+          "sha256": "ae89c9c538bc836bd98ba2d51ba96be9c09274e4ffa9b37340c6e5a58d07f383",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "Z": {
+          "dtype": "<f4",
+          "sha256": "e6cfa17039db49d41df353beb717d856937b86d8457b8a77121bbd69217786ea",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "objectID": {
+          "dtype": "<u4",
+          "sha256": "368580a4ad1d98ee6fdb6aa958b4201c763c05553399852a0d686384aeb1b176",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      }
+    ],
+    "producer": "OpenEXR 3.5.4",
+    "sha256": "367be789d5ac3eaecf72aea3cef132f06a93466cfe124b8fbbe0070abb30c8c7"
   },
   "negwin.exr": {
     "compression": "ZIP",
@@ -412,6 +614,65 @@
     ],
     "producer": "OpenEXR 3.5.4",
     "sha256": "e48439c721466d70acb2c1da120891d0e979040b48fe8de7d379fb597a465a85"
+  },
+  "stereo.exr": {
+    "compression": "multipart ZIP/PIZ",
+    "pixels": [
+      {
+        "B": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "G": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "R": {
+          "dtype": "<f2",
+          "sha256": "ae89c9c538bc836bd98ba2d51ba96be9c09274e4ffa9b37340c6e5a58d07f383",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      },
+      {
+        "B": {
+          "dtype": "<f2",
+          "sha256": "9ff8da273b175352beb0b6f12b8b902b3f793193ce2aba58f0f9afd150bbc177",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "G": {
+          "dtype": "<f2",
+          "sha256": "c5988030540959f4d2fe111002964ab928053d56bbbe8e170853881caf926327",
+          "shape": [
+            67,
+            91
+          ]
+        },
+        "R": {
+          "dtype": "<f2",
+          "sha256": "9954a179b98e4678e3d168e7b4e4b2d3b801554ae9d03271a2ccd1890bc04b80",
+          "shape": [
+            67,
+            91
+          ]
+        }
+      }
+    ],
+    "producer": "OpenEXR 3.5.4",
+    "sha256": "f6ad91aeeeb44a9e765058b37a9dae6bdb2fbd4979af05ef09a48139794cc11b"
   },
   "tilerle.exr": {
     "compression": "RLE",
