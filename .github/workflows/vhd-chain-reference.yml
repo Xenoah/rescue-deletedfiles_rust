@@ -1,4 +1,4 @@
-name: Capture seven nonresident unlinks across three native Windows VHD layers
+name: Compare durable writes before seven Windows nonresident VHD unlinks
 on:
   push:
     branches: [qa/windows-vhd-chain-reference]
@@ -15,12 +15,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: Modify file sectors at two depths, delete the files, then read back the relocated disk chain
-        run: python -u tests/vhd-chain/capture_nonresident.py
+        run: python -u tests/vhd-chain/capture_nonresident.py --flush-before-delete
       - name: Preserve verified differencing images
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
           git add tests/vhd-chain
-          git commit -m "Preserve nonresident file sectors and full Windows guest readbacks across three VHD layers"
+          git commit -m "Preserve driver readbacks after flushing file and volume buffers before unlink"
           git push origin HEAD:qa/windows-vhd-chain-reference

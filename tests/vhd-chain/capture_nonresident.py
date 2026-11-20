@@ -1,4 +1,5 @@
 """Capture real NTFS unlinks of seven multi-cluster documents and media in a two-child VHD."""
+import argparse
 import json
 import lzma
 from pathlib import Path
@@ -7,9 +8,13 @@ import tempfile
 from capture_driver_raw import read_guest
 from generate_windows import ROOT, capture
 
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--flush-before-delete', action='store_true')
+durable=parser.parse_args().flush_before_delete
+label='dynamic-flushed' if durable else 'dynamic-nonresident'
 with tempfile.TemporaryDirectory() as tmp:
-    capture(Path(tmp), 'dynamic-nonresident', 'expandable', 2, layered=True)
-case=ROOT/'dynamic-nonresident'
+    capture(Path(tmp), label, 'expandable', 2, layered=True, durable=durable)
+case=ROOT/label
 data=json.loads((case/'manifest.json').read_text())
 receipt={}
 with tempfile.TemporaryDirectory() as tmp:

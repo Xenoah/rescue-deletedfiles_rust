@@ -95,7 +95,7 @@ def archive(image, out):
     return dict(filename=image.name, bytes=image.stat().st_size, sha256=sha(image), xz_sha256=sha(dest))
 
 
-def capture(root, case, kind, depth, layered=False):
+def capture(root, case, kind, depth, layered=False, durable=False):
     folder = root/case
     folder.mkdir()
     base = folder/'base.vhd'
@@ -132,6 +132,9 @@ def capture(root, case, kind, depth, layered=False):
                     with (mount/'deletions'/name).open('r+b') as f:
                         f.seek(offset)
                         f.write(raw[offset:offset+512])
+                        if durable:
+                            f.flush()
+                            os.fsync(f.fileno())
                     check((mount/'deletions'/name).read_bytes() == contents(name, level), name)
             with (mount/'write-control.bin').open('r+b') as control:
                 at = level * 4096
@@ -142,6 +145,8 @@ def capture(root, case, kind, depth, layered=False):
                 control.seek(at+1024)
                 control.write(bytes([level])*512)
             if level == depth:
+                if durable:
+                    sync_volume(mount)
                 for name in originals:
                     (mount/'deletions'/name).unlink()
                 check(not list((mount/'deletions').iterdir()), case)
