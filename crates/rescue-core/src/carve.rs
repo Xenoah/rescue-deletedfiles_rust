@@ -31,6 +31,7 @@ mod movie;
 mod mp3;
 mod netpbm;
 mod pdf;
+mod photoshop;
 mod png;
 mod xml;
 mod zip;
@@ -78,6 +79,8 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "psd" => Some(Format::Psd),
+        "psb" => Some(Format::Psb),
         "tif" | "tiff" => Some(Format::Tiff),
         "ttf" => Some(Format::Ttf),
         "otf" if head.starts_with(b"PK\x03\x04") => Some(Format::Zip),
@@ -193,6 +196,8 @@ enum Format<'a> {
     Apng,
     Jpeg,
     Tiff,
+    Psd,
+    Psb,
     Aiff,
     Aifc,
     Flac,
@@ -248,6 +253,8 @@ impl<'a> Format<'a> {
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
             Self::Tiff => "tif",
+            Self::Psd => "psd",
+            Self::Psb => "psb",
             Self::Aiff => "aiff",
             Self::Aifc => "aifc",
             Self::Flac => "flac",
@@ -336,6 +343,8 @@ impl<'a> Format<'a> {
             }
             Self::Heic | Self::Avif | Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
+            | Self::Psd
+            | Self::Psb
             | Self::Aiff
             | Self::Aifc
             | Self::Flac
@@ -447,6 +456,11 @@ impl<'a> Format<'a> {
             Self::Json => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = json::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Psd | Self::Psb => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = photoshop::parse(&mut input, self)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Tiff => {
@@ -578,6 +592,10 @@ fn detect<'a>(
         && format.allowed(extensions)
     {
         Some(format)
+    } else if bytes.first() == Some(&b'8')
+        && let Some(format) = photoshop::signature(bytes)
+    {
+        Some(format).filter(|f| f.allowed(extensions))
     } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
         Some(Format::Flac)
     } else if bytes.starts_with(b"MSCF") && Format::Cab.allowed(extensions) {
@@ -622,6 +640,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Psd | Format::Psb => &[
+            "Photoshop header, resource and layer section bounds, and composite channel lengths were checked. Layer effects and individual channel pixels are not rendered. Raw and PackBits data carry no independent content checksum.",
         ],
         Format::Tiff => &[
             "Classic TIFF/BigTIFF through the last referenced byte. Each supported page is pixel-decoded. Private pointer tags, subsidiary IFDs and unreferenced trailing padding are excluded. Up to 256 pages and 128 MiB decoded across all pages.",
@@ -748,7 +769,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -956,6 +977,8 @@ pub(crate) fn recovery_data(
         Format::Jpeg,
         Format::Pdf,
         Format::Tiff,
+        Format::Psd,
+        Format::Psb,
         Format::Aiff,
         Format::Aifc,
         Format::Flac,
