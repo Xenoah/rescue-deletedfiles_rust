@@ -1,4 +1,5 @@
-//! Standalone classic Microsoft VHD, with 512-byte, MSB-first sector allocation maps.
+//! Classic Microsoft VHD, with 512-byte, MSB-first sector allocation maps.
+pub(super) mod backing;
 use super::{Block, Error, File, Result, invalid, read_at};
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -42,6 +43,8 @@ fn checked_region(at: u64, length: u64, limit: u64) -> Result<std::ops::Range<u6
 pub(super) struct Vhd {
     pub size: u64,
     allocation: Option<Allocation>,
+    uuid: [u8; 16],
+    parent: Option<backing::Parent>,
 }
 
 struct Allocation {
@@ -53,6 +56,15 @@ struct Allocation {
 
 impl Vhd {
     pub(super) fn open(source: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
+        Self::open_member(source, length, cancel, false)
+    }
+
+    fn open_member(
+        source: &mut File,
+        length: u64,
+        cancel: &AtomicBool,
+        chain: bool,
+    ) -> Result<Self> {
         if length < SECTOR || !length.is_multiple_of(SECTOR) {
             return Err(invalid("truncated VHD footer"));
         }
@@ -69,10 +81,18 @@ impl Vhd {
             return Err(invalid("VHD logical size"));
         }
         let header_at = be64(&footer, 16);
-        let allocation = match be32(&footer, 60) {
+        let kind = be32(&footer, 60);
+        let uuid = footer[68..84].try_into().unwrap();
+        if chain && (uuid == [0; 16] || footer[84] != 0) {
+            return Err(invalid(
+                "VHD chain member has no disk ID or is in a saved state",
+            ));
+        }
+        let mut parent = None;
+        let allocation = match kind {
             2 if header_at == u64::MAX && size == end => None,
             2 => return Err(invalid("fixed VHD size or header offset")),
-            3 => {
+            3 | 4 if kind == 3 || chain => {
                 let mut backup = [0; 512];
                 read_at(source, 0, &mut backup)?;
                 if !footer_valid(&backup)
@@ -83,7 +103,10 @@ impl Vhd {
                 {
                     return Err(invalid("dynamic VHD footer copies disagree"));
                 }
-                Some(Allocation::open(source, header_at, end, size, cancel)?)
+                let (map, link) =
+                    Allocation::open(source, header_at, end, size, kind == 4, cancel)?;
+                parent = link;
+                Some(map)
             }
             _ => {
                 return Err(Error::Unsupported(
@@ -91,7 +114,12 @@ impl Vhd {
                 ));
             }
         };
-        Ok(Self { size, allocation })
+        Ok(Self {
+            size,
+            allocation,
+            uuid,
+            parent,
+        })
     }
 
     pub(super) fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
@@ -108,8 +136,9 @@ impl Allocation {
         header_at: u64,
         end: u64,
         size: u64,
+        child: bool,
         cancel: &AtomicBool,
-    ) -> Result<Self> {
+    ) -> Result<(Self, Option<backing::Parent>)> {
         let header_region = checked_region(header_at, 1024, end)?;
         let mut header = [0; 1024];
         read_at(source, header_at, &mut header)?;
@@ -135,6 +164,11 @@ impl Allocation {
         let mut table = vec![0; (count * 4) as usize];
         read_at(source, table_region.start, &mut table)?;
         let mut regions = vec![0..SECTOR, header_region, table_region];
+        let parent = if child {
+            Some(backing::parse(source, &header, end, &mut regions)?)
+        } else {
+            None
+        };
         for (index, &entry) in table.as_chunks::<4>().0.iter().enumerate() {
             if cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
@@ -156,12 +190,15 @@ impl Allocation {
         if regions.windows(2).any(|pair| pair[1].start < pair[0].end) {
             return Err(invalid("overlapping VHD metadata or data blocks"));
         }
-        Ok(Self {
-            block_size,
-            table,
-            bitmap: vec![0; bitmap_size as usize],
-            cached: None,
-        })
+        Ok((
+            Self {
+                block_size,
+                table,
+                bitmap: vec![0; bitmap_size as usize],
+                cached: None,
+            },
+            parent,
+        ))
     }
 
     fn sector_present(&self, sector: u64) -> bool {
@@ -191,6 +228,6 @@ impl Allocation {
         } else {
             Block::Zero
         };
-        Ok((block, (next - sector) * SECTOR))
+        Ok((block, (next - sector) * SECTOR - within % SECTOR))
     }
 }

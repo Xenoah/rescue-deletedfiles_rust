@@ -39,13 +39,13 @@ def native_import(binary, src, out, image_type=None, expected=0, segments=()):
     return json.loads(p.stdout)
 
 
-def recover(binary, raw, root, manifest, indexed=False):
+def recover(binary, raw, root, manifest, indexed=False, folder="rescue-vhdx-fixtures"):
     scan = run(binary, 'scan', '--source', raw, '--work-dir', root / 'scan', '--json',
                *(['--indexed'] if indexed else []), timeout=180)
     rows = run(binary, 'results', '--session', scan['session'], '--json')['candidates']
     rows = [r for r in rows if r['name'] in manifest['originals']]
     check({r['name'] for r in rows} == set(manifest['originals']) and len(rows) == 7, rows)
-    check(all(r['supported'] and 'rescue-vhdx-fixtures/' in r['original_path'] for r in rows), rows)
+    check(all(r['supported'] and folder+'/' in r['original_path'] for r in rows), rows)
     ids = [arg for r in rows for arg in ('--id', r['id'])]
     outputs = run(binary, 'recover', '--session', scan['session'], *ids, '--destination', root / 'files',
                   '--json')['results']

@@ -1,4 +1,5 @@
 //! Read logical sectors from virtual disks. No host path stored in an image is opened.
+mod chain;
 mod qcow;
 mod vhd;
 mod vhdx;
@@ -14,6 +15,7 @@ use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
+pub(super) use vhd::backing::import_vhd_chain;
 pub(super) use vmdk::import_segments;
 
 fn invalid(reason: &str) -> Error {

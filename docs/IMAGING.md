@@ -199,7 +199,7 @@ GUIの変換画面で `.img.gz` などを選ぶか、CLIで `rescue import-image
 
 ## 固定容量・可変容量のクラシックVHD
 
-GUIの「イメージをRAWに変換」でVHDを選ぶか、次のコマンドを実行します。親イメージを持つ差分VHDは対象外です。
+GUIの「イメージをRAWに変換」でVHDを選ぶか、次のコマンドを実行します。差分VHDでは子を選び、直近の親からベースまでを順に指定すると論理ディスクを復元できます。[Windowsでの実測と制限](RELEASE-v1.34.0.md)
 
 ```console
 rescue import-image --source guest.vhd --image-type vhd --output guest.raw --json

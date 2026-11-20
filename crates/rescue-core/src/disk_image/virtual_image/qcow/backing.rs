@@ -2,16 +2,17 @@
 use super::{Block, Qcow, be32, be64, invalid, read_at};
 use crate::{
     Error, Result,
-    disk_image::{ImportedFile, publish_output},
+    disk_image::{
+        ImportedFile,
+        virtual_image::chain::{self, Layer},
+    },
 };
-use sha2::{Digest, Sha256};
 use std::{
     collections::HashSet,
     ffi::{OsStr, OsString},
-    fs::{File, Metadata},
-    io::{Seek, SeekFrom, Write},
+    fs::File,
     path::Path,
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::AtomicBool,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -110,17 +111,18 @@ pub(super) fn reference(
     }))
 }
 
-struct Member {
-    file: File,
-    before: Metadata,
+struct QcowLayer {
     map: Option<Qcow>,
     decoded: Vec<u8>,
     cached_guest: Option<u64>,
 }
 
-impl Member {
+impl Layer<QcowLayer> {
     fn size(&self) -> u64 {
-        self.map.as_ref().map_or(self.before.len(), |q| q.size)
+        self.layout
+            .map
+            .as_ref()
+            .map_or(self.before.len(), |q| q.size)
     }
 
     // Overlay data ends at the first allocation boundary in any younger layer.
@@ -137,7 +139,7 @@ impl Member {
             return Ok(true);
         }
         *limit = (*limit as u64).min(size - guest) as usize;
-        let Some(map) = &mut self.map else {
+        let Some(map) = &mut self.layout.map else {
             read_at(&mut self.file, guest, &mut buf[..*limit])?;
             return Ok(true);
         };
@@ -152,15 +154,15 @@ impl Member {
             let within = guest % map.cluster;
             *limit = (*limit as u64).min(map.cluster - within) as usize;
             let start = guest - within;
-            if self.cached_guest != Some(start) {
+            if self.layout.cached_guest != Some(start) {
                 encoded.resize(bytes, 0);
                 read_at(&mut self.file, at, encoded)?;
-                self.decoded.resize(map.cluster as usize + 1, 0);
-                codec.decode(encoded, &mut self.decoded, map.cluster, map.cluster)?;
-                self.cached_guest = Some(start);
+                self.layout.decoded.resize(map.cluster as usize + 1, 0);
+                codec.decode(encoded, &mut self.layout.decoded, map.cluster, map.cluster)?;
+                self.layout.cached_guest = Some(start);
             }
             let off = within as usize;
-            buf[..*limit].copy_from_slice(&self.decoded[off..off + *limit]);
+            buf[..*limit].copy_from_slice(&self.layout.decoded[off..off + *limit]);
             return Ok(true);
         }
         *limit = (*limit as u64).min(span - skip) as usize;
@@ -232,52 +234,25 @@ pub(in crate::disk_image) fn import_chain(
             (None, Some(_)) => return Err(invalid("extra parent after standalone disk")),
             (None, None) => {}
         }
-        members.push(Member {
+        members.push(Layer {
             file,
             before,
-            map,
-            decoded: Vec::new(),
-            cached_guest: None,
+            layout: QcowLayer {
+                map,
+                decoded: Vec::new(),
+                cached_guest: None,
+            },
         });
     }
     let size = members[0].size();
-    let expected_digest = expected.expected_digest(size)?;
-    let result = publish_output(output, cancel, |out| {
-        let mut digest = Sha256::new();
-        let mut buf = vec![0; 256 * 1024];
-        let mut encoded = Vec::new();
-        let mut guest = 0;
-        while guest < size {
-            if cancel.load(Ordering::Relaxed) {
-                return Err(Error::Cancelled);
-            }
-            let mut n = (size - guest).min(buf.len() as u64) as usize;
-            let mut found = false;
-            for member in &mut members {
-                if member.read(guest, &mut buf, &mut n, &mut encoded)? {
-                    found = true;
-                    break;
-                }
-            }
-            if !found {
-                buf[..n].fill(0);
-            }
-            digest.update(&buf[..n]);
-            if buf[..n].iter().any(|&b| b != 0) {
-                out.seek(SeekFrom::Start(guest))?;
-                out.write_all(&buf[..n])?;
-            }
-            guest += n as u64;
-        }
-        crate::disk_image::split_raw::verify_digest(&digest, expected_digest)?;
-        out.set_len(size)?;
-        for m in &members {
-            let after = m.file.metadata()?;
-            if after.len() != m.before.len() || after.modified()? != m.before.modified()? {
-                return Err(Error::SourceChanged);
-            }
-        }
-        Ok((size, digest))
-    })?;
-    Ok(Some(result))
+    let mut encoded = Vec::new();
+    chain::flatten(
+        &mut members,
+        size,
+        output,
+        expected,
+        cancel,
+        |m, guest, buf, n| m.read(guest, buf, n, &mut encoded),
+    )
+    .map(Some)
 }

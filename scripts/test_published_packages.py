@@ -41,6 +41,7 @@ from e2e_cab import verify as cabinet_archives
 from e2e_android_sparse import portable as android_sparse, native as aosp_deletions
 from e2e_ddrescue_partitions import exercise as shifted_ddrescue_partitions
 from e2e_qcow1 import portable as qcow1, native as qemu_qcow1
+from e2e_vhd_chain import verify as vhd_chain
 from e2e_xfs_allocation import verify as xfs_allocation
 from e2e_ext4_allocation import verify as ext4_allocation
 from e2e_hfs_allocation import verify as hfs_allocation
@@ -236,6 +237,9 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 34, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['vhd_chain'] = vhd_chain(binary, Path(tmp), tsk=a.platform == 'linux', windows_driver=a.platform == 'windows')
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 33, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['xfs_allocation'] = xfs_allocation(binary, Path(tmp), xfs_tools=a.platform == 'linux')
