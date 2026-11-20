@@ -121,6 +121,7 @@ impl Vdi {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Compression {
     QcowDeflate,
+    QcowV1Deflate,
     QcowZstd,
     VmdkZlib,
 }
@@ -158,7 +159,8 @@ impl Compression {
         let decoded_length = stream.total_out();
         if status != Status::StreamEnd
             || (decoded_length != cluster && !(wrapped && decoded_length == count))
-            || (wrapped && stream.total_in() != encoded.len() as u64)
+            || ((wrapped || self == Self::QcowV1Deflate)
+                && stream.total_in() != encoded.len() as u64)
         {
             return Err(invalid("compressed virtual disk block length"));
         }
@@ -178,6 +180,7 @@ enum Block {
 enum Disk {
     Vdi(Vdi),
     Qcow(qcow::Qcow),
+    QcowV1(qcow::v1::Legacy),
     Vhd(vhd::Vhd),
     Vhdx(vhdx::Vhdx),
     Vmdk(vmdk::Vmdk),
@@ -188,6 +191,7 @@ impl Disk {
         match self {
             Self::Vdi(v) => v.size,
             Self::Qcow(q) => q.size,
+            Self::QcowV1(q) => q.size,
             Self::Vhd(v) => v.size,
             Self::Vhdx(v) => v.size,
             Self::Vmdk(v) => v.size,
@@ -198,6 +202,7 @@ impl Disk {
         match self {
             Self::Vdi(v) => Ok((v.block(offset), v.block_size)),
             Self::Qcow(q) => q.block(source, offset),
+            Self::QcowV1(q) => q.block(source, offset),
             Self::Vhd(v) => v.block(source, offset),
             Self::Vhdx(v) => Ok(v.block(offset)),
             Self::Vmdk(v) => Ok(v.block(offset)),
@@ -290,7 +295,12 @@ pub(super) fn import(
     output: &Path,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
-    if requested.is_some_and(|v| !matches!(v, "vdi" | "qcow2" | "vhd" | "vhdx" | "vmdk")) {
+    if requested.is_some_and(|v| {
+        !matches!(
+            v,
+            "vdi" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk"
+        )
+    }) {
         return Ok(None);
     }
     let mut source = File::open(path)?;
@@ -311,7 +321,11 @@ pub(super) fn import(
     } else if head[..8] == *b"vhdxfile" {
         Some("vhdx")
     } else if head[..4] == *b"QFI\xfb" {
-        Some("qcow2")
+        Some(if head[4..8] == 1u32.to_be_bytes() {
+            "qcow1"
+        } else {
+            "qcow2"
+        })
     } else if head[64..68] == *b"\x7f\x10\xda\xbe" {
         Some("vdi")
     } else {
@@ -324,6 +338,7 @@ pub(super) fn import(
     if requested.is_some()
         && kind != requested
         && !(kind == Some("vhdx") && requested == Some("vhd"))
+        && !(matches!(kind, Some("qcow1" | "qcow2")) && requested == Some("qcow"))
     {
         return Err(invalid("signature differs from requested image type"));
     }
@@ -331,6 +346,7 @@ pub(super) fn import(
         Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), None, cancel)?),
         Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
+        Some("qcow1") => Disk::QcowV1(qcow::v1::Legacy::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),
         Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),
         _ => return Ok(None),
