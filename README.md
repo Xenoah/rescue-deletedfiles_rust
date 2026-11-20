@@ -6,6 +6,8 @@ Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MC
 
 [リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/latest) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.33.0/docs/RELEASE-v1.33.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44682179836)
 
+VirtualBox製の差分VMDKを使用する場合は、親を省略する前に公開版で確認された制限をご確認ください。[該当するディスクの判別と復元手順](docs/IMAGING.md#vmdkの内蔵読み取り)
+
 ![v1.33.0で復元したファイル](docs/images/v1.33.0/structures-recovered.png)
 
 ## ダウンロード
