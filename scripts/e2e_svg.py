@@ -93,7 +93,9 @@ def controls(binary, root, sample):
             rows = run(binary, "results", "--session", json.loads(s.stdout)["session"], "--json")["candidates"]
             check(not any(row["record"] == 0 and row["supported"] for row in rows), (name, rows))
             rejected.append(name + "." + ext)
-    gz = gzip.compress(sample, mtime=0)
+    # Share the same encoded positive-control file across operating systems.
+    gz = (GOLD / "rectangle.svgz").read_bytes()
+    check(gzip.decompress(gz) == sample, "fixed SVGZ control does not match its source")
     for label, value in [("trailer-crc", gz[:-8] + bytes(4) + gz[-4:]), ("trailer-length", gz[:-4] + bytes(4)),
                          ("truncated", gz[:-2]), ("trailing-non-XML", gzip.compress(sample + b"junk", mtime=0)),
                          ("two-roots", gzip.compress(sample + sample, mtime=0))]:
