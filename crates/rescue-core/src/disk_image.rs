@@ -12,6 +12,7 @@ pub use btrfs::{BtrfsRequest, btrfs};
 mod compressed_raw;
 mod ewf;
 mod ext4_journal;
+pub(crate) use ext4_journal::Volume as Ext4Volume;
 mod extents;
 pub use ext4_journal::{Ext4JournalRequest, ext4_journal};
 mod fingerprint;

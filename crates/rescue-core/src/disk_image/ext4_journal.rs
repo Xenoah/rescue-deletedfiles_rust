@@ -11,7 +11,8 @@ use std::{
     path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
 };
-use volume::{Run, Volume, file_size, runs};
+pub(crate) use volume::Volume;
+use volume::{Run, file_size, runs};
 
 pub struct Ext4JournalRequest {
     pub source: PathBuf,
