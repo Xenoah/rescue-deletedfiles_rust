@@ -1,0 +1,24 @@
+name: Capture actual VHDX sector bitmap transition across 4 GiB
+on:
+  push:
+    branches: [qa/windows-vhdx-bitmap-boundary]
+    paths: [tests/vhdx-chain/capture_boundary.py, .github/workflows/vhdx-boundary-reference.yml]
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: windows-2022
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -u tests/vhdx-chain/capture_boundary.py
+      - shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/vhdx-chain/boundary-4g
+          git commit -m "Preserve two native 4192 MiB Windows VHDX views and fourteen actual unlinks"
+          git push origin HEAD:qa/windows-vhdx-bitmap-boundary
