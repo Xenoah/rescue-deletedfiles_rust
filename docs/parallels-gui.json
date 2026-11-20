@@ -1,0 +1,25 @@
+{
+  "guest_bytes": 16777216,
+  "guest_sha256": "26ed183d07121ba7ff9eb55e55c28cd247d91b2ef528493a3295d82478571835",
+  "gui_sha256": "bfb5d3a868ca1de9e91e0b0f6dd5d654e46a602c56c2f92b925d47e134264bc7",
+  "ntfs_files_byte_and_sha256_exact": {
+    "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+    "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+    "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "sample.ogg": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+    "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+    "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+    "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+    "sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "sample.xlsx": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+  },
+  "platform": "Linux x64, Xvfb",
+  "screenshots": {
+    "images/v1.51.0/parallels-rejected.png": "8c9905179b4936101fb0a3b9facd265d4cbf45b13c2322f1dab8e8ab3794534c",
+    "images/v1.51.0/parallels-selected.png": "72cf62724faac67eb198116ce500b4d79f1cadaa6c899867299631c537094b56",
+    "images/v1.51.0/parallels-settings.png": "715c5160fc31c44bf5b8427fece8841539eb0af68a3770bf4cd5e56059acd383"
+  },
+  "selected_as_scan_source": true,
+  "sha256_mismatch_refused": true
+}
