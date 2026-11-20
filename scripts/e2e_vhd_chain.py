@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import struct
 import subprocess
+import sys
 import tempfile
 
 from e2e import check
@@ -26,12 +27,19 @@ def independent_base(image, raw, root):
     comparison.unlink()
 
 
-def member(path, spec):
-    compressed = path.with_name(path.name+'.xz')
+def member(path, spec, ref):
+    compressed = ref/(path.name+'.xz')
     check(digest(compressed) == spec['xz_sha256'], compressed)
     with lzma.open(compressed) as src, path.open('xb') as out:
         shutil.copyfileobj(src, out, length=1<<20)
     check(path.stat().st_size == spec['bytes'] and digest(path) == spec['sha256'], path)
+
+
+def compare_driver(raw, archive):
+    with lzma.open(archive) as source, raw.open('rb') as result:
+        while data := source.read(1 << 20):
+            check(data == result.read(len(data)), ('Windows guest byte mismatch', raw, result.tell()))
+        check(not result.read(1), 'unexpected guest suffix')
 
 
 def controls(binary, root, chain, metadata):
@@ -104,24 +112,33 @@ def controls(binary, root, chain, metadata):
     return sorted(cases)
 
 
-def verify(binary, root, tsk=False):
+def verify(binary, root, tsk=False, windows_driver=False):
     result={}
     for case in ('fixed-child','dynamic-child','dynamic-two-children'):
         ref=REF/case
         metadata=json.loads((ref/'manifest.json').read_text())
         folder=root/case
         folder.mkdir()
-        for archive in ref.glob('*.xz'):
-            shutil.copyfile(archive,folder/archive.name)
+        receipts=json.loads((ref/'driver.json').read_text())
         chain=[]
         for spec in metadata['members']:
             path=folder/spec['filename']
-            member(path,spec)
+            member(path,spec,ref)
             chain.insert(0,path)
             raw=folder/'logical.raw'
             report=checked_import(binary,chain,raw,['--raw-bytes',spec['guest_bytes'],
                                   '--raw-sha256',spec['guest_sha256']],kind='vhd')
             verify_guest(raw,report,spec)
+            oracle = ref/(path.name+'.guest.raw.xz')
+            check(digest(oracle) == receipts[oracle.name], oracle)
+            compare_driver(raw,oracle)
+            if windows_driver:
+                sys.path.insert(0,str(REF))
+                from capture_driver_raw import read_guest
+                current = folder/'current-driver.raw.xz'
+                read_guest(path, spec, current)
+                compare_driver(raw,current)
+                current.unlink()
             if tsk and len(chain) == 1:
                 independent_base(path,raw,folder)
             if len(chain) < len(metadata['members']):
@@ -164,9 +181,10 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--binary',type=Path,required=True)
     p.add_argument('--tsk',action='store_true')
+    p.add_argument('--windows-driver',action='store_true')
     p.add_argument('--output',type=Path)
     args=p.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
-        report=verify(args.binary.resolve(),Path(tmp),args.tsk)
+        report=verify(args.binary.resolve(),Path(tmp),args.tsk,args.windows_driver)
     if args.output:
         args.output.write_text(json.dumps(report,indent=2,sort_keys=True)+'\n',encoding='utf-8')
