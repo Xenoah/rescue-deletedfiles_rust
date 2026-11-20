@@ -19,3 +19,5 @@ python scripts/verify_f2fs_unlinks.py --binary /path/to/rescue --output f2fs-res
 ```
 
 ポータブル版はリリースの `SHA256SUMS.txt` と照合し、中の実行ファイルも照合しました。公開版とv1.55.0候補は、同じ3ディスクで同じ10/10・10/10・0/10になりました。[公開パッケージ](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.46.0) · [公開版のファイル別結果とパッケージSHA-256](published-v1.46-linux.json) · [候補版のファイル別結果](candidate-v1.55-linux.json) · [原本と各ディスクのSHA-256](manifest.json) · [ゲストのコマンド](guest.sh) · [Linuxの実行ログ](guest.txt.gz)
+
+断片化した別ディスクでは、通常・索引の内容検索は6原本の完全復元が0件でした。削除前の配置またはブロックごとの照合情報を使えば6件とも復元できました。[6形式・179範囲の実測](fragmented)

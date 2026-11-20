@@ -1,0 +1,50 @@
+{
+  "binary_sha256": "663f7621d5417bc742c5c1f8bae30e957ce8edbbce47385d242f0dc9c89d65c9",
+  "files": {
+    "original.bmp": {
+      "bytes": 139666,
+      "fiemap_ranges": 35,
+      "fiemap_sha256": "264852f7478638eb2d87097f34673c8ff3da08505477036dc7e3991744ca9236",
+      "fingerprinted_sha256": "264852f7478638eb2d87097f34673c8ff3da08505477036dc7e3991744ca9236"
+    },
+    "original.jpg": {
+      "bytes": 29293,
+      "fiemap_ranges": 8,
+      "fiemap_sha256": "2c4193668c4da0b2d24e1d639e7f605b381cdf7db1056db7317097446d671f06",
+      "fingerprinted_sha256": "2c4193668c4da0b2d24e1d639e7f605b381cdf7db1056db7317097446d671f06"
+    },
+    "original.png": {
+      "bytes": 139620,
+      "fiemap_ranges": 35,
+      "fiemap_sha256": "b8ab249173dffdb1a087b363e380efbc8c5824fcd9aa0ffec082aa55c0d2699e",
+      "fingerprinted_sha256": "b8ab249173dffdb1a087b363e380efbc8c5824fcd9aa0ffec082aa55c0d2699e"
+    },
+    "original.sqlite": {
+      "bytes": 253952,
+      "fiemap_ranges": 36,
+      "fiemap_sha256": "580efb8a26ad7df6e0cf32cd493f244f288368bfe8479b011d933e25f5152276",
+      "fingerprinted_sha256": "580efb8a26ad7df6e0cf32cd493f244f288368bfe8479b011d933e25f5152276"
+    },
+    "original.wav": {
+      "bytes": 120044,
+      "fiemap_ranges": 30,
+      "fiemap_sha256": "a0ccc6bc2383aedcea5024bd9e8ced2431887d80b34ebce7dd0ba1b8de4a78df",
+      "fingerprinted_sha256": "a0ccc6bc2383aedcea5024bd9e8ced2431887d80b34ebce7dd0ba1b8de4a78df"
+    },
+    "original.zip": {
+      "bytes": 139357,
+      "fiemap_ranges": 35,
+      "fiemap_sha256": "cc6b608f0a26af35722e70617bb5b9374930cf4dba52d68f59ea47def9d9a51a",
+      "fingerprinted_sha256": "cc6b608f0a26af35722e70617bb5b9374930cf4dba52d68f59ea47def9d9a51a"
+    }
+  },
+  "indexed": {
+    "candidates": 6,
+    "exact": []
+  },
+  "ordinary": {
+    "candidates": 6,
+    "exact": []
+  },
+  "version": "rescue 1.46.0"
+}

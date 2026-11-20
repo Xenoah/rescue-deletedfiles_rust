@@ -1,0 +1,64 @@
+{
+  "bmp": {
+    "exact": false,
+    "header_offsets": [
+      23072768
+    ],
+    "original_sha256": "264852f7478638eb2d87097f34673c8ff3da08505477036dc7e3991744ca9236",
+    "outcomes": [
+      "INVALID_IMAGE"
+    ]
+  },
+  "jpg": {
+    "detected_stride": 6,
+    "exact": true,
+    "header_offsets": [
+      23076864
+    ],
+    "original_sha256": "2c4193668c4da0b2d24e1d639e7f605b381cdf7db1056db7317097446d671f06",
+    "outcomes": [
+      "matched"
+    ],
+    "selected_header": 23076864
+  },
+  "png": {
+    "exact": false,
+    "header_offsets": [
+      23080960
+    ],
+    "original_sha256": "b8ab249173dffdb1a087b363e380efbc8c5824fcd9aa0ffec082aa55c0d2699e",
+    "outcomes": [
+      "INVALID_IMAGE"
+    ]
+  },
+  "sqlite": {
+    "exact": false,
+    "header_offsets": [
+      23085056
+    ],
+    "original_sha256": "580efb8a26ad7df6e0cf32cd493f244f288368bfe8479b011d933e25f5152276",
+    "outcomes": [
+      "INVALID_IMAGE"
+    ]
+  },
+  "wav": {
+    "exact": false,
+    "header_offsets": [
+      23089152
+    ],
+    "original_sha256": "a0ccc6bc2383aedcea5024bd9e8ced2431887d80b34ebce7dd0ba1b8de4a78df",
+    "outcomes": [
+      "INVALID_IMAGE"
+    ]
+  },
+  "zip": {
+    "exact": false,
+    "header_offsets": [
+      23093248
+    ],
+    "original_sha256": "cc6b608f0a26af35722e70617bb5b9374930cf4dba52d68f59ea47def9d9a51a",
+    "outcomes": [
+      "INVALID_IMAGE"
+    ]
+  }
+}
