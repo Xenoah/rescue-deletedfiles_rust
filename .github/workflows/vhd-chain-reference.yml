@@ -1,8 +1,8 @@
-name: Capture Windows differencing VHDs after real NTFS unlinks
+name: Verify relocated VHD chains against full Windows driver readbacks
 on:
   push:
     branches: [qa/windows-vhd-chain-reference]
-    paths: ['tests/vhd-chain/generate_windows.py', '.github/workflows/vhd-chain-reference.yml']
+    paths: ['tests/vhd-chain/capture_driver_raw.py', '.github/workflows/vhd-chain-reference.yml']
 permissions:
   contents: write
 jobs:
@@ -14,13 +14,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Write and remove seven files and hash each guest through the Windows driver
-        run: python -u tests/vhd-chain/generate_windows.py
+      - name: Reopen captured VHD chains after relocation and preserve the Windows guest bytes
+        run: python -u tests/vhd-chain/capture_driver_raw.py
       - name: Preserve verified differencing images
         shell: bash
         run: |
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
           git add tests/vhd-chain
-          git commit -m "Preserve Windows differencing VHDs with real NTFS deletions and driver readback"
+          git commit -m "Preserve complete Windows guest bytes after relocating three differencing VHD chains"
           git push origin HEAD:qa/windows-vhd-chain-reference
