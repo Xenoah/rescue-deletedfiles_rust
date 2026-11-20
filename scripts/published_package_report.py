@@ -60,6 +60,12 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 38, 0):
+        docs = Path(__file__).resolve().parents[1] / 'docs'
+        reference = json.loads((docs/'openexr-results.json').read_text(encoding='utf-8'))
+        assert run['openexr'] == reference['portable']
+        if platform == 'linux':
+            assert run['openexr_deleted'] == reference['native']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 37, 0):
         docs = Path(__file__).resolve().parents[1] / 'docs'
         assert run['vmdk_cid'] == json.loads((docs/'vmdk-cid-results.json').read_text(encoding='utf-8'))

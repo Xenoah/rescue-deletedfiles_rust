@@ -21,11 +21,12 @@ def pixels(path):
                    '-f', 'rawvideo', '-pix_fmt', 'rgba64be', '-').stdout
 
 
-def make_deleted_ext4(root, files):
+def make_deleted_ext4(root, files, block_size=None):
     disk = root / 'ext4.raw'
     with disk.open('wb') as out:
         out.truncate(16 << 20)
-    command('mke2fs', '-q', '-t', 'ext4', '-F', disk)
+    geometry = ['-b', str(block_size)] if block_size is not None else []
+    command('mke2fs', '-q', '-t', 'ext4', '-F', *geometry, disk)
     for name, data in files.items():
         (root / name).write_bytes(data)
         command('debugfs', '-w', '-R', f'write {name} /{name}', disk, cwd=root)

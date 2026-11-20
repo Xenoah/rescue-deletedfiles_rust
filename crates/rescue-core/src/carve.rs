@@ -31,6 +31,7 @@ mod json;
 mod movie;
 mod mp3;
 mod netpbm;
+mod openexr;
 mod pdf;
 mod photoshop;
 mod png;
@@ -82,6 +83,7 @@ pub(crate) fn validate_estimated_extent(
         "pdf" => Some(Format::Pdf),
         "jp2" => Some(Format::Jp2),
         "j2k" | "j2c" | "jpc" => Some(Format::J2k),
+        "exr" => Some(Format::Exr),
         "psd" => Some(Format::Psd),
         "psb" => Some(Format::Psb),
         "tif" | "tiff" => Some(Format::Tiff),
@@ -201,6 +203,7 @@ enum Format<'a> {
     Jp2,
     J2k,
     Tiff,
+    Exr,
     Psd,
     Psb,
     Aiff,
@@ -260,6 +263,7 @@ impl<'a> Format<'a> {
             Self::Tiff => "tif",
             Self::Jp2 => "jp2",
             Self::J2k => "j2k",
+            Self::Exr => "exr",
             Self::Psd => "psd",
             Self::Psb => "psb",
             Self::Aiff => "aiff",
@@ -352,6 +356,7 @@ impl<'a> Format<'a> {
             Self::Tiff
             | Self::Jp2
             | Self::J2k
+            | Self::Exr
             | Self::Psd
             | Self::Psb
             | Self::Aiff
@@ -473,6 +478,11 @@ impl<'a> Format<'a> {
                 let (end, inner) = jpeg2000::parse(&mut input, self)?;
                 Ok((self, input.finish(end)?, inner.into_iter().collect()))
             }
+            Self::Exr => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = openexr::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
+            }
             Self::Psd | Self::Psb => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = photoshop::parse(&mut input, self)?;
@@ -556,6 +566,8 @@ fn detect<'a>(
         && let Some(format) = netpbm::signature(bytes)
     {
         Some(format).filter(|f| f.allowed(extensions))
+    } else if bytes.starts_with(openexr::MAGIC) {
+        Format::Exr.allowed(extensions).then_some(Format::Exr)
     } else if bytes.starts_with(jpeg2000::BOX_SIGNATURE) {
         Format::Jp2.allowed(extensions).then_some(Format::Jp2)
     } else if bytes.starts_with(jpeg2000::CODESTREAM_SIGNATURE) {
@@ -665,6 +677,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Jp2 | Format::J2k => &[
             "JPEG 2000 Part 1 headers, tile lengths, EOC and full image decoding checked. Entropy data has no whole-file checksum. JP2 includes contiguous recognized metadata boxes after the codestream.",
+        ],
+        Format::Exr => &[
+            "OpenEXR header, channel layout, offset table and every pixel block decoded. Original names, deletion and file identity require independent evidence.",
         ],
         Format::Psd | Format::Psb => &[
             "Photoshop header, resource and layer section bounds, and composite channel lengths were checked. Layer effects and individual channel pixels are not rendered. Raw and PackBits data carry no independent content checksum.",
@@ -794,7 +809,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -1009,6 +1024,7 @@ pub(crate) fn recovery_data(
         Format::Tiff,
         Format::Jp2,
         Format::J2k,
+        Format::Exr,
         Format::Psd,
         Format::Psb,
         Format::Aiff,
