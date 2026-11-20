@@ -1,6 +1,8 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
 mod split_raw;
 pub use split_raw::{RawExpectation, RawSegment, RawVerification};
+mod ddrescue;
+pub use ddrescue::{DdrescueLayout, DdrescueVerification, import_ddrescue};
 mod android;
 pub use android::{AndroidVerification, import_android};
 mod apfs;
@@ -46,6 +48,8 @@ pub struct ImportedFile {
     pub android_sparse: Option<AndroidVerification>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub raw: Option<RawVerification>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ddrescue: Option<DdrescueVerification>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -254,6 +258,44 @@ fn write_sparse_chunk(output: &mut fs::File, bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
+#[cfg(any(target_os = "linux", target_os = "macos"))]
+fn publish_directory(staged: &Path, output: &Path) -> io::Result<()> {
+    use rustix::fs::{CWD, RenameFlags, renameat_with};
+    renameat_with(CWD, staged, CWD, output, RenameFlags::NOREPLACE).map_err(Into::into)
+}
+
+#[cfg(windows)]
+fn publish_directory(staged: &Path, output: &Path) -> io::Result<()> {
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Storage::FileSystem::{MOVEFILE_WRITE_THROUGH, MoveFileExW};
+    fn wide(path: &Path) -> io::Result<Vec<u16>> {
+        let mut value: Vec<_> = path.as_os_str().encode_wide().collect();
+        if value.contains(&0) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "NUL in output path",
+            ));
+        }
+        value.push(0);
+        Ok(value)
+    }
+    let from = wide(staged)?;
+    let to = wide(output)?;
+    // Both paths are owned, NUL-terminated UTF-16. No replace or cross-volume copy flag.
+    if unsafe { MoveFileExW(from.as_ptr(), to.as_ptr(), MOVEFILE_WRITE_THROUGH) } == 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "linux", target_os = "macos", windows)))]
+fn publish_directory(_: &Path, _: &Path) -> io::Result<()> {
+    Err(io::Error::new(
+        io::ErrorKind::Unsupported,
+        "atomic directory publication unavailable on this platform",
+    ))
+}
+
 fn publish_output(
     output: &Path,
     cancel: &AtomicBool,
@@ -282,6 +324,7 @@ fn publish_output(
         sha256: format!("{:x}", digest.finalize()),
         ewf: None,
         android_sparse: None,
+        ddrescue: None,
         raw: None,
     })
 }

@@ -10,6 +10,7 @@ enum Format {
     Dmg,
     Optical,
     Android,
+    Ddrescue,
     Ewf,
     Vhd,
     Vhdx,
@@ -19,7 +20,7 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 12] = [
+    const ALL: [Self; 13] = [
         Self::Vdi,
         Self::Qcow2,
         Self::CompressedRaw,
@@ -32,6 +33,7 @@ impl Format {
         Self::Aff,
         Self::Raw,
         Self::Android,
+        Self::Ddrescue,
     ];
 
     fn from_path(path: &str) -> Option<Self> {
@@ -65,6 +67,7 @@ impl Format {
             Self::CompressedRaw => "compressed-raw",
             Self::Optical => "cd-raw",
             Self::Android => "android-sparse",
+            Self::Ddrescue => "ddrescue",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
             Self::Qcow2 => "qcow2",
@@ -81,6 +84,7 @@ impl Format {
         match self {
             Self::CompressedRaw => "Compressed RAW (gzip, bzip2, XZ, Zstd, LZ4)",
             Self::Android => "Android sparse",
+            Self::Ddrescue => "GNU ddrescue (RAW + map)",
             Self::Optical => "CD-ROM (Mode 1 / XA Form 1)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
@@ -105,6 +109,7 @@ pub(super) struct State {
     pub first: String,
     format: Option<Format>,
     segments: String,
+    ddrescue_map: String,
     raw_sha256: String,
     raw_bytes: String,
     pub output: String,
@@ -118,6 +123,7 @@ impl State {
             self.first = source.to_owned();
             self.format = Format::from_path(source);
             self.segments.clear();
+            self.ddrescue_map.clear();
             self.raw_sha256.clear();
             self.raw_bytes.clear();
             self.output.clear();
@@ -148,6 +154,7 @@ impl App {
                 if state.first != old {
                     state.format = Format::from_path(&state.first);
                     state.segments.clear();
+                    state.ddrescue_map.clear();
                     state.raw_sha256.clear();
                     state.raw_bytes.clear();
                 }
@@ -160,6 +167,10 @@ impl App {
                 if let Some(format) = state.format {
                     match format {
                         Format::Raw => {ui.small(tr!("連番は.000または.001から自動検出します。他の名前は追加セグメントを順番に指定してください。","Numbered RAW sets starting at .000 or .001 are discovered automatically. For other names, add the segments in order."));}
+                        Format::Ddrescue => {
+                            path_row(ui, tr!("GNU ddrescueのマップ", "GNU ddrescue mapfile"), &mut state.ddrescue_map, Picker::Open);
+                            ui.small(tr!("元ディスクと同じ位置に取得したRAW用です。読み取り失敗と未試行の領域は復元対象から除きます。位置を変更した取得にはCLIを使用してください。", "For captures using original disk offsets. Failed and untried regions are excluded from recovery. Use the CLI for shifted captures."));
+                        }
                         Format::Android => {ui.small(tr!("新しい保存先フォルダー名を指定してください。RAWと読取マップを一緒に保存し、省略されたブロックを未取得として扱います。","Enter a new directory name. The RAW and read map are saved together, with omitted blocks marked unavailable."));}
                         Format::CompressedRaw => {ui.small(tr!("圧縮ストリームを順に展開し、論理ディスクのSHA-256を計算します。","Expands compressed streams in order and calculates the logical disk SHA-256."));}
                         Format::Optical => {ui.small(tr!("各セクターのEDCとP/Qパリティを照合し、データ部分を取り出します。","Checks each sector’s EDC and P/Q parity, then extracts its 2048 data bytes."));}
@@ -209,7 +220,7 @@ impl App {
                         },
                     );
                 }
-                if state.format == Some(Format::Android) {
+                if matches!(state.format, Some(Format::Android | Format::Ddrescue)) {
                     path_row(ui, tr!("新しい保存先フォルダー", "New destination directory"), &mut state.output, Picker::File);
                 } else {
                     path_row(ui, tr!("新しいRAWファイル", "New RAW file"), &mut state.output, Picker::Raw);
@@ -217,7 +228,7 @@ impl App {
             });
             if let Some(error) = &state.error { theme::error_banner(ui, &error.to_string()); }
             ui.horizontal_wrapped(|ui| {
-                start = ui.add_enabled(state.format.is_some() && !state.first.trim().is_empty() && !state.output.trim().is_empty(),
+                start = ui.add_enabled(state.format.is_some() && (state.format != Some(Format::Ddrescue) || !state.ddrescue_map.trim().is_empty()) && !state.first.trim().is_empty() && !state.output.trim().is_empty(),
                     theme::primary(ui, tr!("変換してスキャン元に設定", "Convert and use as source"), 224.0)).clicked();
                 close = ui.button(tr!("閉じる", "Close")).clicked();
             });
@@ -252,6 +263,7 @@ impl App {
             segment: segments,
             sector_size: None,
         };
+        let ddrescue_map = PathBuf::from(&state.ddrescue_map);
         let expected_hash = state.raw_sha256.trim().to_owned();
         let expected_size = state.raw_bytes.trim().to_owned();
         let output = PathBuf::from(&state.output);
@@ -276,7 +288,15 @@ impl App {
                         ));
                     }
                 }
-                if format == Format::Android {
+                if format == Format::Ddrescue {
+                    rescue_core::disk_image::import_ddrescue(
+                        &request.source,
+                        &ddrescue_map,
+                        &output,
+                        Default::default(),
+                        &cancel,
+                    )
+                } else if format == Format::Android {
                     rescue_core::disk_image::import_android(&request.source, &output, &cancel)
                 } else if format == Format::Raw {
                     let bytes = if expected_size.is_empty() {
@@ -320,6 +340,16 @@ impl App {
                 self.image_original = None;
                 self.invalidate_changed_source();
                 self.status_error = false;
+                if let Some(proof) = import.ddrescue {
+                    self.status = message!(
+                        "ddrescueの読取マップ付きRAWを設定しました。取得 {} バイト、失敗 {} バイト、未試行・範囲外 {} バイト。",
+                        "Selected ddrescue mapped RAW. {} copied, {} failed and {} untried or outside-map bytes.",
+                        proof.finished_bytes,
+                        proof.nontrimmed_bytes + proof.nonscraped_bytes + proof.bad_sector_bytes,
+                        proof.untried_bytes + proof.outside_map_bytes
+                    );
+                    return;
+                }
                 if let Some(proof) = import.android_sparse {
                     self.status = message!(
                         "読取マップ付きRAWを設定しました。記録済み {} バイト、未取得 {} バイト。",
@@ -401,6 +431,7 @@ mod tests {
             sha256: "abcd".into(),
             ewf: None,
             android_sparse: None,
+            ddrescue: None,
             raw: None,
         }));
         assert_eq!(Path::new(&app.source), output);
