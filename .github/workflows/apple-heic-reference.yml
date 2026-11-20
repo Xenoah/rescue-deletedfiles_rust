@@ -1,0 +1,18 @@
+name: Capture Apple ImageIO HEIC originals
+on:
+  push:
+    branches: [qa/apple-heic-reference]
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Encode and decode five Apple ImageIO photographs
+        run: python3 tests/heif/generate_apple.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apple-heic
+          path: apple-heic
+          if-no-files-found: error
