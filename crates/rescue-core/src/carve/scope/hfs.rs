@@ -77,6 +77,87 @@ impl Fork {
     }
 }
 
+// JournalInfoBlock uses big-endian fields. The journal header records its writer's
+// byte order and checksums the first 44 on-disk bytes with its checksum field zeroed.
+fn journal_ranges(
+    image: &mut Image,
+    info_block: u32,
+    block: u64,
+    volume_bytes: u64,
+) -> Result<[Range<u32>; 2]> {
+    let info_at = u64::from(info_block) * block;
+    if info_block == 0 || info_at >= volume_bytes {
+        return Err(invalid("journal info block outside volume"));
+    }
+    let info = image.read(info_at, 52)?;
+    if be32(&info, 0) != 1 {
+        return Err(Error::Unsupported(
+            "HFS journal is external, uninitialized or has unknown flags".into(),
+        ));
+    }
+    let at = u64::from_be_bytes(info[36..44].try_into().unwrap());
+    let size = u64::from_be_bytes(info[44..52].try_into().unwrap());
+    let end = at
+        .checked_add(size)
+        .filter(|&n| n <= volume_bytes)
+        .ok_or_else(|| invalid("journal outside volume"))?;
+    if !(256 * 1024..=1 << 30).contains(&size) || !at.is_multiple_of(block) {
+        return Err(invalid("journal extent geometry"));
+    }
+
+    let mut header = image.read(at, 44)?;
+    let little = match &header[..8] {
+        b"xLNJ\x78\x56\x34\x12" => true,
+        b"JNLx\x12\x34\x56\x78" => false,
+        _ => return Err(invalid("journal signature or byte order")),
+    };
+    let read32 = |bytes: &[u8]| {
+        let bytes = bytes.try_into().unwrap();
+        if little {
+            u32::from_le_bytes(bytes)
+        } else {
+            u32::from_be_bytes(bytes)
+        }
+    };
+    let read64 = |bytes: &[u8]| {
+        let bytes = bytes.try_into().unwrap();
+        if little {
+            u64::from_le_bytes(bytes)
+        } else {
+            u64::from_be_bytes(bytes)
+        }
+    };
+    let stored = read32(&header[36..40]);
+    header[36..40].fill(0);
+    let checksum = !header.iter().fold(0u32, |sum, &byte| {
+        (sum << 8) ^ sum.wrapping_add(u32::from(byte))
+    });
+    if checksum != stored {
+        return Err(invalid("journal header checksum"));
+    }
+    let start = read64(&header[8..16]);
+    if start != read64(&header[16..24]) {
+        return Err(Error::Unsupported("HFS journal requires replay".into()));
+    }
+    let sector = u64::from(read32(&header[40..44]));
+    let list = u64::from(read32(&header[32..36]));
+    if read64(&header[24..32]) != size
+        || !(512..=65536).contains(&sector)
+        || !sector.is_power_of_two()
+        || !size.is_multiple_of(sector)
+        || !(sector..=size).contains(&start)
+        || !start.is_multiple_of(sector)
+        || !(sector..size).contains(&list)
+        || !list.is_multiple_of(sector)
+    {
+        return Err(invalid("journal header geometry"));
+    }
+    Ok([
+        info_block..info_block + 1,
+        (at / block) as u32..end.div_ceil(block) as u32,
+    ])
+}
+
 pub(super) struct Map {
     bits: Vec<u8>,
     block_size: u64,
@@ -92,11 +173,6 @@ impl Map {
         if attrs & UNMOUNTED == 0 || attrs & INCONSISTENT != 0 {
             return Err(Error::Unsupported(
                 "HFS volume is dirty or inconsistent".into(),
-            ));
-        }
-        if attrs & JOURNALED != 0 {
-            return Err(Error::Unsupported(
-                "HFS journal requires a clean-state check".into(),
             ));
         }
         let block_size = u64::from(be32(&header, 40));
@@ -119,6 +195,8 @@ impl Map {
         let alt = image.read(image.length - 1024, HEADER_SIZE)?;
         // The alternate's counters may be older than the primary's. Its layout and allocation fork must agree.
         if alt[..4] != header[..4]
+            || (be32(&alt, 4) ^ attrs) & JOURNALED != 0
+            || alt[12..16] != header[12..16]
             || alt[40..48] != header[40..48]
             || alt[112..192] != header[112..192]
         {
@@ -184,6 +262,14 @@ impl Map {
                 return Err(invalid("missing extents or catalog B-tree"));
             }
             ranges.extend(fork.runs);
+        }
+        if attrs & JOURNALED != 0 {
+            ranges.extend(journal_ranges(
+                image,
+                be32(&header, 12),
+                block_size,
+                volume_bytes,
+            )?);
         }
         ranges.sort_unstable_by_key(|r| r.start);
         if ranges.windows(2).any(|w| w[0].end > w[1].start) {

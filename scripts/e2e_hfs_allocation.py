@@ -39,7 +39,7 @@ def restore(binary, image, ref, work, *, shift=0, indexed=False):
     check(all(r['allocation_status'] == 'unallocated' for r in rows), rows)
     names = {r['id']: expected[r['record']] for r in rows}
     outputs = run(binary, 'recover', '--session', session['session'], '--all',
-                  '--destination', work/'recovered', '--json')['results']
+                  '--destination', work/'recovered', '--json', timeout=180)['results']
     check({item['candidate_id'] for item in outputs} == names.keys(), outputs)
     result = {}
     for item in outputs:
@@ -140,17 +140,77 @@ def degraded(binary, root, pristine, ref):
     # An unreadable allocation file cannot supply free-space evidence.
     image.write_bytes(pristine)
     capture = run(binary, 'image', '--source', image, '--destination', root/'acquired',
-                  '--block-size', 4096, '--json')
+                  '--block-size', 4096, '--json', timeout=180)
     mapped = Path(capture['image'])
     mark_gap(mapped, bitmap)
     unknown(mapped, 'unreadable', expected=5)
     return sorted([*edits, 'unreadable', 'partially_reused_file', 'stale_session'])
 
 
+def journals(binary, root, pristine, ref):
+    # Use Apple's captured journal fields to exercise both byte orders and isolate
+    # each validation failure. Keep checksum valid for all semantic mutations.
+    bs = struct.unpack_from('>I', pristine, 1024+40)[0]
+    info = struct.unpack_from('>I', pristine, 1024+12)[0] * bs
+    at, size = struct.unpack_from('>QQ', pristine, info+36)
+    layout = 'IIQQQIII'
+    endian = '<' if pristine[at:at+4] == b'xLNJ' else '>'
+    fields = list(struct.unpack_from(endian + layout, pristine, at))
+    check(fields[0] == 0x4a4e4c78 and fields[1] == 0x12345678 and fields[2] == fields[3], fields)
+
+    def encoded(order, **updates):
+        values = fields.copy()
+        for key, value in updates.items():
+            values[{'start':2, 'end':3, 'size':4, 'sector':7}[key]] = value
+        values[6] = 0
+        header = struct.pack(order + layout, *values)
+        checksum = 0
+        for octet in header:
+            checksum = ((checksum << 8) ^ (checksum + octet)) & 0xffffffff
+        values[6] = checksum ^ 0xffffffff
+        return struct.pack(order + layout, *values)
+    check(encoded(endian) == pristine[at:at+44], 'independent Apple journal checksum')
+    image = root/'journal-controls.raw'
+    image.write_bytes(pristine)
+    png = ref['sample.png']
+    def change(offset, data):
+        with image.open('r+b') as out:
+            out.seek(offset)
+            out.write(data)
+    other = '>' if endian == '<' else '<'
+    change(at, encoded(other))
+    exact = restore(binary, image, ref, root/'other-journal-endian', indexed=True)
+    check(len(exact) == 7, exact)
+    changes = {
+        'journal_external': (info, struct.pack('>I', 2)),
+        'journal_needs_init': (info, struct.pack('>I', 5)),
+        'journal_out_of_bounds': (info+36, struct.pack('>Q', len(pristine))),
+        'journal_signature': (at, b'JUNK'),
+        'journal_endian': (at+4, bytes(4)),
+        'journal_checksum': (at+36, bytes(4)),
+        'journal_pending': (at, encoded(endian, end=fields[7] if fields[2] != fields[7] else fields[7]*2)),
+        'journal_size_mismatch': (at, encoded(endian, size=size+bs)),
+        'journal_bad_sector': (at, encoded(endian, sector=0)),
+        'journal_bad_cursor': (at, encoded(endian, start=size+512, end=size+512)),
+        'journal_alt_disabled': (len(pristine)-1024+4,
+                                 struct.pack('>I', struct.unpack_from('>I', pristine, 1024+4)[0] & ~(1<<13))),
+    }
+    for label, (offset, value) in changes.items():
+        image.write_bytes(pristine)
+        change(offset, value)
+        session, rows = scan(binary, image, root/label, extensions='png')
+        check({r['record'] for r in rows} == {png['deleted_offset'], png['live_offset']}, rows)
+        check(all(r['allocation_status'] == 'unknown' for r in rows), rows)
+        check(any(w.startswith('ALLOCATION_FALLBACK:') for w in session['warnings']), session)
+    image.unlink()
+    return sorted(changes)
+
+
 def verify(binary, root, *, tsk=False):
     manifest = json.loads((REFERENCE/'manifest.json').read_text())
+    manifest.update(json.loads((REFERENCE/'journaled.json').read_text()))
     result = {}
-    for case in ('hfsplus', 'hfsx'):
+    for case in ('hfsplus', 'hfsx', 'hfsplus-journaled', 'hfsx-journaled'):
         ref = manifest[case]
         image = root/(case+'.raw')
         data = lzma.decompress((REFERENCE/(case+'.raw.xz')).read_bytes())
@@ -164,7 +224,7 @@ def verify(binary, root, *, tsk=False):
         check({r['record'] for r in rows} == {f[k] for f in files.values() for k in ('live_offset','deleted_offset')}, rows)
         exact = restore(binary, image, files, root/(case+'-ordinary'))
         check(restore(binary, image, files, root/(case+'-indexed'), indexed=True) == exact, case)
-        if case == 'hfsplus':
+        if case.startswith('hfsplus'):
             wrapper = root/'apm.raw'
             make_image(wrapper, 512, image, kind=b'Apple_HFS')
             shift = 64*512
@@ -178,6 +238,8 @@ def verify(binary, root, *, tsk=False):
         print(case, '7 native Apple unlinks matched original bytes and SHA-256; 7 live controls excluded', flush=True)
         if case == 'hfsplus':
             result['degraded'] = degraded(binary, root, data, files)
+        if case == 'hfsplus-journaled':
+            result['journal_degraded'] = journals(binary, root, data, files)
         image.unlink()
     return result
 
