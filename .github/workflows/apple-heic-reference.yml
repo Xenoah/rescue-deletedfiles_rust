@@ -1,18 +1,42 @@
-name: Capture Apple ImageIO HEIC originals
+name: Preserve natively encoded Apple ImageIO HEIC files
 on:
   push:
     branches: [qa/apple-heic-reference]
+    paths: [.github/workflows/apple-heic-reference.yml]
 permissions:
-  contents: read
+  contents: write
+  actions: read
 jobs:
-  generate:
-    runs-on: macos-26
+  collect:
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Encode and decode five Apple ImageIO photographs
-        run: python3 tests/heif/generate_apple.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           name: apple-heic
-          path: apple-heic
-          if-no-files-found: error
+          run-id: 44652074819
+          github-token: ${{ github.token }}
+          path: tests/heif/apple
+      - name: Independently decode and preserve the existing macOS originals
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libheif-examples
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib, json, subprocess, tempfile
+          root=Path('tests/heif/apple')
+          manifest=json.loads((root/'manifest.json').read_text())
+          assert set(manifest)=={'apple-'+n+'.heic' for n in ('landscape','portrait','alpha','gray','deep')}
+          with tempfile.TemporaryDirectory() as tmp:
+              for name,meta in manifest.items():
+                  data=(root/name).read_bytes()
+                  assert len(data)==meta['bytes'] and hashlib.sha256(data).hexdigest()==meta['sha256']
+                  path=Path(tmp)/(name+'.png')
+                  subprocess.run(['heif-convert',root/name,path],check=True)
+                  assert path.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/heif/apple
+          git commit -m "Preserve five macOS HEIC originals after independent Linux decoding"
+          git push origin HEAD:qa/apple-heic-reference
