@@ -391,6 +391,18 @@ enum Command {
     },
     /// Inspect or save an explicit read-only RAID configuration. Members remain unchanged.
     Raid(RaidArgs),
+    /// Identify clean Linux MD RAID5/6 superblocks and order the selected read-only member images.
+    RaidMd {
+        #[arg(long = "member", required = true)]
+        members: Vec<PathBuf>,
+        #[arg(long, default_value_t = 512)]
+        sector_size: u32,
+        /// Save the detected configuration for normal scanning.
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Acquire a disk into a durable RAW image/read-map pair. The output directory must be empty.
     Image(ImageArgs),
     /// Inspect acquisition coverage without reading damaged source media.
@@ -911,6 +923,25 @@ fn run(cli: Cli) -> Result<i32, Error> {
                 json!({"schema_version":1,"sources":rescue_core::list_disks()?}),
                 compact,
             );
+            Ok(0)
+        }
+        Command::RaidMd {
+            members,
+            sector_size,
+            output,
+            json: compact,
+        } => {
+            let discovery = rescue_core::discover_md_members(&members, sector_size)?;
+            if let Some(path) = output {
+                rescue_core::create_raid_manifest(
+                    &discovery.config,
+                    std::path::Path::new("."),
+                    &path,
+                    None,
+                    &cancel,
+                )?;
+            }
+            print(serde_json::to_value(discovery)?, compact);
             Ok(0)
         }
         Command::Raid(RaidArgs {

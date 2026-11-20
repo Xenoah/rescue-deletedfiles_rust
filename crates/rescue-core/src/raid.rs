@@ -1,9 +1,11 @@
 //! Bounded, read-only reconstruction from explicit member images. Never repairs a member.
+mod md;
 mod parity;
 use crate::{
     Error, Fingerprint, MissingRange, OutputRoot, ReadState, RecoveryDestination, Result,
     source::Image,
 };
+pub use md::{MdDiscovery, discover_md_members};
 use parity::Stripe;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

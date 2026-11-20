@@ -65,12 +65,12 @@ pub use partitions::{SourceLayout, SourceRegion, inspect_source};
 pub use preview::{
     Preview, PreviewExport, PreviewInfo, preview_candidate, preview_worker_entry, save_preview,
 };
+pub use raid::{MdDiscovery, RaidReadRange, RaidReadTrace, discover_md_members};
 pub use raid::{
     RAID_SUFFIX, RaidConfig, RaidEvidence, RaidInspection, RaidLayout, RaidLevel, RaidMember,
     create_raid_manifest, inspect_raid, is_raid_path,
 };
 pub use raid::{RaidAlternative, RaidSearchOptions, RaidSearchResult, search_raid};
-pub use raid::{RaidReadRange, RaidReadTrace};
 pub use read_access::{ReadAccess, read_broker_entry, request_read_access};
 pub use read_map::{
     AcquisitionIdentity, AcquisitionStrategy, MissingRange, ReadMapSummary, ReadState,

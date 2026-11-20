@@ -210,13 +210,29 @@ impl State {
         Ok(())
     }
 }
+enum ConfigurationSource {
+    Explicit(RaidConfig),
+    LinuxMd(Vec<PathBuf>, u32),
+}
+
 impl App {
-    fn raid_start(&mut self, search: bool, save: bool) {
-        let config = match self.raid.config() {
-            Ok(c) => c,
-            Err(e) => {
-                self.raid.error = e;
-                return;
+    fn raid_start(&mut self, search: bool, save: bool, detect_md: bool) {
+        let source = if detect_md {
+            let selected = self
+                .raid
+                .members
+                .iter()
+                .filter(|member| !member.missing && !member.path.trim().is_empty())
+                .map(|member| PathBuf::from(member.path.trim()))
+                .collect();
+            ConfigurationSource::LinuxMd(selected, self.raid.sector)
+        } else {
+            match self.raid.config() {
+                Ok(config) => ConfigurationSource::Explicit(config),
+                Err(error) => {
+                    self.raid.error = error;
+                    return;
+                }
             }
         };
         let destination = PathBuf::from(&self.raid.destination);
@@ -236,6 +252,18 @@ impl App {
         self.messages = Some(rx);
         thread::spawn(move || {
             let base = std::env::current_dir().unwrap_or_default();
+            let config = match source {
+                ConfigurationSource::Explicit(config) => config,
+                ConfigurationSource::LinuxMd(paths, sector_size) => {
+                    match rescue_core::discover_md_members(&paths, sector_size) {
+                        Ok(found) => found.config,
+                        Err(error) => {
+                            let _ = tx.send(Message::Error(error.to_string().into()));
+                            return;
+                        }
+                    }
+                }
+            };
             if search {
                 let options = rescue_core::RaidSearchOptions {
                     reorder_members: reorder,
@@ -304,6 +332,7 @@ impl App {
     pub(super) fn raid_dialog_ui(&mut self, ctx: &egui::Context) {
         let mut close = false;
         let mut inspect = false;
+        let mut detect_md = false;
         let mut search = false;
         let mut save = false;
         let mut selected = None;
@@ -316,6 +345,8 @@ impl App {
                 .show_accessible(ui, tr!("RAID設定", "RAID settings"), |ui| {
                     self.raid.geometry_ui(ui);
                     self.raid.members_ui(ui);
+                    detect_md = ui.button(tr!("入力したメンバーからLinux MD構成を読む", "Read Linux MD configuration from entered members")).clicked();
+
                     text_row(ui, tr!("構成の保存先", "Configuration destination"), &mut self.raid.destination, "/path/array.rescue-raid.json");
                     ui.checkbox(&mut self.raid.reorder, tr!("自動候補探索でメンバー順も試す", "Also try member order in automatic discovery"));
                     ui.small(tr!("候補探索: ストライプ4 KiB〜1 MiB、最大128構成・5秒。開始位置と使用長は指定値を維持します。候補は選択後に使用します。", "Discovery tries stripes from 4 KiB to 1 MiB, up to 128 configurations and 5 seconds. Specified offsets and lengths are kept. Select a candidate before using it."));
@@ -351,8 +382,8 @@ impl App {
         }
         if close || response.should_close() {
             self.raid.dialog = false;
-        } else if inspect || search || save {
-            self.raid_start(search, save);
+        } else if inspect || search || save || detect_md {
+            self.raid_start(search, save, detect_md);
         }
     }
 }

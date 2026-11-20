@@ -1,0 +1,12 @@
+{
+  "array_uuid": "512b6c53:fbc8f52d:43d4ad01:322350b8",
+  "events": 21,
+  "guest_sha256": "3ae40eaf61df9a36677b3885cdb7d0f5599d7450a6283a45889b435635e07d18",
+  "members": {
+    "b": "1842f928d953342c1d4c3a674ae18b92b18cdd8b39906d35e23251c85f5e332b",
+    "c": "b3c89d9e534d0c098cb9c545548c5d73ee0c1c22deb746657a2addb875227f00",
+    "d": "c5157744a5748c7d19471b8a4e1600fe7efdcfbc6d650815064fdda62f662ef3",
+    "e": "ebc918e3e3fcf731ff87e40c79fab27f6e971539dc7fb1da1c656782972c30e5"
+  },
+  "previous_events": 17
+}
