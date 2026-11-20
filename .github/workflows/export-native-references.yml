@@ -1,0 +1,47 @@
+name: Preserve measured JPEG 2000 and VHDX reference artifacts
+on:
+  push:
+    branches: [qa/export-native-references]
+    paths: ['.github/workflows/export-native-references.yml']
+permissions:
+  actions: read
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: apple-imageio-jp2
+          run-id: 44672922457
+          github-token: ${{ github.token }}
+          path: reference/apple-jp2
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-differencing-vhdx
+          run-id: 44673922816
+          github-token: ${{ github.token }}
+          path: reference/windows-vhdx
+      - name: Verify every exported original and commit the two immutable captures
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib,json,lzma
+          def sha(path):
+              with path.open('rb') as source:return hashlib.file_digest(source,'sha256').hexdigest()
+          folder=Path('reference/apple-jp2')
+          images=json.loads((folder/'manifest.json').read_text());assert len(images)==6
+          for name,entry in images.items():assert sha(folder/name)==entry['sha256']
+          manifests=list(Path('reference/windows-vhdx').rglob('manifest.json'));assert len(manifests)==3
+          for path in manifests:
+              capture=json.loads(path.read_text());assert capture['relocated_driver_verified']
+              for member in capture['members']:
+                  with lzma.open(path.parent/(member['filename']+'.xz')) as f:assert hashlib.file_digest(f,'sha256').hexdigest()==member['sha256']
+                  with lzma.open(path.parent/(member['filename']+'.guest.raw.xz')) as f:assert hashlib.file_digest(f,'sha256').hexdigest()==member['guest_sha256']
+          PY
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add reference/
+          git commit -m "Preserve six Apple images and seven relocated Windows VHDX guest generations"
+          git push origin HEAD:qa/export-native-references
