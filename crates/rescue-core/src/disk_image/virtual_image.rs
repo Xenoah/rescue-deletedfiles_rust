@@ -1,4 +1,4 @@
-//! Read logical sectors from self-contained virtual disks. No host path stored in an image is opened.
+//! Read logical sectors from virtual disks. No host path stored in an image is opened.
 mod qcow;
 mod vhd;
 mod vhdx;
@@ -6,6 +6,7 @@ mod vmdk;
 use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
+pub(super) use qcow::backing::import_chain;
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,

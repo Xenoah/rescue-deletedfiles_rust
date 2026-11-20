@@ -63,7 +63,7 @@ pub struct EwfVerification {
 pub struct ImageInput {
     /// Read-only disk, volume, or first image segment.
     pub source: PathBuf,
-    /// Additional image segments in logical order, or named extent files for a VMDK descriptor.
+    /// Additional image segments in logical order, named VMDK extent files, or explicit QCOW2 backing files from nearest parent to base.
     pub segment: Vec<PathBuf>,
     /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
@@ -359,6 +359,11 @@ pub fn import_with_raw_expectation(
             return Err(Error::Request("use import-android with a new destination directory to preserve unrecorded Android sparse ranges".into()));
         }
         if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
+            return Ok(result);
+        }
+        if paths.len() > 1
+            && let Some(result) = virtual_image::import_chain(&paths, kind, output, cancel)?
+        {
             return Ok(result);
         }
         if let Some(result) = virtual_image::import_segments(&paths, kind, output, cancel)? {

@@ -1,4 +1,5 @@
-//! Read-only QCOW2 v2/v3 base images. Only metadata inside the selected file is read.
+//! Read-only QCOW2 v2/v3 metadata and allocation maps.
+pub(in crate::disk_image) mod backing;
 pub(super) mod v1;
 use super::{Block, Compression, invalid, read_at};
 use crate::{Error, Result};
@@ -52,6 +53,7 @@ impl Regions {
 
 pub(super) struct Qcow {
     pub size: u64,
+    backing: Option<backing::Reference>,
     cluster: u64,
     entry_bytes: usize,
     compression: Compression,
@@ -65,18 +67,27 @@ pub(super) struct Qcow {
 
 impl Qcow {
     pub fn open(source: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
+        Self::open_member(source, length, false, cancel)
+    }
+
+    fn open_member(
+        source: &mut File,
+        length: u64,
+        allow_backing: bool,
+        cancel: &AtomicBool,
+    ) -> Result<Self> {
         let mut header = [0; 104];
         read_at(source, 0, &mut header[..72])?;
         let version = be32(&header, 4);
         if !matches!(version, 2 | 3)
             || header[..4] != *b"QFI\xfb"
-            || be64(&header, 8) != 0
-            || be32(&header, 16) != 0
             || be32(&header, 32) != 0
             || be32(&header, 60) != 0
             || be64(&header, 64) != 0
         {
-            return Err(Error::Unsupported("QCOW2 requires an unencrypted v2/v3 base image without a backing file or internal snapshots".into()));
+            return Err(Error::Unsupported(
+                "QCOW2 requires an unencrypted v2/v3 image without internal snapshots".into(),
+            ));
         }
         let bits = be32(&header, 20);
         if !(9..=21).contains(&bits) {
@@ -118,6 +129,7 @@ impl Qcow {
                 entry_bytes = 16;
             }
         }
+        let backing = backing::reference(source, length, &header, cluster, allow_backing)?;
         let size = be64(&header, 24);
         let l1_count = u64::from(be32(&header, 36));
         let l1_at = be64(&header, 40);
@@ -162,6 +174,7 @@ impl Qcow {
             }
         }
         Ok(Self {
+            backing,
             size,
             cluster,
             length,
@@ -175,11 +188,18 @@ impl Qcow {
         })
     }
     pub fn block(&mut self, source: &mut File, guest: u64) -> Result<(Block, u64)> {
+        let (block, length) = self.mapping(source, guest)?;
+        Ok((block.unwrap_or(Block::Zero), length))
+    }
+
+    // The caller supplies a cluster boundary, or a subcluster boundary for extended L2.
+    // None inherits from a parent; an explicit zero always masks older data.
+    fn mapping(&mut self, source: &mut File, guest: u64) -> Result<(Option<Block>, u64)> {
         let index = guest / self.cluster;
         let per_l2 = self.cluster / self.entry_bytes as u64;
         let table = be64(&self.l1, (index / per_l2) as usize * 8) & OFFSET;
         if table == 0 {
-            return Ok((Block::Zero, self.cluster));
+            return Ok((None, self.cluster - guest % self.cluster));
         }
         if self.cached_l2 != Some(table) {
             read_at(source, table, &mut self.l2)?;
@@ -204,11 +224,11 @@ impl Qcow {
             let bytes = sectors * 512 - (at % 512);
             self.check_data(at, bytes)?;
             return Ok((
-                Block::Compressed {
+                Some(Block::Compressed {
                     codec: self.compression,
                     at,
                     bytes: bytes as usize,
-                },
+                }),
                 self.cluster,
             ));
         }
@@ -221,9 +241,6 @@ impl Qcow {
         {
             return Err(invalid("QCOW2 reserved data flags or alignment"));
         }
-        if at != 0 {
-            self.check_data(at, self.cluster)?;
-        }
         if extended {
             let allocated = bitmap as u32;
             let zeros = (bitmap >> 32) as u32;
@@ -233,27 +250,41 @@ impl Qcow {
                 ));
             }
             let subcluster = self.cluster / 32;
+            if at != 0 {
+                // A sparse host file can end immediately after its last allocated subcluster.
+                // The entire reserved cluster must still be clear of metadata.
+                let reserved_end = at
+                    .checked_add(self.cluster)
+                    .ok_or_else(|| invalid("QCOW2 cluster overflow"))?;
+                if self.metadata.overlaps(at, reserved_end) {
+                    return Err(invalid("QCOW2 subclusters overlap metadata"));
+                }
+                self.check_data(at, u64::from(32 - allocated.leading_zeros()) * subcluster)?;
+            }
             let within = guest % self.cluster;
             let sub = (within / subcluster) as u32;
-            let is_data = allocated & (1 << sub) != 0;
-            let run = if is_data { allocated } else { !allocated };
-            let consecutive = (run >> sub).trailing_ones();
-            let count = subcluster * u64::from(consecutive);
-            let block = if is_data {
-                Block::Data(at + within)
+            let bit = 1 << sub;
+            let (block, bitmap) = if allocated & bit != 0 {
+                (Some(Block::Data(at + within)), allocated)
+            } else if zeros & bit != 0 {
+                (Some(Block::Zero), zeros)
             } else {
-                Block::Zero
+                (None, !(allocated | zeros))
             };
+            let count = subcluster * u64::from((bitmap >> sub).trailing_ones());
             return Ok((block, count));
         }
-        Ok((
-            if zero || at == 0 {
-                Block::Zero
-            } else {
-                Block::Data(at)
-            },
-            self.cluster,
-        ))
+        if at != 0 {
+            self.check_data(at, self.cluster)?;
+        }
+        let block = if zero {
+            Some(Block::Zero)
+        } else if at != 0 {
+            Some(Block::Data(at))
+        } else {
+            None
+        };
+        Ok((block, self.cluster))
     }
     fn check_data(&self, at: u64, bytes: u64) -> Result<()> {
         let end = at

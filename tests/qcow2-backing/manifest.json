@@ -1,0 +1,31 @@
+{
+  "producer": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+  "members": {
+    "child.qcow2": "467455014daf7387fde3c17f28067bf817f6d1e5abba9288257b17e4f9dea739",
+    "middle.qcow2": "ab345d517b8dcb5981d29082b50305d7d27407f1e6f7982604d0c21812172b79",
+    "base.qcow2": "c108d2c7e72f35ce4293707f39b12e8191e8cde987f3ce15b87bbead9e35ee32"
+  },
+  "chain": [
+    "child.qcow2",
+    "middle.qcow2",
+    "base.qcow2"
+  ],
+  "expected": {
+    "guest_sha256": "a2a44f2e35df75a73a480f55232e2c43f71447d6a66abb5410d19678d1e165fb",
+    "guest_bytes": 41943040,
+    "originals": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    },
+    "qemu_depths": [
+      0,
+      1,
+      2
+    ]
+  }
+}

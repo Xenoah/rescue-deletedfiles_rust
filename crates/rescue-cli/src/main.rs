@@ -298,7 +298,7 @@ struct McpArgs {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Convert a standalone virtual or forensic disk image to a new RAW file.
+    /// Convert a virtual or forensic disk image, including explicitly supplied QCOW2 backing files, to a new RAW file.
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
