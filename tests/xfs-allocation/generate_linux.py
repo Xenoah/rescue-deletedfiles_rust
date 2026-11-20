@@ -1,6 +1,10 @@
 """Capture clean kernel-unmounted XFS images with actual unlinks and identical live controls."""
 
 from contextlib import contextmanager
+import argparse
+import ctypes
+import os
+import struct
 import hashlib
 import json
 import lzma
@@ -50,7 +54,22 @@ def hits(image, value):
     return result
 
 
-def generate(root, block, sector, reflink, ags):
+def fragmented_log(mount, block):
+    """Make both free-space trees grow and force committed metadata through the circular log."""
+    path = mount / "fragmented"
+    with path.open("w+b", buffering=0) as f:
+        os.posix_fallocate(f.fileno(), 0, block * 4096)
+        punch = ctypes.CDLL(None, use_errno=True).fallocate
+        punch.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_longlong, ctypes.c_longlong]
+        for nr in range(1, 4096, 2):
+            if punch(f.fileno(), 3, nr * block, block):
+                raise OSError(ctypes.get_errno(), "punch file range")
+        for rev in range(18000):
+            os.setxattr(f.fileno(), "user.revision", struct.pack(">Q", rev))
+            os.fsync(f.fileno())
+
+
+def generate(root, block, sector, reflink, ags, fragmented=False):
     disk = root / "volume.raw"
     mount = root / "mount"
     mount.mkdir()
@@ -71,6 +90,8 @@ def generate(root, block, sector, reflink, ags):
         disk,
     )
     with mounted(disk, mount):
+        if fragmented:
+            fragmented_log(mount, block)
         (mount / "deleted").mkdir()
         (mount / "live").mkdir()
         for n, v in FILES.items():
@@ -144,6 +165,17 @@ def generate(root, block, sector, reflink, ags):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--fragmented", action="store_true")
+    if parser.parse_args().fragmented:
+        with tempfile.TemporaryDirectory() as tmp:
+            capture = generate(Path(tmp), 4096, 4096, True, 3, True)
+            assert len(capture["xfs_db_free_extents"]) > 1000
+            (ROOT / "fragmented.json").write_text(
+                json.dumps({"xfs-4096-4096-3": capture}, indent=2) + "\n"
+            )
+        raise SystemExit(0)
+
     manifest = {}
     for block, sector, reflink, ags in [
         (4096, 512, False, 4),
