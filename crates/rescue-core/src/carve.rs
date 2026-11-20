@@ -1252,7 +1252,7 @@ pub(crate) fn recovery_data(
             .map(str::to_owned)
             .collect(),
         extent_evidence: format.evidence(),
-        allocation_status: AllocationStatus::Unknown,
+        allocation_status: candidate.allocation_status,
     })
 }
 
@@ -1278,7 +1278,8 @@ pub(crate) fn revalidate_candidate(
         warnings: data.warnings,
         record_sha256: candidate.record_sha256.clone(),
         extent_evidence: data.extent_evidence,
-        allocation_status: data.allocation_status,
+        // The restore path obtains current allocation after it derives the full extent.
+        allocation_status: AllocationStatus::Unknown,
         created: None,
         modified: None,
     })

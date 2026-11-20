@@ -1,5 +1,23 @@
 {
   "ext2-1024": {
+    "exported_allocation": {
+      "all_archive": {
+        "allocation_status": "unknown",
+        "files": 18
+      },
+      "all_directory": {
+        "allocation_status": "unknown",
+        "files": 18
+      },
+      "unallocated_archive": {
+        "allocation_status": "unallocated",
+        "files": 9
+      },
+      "unallocated_directory": {
+        "allocation_status": "unallocated",
+        "files": 9
+      }
+    },
     "fallbacks": [
       "bad-free-block-count",
       "bad-free-inode-count",

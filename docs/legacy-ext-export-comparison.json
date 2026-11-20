@@ -1,0 +1,29 @@
+{
+  "fixed": {
+    "directory": {
+      "allocation_status": "unallocated",
+      "files": 7,
+      "original_bytes_sha256_match": true
+    },
+    "scan": "unallocated",
+    "zip": {
+      "allocation_status": "unallocated",
+      "files": 7,
+      "original_bytes_sha256_match": true
+    }
+  },
+  "published_v1.37.0": {
+    "directory": {
+      "allocation_status": "unknown",
+      "files": 7,
+      "original_bytes_sha256_match": true
+    },
+    "scan": "unallocated",
+    "zip": {
+      "allocation_status": "unknown",
+      "files": 7,
+      "original_bytes_sha256_match": true
+    }
+  },
+  "source": "tests/ext4-allocation/ext4-1024.raw.xz"
+}

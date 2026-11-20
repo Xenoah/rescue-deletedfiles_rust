@@ -1,0 +1,9 @@
+{
+  "bytes": 4320133120,
+  "gpt_writer": "GNU Parted 3.6",
+  "partition_offset": 4288129024,
+  "sector_size": 512,
+  "sha256": "809fd75bc829d7ee3a84f87b7c536bb56e90a4de2668c86b5b8aba31dfb19032",
+  "volume": "ext3-1024-indirect",
+  "volume_sha256": "85a00ed55ff28430d1b0d04e6f28b8e217e805c3498260ba2240a930afc0da7d"
+}

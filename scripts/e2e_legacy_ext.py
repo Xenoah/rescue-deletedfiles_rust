@@ -8,6 +8,7 @@ from pathlib import Path
 import struct
 import subprocess
 import tempfile
+import zipfile
 
 from e2e import check, run
 from e2e_disks import disk_image
@@ -201,6 +202,83 @@ def stale_recovery(binary, root, volume, ref):
     return dict(second_block_reallocated=True, original_source_fingerprint_preserved=True, stale_recovery="SOURCE_CHANGED")
 
 
+def report_allocation(binary, root, volume, ref):
+    result = {}
+    for scope, state in [("unallocated", "unallocated"), ("all", "unknown")]:
+        session, candidates = scan(binary, volume, root / ("report-" + scope), scope=scope, extensions=EXTENSIONS)
+        expected = {r["id"]: r["record_sha256"] for r in candidates}
+        check(len(expected) == len(ref["originals"]) * (2 if scope == "all" else 1), scope)
+        for output in ("directory", "archive"):
+            if output == "directory":
+                rows = run(binary, "recover", "--session", session["session"], "--all",
+                           "--destination", root / ("files-" + scope), "--json")["results"]
+                digests = {r["candidate_id"]: hashlib.sha256(Path(r["path"]).read_bytes()).hexdigest() for r in rows}
+            else:
+                saved = run(binary, "recover", "--session", session["session"], "--all",
+                            "--archive", root / (scope + ".zip"), "--json")["result"]
+                with zipfile.ZipFile(saved["archive"]) as archive:
+                    rows = json.loads(archive.read("rescue-report.json"))["results"]
+                    digests = {r["candidate_id"]: hashlib.sha256(archive.read(r["archive_entry"])).hexdigest() for r in rows}
+            check(digests == expected and all(r["allocation_status"] == state for r in rows), (scope, output, rows))
+            result[scope + "_" + output] = dict(allocation_status=state, files=len(rows))
+    return result
+
+
+def boundary(binary, root, manifest):
+    # The two GPT copies were written by GNU Parted. Rebuild the same sparse
+    # device without requiring 4 GiB of physical storage on the test machine.
+    folder = ROOT / "gpt-4g"
+    info = json.loads((folder / "manifest.json").read_text())
+    ref = manifest[info["volume"]]
+    contents = lzma.decompress((ROOT / (info["volume"] + ".raw.xz")).read_bytes())
+    check(hashlib.sha256(contents).hexdigest() == info["volume_sha256"] == ref["disk_sha256"], info)
+    head, tail = [lzma.decompress((folder / (name + ".raw.xz")).read_bytes()) for name in ("head", "tail")]
+    disk = root / "ext3-gpt-4g.raw"
+    start, size = info["partition_offset"], info["bytes"]
+    with disk.open("xb") as stream:
+        stream.truncate(size)
+        stream.write(head)
+        stream.seek(start)
+        stream.write(contents)
+        stream.seek(size - len(tail))
+        stream.write(tail)
+    def digest():
+        with disk.open("rb") as stream:
+            return hashlib.file_digest(stream, "sha256").hexdigest()
+    check(digest() == info["sha256"], disk)
+    listing = subprocess.check_output(["mmls", disk], text=True)
+    sector = start // info["sector_size"]
+    check(str(sector) in listing and "ext3-deleted" in listing, listing)
+    files = ref["originals"]
+    truth = {start + f["deleted_offset"]: name for name, f in files.items()}
+    limit = 1 << 32
+    check(min(truth) < limit < max(truth), truth)
+    wav = files["sample.wav"]
+    check(start + wav["deleted_offset"] < limit < start + wav["deleted_offset"] + wav["bytes"], wav)
+    for name, f in files.items():
+        for key, status in [("deleted_offset","Not Allocated"),("live_offset","Allocated")]:
+            fst = f[key] // ref["block_bytes"]
+            last = (f[key]+f["bytes"]-1) // ref["block_bytes"]
+            for block in {fst,last}:
+                report = subprocess.check_output(["blkstat", "-o", str(sector), "-f", "ext3", disk, str(block)], text=True)
+                check(status in report.splitlines(), (name, block, report))
+    for label, indexed in [("ordinary", False), ("indexed", True)]:
+        job = root / ("boundary-" + label)
+        session, rows = scan(binary, disk, job, indexed=indexed, extensions=EXTENSIONS, bounds=(start, start + len(contents)))
+        check({r["record"] for r in rows} == truth.keys() and all(r["supported"] and r["allocation_status"] == "unallocated" for r in rows), rows)
+        by_id = {r["id"]: truth[r["record"]] for r in rows}
+        recovered = run(binary, "recover", "--session", session["session"], "--all", "--destination", job / "out", "--json", timeout=180)["results"]
+        check(len(recovered) == len(files), recovered)
+        for row in recovered:
+            name = by_id[row["candidate_id"]]
+            restored = Path(row["path"]).read_bytes()
+            check(restored == (ROOT.parent / "corpus/files" / name).read_bytes() and
+                  hashlib.sha256(restored).hexdigest() == row["sha256"] == files[name]["sha256"], name)
+    check(digest() == info["sha256"], disk)
+    return dict(disk_bytes=size, disk_sha256=info["sha256"], partition_offset=start, crossing_file="sample.wav",
+                restored={name: dict(offset=pos, sha256=files[name]["sha256"]) for pos,name in truth.items()})
+
+
 def verify(binary, root, native=False):
     manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
     result = {}
@@ -231,6 +309,7 @@ def verify(binary, root, native=False):
             result[name]["indirect_fallbacks"] = indirect_controls(binary, folder, volume, ref)
         if name == "ext2-1024":
             result[name]["stale_session"] = stale_recovery(binary, folder, volume, ref)
+            result[name]["exported_allocation"] = report_allocation(binary, folder, volume, ref)
         if native:
             if name.endswith("-indirect"):
                 details = subprocess.check_output(["debugfs", "-R", "stat /saved/sparse-live.bin", volume], text=True, stderr=subprocess.DEVNULL)
@@ -239,6 +318,8 @@ def verify(binary, root, native=False):
             result[name]["independent_allocation"] = independent(volume, ref, name.split("-")[0])
         check(hashlib.sha256(volume.read_bytes()).hexdigest() == ref["disk_sha256"], name)
         print(name, len(exact), "actual Linux unlinks matched bytes and SHA-256, live duplicates excluded", flush=True)
+    if native:
+        result["gpt_4g"] = boundary(binary, root, manifest)
     return result
 
 
