@@ -24,7 +24,7 @@ def sha(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def children(parent):
+def children(parent, binary):
     if os.name == 'nt':
         from ctypes import wintypes as w
         class Entry(ctypes.Structure):
@@ -45,7 +45,9 @@ def children(parent):
             entry = Entry(); entry.dwSize = ctypes.sizeof(entry)
             valid = kernel.Process32FirstW(snapshot, ctypes.byref(entry))
             while valid:
-                if entry.th32ParentProcessID == parent:
+                # Windows can attach a console host to the same parent.
+                # The acquisition reader is another instance of the tested binary.
+                if entry.th32ParentProcessID == parent and entry.szExeFile.casefold() == binary.name.casefold():
                     found.append(entry.th32ProcessID)
                 valid = kernel.Process32NextW(snapshot, ctypes.byref(entry))
         finally:
@@ -55,10 +57,10 @@ def children(parent):
     return [int(line.split()[0]) for line in output.splitlines() if len(line.split()) == 2 and int(line.split()[1]) == parent]
 
 
-def suspend_owned(parent):
+def suspend_owned(parent, binary):
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        found = children(parent)
+        found = children(parent, binary)
         if found:
             check(len(found) == 1, 'unexpected child processes')
             pid = found[0]
@@ -119,7 +121,7 @@ def start_paused(binary, source, destination, reconnect):
     try:
         first = messages.get(timeout=10)
         check(first['map']['copied_bytes'] > 0, 'no durable initial progress')
-        reader = suspend_owned(child.pid)
+        reader = suspend_owned(child.pid, binary)
         return child, reader, messages
     except BaseException:
         child.kill(); child.wait(timeout=10)
@@ -143,7 +145,9 @@ def main(binary, output=None):
     with tempfile.TemporaryDirectory(prefix='rescue-adaptive-') as tmp:
         root = Path(tmp); source = root/'source.raw'
         with source.open('wb') as stream:
-            for n in range(32): stream.write(bytes([n]) * 1024 * 1024)
+            # 2,048 durable block writes leave time to interrupt the first pass
+            # without timing a healthy Windows volume's thousands of flushes.
+            for n in range(8): stream.write(bytes([n]) * 1024 * 1024)
         original = sha(source)
         child, helper, messages = start_paused(binary, source, root/'deadline', 0)
         started = time.monotonic()
@@ -214,7 +218,7 @@ def main(binary, output=None):
                 client.tool('start_image', {'source':str(source),'destination':str(root/'mcp-out/bad'),field:value,'request_id':field}, error=True)
             cases.append('MCP option bounds')
             task = client.tool('start_image', {'source':str(source),'destination':str(root/'mcp-out/cancel'),'block_size':4096,'read_timeout_ms':10000,'request_id':'cancel'})
-            helper = suspend_owned(client.process.pid)
+            helper = suspend_owned(client.process.pid, binary)
             started = time.monotonic()
             client.tool('cancel_job', {'job_id':task['job_id']})
             job = client.wait(task['job_id'])
