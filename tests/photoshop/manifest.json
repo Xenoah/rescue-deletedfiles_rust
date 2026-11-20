@@ -69,6 +69,170 @@
       ]
     }
   },
+  "deep-layers-raw.psb": {
+    "bytes": 21755,
+    "sha256": "a64036c7a5edba1d7f46fe4f597182fd38151444f65c153b77f58c390ef23eaa",
+    "decoded": {
+      "version": 2,
+      "dimensions": [
+        32,
+        32
+      ],
+      "depth": 16,
+      "channels": 3,
+      "mode": 3,
+      "compression": 1,
+      "composite_sha256": "3779af49b680c57166c3784c6bca13279e1db57b342804fab67d650f893a0138",
+      "layers": [
+        [
+          "Original",
+          [
+            0,
+            0,
+            32,
+            32
+          ],
+          [
+            [
+              0,
+              32,
+              32,
+              "5e1c8338f1f96b2239c156ec2de189fd2771e297c49d22f7b0ff1b7fb8a7b985"
+            ],
+            [
+              1,
+              32,
+              32,
+              "9851adc0491c14d310cd2bbcdccb24c260bd86fe4b92ead3496001c1e4beff3b"
+            ],
+            [
+              2,
+              32,
+              32,
+              "f6d721049d5cc32e5d7e07b70e9507cf62df131e67a2ee80d279ba3f80d5f0cc"
+            ]
+          ]
+        ],
+        [
+          "編集 layer high-depth",
+          [
+            4,
+            3,
+            36,
+            35
+          ],
+          [
+            [
+              -1,
+              32,
+              32,
+              "d0ff1b294b5288d1ae1421eadf5b2d38a8752b76d472ff30bed9028e25b1c5b8"
+            ],
+            [
+              0,
+              32,
+              32,
+              "5e1c8338f1f96b2239c156ec2de189fd2771e297c49d22f7b0ff1b7fb8a7b985"
+            ],
+            [
+              1,
+              32,
+              32,
+              "9851adc0491c14d310cd2bbcdccb24c260bd86fe4b92ead3496001c1e4beff3b"
+            ],
+            [
+              2,
+              32,
+              32,
+              "f6d721049d5cc32e5d7e07b70e9507cf62df131e67a2ee80d279ba3f80d5f0cc"
+            ]
+          ]
+        ]
+      ]
+    }
+  },
+  "deep-tag-prediction.psd": {
+    "bytes": 7835,
+    "sha256": "9d6d4b756308fa6d0691afa5a0c476ea73202a436a62537c7642e26c8bb60cca",
+    "decoded": {
+      "version": 1,
+      "dimensions": [
+        32,
+        32
+      ],
+      "depth": 16,
+      "channels": 3,
+      "mode": 3,
+      "compression": 1,
+      "composite_sha256": "3779af49b680c57166c3784c6bca13279e1db57b342804fab67d650f893a0138",
+      "layers": [
+        [
+          "Original",
+          [
+            0,
+            0,
+            32,
+            32
+          ],
+          [
+            [
+              0,
+              32,
+              32,
+              "5e1c8338f1f96b2239c156ec2de189fd2771e297c49d22f7b0ff1b7fb8a7b985"
+            ],
+            [
+              1,
+              32,
+              32,
+              "9851adc0491c14d310cd2bbcdccb24c260bd86fe4b92ead3496001c1e4beff3b"
+            ],
+            [
+              2,
+              32,
+              32,
+              "f6d721049d5cc32e5d7e07b70e9507cf62df131e67a2ee80d279ba3f80d5f0cc"
+            ]
+          ]
+        ],
+        [
+          "編集 layer high-depth",
+          [
+            4,
+            3,
+            36,
+            35
+          ],
+          [
+            [
+              -1,
+              32,
+              32,
+              "d0ff1b294b5288d1ae1421eadf5b2d38a8752b76d472ff30bed9028e25b1c5b8"
+            ],
+            [
+              0,
+              32,
+              32,
+              "5e1c8338f1f96b2239c156ec2de189fd2771e297c49d22f7b0ff1b7fb8a7b985"
+            ],
+            [
+              1,
+              32,
+              32,
+              "9851adc0491c14d310cd2bbcdccb24c260bd86fe4b92ead3496001c1e4beff3b"
+            ],
+            [
+              2,
+              32,
+              32,
+              "f6d721049d5cc32e5d7e07b70e9507cf62df131e67a2ee80d279ba3f80d5f0cc"
+            ]
+          ]
+        ]
+      ]
+    }
+  },
   "float32-prediction.psd": {
     "bytes": 760,
     "sha256": "730d9deaf9c3ae485388b4d8a453ac10e1b4192821366d69f40f00c1ec9ea0d1",
@@ -513,6 +677,64 @@
       ]
     }
   },
+  "gray-layers-zip.psd": {
+    "bytes": 6068,
+    "sha256": "f666b48272a06fc0bd60c5b7369801e6fc28b0faae1355fb36c0333233776ecb",
+    "decoded": {
+      "version": 1,
+      "dimensions": [
+        32,
+        32
+      ],
+      "depth": 8,
+      "channels": 1,
+      "mode": 1,
+      "compression": 1,
+      "composite_sha256": "44dec7e1d6b1f5ca8c4eb5b5db703292439d63b7a8242bae7fc98969c44a378f",
+      "layers": [
+        [
+          "Original",
+          [
+            0,
+            0,
+            32,
+            32
+          ],
+          [
+            [
+              0,
+              32,
+              32,
+              "ac7751025a2b2b44fccf5e9fb38849850eccf3b672f4d4c46aa73e8bb7956f00"
+            ]
+          ]
+        ],
+        [
+          "編集 layer gray",
+          [
+            4,
+            3,
+            36,
+            35
+          ],
+          [
+            [
+              -1,
+              32,
+              32,
+              "5f4ecdb7b71c3e403983fe405cddcdc2f2576b655fdb3e80d94a6f7c32e58bc2"
+            ],
+            [
+              0,
+              32,
+              32,
+              "ac7751025a2b2b44fccf5e9fb38849850eccf3b672f4d4c46aa73e8bb7956f00"
+            ]
+          ]
+        ]
+      ]
+    }
+  },
   "gray-rle.psd": {
     "bytes": 2500,
     "sha256": "38d4d4155da97717157641c6c1e69fc3d386b8c517ace6c777359aed5d1bfd61",
@@ -641,6 +863,94 @@
       ]
     }
   },
+  "mask-prediction.psd": {
+    "bytes": 6802,
+    "sha256": "81d34e84480aee13185e205e0698c079c96e72b69649953016859276d0222a68",
+    "decoded": {
+      "version": 1,
+      "dimensions": [
+        32,
+        32
+      ],
+      "depth": 8,
+      "channels": 3,
+      "mode": 3,
+      "compression": 1,
+      "composite_sha256": "5578e050e8926855f63fce4ee111646ba1e051c652feccb086db621e610ab4e2",
+      "layers": [
+        [
+          "Original",
+          [
+            0,
+            0,
+            32,
+            32
+          ],
+          [
+            [
+              0,
+              32,
+              32,
+              "5c8453f728ef399b3d93a57a49fa277522770c43d2ceac8f28e50a58ec888cdf"
+            ],
+            [
+              1,
+              32,
+              32,
+              "ebdbd06cdc731a1c1b632d5c0e1583281bc4837b7e64951ecfd97547d12c8936"
+            ],
+            [
+              2,
+              32,
+              32,
+              "ebb5f0939cce8cf3c8a60ff633e83c704d75645e22d975ec7b7ad3d73d325529"
+            ]
+          ]
+        ],
+        [
+          "編集 layer mask",
+          [
+            4,
+            3,
+            36,
+            35
+          ],
+          [
+            [
+              -1,
+              32,
+              32,
+              "5f4ecdb7b71c3e403983fe405cddcdc2f2576b655fdb3e80d94a6f7c32e58bc2"
+            ],
+            [
+              0,
+              32,
+              32,
+              "5c8453f728ef399b3d93a57a49fa277522770c43d2ceac8f28e50a58ec888cdf"
+            ],
+            [
+              1,
+              32,
+              32,
+              "ebdbd06cdc731a1c1b632d5c0e1583281bc4837b7e64951ecfd97547d12c8936"
+            ],
+            [
+              2,
+              32,
+              32,
+              "ebb5f0939cce8cf3c8a60ff633e83c704d75645e22d975ec7b7ad3d73d325529"
+            ],
+            [
+              -2,
+              32,
+              32,
+              "5f4ecdb7b71c3e403983fe405cddcdc2f2576b655fdb3e80d94a6f7c32e58bc2"
+            ]
+          ]
+        ]
+      ]
+    }
+  },
   "mono-raw.psd": {
     "bytes": 191,
     "sha256": "7aaecb0e76afbc933723f6b6d0a073cfd4675a2e07213dd54d01dce59334d622",
@@ -656,6 +966,88 @@
       "compression": 0,
       "composite_sha256": "fe11062311639422c26597c19dc82c207675c7f70e152a36be1ef72ce0f220f2",
       "layers": []
+    }
+  },
+  "rgb-layers-zip.psb": {
+    "bytes": 7102,
+    "sha256": "bc45ff40a92cb265fac86def2c77a51f6e18ad994c808e62f3510bf7bf83fe0c",
+    "decoded": {
+      "version": 2,
+      "dimensions": [
+        32,
+        32
+      ],
+      "depth": 8,
+      "channels": 3,
+      "mode": 3,
+      "compression": 1,
+      "composite_sha256": "5578e050e8926855f63fce4ee111646ba1e051c652feccb086db621e610ab4e2",
+      "layers": [
+        [
+          "Original",
+          [
+            0,
+            0,
+            32,
+            32
+          ],
+          [
+            [
+              0,
+              32,
+              32,
+              "5c8453f728ef399b3d93a57a49fa277522770c43d2ceac8f28e50a58ec888cdf"
+            ],
+            [
+              1,
+              32,
+              32,
+              "ebdbd06cdc731a1c1b632d5c0e1583281bc4837b7e64951ecfd97547d12c8936"
+            ],
+            [
+              2,
+              32,
+              32,
+              "ebb5f0939cce8cf3c8a60ff633e83c704d75645e22d975ec7b7ad3d73d325529"
+            ]
+          ]
+        ],
+        [
+          "編集 layer layers",
+          [
+            4,
+            3,
+            36,
+            35
+          ],
+          [
+            [
+              -1,
+              32,
+              32,
+              "5f4ecdb7b71c3e403983fe405cddcdc2f2576b655fdb3e80d94a6f7c32e58bc2"
+            ],
+            [
+              0,
+              32,
+              32,
+              "5c8453f728ef399b3d93a57a49fa277522770c43d2ceac8f28e50a58ec888cdf"
+            ],
+            [
+              1,
+              32,
+              32,
+              "ebdbd06cdc731a1c1b632d5c0e1583281bc4837b7e64951ecfd97547d12c8936"
+            ],
+            [
+              2,
+              32,
+              32,
+              "ebb5f0939cce8cf3c8a60ff633e83c704d75645e22d975ec7b7ad3d73d325529"
+            ]
+          ]
+        ]
+      ]
     }
   },
   "rgb-prediction.psb": {

@@ -72,6 +72,34 @@ def composite(data):
     return pos
 
 
+def layer_channels(data, tagged=False):
+    """Locate recorded channel headers and payloads for targeted damage to an intact document."""
+    wide = 8 if data[5] == 2 else 4
+    start = 26
+    for _ in range(2):
+        start += 4 + int.from_bytes(data[start:start+4], 'big')
+    pos = data.index(b'8BIMLr16') + 12 if tagged else start + wide * 2
+    count = abs(int.from_bytes(data[pos:pos+2], 'big', signed=True))
+    pos += 2
+    entries = []
+    for _ in range(count):
+        pos += 16
+        channels = int.from_bytes(data[pos:pos+2], 'big')
+        pos += 2
+        for _ in range(channels):
+            channel = int.from_bytes(data[pos:pos+2], 'big', signed=True)
+            size = int.from_bytes(data[pos+2:pos+2+wide], 'big')
+            entries.append((channel, pos, size))
+            pos += 2 + wide
+        pos += 12
+        pos += 4 + int.from_bytes(data[pos:pos+4], 'big')
+    result = []
+    for channel, header, size in entries:
+        result.append((channel, header, pos, pos+size))
+        pos += size
+    return result
+
+
 def damaged(binary, folder, files):
     raw=files['rgb-raw.psd']
     zipped=files['rgb-zip.psd']
@@ -97,6 +125,30 @@ def damaged(binary, folder, files):
         'zip-long-output':zipped[:p+2]+zlib.compress(bytes(31*17*3+1)),
         'psb-section-overflow':edit(packed,layer_section,b'\xff'*8),
     }
+    for label, filename, channel, mutation in [
+        ('layer-id', 'rgb-raw.psd', 0, 'duplicate'),
+        ('layer-method', 'deep-layers-raw.psb', 0, 'method'),
+        ('layer-raw-length', 'deep-layers-raw.psb', 0, 'size'),
+        ('layer-rle-row', 'gimp-layers.psd', 0, 'row'),
+        ('layer-psb-row', 'layers-rle.psb', 0, 'row'),
+        ('layer-zip-checksum', 'gray-layers-zip.psd', 0, 'checksum'),
+        ('layer-psb-zip-checksum', 'rgb-layers-zip.psb', 0, 'checksum'),
+        ('mask-zip-checksum', 'mask-prediction.psd', -2, 'checksum'),
+        ('tagged-layer-checksum', 'deep-tag-prediction.psd', 0, 'checksum'),
+    ]:
+        data = files[filename]
+        _, header, start, end = next(c for c in layer_channels(data,filename.startswith('deep-tag')) if c[0]==channel)
+        wide = 8 if filename.endswith('.psb') else 4
+        if mutation == 'duplicate':
+            bad[label] = edit(data,header,b'\0\1')
+        elif mutation == 'method':
+            bad[label] = edit(data,start,b'\0\4')
+        elif mutation == 'size':
+            bad[label] = edit(data,header+2,(end-start-1).to_bytes(wide,'big'))
+        elif mutation == 'row':
+            bad[label] = edit(data,start+2,b'\xff'*(wide//2))
+        else:
+            bad[label] = edit(data,end-1,bytes([data[end-1]^0xff]))
     for name,data in bad.items():
         path=folder/(name+'.raw')
         path.write_bytes(data)

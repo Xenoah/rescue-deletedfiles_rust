@@ -56,7 +56,12 @@ fn resources(mut bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
-fn tagged(mut bytes: &[u8], large: bool, alignment: usize) -> Result<()> {
+fn tagged(
+    mut bytes: &[u8],
+    large: bool,
+    alignment: usize,
+    mut visit: impl FnMut(&[u8], &[u8], usize) -> Result<()>,
+) -> Result<()> {
     let mut count = 0;
     while bytes.len() >= 12 {
         count += 1;
@@ -90,6 +95,7 @@ fn tagged(mut bytes: &[u8], large: bool, alignment: usize) -> Result<()> {
                     | b"pths"
             );
         let value = section(&mut bytes, if wide { 8 } else { 4 })?;
+        visit(key, value, bytes.len())?;
         let padding = (alignment - value.len() % alignment) % alignment;
         take(&mut bytes, padding)?;
     }
@@ -99,7 +105,55 @@ fn tagged(mut bytes: &[u8], large: bool, alignment: usize) -> Result<()> {
     Ok(())
 }
 
-fn layer_info(mut bytes: &[u8], large: bool) -> Result<()> {
+#[derive(Clone, Copy)]
+struct Plane {
+    row_bytes: usize,
+    rows: usize,
+}
+
+impl Plane {
+    fn from_bounds(bounds: &[u8], depth: usize) -> Result<Self> {
+        let mut fields = bounds.chunks_exact(4);
+        let mut coord = || {
+            fields
+                .next()
+                .and_then(|b| b.try_into().ok())
+                .map(i32::from_be_bytes)
+                .map(i64::from)
+                .ok_or_else(|| invalid("missing layer bounds"))
+        };
+        let (top, left, bottom, right) = (coord()?, coord()?, coord()?, coord()?);
+        let (width, height) = (right - left, bottom - top);
+        if !(0..=300000).contains(&width) || !(0..=300000).contains(&height) {
+            return Err(invalid("layer bounds"));
+        }
+        Ok(Self {
+            row_bytes: (width as usize * depth).div_ceil(8),
+            rows: height as usize,
+        })
+    }
+
+    fn size(self) -> Result<usize> {
+        self.row_bytes
+            .checked_mul(self.rows)
+            .filter(|&n| n <= MAX_DECODED)
+            .ok_or_else(|| invalid("layer plane exceeds limit"))
+    }
+}
+
+struct LayerChannel {
+    start: usize,
+    end: usize,
+    plane: Plane,
+}
+
+fn layer_info(
+    mut bytes: &[u8],
+    end: usize,
+    large: bool,
+    depth: usize,
+    output: &mut Vec<LayerChannel>,
+) -> Result<()> {
     if bytes.is_empty() {
         return Ok(());
     }
@@ -107,41 +161,61 @@ fn layer_info(mut bytes: &[u8], large: bool) -> Result<()> {
     if count > 4096 {
         return Err(invalid("layer count"));
     }
-    let mut lengths = Vec::new();
+    let mut pending = Vec::new();
     for _ in 0..count {
-        let bounds = take(&mut bytes, 16)?;
-        let coord = |pos| i32::from_be_bytes(bounds[pos..pos + 4].try_into().unwrap());
-        if coord(8) < coord(0) || coord(12) < coord(4) {
-            return Err(invalid("layer bounds"));
-        }
+        let layer = Plane::from_bounds(take(&mut bytes, 16)?, depth)?;
         let channels = number(&mut bytes, 2)?;
-        if channels > 56 || lengths.len() + channels > 65536 {
+        if channels > 56 || output.len() + pending.len() + channels > 65536 {
             return Err(invalid("layer channel count"));
         }
+        let mut metadata = Vec::with_capacity(channels);
+        let mut ids = 0u64;
         for _ in 0..channels {
-            take(&mut bytes, 2)?;
+            let id = i16::from_be_bytes(take(&mut bytes, 2)?.try_into().unwrap());
+            if !(-3..=55).contains(&id) || ids & (1u64 << (id + 3)) != 0 {
+                return Err(invalid("layer channel id"));
+            }
+            ids |= 1u64 << (id + 3);
             let len = number(&mut bytes, if large { 8 } else { 4 })?;
             if len < 2 {
                 return Err(invalid("layer channel length"));
             }
-            lengths.push(len);
+            metadata.push((id, len));
         }
         if take(&mut bytes, 4)? != b"8BIM" {
             return Err(invalid("layer blend signature"));
         }
-        take(&mut bytes, 8)?; // Blend key, opacity, clipping, flags, reserved.
+        take(&mut bytes, 8)?;
         let mut extra = section(&mut bytes, 4)?;
-        section(&mut extra, 4)?; // Mask parameters and blending ranges are preserved.
-        section(&mut extra, 4)?;
+        let mask = section(&mut extra, 4)?;
+        for (id, len) in metadata {
+            let plane = match id {
+                -2 => Plane::from_bounds(
+                    mask.get(..16).ok_or_else(|| invalid("missing user mask"))?,
+                    depth,
+                )?,
+                -3 => Plane::from_bounds(
+                    mask.get(20..36)
+                        .ok_or_else(|| invalid("missing real user mask"))?,
+                    depth,
+                )?,
+                _ => layer,
+            };
+            pending.push((len, plane));
+        }
+        section(&mut extra, 4)?; // Blending ranges.
         let name = number(&mut extra, 1)?;
         take(&mut extra, (name + 1).next_multiple_of(4) - 1)?;
-        tagged(extra, large, 1)?;
+        tagged(extra, large, 1, |_, _, _| Ok(()))?;
     }
-    for size in lengths {
-        let data = take(&mut bytes, size)?;
-        if u16::from_be_bytes(data[..2].try_into().unwrap()) > 3 {
-            return Err(invalid("layer channel compression"));
-        }
+    for (len, plane) in pending {
+        let start = end - bytes.len();
+        take(&mut bytes, len)?;
+        output.push(LayerChannel {
+            start,
+            end: start + len,
+            plane,
+        });
     }
     if bytes.len() > 3 || bytes.iter().any(|&b| b != 0) {
         return Err(invalid("layer channel lengths disagree with table"));
@@ -149,16 +223,28 @@ fn layer_info(mut bytes: &[u8], large: bool) -> Result<()> {
     Ok(())
 }
 
-fn layers(mut bytes: &[u8], large: bool) -> Result<()> {
-    if bytes.is_empty() {
-        return Ok(());
+fn layers(mut bytes: &[u8], end: usize, large: bool, depth: usize) -> Result<Vec<LayerChannel>> {
+    let mut channels = Vec::new();
+    if !bytes.is_empty() {
+        let info = section(&mut bytes, if large { 8 } else { 4 })?;
+        layer_info(info, end - bytes.len(), large, depth, &mut channels)?;
+        // Some writers pad the layer section without a global mask length.
+        if bytes.len() >= 4 && !(bytes.starts_with(b"8BIM") || bytes.starts_with(b"8B64")) {
+            section(&mut bytes, 4)?;
+        }
+        tagged(bytes, large, 4, |key, value, remaining| {
+            if matches!(key, b"Layr" | b"Lr16" | b"Lr32") {
+                let embedded_depth = match key {
+                    b"Lr16" => 16,
+                    b"Lr32" => 32,
+                    _ => depth,
+                };
+                layer_info(value, end - remaining, large, embedded_depth, &mut channels)?;
+            }
+            Ok(())
+        })?;
     }
-    layer_info(section(&mut bytes, if large { 8 } else { 4 })?, large)?;
-    // Some writers pad the layer section to its boundary without a global mask length.
-    if bytes.len() >= 4 && !(bytes.starts_with(b"8BIM") || bytes.starts_with(b"8B64")) {
-        section(&mut bytes, 4)?; // Global layer mask.
-    }
-    tagged(bytes, large, 4)
+    Ok(channels)
 }
 
 fn document_section(
@@ -202,16 +288,26 @@ fn packbits(mut bytes: &[u8], width: usize) -> Result<()> {
     Ok(())
 }
 
-fn rle(input: &mut Input, pos: usize, rows: usize, width: usize, large: bool) -> Result<usize> {
+fn rle(
+    input: &mut Input,
+    pos: usize,
+    rows: usize,
+    width: usize,
+    large: bool,
+    limit: usize,
+) -> Result<usize> {
     let field = if large { 4 } else { 2 };
     let table_end = pos + rows * field;
+    if table_end > limit {
+        return Err(invalid("RLE table exceeds channel"));
+    }
     input.ensure(table_end)?;
     let mut end = table_end;
     for i in 0..rows {
         let len = number(&mut &input.bytes[pos + i * field..], field)?;
         end = end
             .checked_add(len)
-            .filter(|&n| n <= input.limit())
+            .filter(|&n| n <= limit)
             .ok_or_else(|| invalid("RLE row extent"))?;
     }
     input.ensure(end)?;
@@ -227,32 +323,66 @@ fn rle(input: &mut Input, pos: usize, rows: usize, width: usize, large: bool) ->
     Ok(end)
 }
 
-fn zlib(input: &mut Input, mut pos: usize, expected: usize) -> Result<usize> {
+fn zlib(input: &mut Input, mut pos: usize, expected: usize, limit: usize) -> Result<usize> {
     let mut decoder = Decompress::new(true);
     let mut buf = [0; 16384];
     loop {
         input.check()?;
-        if pos == input.bytes.len() && pos < input.limit() {
+        if pos == input.bytes.len() && pos < limit {
             input.ensure(pos + 1)?;
         }
         let before_in = decoder.total_in();
         let before_out = decoder.total_out();
         let status = decoder
-            .decompress(&input.bytes[pos..], &mut buf, FlushDecompress::None)
+            .decompress(
+                &input.bytes[pos..input.bytes.len().min(limit)],
+                &mut buf,
+                FlushDecompress::None,
+            )
             .map_err(|_| invalid("zlib data or checksum"))?;
         pos += (decoder.total_in() - before_in) as usize;
         if decoder.total_out() > expected as u64 {
-            return Err(invalid("excess composite samples"));
+            return Err(invalid("excess image samples"));
         }
         if status == Status::StreamEnd {
             if decoder.total_out() != expected as u64 {
-                return Err(invalid("incomplete composite samples"));
+                return Err(invalid("incomplete image samples"));
             }
             return Ok(pos);
         }
         if before_in == decoder.total_in() && before_out == decoder.total_out() {
             return Err(invalid("truncated zlib stream"));
         }
+    }
+}
+
+fn compressed_plane(
+    input: &mut Input,
+    pos: usize,
+    plane: Plane,
+    large: bool,
+    limit: usize,
+) -> Result<usize> {
+    if pos + 2 > limit {
+        return Err(invalid("compression field exceeds section"));
+    }
+    input.ensure(pos + 2)?;
+    let method = number(&mut &input.bytes[pos..], 2)?;
+    let start = pos + 2;
+    let expected = plane.size()?;
+    input.work(expected)?;
+    match method {
+        0 => {
+            let end = start + expected;
+            if end > limit {
+                return Err(invalid("uncompressed samples exceed section"));
+            }
+            input.ensure(end)?;
+            Ok(end)
+        }
+        1 => rle(input, start, plane.rows, plane.row_bytes, large, limit),
+        2 | 3 => zlib(input, start, expected, limit),
+        _ => Err(invalid("image compression")),
     }
 }
 
@@ -288,10 +418,11 @@ pub(super) fn parse(input: &mut Input, format: Format) -> Result<usize> {
     }
     let row = (width * depth).div_ceil(8);
     let rows = height * channels;
-    let expected = row
-        .checked_mul(rows)
-        .filter(|&v| v <= MAX_DECODED)
-        .ok_or_else(|| invalid("composite exceeds 128 MiB"))?;
+    let composite = Plane {
+        rows,
+        row_bytes: row,
+    };
+    composite.size()?;
     if rows > MAX_ROWS {
         return Err(invalid("too many scanlines"));
     }
@@ -303,19 +434,22 @@ pub(super) fn parse(input: &mut Input, format: Format) -> Result<usize> {
     let resource = document_section(input, &mut pos, 4)?;
     resources(&input.bytes[resource])?;
     let layer = document_section(input, &mut pos, if large { 8 } else { 4 })?;
-    layers(&input.bytes[layer], large)?;
-    input.ensure(pos + 2)?;
-    let method = number(&mut &input.bytes[pos..], 2)?;
-    pos += 2;
-    input.work(expected)?;
-    match method {
-        0 => {
-            let end = pos + expected;
-            input.ensure(end)?;
-            Ok(end)
+    let layer_end = layer.end;
+    let channels = layers(&input.bytes[layer], layer_end, large, depth)?;
+    let mut layer_bytes = 0usize;
+    for channel in channels {
+        layer_bytes += channel.plane.size()?;
+        if layer_bytes > MAX_DECODED {
+            return Err(invalid("combined layer samples exceed limit"));
         }
-        1 => rle(input, pos, rows, row, large),
-        2 | 3 if method == 2 || depth != 1 => zlib(input, pos, expected),
-        _ => Err(invalid("composite compression")),
+        let end = compressed_plane(input, channel.start, channel.plane, large, channel.end)?;
+        if end != channel.end {
+            return Err(invalid("channel length disagrees with samples"));
+        }
     }
+    input.ensure(pos + 2)?;
+    if depth == 1 && input.bytes[pos..pos + 2] == [0, 3] {
+        return Err(invalid("one-bit prediction"));
+    }
+    compressed_plane(input, pos, composite, large, input.limit())
 }
