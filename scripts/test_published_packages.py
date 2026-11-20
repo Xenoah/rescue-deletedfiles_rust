@@ -63,6 +63,7 @@ from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
 from e2e_rar import verify as rar_archives
 from e2e_svg import verify as svg_images
 from e2e_lvm2 import verify as lvm2_volumes
+from e2e_lvm2_snapshots import verify as lvm2_snapshots
 from e2e_qcow2_snapshots import verify as qcow2_snapshots
 from e2e_vmdk_chain import verify as vmdk_chain
 from e2e_vdi_chain import verify as vdi_chain
@@ -250,6 +251,9 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 45, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['lvm2_snapshots'] = lvm2_snapshots(binary, Path(tmp), native=a.platform == 'linux')
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 44, 0):
         with tempfile.TemporaryDirectory() as tmp:
             reader = Path('/usr/sbin/lvm') if a.platform == 'linux' else None
