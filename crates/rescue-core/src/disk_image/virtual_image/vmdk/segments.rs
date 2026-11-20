@@ -49,6 +49,9 @@ pub(in crate::disk_image) fn import_segments(
     if before.len() >= probe.len() as u64 {
         descriptor.read_exact(&mut probe)?;
     }
+    if paths.len() > 1 && &probe[..4] == b"KDMV" {
+        return super::backing::import(paths, descriptor, output, expected, cancel).map(Some);
+    }
     if &probe != b"# Disk DescriptorFile" {
         return if paths.len() > 1 && kind == Some("vmdk") {
             Err(invalid(
@@ -66,7 +69,7 @@ pub(in crate::disk_image) fn import_segments(
     descriptor.seek(SeekFrom::Start(0))?;
     let mut data = vec![0; before.len() as usize];
     descriptor.read_exact(&mut data)?;
-    let desc = Descriptor::parse(&data)?;
+    let desc = Descriptor::parse(&data, false)?;
     if !matches!(
         desc.kind,
         "monolithicFlat" | "twoGbMaxExtentFlat" | "twoGbMaxExtentSparse"

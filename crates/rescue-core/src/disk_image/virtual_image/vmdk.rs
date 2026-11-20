@@ -1,7 +1,8 @@
-//! Self-contained hosted sparse VMDK. Descriptor strings never select a host path.
+//! Hosted sparse VMDK, including explicitly selected parent chains. Descriptor strings never select a host path.
+mod backing;
 mod descriptor;
 use super::{Block, Error, File, Result, invalid, le32, read_at};
-use descriptor::{Descriptor, Extent, Storage};
+use descriptor::{Descriptor, Extent, Lineage, Storage};
 use std::{
     ops::Range,
     sync::atomic::{AtomicBool, Ordering},
@@ -148,10 +149,15 @@ impl Header {
     }
 }
 
-fn validate_descriptor(file: &mut File, h: &Header, external_size: Option<u64>) -> Result<()> {
+fn validate_descriptor(
+    file: &mut File,
+    h: &Header,
+    external_size: Option<u64>,
+    chain: bool,
+) -> Result<Option<Lineage>> {
     let Some(region) = &h.descriptor else {
         return if external_size == Some(h.capacity) && !h.compressed {
-            Ok(())
+            Ok(None)
         } else {
             Err(invalid("missing matching external VMDK extent descriptor"))
         };
@@ -161,14 +167,14 @@ fn validate_descriptor(file: &mut File, h: &Header, external_size: Option<u64>) 
     if let Some(size) = external_size {
         // QEMU reserves the descriptor sectors in split components and leaves them zero.
         return if size == h.capacity && !h.compressed && bytes.iter().all(|&b| b == 0) {
-            Ok(())
+            Ok(None)
         } else {
             Err(invalid(
                 "split VMDK extent capacity, encoding or embedded descriptor conflict",
             ))
         };
     }
-    let desc = Descriptor::parse(&bytes)?;
+    let desc = Descriptor::parse(&bytes, chain)?;
     let kind = if h.compressed {
         "streamOptimized"
     } else {
@@ -181,7 +187,7 @@ fn validate_descriptor(file: &mut File, h: &Header, external_size: Option<u64>) 
             "VMDK descriptor conflicts with standalone extent type or size",
         ));
     }
-    Ok(())
+    Ok(desc.lineage)
 }
 
 #[derive(Clone, Copy, Default)]
@@ -233,7 +239,7 @@ impl Maps {
     }
     fn grain(&mut self, file: &mut File, sector: u32, index: usize, h: &Header) -> Result<Grain> {
         if sector == 0 || sector == 1 && h.flags & ZERO_GRAIN != 0 {
-            return Ok(Grain::default());
+            return Ok(Grain { sector, encoded: 0 });
         }
         let at = u64::from(sector) * SECTOR;
         if at < h.overhead {
@@ -310,6 +316,7 @@ pub(super) struct Vmdk {
     pub size: u64,
     grain_size: u64,
     grains: Vec<Grain>,
+    zero_grain: bool,
 }
 impl Vmdk {
     pub fn open(
@@ -319,7 +326,10 @@ impl Vmdk {
         cancel: &AtomicBool,
     ) -> Result<Self> {
         let h = Header::read(file, length)?;
-        validate_descriptor(file, &h, external_size)?;
+        validate_descriptor(file, &h, external_size, false)?;
+        Self::read_maps(file, length, &h, cancel)
+    }
+    fn read_maps(file: &mut File, length: u64, h: &Header, cancel: &AtomicBool) -> Result<Self> {
         let mut maps = Maps {
             length,
             regions: Vec::new(),
@@ -329,14 +339,15 @@ impl Vmdk {
         Ok(Self {
             size: h.capacity,
             grain_size: h.grain_size,
-            grains: maps.read_grains(file, &h, cancel)?,
+            grains: maps.read_grains(file, h, cancel)?,
+            zero_grain: h.flags & ZERO_GRAIN != 0,
         })
     }
     pub fn block(&self, offset: u64) -> (Block, u64) {
         let grain = self.grains[(offset / self.grain_size) as usize];
         let within = offset % self.grain_size;
         let at = u64::from(grain.sector) * SECTOR;
-        let block = if grain.sector == 0 {
+        let block = if grain.sector == 0 || grain.sector == 1 && self.zero_grain {
             Block::Zero
         } else if grain.encoded != 0 {
             Block::Compressed {
