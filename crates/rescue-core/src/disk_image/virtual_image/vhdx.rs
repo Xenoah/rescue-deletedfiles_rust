@@ -1,6 +1,8 @@
-//! Read-only standalone VHDX. Active logs and parent disk references are never followed.
+//! Read-only VHDX. Stored locator paths are never opened and active logs are rejected.
+mod backing;
 use super::{Block, Error, File, Result, invalid, le32, read_at};
 use crate::crc32c::update;
+pub(in crate::disk_image) use backing::import_vhdx_chain;
 use std::{
     collections::HashSet,
     ops::Range,
@@ -52,7 +54,7 @@ fn read_copy(file: &mut File, offset: u64, size: usize, magic: &[u8]) -> Result<
     data[4..8].fill(0);
     Ok((data.starts_with(magic) && !update(u32::MAX, &data) == expected).then_some(data))
 }
-fn log_region(file: &mut File, length: u64) -> Result<Range<u64>> {
+fn active_header(file: &mut File, length: u64) -> Result<(Range<u64>, u128)> {
     let a = read_copy(file, TABLE as u64, 4096, b"head")?;
     let b = read_copy(file, 2 * TABLE as u64, 4096, b"head")?;
     let header = match (a, b) {
@@ -75,17 +77,18 @@ fn log_region(file: &mut File, length: u64) -> Result<Range<u64>> {
     if !size.is_multiple_of(MIB) || !start.is_multiple_of(MIB) {
         return Err(invalid("unaligned VHDX log"));
     }
-    extent(start, size, length)
+    Ok((extent(start, size, length)?, guid(&header[32..48])))
 }
 
 struct Regions {
+    write_id: u128,
     bat: Range<u64>,
     metadata: Range<u64>,
     reserved: Vec<Range<u64>>,
 }
 impl Regions {
     fn open(file: &mut File, length: u64) -> Result<Self> {
-        let log = log_region(file, length)?;
+        let (log, write_id) = active_header(file, length)?;
         let a = read_copy(file, 3 * TABLE as u64, TABLE, b"regi")?;
         let b = read_copy(file, 4 * TABLE as u64, TABLE, b"regi")?;
         let table = match (a, b) {
@@ -122,6 +125,7 @@ impl Regions {
         }
         disjoint(&mut reserved)?;
         Ok(Self {
+            write_id,
             bat: bat.ok_or_else(|| invalid("missing VHDX BAT region"))?,
             metadata: metadata.ok_or_else(|| invalid("missing VHDX metadata region"))?,
             reserved,
@@ -134,6 +138,8 @@ struct Geometry {
     block: u64,
     logical: u64,
     fixed: bool,
+    page83: u128,
+    parent: Option<backing::Parent>,
 }
 impl Geometry {
     fn read(file: &mut File, region: &Range<u64>) -> Result<Self> {
@@ -146,6 +152,8 @@ impl Geometry {
         let mut ranges = Vec::with_capacity(count + 1);
         ranges.push(0..TABLE as u64);
         let mut seen = HashSet::new();
+        let mut page83 = None;
+        let mut parent = None;
         let (mut params, mut size, mut logical, mut physical) = (None, None, None, None);
         for entry in table[32..32 + count * 32].as_chunks::<32>().0 {
             let id = guid(entry);
@@ -164,9 +172,13 @@ impl Geometry {
                 LOGICAL | PHYSICAL => (4, 6),
                 DISK_ID => (16, 6),
                 PARENT => {
-                    return Err(Error::Unsupported(
-                        "VHDX parent disks are unsupported".into(),
-                    ));
+                    if flags != 4 || !(20..=65536).contains(&len) {
+                        return Err(invalid("VHDX parent locator size or metadata flags"));
+                    }
+                    let mut data = vec![0; len as usize];
+                    read_at(file, region.start + offset, &mut data)?;
+                    parent = Some(backing::Parent::parse(&data)?);
+                    continue;
                 }
                 _ if flags & 4 != 0 => {
                     return Err(Error::Unsupported(
@@ -184,6 +196,7 @@ impl Geometry {
                 PARAMETERS => params = Some((u64::from(le32(&bytes, 0)), le32(&bytes, 4))),
                 SIZE => size = Some(le64(&bytes, 0)),
                 LOGICAL => logical = Some(u64::from(le32(&bytes, 0))),
+                DISK_ID => page83 = Some(guid(&bytes)),
                 PHYSICAL => physical = Some(le32(&bytes, 0)),
                 _ => (),
             }
@@ -194,13 +207,8 @@ impl Geometry {
         else {
             return Err(invalid("missing VHDX geometry"));
         };
-        if flags & 2 != 0 {
-            return Err(Error::Unsupported(
-                "VHDX differencing images require a parent disk".into(),
-            ));
-        }
-        if flags > 1
-            || !seen.contains(&DISK_ID)
+        if flags > 2
+            || (flags == 2) != parent.is_some()
             || !(MIB..=256 * MIB).contains(&block)
             || !block.is_power_of_two()
             || !matches!(logical, 512 | 4096)
@@ -216,6 +224,8 @@ impl Geometry {
             block,
             logical,
             fixed: flags == 1,
+            page83: page83.ok_or_else(|| invalid("missing VHDX disk identifier"))?,
+            parent,
         })
     }
 }
@@ -223,75 +233,161 @@ impl Geometry {
 pub(super) struct Vhdx {
     pub size: u64,
     block_size: u64,
-    offsets: Vec<u64>,
+    logical: u64,
+    write_id: u128,
+    page83: u128,
+    parent: Option<backing::Parent>,
+    payload: Vec<u64>,
+    bitmaps: Vec<u64>,
+    cached_at: u64,
+    bitmap: Vec<u8>,
 }
 
 impl Vhdx {
     pub fn open(file: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
+        Self::open_member(file, length, cancel, false)
+    }
+
+    fn open_member(file: &mut File, length: u64, cancel: &AtomicBool, chain: bool) -> Result<Self> {
+        let mut magic = [0; 8];
+        read_at(file, 0, &mut magic)?;
+        if &magic != b"vhdxfile" {
+            return Err(invalid("VHDX file signature"));
+        }
         let regions = Regions::open(file, length)?;
         let disk = Geometry::read(file, &regions.metadata)?;
+        let child = disk.parent.is_some();
+        if child && !chain {
+            return Err(Error::Unsupported(
+                "select all parent files for the differencing VHDX".into(),
+            ));
+        }
         let count = disk.size.div_ceil(disk.block);
+        // Each bitmap covers 2^23 logical sectors. In a differencing disk its slot
+        // follows a *full* chunk of BAT entries, even in the final partial chunk.
         let chunk = (1u64 << 23) * disk.logical / disk.block;
-        let entries = count + (count - 1) / chunk;
+        let chunks = count.div_ceil(chunk);
+        let entries = if child {
+            chunks * (chunk + 1)
+        } else {
+            count + (count - 1) / chunk
+        };
         if entries > MAX_BAT_ENTRIES || entries * 8 > regions.bat.end - regions.bat.start {
             return Err(invalid("VHDX BAT length or one-million-entry limit"));
         }
         let mut data = vec![0; entries as usize * 8];
         read_at(file, regions.bat.start, &mut data)?;
         let mut ranges = regions.reserved;
-        let mut offsets = Vec::with_capacity(count as usize);
+        let mut payload = Vec::with_capacity(count as usize);
+        let mut bitmaps = Vec::with_capacity(chunks as usize);
+        let mut needs_bitmap = false;
         for (index, entry) in data.as_chunks::<8>().0.iter().enumerate() {
             if index % 4096 == 0 && cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
             }
             let value = u64::from_le_bytes(*entry);
-            if index as u64 % (chunk + 1) == chunk {
-                if value != 0 {
-                    return Err(invalid("sector bitmap BAT entry in standalone VHDX"));
-                }
-                continue;
-            }
             let state = value & 7;
             let at = value & !(MIB - 1);
             if value & 0x000f_fff8 != 0 {
                 return Err(invalid("VHDX reserved BAT bits"));
             }
+            if index as u64 % (chunk + 1) == chunk {
+                match (state, at) {
+                    (0, 0) if !needs_bitmap => {}
+                    (6, at) if child && at != 0 => ranges.push(extent(at, MIB, length)?),
+                    _ => return Err(invalid("missing or inconsistent VHDX sector bitmap")),
+                }
+                bitmaps.push(at);
+                needs_bitmap = false;
+                continue;
+            }
+            if payload.len() == count as usize {
+                if value != 0 {
+                    return Err(invalid("VHDX allocated BAT padding beyond virtual size"));
+                }
+                continue;
+            }
             match state {
-                0 if at == 0 && !disk.fixed => offsets.push(0),
+                0 if at == 0 && !disk.fixed => {}
                 2 => {
                     if at != 0 {
                         ranges.push(extent(at, disk.block, length)?);
                     }
-                    offsets.push(0);
                 }
-                6 if at != 0 => {
+                6 | 7 if at != 0 && (state == 6 || child) => {
                     ranges.push(extent(at, disk.block, length)?);
-                    offsets.push(at);
+                    needs_bitmap |= state == 7;
                 }
                 _ => {
                     return Err(Error::Unsupported(
-                        "undefined, discarded, partial or invalid VHDX payload block".into(),
+                        "undefined, discarded or invalid VHDX payload block".into(),
                     ));
                 }
             }
+            payload.push(value);
         }
         disjoint(&mut ranges)?;
         Ok(Self {
             size: disk.size,
             block_size: disk.block,
-            offsets,
+            logical: disk.logical,
+            write_id: regions.write_id,
+            page83: disk.page83,
+            parent: disk.parent,
+            payload,
+            bitmaps,
+            cached_at: 0,
+            bitmap: Vec::new(),
         })
     }
+
+    // Standalone opening only admits fully present or zero-filled blocks.
     pub fn block(&self, offset: u64) -> (Block, u64) {
         let relative = offset % self.block_size;
-        let at = self.offsets[(offset / self.block_size) as usize];
-        (
-            if at == 0 {
-                Block::Zero
-            } else {
-                Block::Data(at + relative)
-            },
-            self.block_size - relative,
-        )
+        let entry = self.payload[(offset / self.block_size) as usize];
+        let block = if entry & 7 == 6 {
+            Block::Data((entry & !(MIB - 1)) + relative)
+        } else {
+            Block::Zero
+        };
+        (block, self.block_size - relative)
+    }
+
+    fn layer_span(
+        &mut self,
+        file: &mut File,
+        offset: u64,
+        limit: &mut usize,
+    ) -> Result<Option<Block>> {
+        let relative = offset % self.block_size;
+        *limit = (*limit as u64).min(self.block_size - relative) as usize;
+        let entry = self.payload[(offset / self.block_size) as usize];
+        let at = (entry & !(MIB - 1)) + relative;
+        match entry & 7 {
+            0 if self.parent.is_some() => Ok(None),
+            0 | 2 => Ok(Some(Block::Zero)),
+            6 => Ok(Some(Block::Data(at))),
+            7 => {
+                let sector = offset / self.logical;
+                let bitmap_at = self.bitmaps[(sector >> 23) as usize];
+                if self.cached_at != bitmap_at {
+                    self.bitmap.resize(MIB as usize, 0);
+                    read_at(file, bitmap_at, &mut self.bitmap)?;
+                    self.cached_at = bitmap_at;
+                }
+                let bit = (sector % (1 << 23)) as usize;
+                let present = |n: usize| self.bitmap[n / 8] & (1 << (n % 8)) != 0;
+                let local = present(bit);
+                let mut span = self.logical - offset % self.logical;
+                let mut next = bit + 1;
+                while span < *limit as u64 && present(next) == local {
+                    span += self.logical;
+                    next += 1;
+                }
+                *limit = (*limit as u64).min(span) as usize;
+                Ok(local.then_some(Block::Data(at)))
+            }
+            _ => Err(invalid("invalid VHDX payload state")),
+        }
     }
 }

@@ -345,10 +345,13 @@ pub fn import_with_raw_expectation(
     let kind = image.image_type.as_deref();
     let regular_raw = !crate::is_device(first);
     if (expected.sha256.is_some() || expected.bytes.is_some())
-        && (!matches!(kind, Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd")) || !regular_raw)
+        && (!matches!(
+            kind,
+            Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx")
+        ) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW, QCOW, or VHD image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, QCOW, VHD or VHDX image type and regular files".into(),
         ));
     }
     if regular_raw {
@@ -370,6 +373,12 @@ pub fn import_with_raw_expectation(
         if paths.len() > 1
             && let Some(result) =
                 virtual_image::import_vhd_chain(&paths, kind, output, expected, cancel)?
+        {
+            return Ok(result);
+        }
+        if paths.len() > 1
+            && let Some(result) =
+                virtual_image::import_vhdx_chain(&paths, kind, output, expected, cancel)?
         {
             return Ok(result);
         }

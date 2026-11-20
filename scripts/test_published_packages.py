@@ -42,6 +42,8 @@ from e2e_android_sparse import portable as android_sparse, native as aosp_deleti
 from e2e_ddrescue_partitions import exercise as shifted_ddrescue_partitions
 from e2e_qcow1 import portable as qcow1, native as qemu_qcow1
 from e2e_vhd_chain import verify as vhd_chain
+from e2e_vhdx_chain import verify as vhdx_chain
+from e2e_vhdx_bitmap_boundary import verify as vhdx_bitmap_boundary
 from e2e_xfs_allocation import verify as xfs_allocation
 from e2e_ext4_allocation import verify as ext4_allocation
 from e2e_hfs_allocation import verify as hfs_allocation
@@ -238,6 +240,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 36, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['vhdx_chain'] = vhdx_chain(binary, Path(tmp), tsk=a.platform == 'linux', windows_driver=a.platform == 'windows')
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['vhdx_bitmap_boundary'] = vhdx_bitmap_boundary(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 35, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['jpeg2000'] = jpeg2000(binary, Path(tmp))

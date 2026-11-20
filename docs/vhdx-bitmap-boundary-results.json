@@ -1,0 +1,53 @@
+{
+  "bitmap_offsets": [
+    4194304,
+    7340032
+  ],
+  "bytes": 4395630592,
+  "changed_guest_mib": [
+    4036,
+    4037,
+    4041,
+    4051,
+    4052,
+    4053,
+    4054,
+    4098,
+    4099,
+    4103,
+    4113,
+    4114,
+    4115,
+    4116
+  ],
+  "deletions_by_volume": {
+    "4232052736": {
+      "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    },
+    "4297064448": {
+      "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+      "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+      "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "guests": [
+    "40827b8aad54d7ed2692b85b62f1bda5d5b768eecd9fbdadc274c2cd954863e3",
+    "92fd424c8dcd888b48e71ae605fd871b5525f58868a0a3daf3063ecd4d8126c9"
+  ],
+  "indexed_ntfs_volumes": 2,
+  "ordinary_scan_skipped_microsoft_reserved_partition": true,
+  "partial_payloads_per_chunk": [
+    5,
+    5
+  ]
+}
