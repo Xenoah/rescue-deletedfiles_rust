@@ -1,0 +1,178 @@
+{
+  "deepgray.j2k": {
+    "bytes": 6525,
+    "decoded_sha256": "c39af4136333f0291523aecaf5a4983d532888aedf1ae30f812fb7a313021565",
+    "mode": "I;16",
+    "producer": "OpenJPEG",
+    "settings": {
+      "num_resolutions": 3,
+      "progression": "CPRL"
+    },
+    "sha256": "6b1cd13678f631de5cca0a84658f6a1d593af5643f41166640c56e59177543f5",
+    "size": [
+      73,
+      57
+    ],
+    "source_pixels_sha256": "c39af4136333f0291523aecaf5a4983d532888aedf1ae30f812fb7a313021565"
+  },
+  "deepgray.jp2": {
+    "bytes": 7509,
+    "decoded_sha256": "a6402f439a7e88bea5945807adda2773dcaf3755dd790d0e8f13b3124131c7d7",
+    "mode": "I;16",
+    "producer": "OpenJPEG",
+    "settings": {
+      "num_resolutions": 4
+    },
+    "sha256": "77ba2b46ef178f817f26ce590f9ab3d6e1a98b39e47a507f635949a39d0436f5",
+    "size": [
+      80,
+      59
+    ],
+    "source_pixels_sha256": "a6402f439a7e88bea5945807adda2773dcaf3755dd790d0e8f13b3124131c7d7"
+  },
+  "ffgray.j2k": {
+    "bytes": 8385,
+    "decoded_sha256": "8ea761ce6557f2ebb5f5b6ba14fb12fa65e3a11cd5df1a60b05c280ea8197f7f",
+    "mode": "L",
+    "producer": "FFmpeg",
+    "settings": {
+      "pred": "dwt53",
+      "prog": "pcrl"
+    },
+    "sha256": "f710c4bf893d6679fb824b518e66ec5f4ef743707db0faa9d7064c911cdb6ec2",
+    "size": [
+      121,
+      73
+    ],
+    "source_pixels_sha256": "8ea761ce6557f2ebb5f5b6ba14fb12fa65e3a11cd5df1a60b05c280ea8197f7f"
+  },
+  "ffrgb.j2k": {
+    "bytes": 20568,
+    "decoded_sha256": "c8670a81d25ab06c12ba503debb7618b4b1c8736d8de92aed8eaa820964a055e",
+    "mode": "RGB",
+    "producer": "FFmpeg",
+    "settings": {
+      "pred": "dwt53",
+      "prog": "lrcp"
+    },
+    "sha256": "024b726ecc69402e5f11cbd6c09ca566efc40ed0f8c34ab5719c7be6d81f1d64",
+    "size": [
+      97,
+      71
+    ],
+    "source_pixels_sha256": "c8670a81d25ab06c12ba503debb7618b4b1c8736d8de92aed8eaa820964a055e"
+  },
+  "layers.j2k": {
+    "bytes": 12249,
+    "decoded_sha256": "edac53072bd6aa624fb238a6beb535719e9005fa963ccc65d2d8359276881cab",
+    "mode": "RGB",
+    "producer": "OpenJPEG",
+    "settings": {
+      "mct": 1,
+      "quality_layers": [
+        12,
+        4,
+        1
+      ]
+    },
+    "sha256": "3a2323fe0e28c6ffd551f7ffd743981c93742ff1df12d9c2310680b8669710c9",
+    "size": [
+      91,
+      65
+    ],
+    "source_pixels_sha256": "edac53072bd6aa624fb238a6beb535719e9005fa963ccc65d2d8359276881cab"
+  },
+  "lossy.jp2": {
+    "bytes": 8293,
+    "decoded_sha256": "de0beb603ddfe572d84e4ab438af9817f3efafcd63ef8cb7f680823efaf16e44",
+    "mode": "RGB",
+    "producer": "OpenJPEG",
+    "settings": {
+      "irreversible": true,
+      "mct": 1,
+      "progression": "RLCP",
+      "quality_layers": [
+        9,
+        3
+      ]
+    },
+    "sha256": "8e82c70c28e3cc3f2f010db62c87a17b923915c78f2dcd990bff78f7f1210430",
+    "size": [
+      101,
+      82
+    ],
+    "source_pixels_sha256": "7ccc7e61143340abf99b2508077053451196a14ac2df3bd26cc5cba81a36f781"
+  },
+  "mono.jp2": {
+    "bytes": 3048,
+    "decoded_sha256": "bf95c7ce7693735983226d6e33dfb24000be9bf17ddce6d30be1e0e3f16bf00d",
+    "mode": "L",
+    "producer": "OpenJPEG",
+    "settings": {},
+    "sha256": "da883ec3fc478d0e08822863afba42c430b641500450b01f074b5f13e63f10b8",
+    "size": [
+      65,
+      47
+    ],
+    "source_pixels_sha256": "bf95c7ce7693735983226d6e33dfb24000be9bf17ddce6d30be1e0e3f16bf00d"
+  },
+  "precinct.j2k": {
+    "bytes": 10010,
+    "decoded_sha256": "a1838f712f93ad513cf098cb83eadf3a25fa69ef0feedf6d712cc7cd6d70bb13",
+    "mode": "L",
+    "producer": "OpenJPEG",
+    "settings": {
+      "codeblock_size": [
+        16,
+        16
+      ],
+      "num_resolutions": 4,
+      "precinct_size": [
+        32,
+        32
+      ],
+      "progression": "RPCL"
+    },
+    "sha256": "72b252b0879f1f3e8e464db9da899b367cdfea2ddd12d7032216784631702148",
+    "size": [
+      128,
+      80
+    ],
+    "source_pixels_sha256": "a1838f712f93ad513cf098cb83eadf3a25fa69ef0feedf6d712cc7cd6d70bb13"
+  },
+  "rgba.jp2": {
+    "bytes": 15958,
+    "decoded_sha256": "a964394e33f2dcd510e8cd73580d9ca5703d3b0c04a346f7d74818a890117d4b",
+    "mode": "RGBA",
+    "producer": "OpenJPEG",
+    "settings": {
+      "num_resolutions": 4
+    },
+    "sha256": "5ea538a94a7d71f21aea99c16642cc514826b61fa3f970799693fcd36ac72e08",
+    "size": [
+      77,
+      53
+    ],
+    "source_pixels_sha256": "a964394e33f2dcd510e8cd73580d9ca5703d3b0c04a346f7d74818a890117d4b"
+  },
+  "rgbtile.jp2": {
+    "bytes": 18968,
+    "decoded_sha256": "7177bbb89cf86ed396f02a83fae5150e27006c519696a9736c714c9a167d37c0",
+    "mode": "RGB",
+    "producer": "OpenJPEG",
+    "settings": {
+      "mct": 1,
+      "num_resolutions": 4,
+      "tile_size": [
+        40,
+        32
+      ]
+    },
+    "sha256": "7b233f0560867fdcaec0c462beebbda6d5c435f1cadd6b4cb62c54ad46602dbd",
+    "size": [
+      103,
+      79
+    ],
+    "source_pixels_sha256": "7177bbb89cf86ed396f02a83fae5150e27006c519696a9736c714c9a167d37c0"
+  }
+}

@@ -26,6 +26,7 @@ mod bmff;
 mod heif;
 mod html;
 mod jpeg;
+mod jpeg2000;
 mod json;
 mod movie;
 mod mp3;
@@ -79,6 +80,8 @@ pub(crate) fn validate_estimated_extent(
         "png" | "apng" => Some(Format::Png),
         "jpg" | "jpeg" | "jpe" => Some(Format::Jpeg),
         "pdf" => Some(Format::Pdf),
+        "jp2" => Some(Format::Jp2),
+        "j2k" | "j2c" | "jpc" => Some(Format::J2k),
         "psd" => Some(Format::Psd),
         "psb" => Some(Format::Psb),
         "tif" | "tiff" => Some(Format::Tiff),
@@ -195,6 +198,8 @@ enum Format<'a> {
     Png,
     Apng,
     Jpeg,
+    Jp2,
+    J2k,
     Tiff,
     Psd,
     Psb,
@@ -253,6 +258,8 @@ impl<'a> Format<'a> {
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
             Self::Tiff => "tif",
+            Self::Jp2 => "jp2",
+            Self::J2k => "j2k",
             Self::Psd => "psd",
             Self::Psb => "psb",
             Self::Aiff => "aiff",
@@ -343,6 +350,8 @@ impl<'a> Format<'a> {
             }
             Self::Heic | Self::Avif | Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
+            | Self::Jp2
+            | Self::J2k
             | Self::Psd
             | Self::Psb
             | Self::Aiff
@@ -391,6 +400,7 @@ impl<'a> Format<'a> {
                         Self::Pbm | Self::Pgm | Self::Ppm | Self::Pam => {
                             ext == "pnm" || ext == self.extension()
                         }
+                        Self::J2k => matches!(ext.as_str(), "j2k" | "j2c" | "jpc"),
                         Self::Html => matches!(ext.as_str(), "html" | "htm"),
                         Self::Aac => matches!(ext.as_str(), "aac" | "adts"),
                         Self::Aiff => matches!(ext.as_str(), "aif" | "aiff"),
@@ -457,6 +467,11 @@ impl<'a> Format<'a> {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let end = json::parse(&mut input)?;
                 Ok((self, input.finish(end)?, Vec::new()))
+            }
+            Self::Jp2 | Self::J2k => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, inner) = jpeg2000::parse(&mut input, self)?;
+                Ok((self, input.finish(end)?, inner.into_iter().collect()))
             }
             Self::Psd | Self::Psb => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -541,6 +556,10 @@ fn detect<'a>(
         && let Some(format) = netpbm::signature(bytes)
     {
         Some(format).filter(|f| f.allowed(extensions))
+    } else if bytes.starts_with(jpeg2000::BOX_SIGNATURE) {
+        Format::Jp2.allowed(extensions).then_some(Format::Jp2)
+    } else if bytes.starts_with(jpeg2000::CODESTREAM_SIGNATURE) {
+        Format::J2k.allowed(extensions).then_some(Format::J2k)
     } else if bytes.starts_with(SIGNATURE) {
         [Format::Png, Format::Apng]
             .into_iter()
@@ -613,6 +632,9 @@ fn detect<'a>(
     {
         Some(Format::Zip)
     } else if bytes.len() >= 8 && &bytes[4..8] == b"ftyp" {
+        if bytes.get(8..12) == Some(b"jp2 ") {
+            return None;
+        }
         if let Some(still) = heif::signature(bytes) {
             still.allowed(extensions).then_some(still)
         } else {
@@ -640,6 +662,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
     match format {
         Format::Rule(_) => &[
             "Extent estimated from a user-defined signature rule. The first matching footer or fixed length may include unrelated data or cut a file short. Original file type and content unverified.",
+        ],
+        Format::Jp2 | Format::J2k => &[
+            "JPEG 2000 Part 1 headers, tile lengths, EOC and full image decoding checked. Entropy data has no whole-file checksum. JP2 includes contiguous recognized metadata boxes after the codestream.",
         ],
         Format::Psd | Format::Psb => &[
             "Photoshop header, resource and layer section bounds, and composite channel lengths were checked. Layer effects and individual channel pixels are not rendered. Raw and PackBits data carry no independent content checksum.",
@@ -819,7 +844,12 @@ pub(crate) fn scan_range(
             }
             if matches!(
                 format,
-                Format::Zip | Format::Html | Format::Xml | Format::Mp3 | Format::Tar(_)
+                Format::Zip
+                    | Format::Html
+                    | Format::Xml
+                    | Format::Mp3
+                    | Format::Tar(_)
+                    | Format::J2k
             ) && internal_headers.remove(&(offset + index as u64))
             {
                 continue;
@@ -977,6 +1007,8 @@ pub(crate) fn recovery_data(
         Format::Jpeg,
         Format::Pdf,
         Format::Tiff,
+        Format::Jp2,
+        Format::J2k,
         Format::Psd,
         Format::Psb,
         Format::Aiff,

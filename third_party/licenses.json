@@ -444,6 +444,24 @@
     ]
   },
   {
+    "package": "hayro-jpeg2000",
+    "version": "0.5.0",
+    "repo": "LaurenzV/hayro",
+    "commit": "3f3825c3e50bb41ed6ec6c3f4b6007978bd13def",
+    "files": [
+      {
+        "path": "licenses/LaurenzV/hayro/3f3825c3e50bb41ed6ec6c3f4b6007978bd13def/LICENSE-MIT",
+        "url": "https://raw.githubusercontent.com/LaurenzV/hayro/3f3825c3e50bb41ed6ec6c3f4b6007978bd13def/LICENSE-MIT",
+        "sha256": "51b50e6120c344dcc146bbd6375ca1c78e079d97c8bea76e67a53d6ff0efebac"
+      },
+      {
+        "path": "licenses/LaurenzV/hayro/3f3825c3e50bb41ed6ec6c3f4b6007978bd13def/LICENSE-APACHE",
+        "url": "https://raw.githubusercontent.com/LaurenzV/hayro/3f3825c3e50bb41ed6ec6c3f4b6007978bd13def/LICENSE-APACHE",
+        "sha256": "0cec06e0e55fbc3dc5cee4fca9b607f66cb8f4e4dbcf3b3c013594dd156732e9"
+      }
+    ]
+  },
+  {
     "package": "hexf-parse",
     "version": "0.2.1",
     "repo": "lifthrasiir/hexf",

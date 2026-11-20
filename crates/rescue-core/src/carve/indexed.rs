@@ -167,7 +167,12 @@ pub(crate) fn resume(
             }
             if matches!(
                 format,
-                Format::Zip | Format::Html | Format::Xml | Format::Mp3 | Format::Tar(_)
+                Format::Zip
+                    | Format::Html
+                    | Format::Xml
+                    | Format::Mp3
+                    | Format::Tar(_)
+                    | Format::J2k
             ) && saved.internal_headers.remove(&at)
             {
                 continue;
