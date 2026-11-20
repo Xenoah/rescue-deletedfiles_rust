@@ -258,6 +258,7 @@ fn search_and_restore(
     };
     let layout = Layout {
         schema_version: 1,
+        partition: None,
         sha256: req.sha256.to_owned(),
         extents: extents
             .iter()

@@ -388,6 +388,7 @@ pub fn recover_fingerprinted(
         .collect();
     let layout = Layout {
         schema_version: 1,
+        partition: None,
         sha256: manifest.sha256,
         extents,
     };

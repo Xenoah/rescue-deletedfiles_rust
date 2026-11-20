@@ -1,11 +1,12 @@
 //! Restore a file from an externally supplied layout and the SHA-256 of its original bytes.
 use super::{ImportedFile, publish_output};
 use crate::{Error, Image, Result, canonical_output_path, guard_output_path};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     io::{Read, Seek, SeekFrom, Write},
+    num::NonZeroU32,
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -18,8 +19,17 @@ const MAX_MANIFEST: u64 = 4 << 20;
 #[serde(deny_unknown_fields)]
 pub(super) struct Layout {
     pub(super) schema_version: u32,
+    // Omission means disk-relative. A present selector must be a positive index.
+    #[serde(default, deserialize_with = "partition_index")]
+    pub(super) partition: Option<NonZeroU32>,
     pub(super) sha256: String,
     pub(super) extents: Vec<Extent>,
+}
+
+fn partition_index<'de, D: Deserializer<'de>>(
+    de: D,
+) -> std::result::Result<Option<NonZeroU32>, D::Error> {
+    NonZeroU32::deserialize(de).map(Some)
 }
 
 #[derive(Deserialize)]
@@ -45,10 +55,16 @@ impl Layout {
             return Err(Error::Limit("extent manifest exceeds 4 MiB".into()));
         }
         let layout: Self = serde_json::from_slice(&bytes)?;
-        if layout.schema_version != 1 || layout.extents.len() > 65536 {
+        if !matches!(
+            (layout.schema_version, layout.partition),
+            (1, None) | (2, Some(_))
+        ) {
             return Err(Error::Request(
-                "expected layout version 1 and at most 65536 extents".into(),
+                "use layout version 1 for disk-relative offsets, or version 2 with a positive partition index".into(),
             ));
+        }
+        if layout.extents.len() > 65536 {
+            return Err(Error::Request("layout exceeds 65536 extents".into()));
         }
         if layout.sha256.len() != 64 || !layout.sha256.bytes().all(|b| b.is_ascii_hexdigit()) {
             return Err(Error::Request(
@@ -97,6 +113,20 @@ pub fn recover_extents(
     let mut image = Image::open(source)?;
     let output = canonical_output_path(output)?;
     guard_image_output(&image, &output)?;
+    if let Some(index) = layout.partition {
+        let table = crate::partitions::inspect_image(&mut image)?;
+        let region = table
+            .regions
+            .iter()
+            .find(|r| r.index == index.get())
+            .ok_or_else(|| {
+                Error::Request(format!(
+                    "partition {index} is missing from the source partition table"
+                ))
+            })?;
+        // Both table inspection and extent reads use the same opened image.
+        image.select_window(region.offset, region.length)?;
+    }
     restore_layout(&mut image, layout, &output, cancel)
 }
 

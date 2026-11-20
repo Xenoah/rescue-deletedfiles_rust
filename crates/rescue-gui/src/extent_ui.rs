@@ -293,7 +293,7 @@ impl State {
             }
             Mode::Layout => {
                 ui.label(source);
-                ui.small(tr!("元ファイルのSHA-256と、ディスク先頭からのバイト位置を記したJSON配置表を選んでください。", "Choose a JSON layout containing the original SHA-256 and byte offsets from the start of this source."));
+                ui.small(tr!("元ファイルのSHA-256と配置を記したJSONを選んでください。位置はディスク先頭（形式1）または指定パーティション先頭（形式2）からのバイト数です。", "Choose a JSON layout with the original SHA-256. Byte offsets start at the source (version 1) or the selected partition (version 2)."));
                 path_row(
                     ui,
                     tr!("JSON配置表", "JSON layout"),

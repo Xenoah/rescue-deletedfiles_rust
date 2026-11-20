@@ -480,7 +480,7 @@ enum Command {
     RecoverExtents {
         #[arg(long)]
         source: PathBuf,
-        /// JSON layout with schema_version, sha256, and ordered extents.
+        /// JSON layout with original SHA-256 and ordered byte extents. Version 1 is source-relative; version 2 names the partition whose start is offset zero.
         #[arg(long)]
         layout: PathBuf,
         /// New output file. Keep existing files and reject missing source ranges.

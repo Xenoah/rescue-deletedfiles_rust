@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 
 
-def parse_map(path, originals, disk, *, require_fragmented=True):
-    names = {p.name for p in originals.glob("camera.*") if p.is_file()}
+def parse_map(path, originals, disk, *, require_fragmented=True, name_pattern="camera.*"):
+    names = {p.name for p in originals.glob(name_pattern) if p.is_file()}
     files = {}
     apis = set()
     name = None

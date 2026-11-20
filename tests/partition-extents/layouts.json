@@ -1,0 +1,1044 @@
+{
+  "fat32": {
+    "driver": "vfat",
+    "files": {
+      "sample.avi": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 792064
+          },
+          {
+            "length": 1024,
+            "offset": 802304
+          },
+          {
+            "length": 1024,
+            "offset": 812544
+          },
+          {
+            "length": 1024,
+            "offset": 822784
+          },
+          {
+            "length": 1024,
+            "offset": 832512
+          },
+          {
+            "length": 1024,
+            "offset": 840704
+          },
+          {
+            "length": 1024,
+            "offset": 847872
+          },
+          {
+            "length": 188,
+            "offset": 854528
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+      },
+      "sample.docx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 793088
+          },
+          {
+            "length": 1024,
+            "offset": 803328
+          },
+          {
+            "length": 1024,
+            "offset": 813568
+          },
+          {
+            "length": 1024,
+            "offset": 823808
+          },
+          {
+            "length": 1024,
+            "offset": 833536
+          },
+          {
+            "length": 1024,
+            "offset": 841728
+          },
+          {
+            "length": 1024,
+            "offset": 848896
+          },
+          {
+            "length": 1024,
+            "offset": 855040
+          },
+          {
+            "length": 1024,
+            "offset": 860160
+          },
+          {
+            "length": 1024,
+            "offset": 864256
+          },
+          {
+            "length": 1024,
+            "offset": 867840
+          },
+          {
+            "length": 1024,
+            "offset": 869888
+          },
+          {
+            "length": 1024,
+            "offset": 871936
+          },
+          {
+            "length": 1024,
+            "offset": 873984
+          },
+          {
+            "length": 1024,
+            "offset": 876032
+          },
+          {
+            "length": 1024,
+            "offset": 878080
+          },
+          {
+            "length": 1024,
+            "offset": 880128
+          },
+          {
+            "length": 1024,
+            "offset": 882176
+          },
+          {
+            "length": 1024,
+            "offset": 884224
+          },
+          {
+            "length": 1024,
+            "offset": 886272
+          },
+          {
+            "length": 1024,
+            "offset": 888320
+          },
+          {
+            "length": 1024,
+            "offset": 890368
+          },
+          {
+            "length": 1024,
+            "offset": 892416
+          },
+          {
+            "length": 1024,
+            "offset": 894464
+          },
+          {
+            "length": 1024,
+            "offset": 896512
+          },
+          {
+            "length": 1024,
+            "offset": 898560
+          },
+          {
+            "length": 1024,
+            "offset": 900608
+          },
+          {
+            "length": 1024,
+            "offset": 902656
+          },
+          {
+            "length": 7970,
+            "offset": 904704
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+      },
+      "sample.flac": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 794112
+          },
+          {
+            "length": 1024,
+            "offset": 804352
+          },
+          {
+            "length": 1024,
+            "offset": 814592
+          },
+          {
+            "length": 1024,
+            "offset": 824832
+          },
+          {
+            "length": 1024,
+            "offset": 834560
+          },
+          {
+            "length": 1024,
+            "offset": 842752
+          },
+          {
+            "length": 1024,
+            "offset": 849920
+          },
+          {
+            "length": 1024,
+            "offset": 856064
+          },
+          {
+            "length": 1024,
+            "offset": 861184
+          },
+          {
+            "length": 262,
+            "offset": 865280
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+      },
+      "sample.ogg": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 795136
+          },
+          {
+            "length": 1024,
+            "offset": 805376
+          },
+          {
+            "length": 1024,
+            "offset": 815616
+          },
+          {
+            "length": 645,
+            "offset": 825856
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+      },
+      "sample.pptx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 796160
+          },
+          {
+            "length": 1024,
+            "offset": 806400
+          },
+          {
+            "length": 1024,
+            "offset": 816640
+          },
+          {
+            "length": 1024,
+            "offset": 826880
+          },
+          {
+            "length": 1024,
+            "offset": 835584
+          },
+          {
+            "length": 1024,
+            "offset": 843776
+          },
+          {
+            "length": 1024,
+            "offset": 850944
+          },
+          {
+            "length": 1024,
+            "offset": 857088
+          },
+          {
+            "length": 1024,
+            "offset": 862208
+          },
+          {
+            "length": 1024,
+            "offset": 865792
+          },
+          {
+            "length": 1024,
+            "offset": 868864
+          },
+          {
+            "length": 1024,
+            "offset": 870912
+          },
+          {
+            "length": 1024,
+            "offset": 872960
+          },
+          {
+            "length": 1024,
+            "offset": 875008
+          },
+          {
+            "length": 1024,
+            "offset": 877056
+          },
+          {
+            "length": 1024,
+            "offset": 879104
+          },
+          {
+            "length": 1024,
+            "offset": 881152
+          },
+          {
+            "length": 1024,
+            "offset": 883200
+          },
+          {
+            "length": 1024,
+            "offset": 885248
+          },
+          {
+            "length": 1024,
+            "offset": 887296
+          },
+          {
+            "length": 1024,
+            "offset": 889344
+          },
+          {
+            "length": 1024,
+            "offset": 891392
+          },
+          {
+            "length": 1024,
+            "offset": 893440
+          },
+          {
+            "length": 1024,
+            "offset": 895488
+          },
+          {
+            "length": 1024,
+            "offset": 897536
+          },
+          {
+            "length": 1024,
+            "offset": 899584
+          },
+          {
+            "length": 1024,
+            "offset": 901632
+          },
+          {
+            "length": 620,
+            "offset": 903680
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+      },
+      "sample.sqlite": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 797184
+          },
+          {
+            "length": 1024,
+            "offset": 807424
+          },
+          {
+            "length": 1024,
+            "offset": 817664
+          },
+          {
+            "length": 1024,
+            "offset": 827904
+          },
+          {
+            "length": 1024,
+            "offset": 836608
+          },
+          {
+            "length": 1024,
+            "offset": 844800
+          },
+          {
+            "length": 1024,
+            "offset": 851968
+          },
+          {
+            "length": 1024,
+            "offset": 858112
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+      },
+      "sample.tar": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 798208
+          },
+          {
+            "length": 1024,
+            "offset": 808448
+          },
+          {
+            "length": 1024,
+            "offset": 818688
+          },
+          {
+            "length": 1024,
+            "offset": 828928
+          },
+          {
+            "length": 1024,
+            "offset": 837632
+          },
+          {
+            "length": 1024,
+            "offset": 845824
+          },
+          {
+            "length": 1024,
+            "offset": 852992
+          },
+          {
+            "length": 1024,
+            "offset": 859136
+          },
+          {
+            "length": 1024,
+            "offset": 863232
+          },
+          {
+            "length": 1024,
+            "offset": 866816
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+      },
+      "sample.tif": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 799232
+          },
+          {
+            "length": 1024,
+            "offset": 809472
+          },
+          {
+            "length": 1024,
+            "offset": 819712
+          },
+          {
+            "length": 140,
+            "offset": 829952
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+      },
+      "sample.wav": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 800256
+          },
+          {
+            "length": 1024,
+            "offset": 810496
+          },
+          {
+            "length": 1024,
+            "offset": 820736
+          },
+          {
+            "length": 1024,
+            "offset": 830464
+          },
+          {
+            "length": 1024,
+            "offset": 838656
+          },
+          {
+            "length": 1024,
+            "offset": 846848
+          },
+          {
+            "length": 334,
+            "offset": 854016
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      },
+      "sample.xlsx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 801280
+          },
+          {
+            "length": 1024,
+            "offset": 811520
+          },
+          {
+            "length": 1024,
+            "offset": 821760
+          },
+          {
+            "length": 1024,
+            "offset": 831488
+          },
+          {
+            "length": 784,
+            "offset": 839680
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+      }
+    },
+    "map_api": [
+      "FIBMAP"
+    ],
+    "source_sha256": "d9acdd5ee52ce8a11cdde44c595ba97702493da5cd6f2309e57aaf375f9dccc0"
+  },
+  "ntfs": {
+    "driver": "ntfs3",
+    "files": {
+      "sample.avi": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10492928
+          },
+          {
+            "length": 1024,
+            "offset": 10503168
+          },
+          {
+            "length": 1024,
+            "offset": 10513408
+          },
+          {
+            "length": 1024,
+            "offset": 10523648
+          },
+          {
+            "length": 1024,
+            "offset": 10533888
+          },
+          {
+            "length": 1024,
+            "offset": 10542080
+          },
+          {
+            "length": 1024,
+            "offset": 10549248
+          },
+          {
+            "length": 188,
+            "offset": 10556416
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480"
+      },
+      "sample.docx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10493952
+          },
+          {
+            "length": 1024,
+            "offset": 10504192
+          },
+          {
+            "length": 1024,
+            "offset": 10514432
+          },
+          {
+            "length": 1024,
+            "offset": 10524672
+          },
+          {
+            "length": 1024,
+            "offset": 10534912
+          },
+          {
+            "length": 1024,
+            "offset": 10543104
+          },
+          {
+            "length": 1024,
+            "offset": 10550272
+          },
+          {
+            "length": 1024,
+            "offset": 10557440
+          },
+          {
+            "length": 1024,
+            "offset": 10562560
+          },
+          {
+            "length": 1024,
+            "offset": 10566656
+          },
+          {
+            "length": 1024,
+            "offset": 10570752
+          },
+          {
+            "length": 1024,
+            "offset": 10572800
+          },
+          {
+            "length": 1024,
+            "offset": 10574848
+          },
+          {
+            "length": 1024,
+            "offset": 10576896
+          },
+          {
+            "length": 1024,
+            "offset": 10578944
+          },
+          {
+            "length": 1024,
+            "offset": 10580992
+          },
+          {
+            "length": 1024,
+            "offset": 10583040
+          },
+          {
+            "length": 1024,
+            "offset": 10585088
+          },
+          {
+            "length": 1024,
+            "offset": 10587136
+          },
+          {
+            "length": 1024,
+            "offset": 10589184
+          },
+          {
+            "length": 1024,
+            "offset": 10591232
+          },
+          {
+            "length": 1024,
+            "offset": 10593280
+          },
+          {
+            "length": 1024,
+            "offset": 10595328
+          },
+          {
+            "length": 1024,
+            "offset": 10597376
+          },
+          {
+            "length": 1024,
+            "offset": 10599424
+          },
+          {
+            "length": 1024,
+            "offset": 10601472
+          },
+          {
+            "length": 1024,
+            "offset": 10603520
+          },
+          {
+            "length": 1024,
+            "offset": 10605568
+          },
+          {
+            "length": 7970,
+            "offset": 10607616
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e"
+      },
+      "sample.flac": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10494976
+          },
+          {
+            "length": 1024,
+            "offset": 10505216
+          },
+          {
+            "length": 1024,
+            "offset": 10515456
+          },
+          {
+            "length": 1024,
+            "offset": 10525696
+          },
+          {
+            "length": 1024,
+            "offset": 10535936
+          },
+          {
+            "length": 1024,
+            "offset": 10544128
+          },
+          {
+            "length": 1024,
+            "offset": 10551296
+          },
+          {
+            "length": 1024,
+            "offset": 10558464
+          },
+          {
+            "length": 1024,
+            "offset": 10563584
+          },
+          {
+            "length": 262,
+            "offset": 10567680
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+      },
+      "sample.ogg": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10496000
+          },
+          {
+            "length": 1024,
+            "offset": 10506240
+          },
+          {
+            "length": 1024,
+            "offset": 10516480
+          },
+          {
+            "length": 645,
+            "offset": 10526720
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1"
+      },
+      "sample.pptx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10497024
+          },
+          {
+            "length": 1024,
+            "offset": 10507264
+          },
+          {
+            "length": 1024,
+            "offset": 10517504
+          },
+          {
+            "length": 1024,
+            "offset": 10527744
+          },
+          {
+            "length": 1024,
+            "offset": 10536960
+          },
+          {
+            "length": 1024,
+            "offset": 10545152
+          },
+          {
+            "length": 1024,
+            "offset": 10552320
+          },
+          {
+            "length": 1024,
+            "offset": 10559488
+          },
+          {
+            "length": 1024,
+            "offset": 10564608
+          },
+          {
+            "length": 1024,
+            "offset": 10568704
+          },
+          {
+            "length": 1024,
+            "offset": 10571776
+          },
+          {
+            "length": 1024,
+            "offset": 10573824
+          },
+          {
+            "length": 1024,
+            "offset": 10575872
+          },
+          {
+            "length": 1024,
+            "offset": 10577920
+          },
+          {
+            "length": 1024,
+            "offset": 10579968
+          },
+          {
+            "length": 1024,
+            "offset": 10582016
+          },
+          {
+            "length": 1024,
+            "offset": 10584064
+          },
+          {
+            "length": 1024,
+            "offset": 10586112
+          },
+          {
+            "length": 1024,
+            "offset": 10588160
+          },
+          {
+            "length": 1024,
+            "offset": 10590208
+          },
+          {
+            "length": 1024,
+            "offset": 10592256
+          },
+          {
+            "length": 1024,
+            "offset": 10594304
+          },
+          {
+            "length": 1024,
+            "offset": 10596352
+          },
+          {
+            "length": 1024,
+            "offset": 10598400
+          },
+          {
+            "length": 1024,
+            "offset": 10600448
+          },
+          {
+            "length": 1024,
+            "offset": 10602496
+          },
+          {
+            "length": 1024,
+            "offset": 10604544
+          },
+          {
+            "length": 620,
+            "offset": 10606592
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b"
+      },
+      "sample.sqlite": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10498048
+          },
+          {
+            "length": 1024,
+            "offset": 10508288
+          },
+          {
+            "length": 1024,
+            "offset": 10518528
+          },
+          {
+            "length": 1024,
+            "offset": 10528768
+          },
+          {
+            "length": 1024,
+            "offset": 10537984
+          },
+          {
+            "length": 1024,
+            "offset": 10546176
+          },
+          {
+            "length": 1024,
+            "offset": 10553344
+          },
+          {
+            "length": 1024,
+            "offset": 10560512
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+      },
+      "sample.tar": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10499072
+          },
+          {
+            "length": 1024,
+            "offset": 10509312
+          },
+          {
+            "length": 1024,
+            "offset": 10519552
+          },
+          {
+            "length": 1024,
+            "offset": 10529792
+          },
+          {
+            "length": 1024,
+            "offset": 10539008
+          },
+          {
+            "length": 1024,
+            "offset": 10547200
+          },
+          {
+            "length": 1024,
+            "offset": 10554368
+          },
+          {
+            "length": 1024,
+            "offset": 10561536
+          },
+          {
+            "length": 1024,
+            "offset": 10565632
+          },
+          {
+            "length": 1024,
+            "offset": 10569728
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f"
+      },
+      "sample.tif": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10500096
+          },
+          {
+            "length": 1024,
+            "offset": 10510336
+          },
+          {
+            "length": 1024,
+            "offset": 10520576
+          },
+          {
+            "length": 140,
+            "offset": 10530816
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+      },
+      "sample.wav": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10501120
+          },
+          {
+            "length": 1024,
+            "offset": 10511360
+          },
+          {
+            "length": 1024,
+            "offset": 10521600
+          },
+          {
+            "length": 1024,
+            "offset": 10531840
+          },
+          {
+            "length": 1024,
+            "offset": 10540032
+          },
+          {
+            "length": 1024,
+            "offset": 10548224
+          },
+          {
+            "length": 334,
+            "offset": 10555392
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      },
+      "sample.xlsx": {
+        "extents": [
+          {
+            "length": 1024,
+            "offset": 10502144
+          },
+          {
+            "length": 1024,
+            "offset": 10512384
+          },
+          {
+            "length": 1024,
+            "offset": 10522624
+          },
+          {
+            "length": 1024,
+            "offset": 10532864
+          },
+          {
+            "length": 784,
+            "offset": 10541056
+          }
+        ],
+        "schema_version": 1,
+        "sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+      }
+    },
+    "map_api": [
+      "FIEMAP"
+    ],
+    "source_sha256": "e9be9a63db8489817a84c30738968ddcd8b0aa339fba1af05b9d0b97b1e1927a"
+  }
+}

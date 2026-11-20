@@ -1,0 +1,366 @@
+{
+  "binary_sha256": "9fd67372c0f1534e7f28da8a3d9e8458fa54667426f33e9be0d3e42bd100f16f",
+  "tool": "parted (GNU parted) 3.6",
+  "volumes": {
+    "contiguous": {
+      "disk_sha256": "4f0eaf390e33a19547c7738a03c53f3bc5204f7ba77e6ea238203a49626c51aa",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "runs": 1,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "runs": 1,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "runs": 1,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "runs": 1,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "runs": 1,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "runs": 1,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "runs": 1,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "runs": 1,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "runs": 1,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "runs": 1,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "runs": 1,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "runs": 1,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "runs": 1,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "runs": 1,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "runs": 1,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "runs": 1,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "offset": 1048576,
+      "partition": 2,
+      "scheme": "apm",
+      "source_volume_sha256": "a9fcd8b195e23cbde89187a1450b4579c280389b031ee542cc96d5c59b9dac15",
+      "wrong_digest_refused": true
+    },
+    "fat32": {
+      "disk_sha256": "6625f7fba6dd02fb59711864a7504b338b8cf82520463d0d657a6ace7de2ec74",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "runs": 176,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "runs": 176,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "offset": 2097152,
+      "partition": 5,
+      "scheme": "mbr",
+      "source_volume_sha256": "f62bf93f70a7220edf1d626ca43b4cb7384ba01d07ceb987787ff0eb557100ff",
+      "wrong_digest_refused": true
+    },
+    "fragmented": {
+      "disk_sha256": "4461a1d18ee43f0aa08f2e440e4622117841a4adade4f9d9d3c03d0870a489b9",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "runs": 176,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "runs": 176,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "offset": 1048576,
+      "partition": 1,
+      "scheme": "mbr",
+      "source_volume_sha256": "d1a9c22f4b9541ef0e3e0a5be9abad7851777eafc7135cb759d2d2072140ee42",
+      "wrong_digest_refused": true
+    },
+    "ntfs": {
+      "disk_sha256": "e86bf7e830924298abe3bad03ea57b6116474f8d105e783e9c674ea5ad2e495f",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "runs": 153,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "runs": 152,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "offset": 1048576,
+      "partition": 1,
+      "scheme": "gpt",
+      "source_volume_sha256": "a320c495179140ebc56bb066950d75dcc0e9477408ebba856a19cdaf3bf5f136",
+      "wrong_digest_refused": true
+    }
+  }
+}

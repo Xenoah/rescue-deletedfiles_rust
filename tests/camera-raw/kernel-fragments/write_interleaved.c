@@ -9,6 +9,9 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
+#ifndef WRITE_CHUNK_BYTES
+#define WRITE_CHUNK_BYTES 65536
+#endif
 static void fail(const char *name) {
   perror(name);
   exit(1);
@@ -17,7 +20,7 @@ int main(int argc, char **argv) {
   if (argc < 3)
     return 2;
   int n = argc - 2, in[n], out[n];
-  unsigned char buf[65536];
+  unsigned char buf[WRITE_CHUNK_BYTES];
   for (int i = 0; i < n; i++) {
     char dest[PATH_MAX];
     char *file = strrchr(argv[i + 2], '/');
