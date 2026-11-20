@@ -294,6 +294,7 @@ pub(super) fn import(
     path: &Path,
     requested: Option<&str>,
     output: &Path,
+    expected: super::RawExpectation,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
     if requested.is_some_and(|v| {
@@ -352,8 +353,10 @@ pub(super) fn import(
         Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),
         _ => return Ok(None),
     };
+    let expected_digest = expected.expected_digest(disk.size())?;
     let result = super::publish_output(output, cancel, |file| {
         let summary = disk.write_raw(&mut source, file, cancel)?;
+        super::split_raw::verify_digest(&summary.1, expected_digest)?;
         let after = source.metadata()?;
         if before.len() != after.len() || before.modified()? != after.modified()? {
             return Err(Error::SourceChanged);

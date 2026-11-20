@@ -178,6 +178,7 @@ pub(in crate::disk_image) fn import_chain(
     paths: &[OsString],
     requested: Option<&str>,
     output: &Path,
+    expected: crate::disk_image::RawExpectation,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
     if requested.is_some_and(|v| !matches!(v, "qcow" | "qcow2")) {
@@ -240,6 +241,7 @@ pub(in crate::disk_image) fn import_chain(
         });
     }
     let size = members[0].size();
+    let expected_digest = expected.expected_digest(size)?;
     let result = publish_output(output, cancel, |out| {
         let mut digest = Sha256::new();
         let mut buf = vec![0; 256 * 1024];
@@ -267,6 +269,7 @@ pub(in crate::disk_image) fn import_chain(
             }
             guest += n as u64;
         }
+        crate::disk_image::split_raw::verify_digest(&digest, expected_digest)?;
         out.set_len(size)?;
         for m in &members {
             let after = m.file.metadata()?;

@@ -198,7 +198,7 @@ impl App {
                         }
                     }
                 }
-                if state.format == Some(Format::Raw) {
+                if matches!(state.format,Some(Format::Raw | Format::Qcow)) {
                     ui.collapsing(
                         tr!("元ディスクと照合", "Verify against the original disk"),
                         |ui| {
@@ -301,7 +301,7 @@ impl App {
                     )
                 } else if format == Format::Android {
                     rescue_core::disk_image::import_android(&request.source, &output, &cancel)
-                } else if format == Format::Raw {
+                } else if matches!(format, Format::Raw | Format::Qcow) {
                     let bytes = if expected_size.is_empty() {
                         None
                     } else {

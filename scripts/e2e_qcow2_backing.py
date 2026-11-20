@@ -149,12 +149,57 @@ def create(root, guest, files, profile):
     return chain, depths
 
 
+def checked_import(binary, chain, out, options, code=0, kind="qcow2"):
+    args = [
+        binary,
+        "import-image",
+        "--source",
+        chain[0],
+        "--image-type",
+        kind,
+        "--output",
+        out,
+        "--json",
+    ]
+    for member in chain[1:]:
+        args.extend(["--segment", member])
+    proc = subprocess.run(
+        list(map(str, [*args, *options])),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=dict(os.environ, PATH=""),
+        timeout=180,
+    )
+    check(proc.returncode == code, (args, proc.stdout, proc.stderr))
+    if code:
+        check(not out.exists(), out)
+        return None
+    return json.loads(proc.stdout)
+
+
+def unrelated_base(folder, destination, size):
+    disk = folder / "unrelated.qcow2"
+    cmd(folder, "qemu-img", "create", "-f", "qcow2", disk.name, str(size))
+    cmd(folder, "qemu-io", "-f", "qcow2", "-c", "write -P 0xbc 0 4096", disk.name)
+    cmd(folder, "qemu-img", "check", disk.name)
+    raw = disk.read_bytes()
+    (destination / "unrelated.qcow2.xz").write_bytes(lzma.compress(raw))
+    return sha(raw)
+
+
 def restore(binary, root, chain, guest, files, windows=None):
     before = [digest(f) for f in chain]
     out = root / "restored.raw"
     copies = {}
     for label, kind, indexed in [("ordinary", None, False), ("indexed", "qcow2", True)]:
-        report = native_import(binary, chain[0], out, kind, segments=chain[1:])
+        report = (
+            checked_import(
+                binary, chain, out, ["--raw-sha256", sha(guest).upper(), "--raw-bytes", len(guest)]
+            )
+            if indexed
+            else native_import(binary, chain[0], out, kind, segments=chain[1:])
+        )
         check(
             report["bytes"] == len(guest)
             and out.read_bytes() == guest
@@ -224,6 +269,7 @@ def native(binary, root, fixture=None):
                     data = p.read_bytes()
                     (fixture / (p.name + ".xz")).write_bytes(lzma.compress(data))
                     meta["members"][p.name] = sha(data)
+                meta["unrelated_qcow2_sha256"] = unrelated_base(case, fixture, len(guest))
                 (fixture / "expected.raw.xz").write_bytes(lzma.compress(guest))
                 (fixture / "manifest.json").write_text(json.dumps(meta, indent=2) + "\n")
             for p in case.glob("*.raw"):
@@ -299,6 +345,30 @@ def invalid_chains(binary, root, chain, guest):
     refuse("truncated-compressed-base", child, [middle, broken], 4)
     bad.write_bytes(original[: len(original) - 1])
     refuse("truncated-allocated-subcluster", bad, [middle, base], 4)
+    for label, options, code in [
+        ("original-length", ["--raw-bytes", len(guest) + 512], 4),
+        ("original-digest", ["--raw-sha256", "00" * 32], 4),
+        ("malformed-original-digest", ["--raw-sha256", "abc"], 2),
+    ]:
+        checked_import(binary, chain, out, options, code)
+        refused.append(label)
+    # A valid same-name substitute is structurally indistinguishable without a known guest hash.
+    altered_base = lzma.decompress((REF / "unrelated.qcow2.xz").read_bytes())
+    check(
+        sha(altered_base)
+        == json.loads((REF / "manifest.json").read_text())["unrelated_qcow2_sha256"],
+        broken,
+    )
+    broken.write_bytes(altered_base)
+    substitute = [child, middle, broken]
+    without_reference = native_import(binary, child, out, "qcow2", segments=substitute[1:])
+    check(
+        without_reference["sha256"] == digest(out) != sha(guest),
+        "same-name substitute must change disk bytes",
+    )
+    out.unlink()
+    checked_import(binary, substitute, out, ["--raw-sha256", sha(guest)], 4)
+    refused.append("same-name-valid-substitute")
     # Existing output is protected even after a complete chain has been supplied.
     out.write_bytes(b"preserve")
     args = [
@@ -319,6 +389,31 @@ def invalid_chains(binary, root, chain, guest):
     return sorted(refused)
 
 
+def standalone(binary, root):
+    result = {}
+    for kind, folder, stored, length_key, hash_key in [
+        ("qcow1", "qcow-v1", "fat32.qcow.xz", "raw_bytes", "raw_sha256"),
+        ("qcow2", "qcow2-subclusters", "fat32.qcow2.xz", "guest_bytes", "guest_sha256"),
+    ]:
+        reference = REF.parent / folder
+        meta = json.loads((reference / "manifest.json").read_text())
+        image = root / ("single." + kind)
+        image.write_bytes(lzma.decompress((reference / stored).read_bytes()))
+        out = root / (kind + ".raw")
+        verified = checked_import(
+            binary,
+            [image],
+            out,
+            ["--raw-bytes", meta[length_key], "--raw-sha256", meta[hash_key]],
+            kind=kind,
+        )
+        check(digest(out) == meta[hash_key] == verified["sha256"], verified)
+        result[kind] = carve(binary, out, root / ("single-" + kind), originals(), False)
+        out.unlink()
+        checked_import(binary, [image], out, ["--raw-sha256", "a5" * 32], 4, kind)
+    return result
+
+
 def portable(binary, root):
     meta = json.loads((REF / "manifest.json").read_text())
     chain = [root / n for n in meta["chain"]]
@@ -332,7 +427,11 @@ def portable(binary, root):
         and proof["originals"] == meta["expected"]["originals"],
         proof,
     )
-    return {**proof, "refused": invalid_chains(binary, root, chain, guest)}
+    return {
+        **proof,
+        "refused": invalid_chains(binary, root, chain, guest),
+        "standalone": standalone(binary, root),
+    }
 
 
 if __name__ == "__main__":
