@@ -1,0 +1,101 @@
+{
+  "degraded-32": [
+    "bitmap_checksum",
+    "free_count_disagrees",
+    "group_checksum",
+    "partially_reused_file",
+    "stale_recovery",
+    "super_checksum",
+    "unclean_state",
+    "uninitialized_group",
+    "unreadable_map",
+    "unreadable_then_allocated_group"
+  ],
+  "degraded-64": [
+    "bitmap_checksum",
+    "free_count_disagrees",
+    "group_checksum",
+    "partially_reused_file",
+    "stale_recovery",
+    "super_checksum",
+    "unclean_state",
+    "uninitialized_group",
+    "unreadable_map",
+    "unreadable_then_allocated_group"
+  ],
+  "ext4-1024": {
+    "disk_sha256": "2eba6c6a28121bfbee3645ed7025b9bd3309d8546487e86bd2e1c6ef6df30001",
+    "excluded_live": 7,
+    "explicit_checksum_seed": false,
+    "group_descriptor_bytes": 64,
+    "hashes": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext4-1024-short": {
+    "disk_sha256": "a9dc91d533c542d4c66c5e1000e13fe6bae068e395ccfc440d86462d09e3c64a",
+    "excluded_live": 7,
+    "explicit_checksum_seed": true,
+    "group_descriptor_bytes": 32,
+    "hashes": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext4-2048": {
+    "disk_sha256": "e5f3d1e85a45a7af0b49e6fd86720bd4a7d0e746dda58de57784cc2fa434278f",
+    "excluded_live": 7,
+    "explicit_checksum_seed": false,
+    "group_descriptor_bytes": 64,
+    "hashes": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext4-4096": {
+    "disk_sha256": "4d39a24817521c6662f32d937ee72d593219fc4be9de7971f4df313390ee1f31",
+    "excluded_live": 7,
+    "explicit_checksum_seed": false,
+    "group_descriptor_bytes": 64,
+    "hashes": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext4-4096-short": {
+    "disk_sha256": "77f54205fc585790c3c533952f4759c53e0d6af4cc169fe08cb0f2a6ade67e3e",
+    "excluded_live": 7,
+    "explicit_checksum_seed": true,
+    "group_descriptor_bytes": 32,
+    "hashes": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  }
+}

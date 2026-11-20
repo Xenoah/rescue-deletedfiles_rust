@@ -50,17 +50,19 @@ def controls(binary, root, data, ref):
     seed = le32(sb,624) if le32(sb,96) & 0x2000 else crc(sb[104:120])
     png, wav = files['sample.png'], files['sample.wav']
     group = (png['deleted_offset']//bs-first)//group_blocks
-    desc = (first+1)*bs+64*group
+    size = 64 if le32(sb,96) & 0x80 else 32
+    desc = (first+1)*bs+size*group
     bitmap = le32(data,desc)*bs
     map_size = group_blocks//8
     def fix_desc(buf):
         buf[desc+30:desc+32] = bytes(2)
-        checksum = crc(struct.pack('<I',group) + buf[desc:desc+64], seed)
+        checksum = crc(struct.pack('<I',group) + buf[desc:desc+size], seed)
         struct.pack_into('<H',buf,desc+30,checksum & 0xffff)
     def fix_bitmap(buf):
         checksum = crc(buf[bitmap:bitmap+map_size],seed)
         struct.pack_into('<H',buf,desc+24,checksum & 0xffff)
-        struct.pack_into('<H',buf,desc+56,checksum >> 16)
+        if size == 64:
+            struct.pack_into('<H',buf,desc+56,checksum >> 16)
         fix_desc(buf)
     def set_state(buf):
         struct.pack_into('<H',buf,1024+58,3)
@@ -111,7 +113,7 @@ def controls(binary, root, data, ref):
         switch_bit(changed,wav[key]//bs+1)
     fix_bitmap(changed)
     with wrapper.open('r+b') as out:
-        for at,n in [(bitmap,map_size),(desc,64)]:
+        for at,n in [(bitmap,map_size),(desc,size)]:
             out.seek(shift+at)
             out.write(changed[at:at+n])
     os.utime(wrapper,ns=(stat.st_atime_ns,stat.st_mtime_ns))
@@ -125,17 +127,39 @@ def controls(binary, root, data, ref):
         failure=run(binary,'recover','--session',found['session'],'--id',row['id'],
                     '--destination',root/('stale'+str(len(mode))),'--json',*mode,expected=5)
         check(failure['results'][0]['path'] is None and 'SOURCE_CHANGED' in json.dumps(failure),failure)
+    # A failed map in group zero must not hide a known allocated block in group one.
+    # Put a valid PNG across the boundary in a disposable copy. Group one's first
+    # block is its backup superblock and has its allocation bit set independently.
+    if group == 1:
+        edge = (first + group_blocks) * bs - 20
+        data_copy = bytearray(data)
+        check(data_copy[bitmap] & 1, 'group one must start with allocated metadata')
+        group0_desc = (first+1)*bs
+        group0_bitmap = le32(data_copy,group0_desc)*bs
+        data_copy[group0_bitmap] ^= 1
+        payload = (REFERENCE.parent/'corpus/files/sample.png').read_bytes()
+        data_copy[edge:edge+len(payload)] = payload
+        image.write_bytes(data_copy)
+        _, all_rows = scan(binary,image,root/'mixed-all',scope='all',extensions='png')
+        check(edge in {r['record'] for r in all_rows}, 'whole-region baseline missed boundary PNG')
+        _, limited = scan(binary,image,root/'mixed',extensions='png')
+        check(edge not in {r['record'] for r in limited}, limited)
+        mutations['unreadable_then_allocated_group'] = None
     return sorted([*mutations,'unreadable_map','partially_reused_file','stale_recovery'])
 
 
 def verify(binary, root, *, tsk=False):
     manifest=json.loads((REFERENCE/'manifest.json').read_text())
+    manifest.update(json.loads((REFERENCE/'short.json').read_text()))
     result={}
     for name, ref in manifest.items():
         image=root/(name+'.raw')
         data=lzma.decompress((REFERENCE/(name+'.raw.xz')).read_bytes())
         check(hashlib.sha256(data).hexdigest()==ref['disk_sha256'] and len(data)==ref['bytes'],name)
         image.write_bytes(data)
+        short = name.endswith('-short')
+        flags = le32(data,1024+96)
+        check(bool(flags & 0x80) != short and bool(flags & 0x2000) == short, (name,flags))
         files=ref['originals']
         check(len(files)==7 and all(f['deleted_bytes_retained'] for f in files.values()),ref)
         if tsk:
@@ -150,9 +174,12 @@ def verify(binary, root, *, tsk=False):
         check(restore(binary,wrapper,files,root/(name+'-partition'),shift=start*sector,indexed=True)==exact,name)
         wrapper.unlink()
         print(name,'7 real Linux unlinks byte-exact; all seven live controls excluded',flush=True)
-        result[name]=dict(disk_sha256=ref['disk_sha256'],hashes=exact,excluded_live=7)
+        result[name]=dict(disk_sha256=ref['disk_sha256'],hashes=exact,excluded_live=7,
+                          group_descriptor_bytes=32 if short else 64,explicit_checksum_seed=short)
         if ref['block_size']==1024:
-            result['degraded']=controls(binary,root,data,ref)
+            negative=root/(name+'-negative')
+            negative.mkdir()
+            result['degraded-'+str(32 if short else 64)]=controls(binary,negative,data,ref)
         image.unlink()
     return result
 

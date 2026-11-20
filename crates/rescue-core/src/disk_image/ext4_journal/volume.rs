@@ -24,6 +24,7 @@ pub(crate) struct Volume {
     pub first_inode: u32,
     seed: u32,
     verify_free_counts: bool,
+    bitmap_checksum_mask: u32,
     first: u64,
     per_group: u32,
     inodes_per: u32,
@@ -50,24 +51,29 @@ impl Volume {
         let sb = image.read(1024, 1024)?;
         let incompat = le32(&sb, 96);
         let readonly = le32(&sb, 100);
+        let large_descriptors = incompat & 0x80 != 0;
+        let descriptor_size = if large_descriptors { 64 } else { 32 };
+        let reported_size = le16(&sb, 254);
         if le16(&sb, 56) != 0xef53
-            || incompat & 0xc0 != 0xc0
+            || incompat & 0x40 == 0
             || incompat & !0x22c2 != 0
             || readonly & 0x400 == 0
             || readonly & !0x47b != 0
             || sb[373] != 1
-            || le16(&sb, 254) != 64
+            || (large_descriptors && reported_size != 64)
+            || (!large_descriptors
+                && (!matches!(reported_size, 0 | 32) || le32(&sb, 336) != 0 || le32(&sb, 344) != 0))
             || le32(&sb, 72) != 0
             || le16(&sb, 58) != 1
             || le32(&sb, 232) != 0
         {
             return Err(Error::Unsupported(
-                "expected clean ext4 with extents, 64-bit groups and metadata checksums".into(),
+                "expected clean ext4 with extents, 32- or 64-byte group descriptors and metadata checksums".into(),
             ));
         }
-        if require_journal && le32(&sb, 92) & 4 == 0 {
+        if require_journal && (!large_descriptors || le32(&sb, 92) & 4 == 0) {
             return Err(Error::Unsupported(
-                "ext4 volume has no internal journal".into(),
+                "ext4 journal recovery requires 64-byte descriptors and an internal journal".into(),
             ));
         }
         if update(u32::MAX, &sb[..1020]) != le32(&sb, 1020) {
@@ -104,7 +110,10 @@ impl Volume {
         if count > 65536 || u64::from(inodes.div_ceil(inodes_per)) != count {
             return Err(bad("unsupported group count"));
         }
-        let descriptors = image.read((first + 1) * block_size as u64, count as usize * 64)?;
+        let descriptors = image.read(
+            (first + 1) * block_size as u64,
+            count as usize * descriptor_size,
+        )?;
         let uuid: [u8; 16] = sb[104..120].try_into().unwrap();
         let seed = if incompat & 0x2000 != 0 {
             le32(&sb, 624)
@@ -114,12 +123,21 @@ impl Volume {
         let mut groups = Vec::new();
         let mut tables = BTreeMap::new();
         let table_blocks = (u64::from(inodes_per) * inode_size as u64).div_ceil(block_size as u64);
-        for (i, group) in descriptors.as_chunks::<64>().0.iter().enumerate() {
+        for (i, disk_group) in descriptors.chunks_exact(descriptor_size).enumerate() {
+            // Short descriptors omit the high halves of addresses, counts and checksums.
+            let mut fields = [0u8; 64];
+            fields[..descriptor_size].copy_from_slice(disk_group);
+            let group = &fields;
             let addr = |lo, hi| u64::from(le32(group, lo)) | (u64::from(le32(group, hi)) << 32);
             let sum = |lo, hi| u32::from(le16(group, lo)) | (u32::from(le16(group, hi)) << 16);
             let mut check = *group;
             check[30..32].fill(0);
-            if update(update(seed, &(i as u32).to_le_bytes()), &check) as u16 != le16(group, 30) {
+            if update(
+                update(seed, &(i as u32).to_le_bytes()),
+                &check[..descriptor_size],
+            ) as u16
+                != le16(group, 30)
+            {
                 return Err(bad("group descriptor checksum mismatch"));
             }
             let g = Group {
@@ -167,6 +185,7 @@ impl Volume {
             seed,
             first,
             verify_free_counts: !require_journal,
+            bitmap_checksum_mask: if large_descriptors { u32::MAX } else { 0xffff },
             per_group,
             inodes_per,
             inodes,
@@ -252,7 +271,7 @@ impl Volume {
             let bytes = self
                 .image
                 .read(pos * self.block_size as u64, amount as usize / 8)?;
-            if update(self.seed, &bytes) != expected {
+            if update(self.seed, &bytes) & self.bitmap_checksum_mask != expected {
                 return Err(bad("allocation bitmap checksum mismatch"));
             }
             if self.verify_free_counts && !inode {
