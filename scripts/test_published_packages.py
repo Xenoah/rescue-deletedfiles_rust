@@ -59,6 +59,7 @@ from e2e_strided_files import portable as strided_files, native as deleted_strid
 from e2e_whole_hash import portable as whole_hash_files, native as deleted_whole_hash_files
 from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
+from e2e_openexr import verify as openexr_files
 from e2e_vmdk_cid import verify as vmdk_cid
 from e2e_vmdk_cid_boundary import verify as vmdk_cid_boundary
 from e2e_vmdk_boundary import verify as vmdk_boundary
@@ -242,6 +243,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 38, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['openexr'] = openexr_files(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['openexr_deleted'] = openexr_files(binary, Path(tmp), native=True)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 37, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['vmdk_cid'] = vmdk_cid(binary, Path(tmp), independent=a.platform == 'linux')
