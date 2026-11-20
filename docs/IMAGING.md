@@ -403,7 +403,10 @@ Windowsで7ファイルずつ削除したMBR・512バイトセクターとGPT・
 
 `rescue import-image --source guest.qcow2 --output guest.raw --json` で、QEMUのQCOW2 v3でZstandard圧縮したクラスタと、拡張L2テーブルを使ったイメージを直接読み取れます。GUIでは「イメージをRAWに変換」でQCOW2を選択します。拡張L2テーブルでは各クラスタの32個のサブクラスタを個別に判定し、明示的なゼロと未割り当て部分をゼロとして書き出します。ホストファイルの同じ位置に残っている古いデータは復元元から除きます。
 
-QCOW2は単独イメージと、親を直近からベースまで明示したチェーンに対応します。親を指定するには子イメージの後に各親を `--segment` で渡します。内部スナップショット、外部データファイル、暗号化、未解決のdirty/corruptフラグは拒否します。[親の種類・照合条件とQEMUとの実測](RELEASE-v1.32.0.md) Zstandardのウィンドウは8 MiBまで、クラスタは2 MiBまでです。クラスタを展開して元の長さと記録されたフレームチェックサムを確認します。書き出したRAWの正しさを独立に確かめるには、原本のSHA-256と照合してください。[QEMU生成の検証イメージ](../tests/qcow2-subclusters/README.md)
+QCOW2は単独イメージと、親を直近からベースまで明示したチェーンに対応します。親を指定するには子イメージの後に各親を `--segment` で渡します。外部データファイル、暗号化、未解決のdirty/corruptフラグは拒否します。[親の種類・照合条件とQEMUとの実測](RELEASE-v1.32.0.md) Zstandardのウィンドウは8 MiBまで、クラスタは2 MiBまでです。クラスタを展開して元の長さと記録されたフレームチェックサムを確認します。書き出したRAWの正しさを独立に確かめるには、原本のSHA-256と照合してください。[QEMU生成の検証イメージ](../tests/qcow2-subclusters/README.md)
+
+QCOW2単独ファイルの内部スナップショットは、`rescue qcow2-snapshots --source disk.qcow2 --json` でID、名前、ゲストディスク容量を一覧できます。`rescue import-image --source disk.qcow2 --image-type qcow2 --qcow2-snapshot-id 2 --output snapshot.raw --json` で選択した時点を読み出せます。`--qcow2-snapshot-name` は名前が一意な場合に使えます。選択を省略すると現在のディスクを読み出します。GUIではQCOW変換の内部スナップショットIDを入力してください。既知の論理SHA-256は `--raw-sha256` で照合できます。外部親と内部スナップショットの併用、VMメモリを含むイメージは対象外です。上限は256スナップショット、ディレクトリ16 MiB、L1表の総量64 MiBです。[実ファイルと再現手順](../tests/qcow2-snapshots/README.md)
+
 
 ## 初代QCOW v1の復元
 

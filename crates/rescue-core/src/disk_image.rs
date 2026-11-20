@@ -36,6 +36,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
+pub use virtual_image::{Qcow2Snapshot, Qcow2SnapshotSelector, list_qcow2_snapshots};
 
 /// Logical RAW file or recovered inode that has been published without overwriting an existing file.
 #[derive(Debug, serde::Serialize)]
@@ -341,6 +342,16 @@ pub fn import_with_raw_expectation(
     expected: RawExpectation<'_>,
     cancel: &AtomicBool,
 ) -> Result<ImportedFile> {
+    import_with_snapshot(image, output, expected, None, cancel)
+}
+
+pub fn import_with_snapshot(
+    image: &ImageInput,
+    output: &Path,
+    expected: RawExpectation<'_>,
+    selector: Option<Qcow2SnapshotSelector<'_>>,
+    cancel: &AtomicBool,
+) -> Result<ImportedFile> {
     let (mut args, paths) = image.arguments(Some(output))?;
     let first = Path::new(&paths[0]);
     let kind = image.image_type.as_deref();
@@ -354,6 +365,15 @@ pub fn import_with_raw_expectation(
         return Err(Error::Request(
             "expected logical length and SHA-256 require an explicit RAW, VDI, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
         ));
+    }
+    if selector.is_some() {
+        if paths.len() != 1 || !regular_raw || !matches!(kind, None | Some("qcow" | "qcow2")) {
+            return Err(Error::Request(
+                "select an internal snapshot from a single QCOW2 file".into(),
+            ));
+        }
+        return virtual_image::import(first, Some("qcow2"), selector, output, expected, cancel)?
+            .ok_or_else(|| Error::Unsupported("a QCOW2 image is required".into()));
     }
     if regular_raw {
         if kind == Some("raw") {
@@ -395,7 +415,9 @@ pub fn import_with_raw_expectation(
             return Ok(result);
         }
         if paths.len() == 1 {
-            if let Some(result) = virtual_image::import(first, kind, output, expected, cancel)? {
+            if let Some(result) =
+                virtual_image::import(first, kind, None, output, expected, cancel)?
+            {
                 return Ok(result);
             }
             if let Some(result) = udif::import(first, kind, output, cancel)? {

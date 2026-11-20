@@ -59,15 +59,17 @@ pub struct FilesystemArgs {
 pub fn import(
     image: ImageArgs,
     output: &Path,
+    selector: Option<disk_image::Qcow2SnapshotSelector>,
     expected: disk_image::RawExpectation,
     json: bool,
     cancel: &AtomicBool,
 ) -> Result<i32> {
     super::print(
-        serde_json::json!(disk_image::import_with_raw_expectation(
+        serde_json::json!(disk_image::import_with_snapshot(
             &image.into(),
             output,
             expected,
+            selector,
             cancel
         )?),
         json,

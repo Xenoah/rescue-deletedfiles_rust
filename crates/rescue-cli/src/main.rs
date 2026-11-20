@@ -302,6 +302,12 @@ enum Command {
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
+        /// Select a saved QCOW2 disk by its unique snapshot ID.
+        #[arg(long, conflicts_with = "qcow2_snapshot_name")]
+        qcow2_snapshot_id: Option<String>,
+        /// Select a saved QCOW2 disk by its exact snapshot name.
+        #[arg(long)]
+        qcow2_snapshot_name: Option<String>,
         /// Verify the logical disk length for an explicitly selected RAW, VDI, QCOW, VHD, VHDX or VMDK image type.
         #[arg(long)]
         raw_bytes: Option<u64>,
@@ -310,6 +316,13 @@ enum Command {
         raw_sha256: Option<String>,
         #[arg(long)]
         output: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List internal disk snapshots in a standalone QCOW2 image.
+    Qcow2Snapshots {
+        #[arg(long)]
+        source: PathBuf,
         #[arg(long)]
         json: bool,
     },
@@ -619,8 +632,15 @@ fn run(cli: Cli) -> Result<i32, Error> {
             print(json!(report), compact);
             Ok(0)
         }
+        Command::Qcow2Snapshots { source, json } => {
+            let snapshots = rescue_core::disk_image::list_qcow2_snapshots(&source, &cancel)?;
+            print(json!({ "snapshots": snapshots }), json);
+            Ok(0)
+        }
         Command::ImportImage {
             image,
+            qcow2_snapshot_id,
+            qcow2_snapshot_name,
             output,
             json,
             raw_bytes,
@@ -628,6 +648,14 @@ fn run(cli: Cli) -> Result<i32, Error> {
         } => sleuthkit::import(
             image,
             &output,
+            qcow2_snapshot_id
+                .as_deref()
+                .map(rescue_core::disk_image::Qcow2SnapshotSelector::Id)
+                .or_else(|| {
+                    qcow2_snapshot_name
+                        .as_deref()
+                        .map(rescue_core::disk_image::Qcow2SnapshotSelector::Name)
+                }),
             rescue_core::disk_image::RawExpectation {
                 bytes: raw_bytes,
                 sha256: raw_sha256.as_deref(),

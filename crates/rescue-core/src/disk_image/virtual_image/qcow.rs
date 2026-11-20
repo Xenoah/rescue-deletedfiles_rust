@@ -1,10 +1,12 @@
 //! Read-only QCOW2 v2/v3 metadata and allocation maps.
 pub(in crate::disk_image) mod backing;
+mod snapshot;
 pub(super) mod v1;
 use super::{Block, Compression, invalid, read_at};
 use crate::{Error, Result};
+pub use snapshot::{Qcow2Snapshot, Qcow2SnapshotSelector};
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fs::File,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -53,6 +55,7 @@ impl Regions {
 
 pub(super) struct Qcow {
     pub size: u64,
+    pub(super) snapshots: Vec<Qcow2Snapshot>,
     backing: Option<backing::Reference>,
     cluster: u64,
     entry_bytes: usize,
@@ -67,26 +70,22 @@ pub(super) struct Qcow {
 
 impl Qcow {
     pub fn open(source: &mut File, length: u64, cancel: &AtomicBool) -> Result<Self> {
-        Self::open_member(source, length, false, cancel)
+        Self::open_member(source, length, false, None, cancel)
     }
 
-    fn open_member(
+    pub(super) fn open_member(
         source: &mut File,
         length: u64,
         allow_backing: bool,
+        selector: Option<Qcow2SnapshotSelector>,
         cancel: &AtomicBool,
     ) -> Result<Self> {
         let mut header = [0; 104];
         read_at(source, 0, &mut header[..72])?;
         let version = be32(&header, 4);
-        if !matches!(version, 2 | 3)
-            || header[..4] != *b"QFI\xfb"
-            || be32(&header, 32) != 0
-            || be32(&header, 60) != 0
-            || be64(&header, 64) != 0
-        {
+        if !matches!(version, 2 | 3) || header[..4] != *b"QFI\xfb" || be32(&header, 32) != 0 {
             return Err(Error::Unsupported(
-                "QCOW2 requires an unencrypted v2/v3 image without internal snapshots".into(),
+                "QCOW2 requires an unencrypted v2/v3 image".into(),
             ));
         }
         let bits = be32(&header, 20);
@@ -146,7 +145,35 @@ impl Qcow {
         }
         let mut metadata = Regions::default();
         metadata.add(0, cluster, cluster, length)?;
-        metadata.add(l1_at, l1_count * 8, cluster, length)?;
+        let snapshots = snapshot::directory(source, &header, cluster, length, &mut metadata)?;
+        if !snapshots.is_empty() && allow_backing {
+            return Err(Error::Unsupported(
+                "QCOW2 internal snapshots on an external backing chain".into(),
+            ));
+        }
+        let selected = selector.map(|s| s.find(&snapshots)).transpose()?;
+        let selected_at = selected.map_or(l1_at, |s| s.l1_offset);
+        let size = selected.map_or(size, |s| s.guest_bytes);
+        let views = std::iter::once((l1_at, l1_count)).chain(
+            snapshots
+                .iter()
+                .map(|s| (s.l1_offset, u64::from(s.l1_count))),
+        );
+        let mut total = 0;
+        for (at, count) in views.clone() {
+            total += count * 8;
+            if total > 2 * MAX_TABLE_BYTES {
+                return Err(Error::Limit("QCOW2 aggregate L1 table size".into()));
+            }
+            metadata.add(at, count * 8, cluster, length)?;
+        }
+        if snapshots.iter().any(|s| {
+            u64::from(s.l1_count)
+                < s.guest_bytes
+                    .div_ceil(cluster * (cluster / entry_bytes as u64))
+        }) {
+            return Err(invalid("QCOW2 snapshot L1 table does not cover its disk"));
+        }
         metadata.add(ref_at, ref_bytes, cluster, length)?;
         let mut refs = vec![0; ref_bytes as usize];
         read_at(source, ref_at, &mut refs)?;
@@ -159,21 +186,44 @@ impl Qcow {
                 metadata.add(at, cluster, cluster, length)?;
             }
         }
-        let mut l1 = vec![0; (l1_count * 8) as usize];
-        read_at(source, l1_at, &mut l1)?;
-        for (index, &raw) in l1.as_chunks::<8>().0.iter().enumerate() {
-            if index.is_multiple_of(8192) && cancel.load(Ordering::Relaxed) {
-                return Err(Error::Cancelled);
-            }
-            let entry = u64::from_be_bytes(raw);
-            if entry != 0 {
-                if entry & !(OFFSET | COPIED) != 0 {
-                    return Err(invalid("QCOW2 reserved L1 flags"));
+        let mut l1 = Vec::new();
+        // Copy-on-write snapshots can share an L2 table at the same guest position.
+        // Reserve every view's metadata even when exporting only one generation.
+        let mut l2_positions = HashMap::new();
+        for (at, count) in views {
+            let mut table = vec![0; (count * 8) as usize];
+            read_at(source, at, &mut table)?;
+            for (index, &raw) in table.as_chunks::<8>().0.iter().enumerate() {
+                if index.is_multiple_of(8192) && cancel.load(Ordering::Relaxed) {
+                    return Err(Error::Cancelled);
                 }
-                metadata.add(entry & OFFSET, cluster, cluster, length)?;
+                let entry = u64::from_be_bytes(raw);
+                if entry == 0 {
+                    continue;
+                }
+                if entry & !(OFFSET | COPIED) != 0 || entry & OFFSET == 0 {
+                    return Err(invalid("QCOW2 reserved L1 flags or missing L2 offset"));
+                }
+                let address = entry & OFFSET;
+                match l2_positions.entry(address) {
+                    std::collections::hash_map::Entry::Vacant(position) => {
+                        metadata.add(address, cluster, cluster, length)?;
+                        position.insert(index);
+                    }
+                    std::collections::hash_map::Entry::Occupied(position)
+                        if *position.get() != index =>
+                    {
+                        return Err(invalid("QCOW2 L2 table reused at different guest offsets"));
+                    }
+                    _ => {}
+                }
+            }
+            if at == selected_at {
+                l1 = table;
             }
         }
         Ok(Self {
+            snapshots,
             backing,
             size,
             cluster,

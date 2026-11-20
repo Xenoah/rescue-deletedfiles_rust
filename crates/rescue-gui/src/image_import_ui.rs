@@ -115,6 +115,7 @@ pub(super) struct State {
     ddrescue_map: String,
     raw_sha256: String,
     raw_bytes: String,
+    qcow2_snapshot_id: String,
     pub output: String,
     worker: Option<thread::JoinHandle<()>>,
     error: Option<Text>,
@@ -126,6 +127,7 @@ impl State {
             self.first = source.to_owned();
             self.format = Format::from_path(source);
             self.segments.clear();
+            self.qcow2_snapshot_id.clear();
             self.ddrescue_map.clear();
             self.raw_sha256.clear();
             self.raw_bytes.clear();
@@ -157,6 +159,7 @@ impl App {
                 if state.first != old {
                     state.format = Format::from_path(&state.first);
                     state.segments.clear();
+                    state.qcow2_snapshot_id.clear();
                     state.ddrescue_map.clear();
                     state.raw_sha256.clear();
                     state.raw_bytes.clear();
@@ -185,6 +188,9 @@ impl App {
                         Format::Vhd => {ui.small(tr!("差分VHDでは、選択した子から近い順に親VHDを指定します。", "For a differencing VHD, select every parent VHD from nearest parent to base."));}
                         Format::Vdi => {ui.small(tr!("差分VDIでは、選択した子から固定・可変のベースまで、親VDIを近い順に指定します。", "For a differencing VDI, select its parents nearest first, ending with the fixed or dynamic base."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
+                    }
+                    if format == Format::Qcow {
+                        text_row(ui, tr!("内部スナップショットID（空欄で現在の状態）", "Internal snapshot ID (leave empty for the active disk)"), &mut state.qcow2_snapshot_id, "");
                     }
                     if format.split() {
                         let caption = if matches!(format, Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx) {
@@ -272,6 +278,7 @@ impl App {
             sector_size: None,
         };
         let ddrescue_map = PathBuf::from(&state.ddrescue_map);
+        let snapshot_id = state.qcow2_snapshot_id.clone();
         let expected_hash = state.raw_sha256.trim().to_owned();
         let expected_size = state.raw_bytes.trim().to_owned();
         let output = PathBuf::from(&state.output);
@@ -332,8 +339,11 @@ impl App {
                         bytes,
                         sha256: (!expected_hash.is_empty()).then_some(expected_hash.as_str()),
                     };
-                    rescue_core::disk_image::import_with_raw_expectation(
-                        &request, &output, expected, &cancel,
+                    let selector = (format == Format::Qcow && !snapshot_id.is_empty()).then_some(
+                        rescue_core::disk_image::Qcow2SnapshotSelector::Id(&snapshot_id),
+                    );
+                    rescue_core::disk_image::import_with_snapshot(
+                        &request, &output, expected, selector, &cancel,
                     )
                 } else {
                     rescue_core::disk_image::import(&request, &output, &cancel)

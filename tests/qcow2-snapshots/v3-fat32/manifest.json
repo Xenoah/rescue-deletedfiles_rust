@@ -1,0 +1,39 @@
+{
+  "active_sha256": "13657d6e92e05e7646769f705f657950f1d53241f182a7473c459320c045ae35",
+  "image_sha256": "337493b1760ca778373556bfc24e58c74ada653e19bc02df1a533e9bdb96fd12",
+  "options": "compat=1.1,cluster_size=65536",
+  "originals": {
+    "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "outer_bytes": 3604480,
+  "qemu": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+  "snapshots": [
+    {
+      "guest_bytes": 44040192,
+      "guest_sha256": "571f3db88a46779aebbe6c779353cd90f8aa9826f5d58cce90b7d53ae44333a8",
+      "id": "1",
+      "name": "before unlink",
+      "reference": "vdi-chain/fat32-zero/fat-0.raw.xz"
+    },
+    {
+      "guest_bytes": 44040192,
+      "guest_sha256": "aa9b001730261ad79cbbe54c4f021d9f026f54869de57bb198e59a9998db791b",
+      "id": "2",
+      "name": "削除後",
+      "reference": "vdi-chain/fat32-zero/fat-1.raw.xz"
+    },
+    {
+      "guest_bytes": 44040192,
+      "guest_sha256": "de1a567e0368ed7b2384d65ea8667800f4e59a2269e907921c3e2015d001b917",
+      "id": "3",
+      "name": "after removal",
+      "reference": "vdi-chain/fat32-zero/fat-2.raw.xz"
+    }
+  ]
+}

@@ -212,7 +212,13 @@ pub(in crate::disk_image) fn import_chain(
         }
         let before = file.metadata()?;
         let map = if kind == Kind::Qcow2 {
-            Some(Qcow::open_member(&mut file, before.len(), true, cancel)?)
+            Some(Qcow::open_member(
+                &mut file,
+                before.len(),
+                true,
+                None,
+                cancel,
+            )?)
         } else {
             None
         };

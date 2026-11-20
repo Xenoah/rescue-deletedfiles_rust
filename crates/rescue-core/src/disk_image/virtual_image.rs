@@ -9,6 +9,22 @@ use super::ImportedFile;
 use crate::{Error, Result};
 use flate2::{Decompress, FlushDecompress, Status};
 pub(super) use qcow::backing::import_chain;
+pub use qcow::{Qcow2Snapshot, Qcow2SnapshotSelector};
+
+pub fn list_qcow2_snapshots(path: &Path, cancel: &AtomicBool) -> Result<Vec<Qcow2Snapshot>> {
+    let path = crate::canonical_source_path(path)?;
+    if crate::is_device(&path) || !path.is_file() {
+        return Err(Error::Request("choose a regular QCOW2 image file".into()));
+    }
+    let mut source = File::open(path)?;
+    let before = source.metadata()?;
+    let image = qcow::Qcow::open(&mut source, before.len(), cancel)?;
+    let after = source.metadata()?;
+    if before.len() != after.len() || before.modified()? != after.modified()? {
+        return Err(Error::SourceChanged);
+    }
+    Ok(image.snapshots)
+}
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
@@ -215,6 +231,7 @@ impl Disk {
 pub(super) fn import(
     path: &Path,
     requested: Option<&str>,
+    selector: Option<Qcow2SnapshotSelector>,
     output: &Path,
     expected: super::RawExpectation,
     cancel: &AtomicBool,
@@ -266,12 +283,21 @@ pub(super) fn import(
     {
         return Err(invalid("signature differs from requested image type"));
     }
+    if selector.is_some() && kind != Some("qcow2") {
+        return Err(invalid("snapshot selection requires a QCOW2 image"));
+    }
     let mut disk = match kind {
         Some("vmdk") => Disk::Vmdk(vmdk::Vmdk::open(&mut source, before.len(), None, cancel)?),
         Some("vhdx") => Disk::Vhdx(vhdx::Vhdx::open(&mut source, before.len(), cancel)?),
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow1") => Disk::QcowV1(qcow::v1::Legacy::open(&mut source, before.len(), cancel)?),
-        Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),
+        Some("qcow2") => Disk::Qcow(qcow::Qcow::open_member(
+            &mut source,
+            before.len(),
+            false,
+            selector,
+            cancel,
+        )?),
         Some("vdi") => Disk::Vdi(Vdi::open(
             &mut source,
             before.len(),
