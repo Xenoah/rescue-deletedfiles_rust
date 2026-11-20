@@ -302,6 +302,9 @@ enum Command {
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
+        /// Select an LVM2 logical volume by its name or UUID, supplying every PV explicitly.
+        #[arg(long, conflicts_with_all = ["qcow2_snapshot_name", "qcow2_snapshot_id"])]
+        lvm_volume: Option<String>,
         /// Select a saved QCOW2 disk by its unique snapshot ID.
         #[arg(long, conflicts_with = "qcow2_snapshot_name")]
         qcow2_snapshot_id: Option<String>,
@@ -316,6 +319,13 @@ enum Command {
         raw_sha256: Option<String>,
         #[arg(long)]
         output: PathBuf,
+        #[arg(long)]
+        json: bool,
+    },
+    /// List verified logical volumes in an LVM2 group from complete physical-volume images.
+    LvmVolumes {
+        #[command(flatten)]
+        image: sleuthkit::ImageArgs,
         #[arg(long)]
         json: bool,
     },
@@ -632,12 +642,40 @@ fn run(cli: Cli) -> Result<i32, Error> {
             print(json!(report), compact);
             Ok(0)
         }
+        Command::LvmVolumes { image, json } => {
+            let volumes = rescue_core::disk_image::list_lvm_volumes(&image.into(), &cancel)?;
+            print(json!({ "volumes": volumes }), json);
+            Ok(0)
+        }
+        Command::ImportImage {
+            image,
+            lvm_volume: Some(volume),
+            output,
+            raw_bytes,
+            raw_sha256,
+            json,
+            ..
+        } => {
+            let report = rescue_core::disk_image::import_lvm_volume(
+                &image.into(),
+                &volume,
+                &output,
+                rescue_core::disk_image::RawExpectation {
+                    bytes: raw_bytes,
+                    sha256: raw_sha256.as_deref(),
+                },
+                &cancel,
+            )?;
+            print(json!(report), json);
+            Ok(0)
+        }
         Command::Qcow2Snapshots { source, json } => {
             let snapshots = rescue_core::disk_image::list_qcow2_snapshots(&source, &cancel)?;
             print(json!({ "snapshots": snapshots }), json);
             Ok(0)
         }
         Command::ImportImage {
+            lvm_volume: None,
             image,
             qcow2_snapshot_id,
             qcow2_snapshot_name,

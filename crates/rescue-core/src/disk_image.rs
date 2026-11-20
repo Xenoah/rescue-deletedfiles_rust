@@ -1,4 +1,6 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
+mod lvm;
+pub use lvm::{VolumeInfo as LvmVolumeInfo, import_lvm_volume, list_lvm_volumes};
 mod split_raw;
 pub use split_raw::{RawExpectation, RawSegment, RawVerification};
 mod ddrescue;
@@ -355,6 +357,9 @@ pub fn import_with_snapshot(
     let (mut args, paths) = image.arguments(Some(output))?;
     let first = Path::new(&paths[0]);
     let kind = image.image_type.as_deref();
+    if kind == Some("lvm2") {
+        return Err(Error::Request("select a logical volume with --lvm-volume; lvm-volumes lists available names and UUIDs".into()));
+    }
     let regular_raw = !crate::is_device(first);
     if (expected.sha256.is_some() || expected.bytes.is_some())
         && (!matches!(

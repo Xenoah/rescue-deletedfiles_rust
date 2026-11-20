@@ -1,0 +1,53 @@
+{
+  "captures": {
+    "linear": {
+      "bytes": 16777216,
+      "sha256": "dcc93f9ba8a2101ec35cec787e95da7ed9ed12d15032a75ea9c186dcded990fb"
+    },
+    "pv-a": {
+      "bytes": 33554432,
+      "sha256": "01495c8e62457ab5e1961f4c9d90db37c59dda32d6fa19f2fb154c6265a5ee63"
+    },
+    "pv-b": {
+      "bytes": 33554432,
+      "sha256": "83b7a6a60e82d830a9f01f319eb8e911618d203c68084f9f79cffde294702068"
+    },
+    "striped": {
+      "bytes": 16777216,
+      "sha256": "21fe0265775b4fe778fc8a0ac7e2b6138e8ffc2414c11a751416eb450f978ca3"
+    }
+  },
+  "mappings": [
+    "rescue_vg-linear: 0 32768 linear 254:16 128",
+    "rescue_vg-striped: 0 32768 striped 2 8 254:0 128 254:16 32896"
+  ],
+  "provenance": "Debian LVM 2.03.31, kernel 6.12.107, dmsetup table and direct dd from each activated logical volume, mounted ext4 with seven Linux unlinks each",
+  "volumes": {
+    "linear": {
+      "matched": {
+        "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "volume_sha256": "dcc93f9ba8a2101ec35cec787e95da7ed9ed12d15032a75ea9c186dcded990fb"
+    },
+    "striped": {
+      "matched": {
+        "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "volume_sha256": "21fe0265775b4fe778fc8a0ac7e2b6138e8ffc2414c11a751416eb450f978ca3"
+    }
+  }
+}
