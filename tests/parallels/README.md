@@ -7,7 +7,7 @@ python scripts/e2e_parallels.py --binary /path/to/rescue
 python scripts/e2e_parallels.py --binary /path/to/rescue --native
 ```
 
-ポータブル試験は11通りで16 MiBの論理ディスク全体を原本と比較します。各出力から、NTFS3で実際に削除した同じ10ファイル（AVI、DOCX、FLAC、OGG、PPTX、SQLite、TAR、TIFF、WAV、XLSX）を削除前の割当記録で復元し、全バイトとSHA-256を照合します。拒否試験は49通りで、親の欠落、割当表の重複、読めない領域、別世代の同名ファイル、既存出力の保護を含みます。[ポータブル試験結果](../../docs/parallels-results.json)
+ポータブル試験は11通りで16 MiBの論理ディスク全体を原本と比較します。各出力から、NTFS3で実際に削除した同じ10ファイル（AVI、DOCX、FLAC、OGG、PPTX、SQLite、TAR、TIFF、WAV、XLSX）を削除前の割当記録で復元し、全バイトとSHA-256を照合します。拒否試験は51通りで、親の欠落、割当表の重複、読めない領域、別世代の同名ファイル、既存出力の保護を含みます。[ポータブル試験結果](../../docs/parallels-results.json)
 
 Linux追加試験ではQEMUが展開した各世代とも照合します。別途FAT32・ext4にAAC、BMP、DOCX、FLAC、PDF、PNG、TAR、XLSXを書き込み、読み戻して削除します。それぞれをQEMUでHDSに変換し、RescueでRAWへ戻してからSleuth Kitで取り出した計16ファイルを原本と照合します。追加試験にはQEMU、dosfstools、mtools、e2fsprogs、Sleuth Kitが必要です。[Linux試験結果](../../docs/parallels-native-results.json)
 

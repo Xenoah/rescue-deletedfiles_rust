@@ -87,11 +87,11 @@ impl Hds {
         let mut mapping = Vec::with_capacity(needed as usize);
         let mut allocated = Vec::new();
         let mut has_holes = false;
-        for (i, word) in table.chunks_exact(4).enumerate() {
+        for (i, word) in table.as_chunks::<4>().0.iter().enumerate() {
             if i.is_multiple_of(4096) && cancel.load(Ordering::Relaxed) {
                 return Err(Error::Cancelled);
             }
-            let value = u32::from_le_bytes(word.try_into().unwrap());
+            let value = u32::from_le_bytes(*word);
             if i as u64 >= needed {
                 if value != 0 {
                     return Err(invalid("Parallels allocation beyond the guest"));
@@ -261,6 +261,12 @@ pub(in crate::disk_image) fn import(
         &head == LEGACY || &head == EXTENDED
     };
     if !hds && kind.is_none() && !descriptor_name_or_signature(path, &mut file, before.len())? {
+        if path
+            .extension()
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("hds"))
+        {
+            return Err(Error::Request("unrecognized HDS header; select DiskDescriptor.xml with its members, or explicitly import a known flat base as RAW".into()));
+        }
         return Ok(None);
     }
     let output = crate::canonical_output_path(output)?;

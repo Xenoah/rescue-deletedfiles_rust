@@ -127,6 +127,10 @@ def rejection_cases(binary, root, source, original, descriptor, snapshot_sha256)
         controls[label] = refuse(binary, root, label, import_args(path, expected=original))
 
     hds("signature", 0, b"Rejected HDS     ")
+    controls["unrecognized_hds_auto"] = refuse(binary, root, "damaged HDS", import_args(path, auto=True))
+    flat_base = root / "flat/flat.hds"
+    controls["flat_member_auto"] = refuse(binary, root, "flat member without descriptor", import_args(flat_base, auto=True))
+
     for label, pos, value in [
         ("version", 16, 8),
         ("cluster_zero", 28, 0),

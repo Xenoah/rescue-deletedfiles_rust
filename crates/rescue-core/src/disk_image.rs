@@ -379,7 +379,7 @@ pub fn import_with_snapshot(
         ) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW, QED, VDI, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, Parallels, QED, VDI, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
         ));
     }
     if selector.is_some() {
