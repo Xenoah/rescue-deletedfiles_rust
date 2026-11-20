@@ -13,7 +13,7 @@ CORPUS = Path(__file__).resolve().parents[1] / 'tests' / 'corpus'
 EXTENSIONS = {'png', 'webp', 'bz2', 'xml', 'txt', 'ico', 'zip'}
 
 
-def make_image(path, block, volume):
+def make_image(path, block, volume, kind=b'Windows_NTFS'):
     data = volume.read_bytes()
     start = 64
     sectors = len(data) // block
@@ -24,7 +24,7 @@ def make_image(path, block, volume):
         out.truncate(total * block)
         out.write(header)
         entries = [(1, 8, b'Apple', b'Apple_partition_map'),
-                   (start, sectors, 'Café'.encode('mac_roman'), b'Windows_NTFS'),
+                   (start, sectors, 'Café'.encode('mac_roman'), kind),
                    (9, start - 9, b'Spare', b'Apple_Free')]
         for i, (first, size, name, kind) in enumerate(entries, 1):
             row = bytearray(512)
