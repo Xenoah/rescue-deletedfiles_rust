@@ -1,0 +1,506 @@
+{
+  "actual_unlinks": 32,
+  "binary_sha256": "a2288ff3a582eb814535af46516ff6e87911339bca0e77634680c62e26870c17",
+  "capture_kernel": "Linux 6.12.107+deb13-cloud-amd64",
+  "chunk_bytes": 4096,
+  "original_bytes_per_volume": 110844883,
+  "search_alignment_bytes": 512,
+  "sources_unchanged": true,
+  "version": "rescue 1.37.0",
+  "volumes": {
+    "fat32": {
+      "controls_without_output": {
+        "other_volume_layout": "INVALID_IMAGE",
+        "reversed_layout": "INVALID_IMAGE",
+        "wrong_chunk_sha256": "INVALID_IMAGE",
+        "wrong_original_sha256": "INVALID_IMAGE"
+      },
+      "current_metadata_listed": 16,
+      "current_metadata_supported": 0,
+      "estimated_extent_evidence": [
+        "estimated_contiguous"
+      ],
+      "files": {
+        "camera.ari": {
+          "both_outputs_byte_exact": true,
+          "bytes": 11529396,
+          "distinct_chunks": 2815,
+          "fingerprint_chunks": 2815,
+          "runs": 176,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6160384,
+          "distinct_chunks": 1504,
+          "fingerprint_chunks": 1504,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "both_outputs_byte_exact": true,
+          "bytes": 5805950,
+          "distinct_chunks": 1418,
+          "fingerprint_chunks": 1418,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "both_outputs_byte_exact": true,
+          "bytes": 5273174,
+          "distinct_chunks": 1269,
+          "fingerprint_chunks": 1288,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 2300702,
+          "distinct_chunks": 562,
+          "fingerprint_chunks": 562,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "both_outputs_byte_exact": true,
+          "bytes": 7547392,
+          "distinct_chunks": 1843,
+          "fingerprint_chunks": 1843,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "both_outputs_byte_exact": true,
+          "bytes": 1538165,
+          "distinct_chunks": 376,
+          "fingerprint_chunks": 376,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 9958994,
+          "distinct_chunks": 2432,
+          "fingerprint_chunks": 2432,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3045278,
+          "distinct_chunks": 744,
+          "fingerprint_chunks": 744,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6422144,
+          "distinct_chunks": 1568,
+          "fingerprint_chunks": 1568,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3236017,
+          "distinct_chunks": 791,
+          "fingerprint_chunks": 791,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 7614592,
+          "distinct_chunks": 1860,
+          "fingerprint_chunks": 1860,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "both_outputs_byte_exact": true,
+          "bytes": 9561139,
+          "distinct_chunks": 2333,
+          "fingerprint_chunks": 2335,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6851240,
+          "distinct_chunks": 1670,
+          "fingerprint_chunks": 1673,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3249664,
+          "distinct_chunks": 792,
+          "fingerprint_chunks": 794,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 20750652,
+          "distinct_chunks": 5064,
+          "fingerprint_chunks": 5067,
+          "runs": 176,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "map_api": [
+        "FIBMAP"
+      ],
+      "sleuthkit_listed": 16,
+      "source_sha256": "f62bf93f70a7220edf1d626ca43b4cb7384ba01d07ceb987787ff0eb557100ff",
+      "total_runs": 1557,
+      "unverified_fat_outputs": {
+        "estimated_outputs": [
+          {
+            "bytes": 11529396,
+            "matched_any_original": false,
+            "name": "camera.ari",
+            "output_sha256": "9d6b8d1b4ee07768c5886072a666d54303f48d7207ab702ff04f8a0b5b93c803"
+          },
+          {
+            "bytes": 6160384,
+            "matched_any_original": false,
+            "name": "camera.arw",
+            "output_sha256": "7a8a117607df576aa9c38477575cf5b698635c7005015f9b06f7f49991dd3b44"
+          },
+          {
+            "bytes": 5805950,
+            "matched_any_original": false,
+            "name": "camera.cr2",
+            "output_sha256": "d37a6c88506e7b4accd1caadd6626af8ca30fe880cffc5fd35678ee34e5b9ed0"
+          },
+          {
+            "bytes": 5273174,
+            "matched_any_original": false,
+            "name": "camera.cr3",
+            "output_sha256": "69b6e2e66ead8c7a614df4c00dec0e80c5a9e04f3c7dd95cc30f710847997852"
+          },
+          {
+            "bytes": 2300702,
+            "matched_any_original": false,
+            "name": "camera.crw",
+            "output_sha256": "c3578ea487547e72a4d3e91337e34b6e66fb82514a00cb17fb63abd32e3eb562"
+          },
+          {
+            "bytes": 7547392,
+            "matched_any_original": false,
+            "name": "camera.dcr",
+            "output_sha256": "8bb0d4be68c562134030c8ff4a7ab8e80f9ceb6b2cf62c5eab38a7a94c7e9898"
+          },
+          {
+            "bytes": 1538165,
+            "matched_any_original": false,
+            "name": "camera.dng",
+            "output_sha256": "0def95504d7977bb66d91635dc592281ff68e1c6abf398909eda2aca0585aa31"
+          },
+          {
+            "bytes": 9958994,
+            "matched_any_original": false,
+            "name": "camera.erf",
+            "output_sha256": "f9aad74bb9c44535977040857f523a5196d60ac5d98c06f7952edec9a4a37bc9"
+          },
+          {
+            "bytes": 3045278,
+            "matched_any_original": false,
+            "name": "camera.gpr",
+            "output_sha256": "a0980831366abe7657867d23f2c458fcab46a593b90e1e71ab1d205c1b7fea13"
+          },
+          {
+            "bytes": 6422144,
+            "matched_any_original": false,
+            "name": "camera.mrw",
+            "output_sha256": "404ba0f991f35d79f4087d2823214b6145e74cb3e0cfed0384e23abd1ddfa40b"
+          },
+          {
+            "bytes": 3236017,
+            "matched_any_original": false,
+            "name": "camera.nef",
+            "output_sha256": "798800910621deb297125b1e38a39d55d01179712b61f09a3c9fb0889daf6cf4"
+          },
+          {
+            "bytes": 7614592,
+            "matched_any_original": false,
+            "name": "camera.orf",
+            "output_sha256": "39977a2db3b2d8f58d83c5a1726e3170dfb14039ed660a810447ae2b3d6e3ded"
+          },
+          {
+            "bytes": 9561139,
+            "matched_any_original": false,
+            "name": "camera.pef",
+            "output_sha256": "dd82d233824e2f71d731c84bd0616cb521f5e7488c7ecfbd65b73fae053d7d49"
+          },
+          {
+            "bytes": 6851240,
+            "matched_any_original": false,
+            "name": "camera.raf",
+            "output_sha256": "ea65d6bb2cc3a3ca28e3a831886cc04410d3e64bae5a02636bed8c97d55bcfb8"
+          },
+          {
+            "bytes": 3249664,
+            "matched_any_original": false,
+            "name": "camera.rw2",
+            "output_sha256": "2aaa576608d3c5d1edc136c3100be4ac7fedc32f3168090d6fed66b4b0ef5862"
+          },
+          {
+            "bytes": 20750652,
+            "matched_any_original": false,
+            "name": "camera.srw",
+            "output_sha256": "694b70b673105dbfb1d3f50dd759ecba511e47d44b6836829e7df98134c8bf1d"
+          }
+        ],
+        "sleuthkit_outputs": [
+          {
+            "bytes": 11529396,
+            "matched_any_original": false,
+            "name": "inode-38.ari",
+            "output_sha256": "9d6b8d1b4ee07768c5886072a666d54303f48d7207ab702ff04f8a0b5b93c803"
+          },
+          {
+            "bytes": 6160384,
+            "matched_any_original": false,
+            "name": "inode-40.arw",
+            "output_sha256": "7a8a117607df576aa9c38477575cf5b698635c7005015f9b06f7f49991dd3b44"
+          },
+          {
+            "bytes": 5805950,
+            "matched_any_original": false,
+            "name": "inode-42.cr2",
+            "output_sha256": "d37a6c88506e7b4accd1caadd6626af8ca30fe880cffc5fd35678ee34e5b9ed0"
+          },
+          {
+            "bytes": 5273174,
+            "matched_any_original": false,
+            "name": "inode-44.cr3",
+            "output_sha256": "69b6e2e66ead8c7a614df4c00dec0e80c5a9e04f3c7dd95cc30f710847997852"
+          },
+          {
+            "bytes": 2300702,
+            "matched_any_original": false,
+            "name": "inode-46.crw",
+            "output_sha256": "c3578ea487547e72a4d3e91337e34b6e66fb82514a00cb17fb63abd32e3eb562"
+          },
+          {
+            "bytes": 7547392,
+            "matched_any_original": false,
+            "name": "inode-48.dcr",
+            "output_sha256": "8bb0d4be68c562134030c8ff4a7ab8e80f9ceb6b2cf62c5eab38a7a94c7e9898"
+          },
+          {
+            "bytes": 1538165,
+            "matched_any_original": false,
+            "name": "inode-50.dng",
+            "output_sha256": "0def95504d7977bb66d91635dc592281ff68e1c6abf398909eda2aca0585aa31"
+          },
+          {
+            "bytes": 9958994,
+            "matched_any_original": false,
+            "name": "inode-52.erf",
+            "output_sha256": "f9aad74bb9c44535977040857f523a5196d60ac5d98c06f7952edec9a4a37bc9"
+          },
+          {
+            "bytes": 3045278,
+            "matched_any_original": false,
+            "name": "inode-54.gpr",
+            "output_sha256": "a0980831366abe7657867d23f2c458fcab46a593b90e1e71ab1d205c1b7fea13"
+          },
+          {
+            "bytes": 6422144,
+            "matched_any_original": false,
+            "name": "inode-56.mrw",
+            "output_sha256": "404ba0f991f35d79f4087d2823214b6145e74cb3e0cfed0384e23abd1ddfa40b"
+          },
+          {
+            "bytes": 3236017,
+            "matched_any_original": false,
+            "name": "inode-58.nef",
+            "output_sha256": "798800910621deb297125b1e38a39d55d01179712b61f09a3c9fb0889daf6cf4"
+          },
+          {
+            "bytes": 7614592,
+            "matched_any_original": false,
+            "name": "inode-60.orf",
+            "output_sha256": "39977a2db3b2d8f58d83c5a1726e3170dfb14039ed660a810447ae2b3d6e3ded"
+          },
+          {
+            "bytes": 9561139,
+            "matched_any_original": false,
+            "name": "inode-62.pef",
+            "output_sha256": "dd82d233824e2f71d731c84bd0616cb521f5e7488c7ecfbd65b73fae053d7d49"
+          },
+          {
+            "bytes": 6851240,
+            "matched_any_original": false,
+            "name": "inode-64.raf",
+            "output_sha256": "ea65d6bb2cc3a3ca28e3a831886cc04410d3e64bae5a02636bed8c97d55bcfb8"
+          },
+          {
+            "bytes": 3249664,
+            "matched_any_original": false,
+            "name": "inode-66.rw2",
+            "output_sha256": "2aaa576608d3c5d1edc136c3100be4ac7fedc32f3168090d6fed66b4b0ef5862"
+          },
+          {
+            "bytes": 20750652,
+            "matched_any_original": false,
+            "name": "inode-68.srw",
+            "output_sha256": "694b70b673105dbfb1d3f50dd759ecba511e47d44b6836829e7df98134c8bf1d"
+          }
+        ]
+      }
+    },
+    "ntfs": {
+      "controls_without_output": {
+        "other_volume_layout": "INVALID_IMAGE",
+        "reversed_layout": "INVALID_IMAGE",
+        "wrong_chunk_sha256": "INVALID_IMAGE",
+        "wrong_original_sha256": "INVALID_IMAGE"
+      },
+      "current_metadata_listed": 0,
+      "current_metadata_supported": 0,
+      "files": {
+        "camera.ari": {
+          "both_outputs_byte_exact": true,
+          "bytes": 11529396,
+          "distinct_chunks": 2815,
+          "fingerprint_chunks": 2815,
+          "runs": 153,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6160384,
+          "distinct_chunks": 1504,
+          "fingerprint_chunks": 1504,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "both_outputs_byte_exact": true,
+          "bytes": 5805950,
+          "distinct_chunks": 1418,
+          "fingerprint_chunks": 1418,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "both_outputs_byte_exact": true,
+          "bytes": 5273174,
+          "distinct_chunks": 1269,
+          "fingerprint_chunks": 1288,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 2300702,
+          "distinct_chunks": 562,
+          "fingerprint_chunks": 562,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "both_outputs_byte_exact": true,
+          "bytes": 7547392,
+          "distinct_chunks": 1843,
+          "fingerprint_chunks": 1843,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "both_outputs_byte_exact": true,
+          "bytes": 1538165,
+          "distinct_chunks": 376,
+          "fingerprint_chunks": 376,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 9958994,
+          "distinct_chunks": 2432,
+          "fingerprint_chunks": 2432,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3045278,
+          "distinct_chunks": 744,
+          "fingerprint_chunks": 744,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6422144,
+          "distinct_chunks": 1568,
+          "fingerprint_chunks": 1568,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3236017,
+          "distinct_chunks": 791,
+          "fingerprint_chunks": 791,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 7614592,
+          "distinct_chunks": 1860,
+          "fingerprint_chunks": 1860,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "both_outputs_byte_exact": true,
+          "bytes": 9561139,
+          "distinct_chunks": 2333,
+          "fingerprint_chunks": 2335,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "both_outputs_byte_exact": true,
+          "bytes": 6851240,
+          "distinct_chunks": 1670,
+          "fingerprint_chunks": 1673,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "both_outputs_byte_exact": true,
+          "bytes": 3249664,
+          "distinct_chunks": 792,
+          "fingerprint_chunks": 794,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "both_outputs_byte_exact": true,
+          "bytes": 20750652,
+          "distinct_chunks": 5064,
+          "fingerprint_chunks": 5067,
+          "runs": 152,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "map_api": [
+        "FIEMAP"
+      ],
+      "sleuthkit_listed": 0,
+      "source_sha256": "a320c495179140ebc56bb066950d75dcc0e9477408ebba856a19cdaf3bf5f136",
+      "total_runs": 1510
+    }
+  },
+  "writes_interleaved_bytes": 65536
+}

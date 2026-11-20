@@ -44,3 +44,5 @@ ext4で同じ確認を行うには、一覧にある過去のinode番号と、�
 rescue ext4-journal --source ext4.raw --json
 rescue ext4-journal --source ext4.raw --inode INODE --sha256 ORIGINAL_SHA256 --output restored.dng --json
 ```
+
+意図的に断片化してからカーネルで削除した場合は、同じ16形式でも結果が変わりました。[断片化したNTFS・FAT32での32件の実測と再現手順](kernel-fragments/README.md)
