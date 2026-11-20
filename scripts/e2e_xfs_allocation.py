@@ -16,6 +16,7 @@ from e2e_btrfs_snapshots import crc32c
 from e2e_disks import disk_image
 from e2e_formats import file_hash
 from e2e_hfs_allocation import restore, scan
+from e2e_imaging import mark_gap
 
 REFERENCE = Path(__file__).resolve().parents[1] / 'tests/xfs-allocation'
 
@@ -113,6 +114,18 @@ def controls(binary, root, image, ref):
     last = log_at + (head - 2) * 512
     header = read_at(image, last, 512)
     check(header[:4] == bytes.fromhex('feedbabe') and be32(header, 12) == 512, header[:44])
+    payload = read_at(image, last + 512, 512)
+    def log_edit(offset, val):
+        copy = bytearray(header)
+        struct.pack_into('>I', copy, offset, val)
+        copy[32:36] = bytes(4)
+        for size in (324, 328):
+            clean = bytearray(header[:size])
+            clean[32:36] = bytes(4)
+            if crc32c(clean + payload) == int.from_bytes(header[32:36], 'little'):
+                struct.pack_into('<I', copy, 32, crc32c(copy[:size] + payload))
+                return copy
+        raise AssertionError('unexpected reference journal checksum')
     edits = {
         'superblock_crc': [(224, bytes([sb[224] ^ 1]))],
         'needs_repair': [(0, amended(sb, 224, [(216, '>I', be32(sb, 216) | 16)]))],
@@ -127,6 +140,9 @@ def controls(binary, root, image, ref):
         'tree_newer_than_log': [(bno_at, amended(bno, 52, [(24, '>Q', (2 << 32))]))],
         'tree_sibling': [(bno_at, amended(bno, 52, [(12, '>I', be32(agf, 16))]))],
         'dual_tree_disagreement': [(cnt_at, amended(cnt, 52, [(56, '>I', be32(cnt, 56) + 1)]))],
+        'missing_inode_tree': [(2 * sector, amended(read_at(image, 2 * sector, sector), 312, [(20, '>I', 0)]))],
+        'journal_future_tail': [(last, log_edit(28, head))],
+        'journal_predecessor': [(last, log_edit(36, head - 3))],
         'journal_checksum': [(last + 32, bytes([header[32] ^ 1]))],
         'journal_needs_replay': [(last + 512 + 9, b'\x00')],
         'journal_cycle_discontinuity': [(log_at + (head + 1)*512, struct.pack('>I', 7))],
@@ -139,6 +155,14 @@ def controls(binary, root, image, ref):
             check([(r['record'], r['allocation_status']) for r in rows] ==
                   [(png['deleted_offset'], 'unknown')], (label, rows, result))
             check(any(w.startswith('ALLOCATION_FALLBACK:') for w in result['warnings']), label)
+    capture = run(binary, 'image', '--source', image, '--destination', root/'acquisition',
+                  '--block-size', 1048576, '--json', timeout=240)
+    mapped = Path(capture['image'])
+    mark_gap(mapped, log_at)
+    degraded, rows = scan(binary, mapped, root/'missing-journal', extensions='png', bounds=area, expected=5)
+    check([(r['record'], r['allocation_status']) for r in rows] == [(png['deleted_offset'], 'unknown')], rows)
+    check(any(w.startswith('ALLOCATION_FALLBACK:') for w in degraded['warnings']), degraded)
+    mapped.unlink()
     # A consistent allocation change covers only the second block of a previously
     # found WAV. Its payload, mtime and all three fingerprint samples stay intact.
     wrapper = root/'reuse.raw'
@@ -170,7 +194,34 @@ def controls(binary, root, image, ref):
                       '--destination', root/('stale'+str(len(mode))), '--json', expected=5)
         check(failure['results'][0]['path'] is None and 'SOURCE_CHANGED' in json.dumps(failure), failure)
     wrapper.unlink()
-    return sorted([*edits, 'partial_reuse', 'stale_recover', 'stale_stream'])
+    return sorted([*edits, 'unreadable_journal', 'partial_reuse', 'stale_recover', 'stale_stream'])
+
+
+def internal_nodes(binary, root, image, ref):
+    bs = ref['block_bytes']
+    sector = ref['sector_bytes']
+    agf = read_at(image, sector, sector)
+    bno_at = be32(agf, 16) * bs
+    node = read_at(image, bno_at, bs)
+    check(node[:6] == b'AB3B' + bytes([0, 1]) and struct.unpack_from('>H', node, 6)[0] > 1, node[:16])
+    check(be32(agf, 28) == be32(agf, 32) == 2, 'expected two-level free trees')
+    pointers = 56 + (bs - 56) // 12 * 8
+    leaf_at = be32(node, pointers) * bs
+    leaf = read_at(image, leaf_at, bs)
+    edits = {
+        'cyclic_child': [(bno_at, amended(node, 52, [(pointers, '>I', bno_at//bs)]))],
+        'duplicate_child': [(bno_at, amended(node, 52, [(pointers+4, '>I', leaf_at//bs)]))],
+        'wrong_separator': [(bno_at, amended(node, 52, [(56, '>I', be32(node, 56)+1)]))],
+        'broken_leaf_link': [(leaf_at, amended(leaf, 52, [(12, '>I', 0xffffffff)]))],
+        'wrong_leaf_address': [(leaf_at, amended(leaf, 52, [(16, '>Q', bno_at//512)]))],
+    }
+    png = ref['files']['sample.png']
+    for label, patches in edits.items():
+        with changed(image, patches):
+            result, rows = scan(binary, image, root/label, extensions='png', bounds=bounds({'png':png}, 'deleted_offset'))
+            check([(r['record'], r['allocation_status']) for r in rows] == [(png['deleted_offset'], 'unknown')], rows)
+            check(any(w.startswith('ALLOCATION_FALLBACK:') for w in result['warnings']), result)
+    return sorted(edits)
 
 
 def verify(binary, root, xfs_tools=False):
@@ -194,6 +245,21 @@ def verify(binary, root, xfs_tools=False):
         check(restore(binary, image, files, root/(case+'-indexed'), indexed=True, bounds=area) == exact, case)
         if case == 'xfs-4096-512-4':
             result['degraded'] = controls(binary, root, image, ref)
+        if case == 'xfs-4096-4096-3':
+            result['internal_node_controls'] = internal_nodes(binary, root, image, ref)
+        if case in ('xfs-1024-512-3', 'xfs-4096-4096-3'):
+            sector, scheme = (512, 'mbr') if ref['sector_bytes'] == 512 else (4096, 'gpt')
+            wrapper = root/('partitioned-'+scheme+'.raw')
+            ((start, _),) = disk_image(wrapper, [image], sector=sector, scheme=scheme)
+            if scheme == 'mbr':
+                write_at(wrapper, 450, bytes([0x83]))
+            shift = start*sector
+            wrapped = restore(binary, wrapper, files, root/(case+'-partitioned'), shift=shift,
+                              indexed=True, bounds=bounds(files, 'deleted_offset', shift))
+            check(wrapped == exact, scheme)
+            _, live = scan(binary, wrapper, root/(case+'-partition-live'), bounds=bounds(files, 'live_offset', shift))
+            check(not live, live)
+            wrapper.unlink()
         check(file_hash(image) == ref['guest_sha256'], case)
         result[case] = dict(guest_sha256=ref['guest_sha256'], restored_sha256=exact, excluded_live=7,
                             xfs_db_extent_count=len(ref['xfs_db_free_extents']))

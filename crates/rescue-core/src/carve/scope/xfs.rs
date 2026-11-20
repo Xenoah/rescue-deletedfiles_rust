@@ -139,7 +139,7 @@ impl Map {
         if be64(&sb, 240) > lsn {
             return Err(invalid("superblock is newer than clean journal head"));
         }
-        let mut budget = 256 << 20;
+        let mut budget: usize = 256 << 20;
         let mut free = Vec::new();
         let mut count = 0u64;
         for number in 0..g.groups {
@@ -156,7 +156,11 @@ impl Map {
                 lsn,
             };
             let at = first * g.block;
-            let headers = image.read(at, 4 * g.sector)?;
+            let header_bytes = 4 * g.sector;
+            budget = budget
+                .checked_sub(header_bytes)
+                .ok_or_else(|| Error::Limit("XFS allocation metadata exceeds 256 MiB".into()))?;
+            let headers = image.read(at, header_bytes)?;
             let alt = &headers[..g.sector];
             if !checked_crc(alt, 224)
                 || alt[..56] != sb[..56]
@@ -190,7 +194,16 @@ impl Map {
             }
             let mut reserved: BTreeSet<u32> =
                 (0..(4 * g.sector as u64).div_ceil(g.block) as u32).collect();
-            for root in [be32(agf, 24), be32(agf, 88), be32(agi, 20), be32(agi, 328)] {
+            let ro_features = be32(&sb, 212);
+            for (root, required) in [
+                (be32(agf, 24), ro_features & 2 != 0),
+                (be32(agf, 88), ro_features & 4 != 0),
+                (be32(agi, 20), true),
+                (be32(agi, 328), ro_features & 1 != 0),
+            ] {
+                if required != (root != 0) {
+                    return Err(invalid("missing or unexpected auxiliary tree root"));
+                }
                 if root != 0 && (root >= group.blocks || !reserved.insert(root)) {
                     return Err(invalid("auxiliary tree roots"));
                 }

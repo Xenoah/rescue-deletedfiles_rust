@@ -8,7 +8,10 @@
     "group_free_total",
     "journal_checksum",
     "journal_cycle_discontinuity",
+    "journal_future_tail",
     "journal_needs_replay",
+    "journal_predecessor",
+    "missing_inode_tree",
     "needs_repair",
     "partial_reuse",
     "realtime",
@@ -18,7 +21,15 @@
     "tree_checksum",
     "tree_newer_than_log",
     "tree_sibling",
-    "tree_wrong_owner"
+    "tree_wrong_owner",
+    "unreadable_journal"
+  ],
+  "internal_node_controls": [
+    "broken_leaf_link",
+    "cyclic_child",
+    "duplicate_child",
+    "wrong_leaf_address",
+    "wrong_separator"
   ],
   "xfs-1024-512-3": {
     "excluded_live": 7,

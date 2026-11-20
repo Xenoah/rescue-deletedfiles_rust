@@ -20,6 +20,7 @@ pub(super) fn clean_lsn(
     let mut current = None;
     let mut head = blocks;
     let mut last = None;
+    let mut previous = None;
     let mut offset = 0;
     while offset < bytes {
         if cancel.load(Ordering::Relaxed) {
@@ -40,7 +41,7 @@ pub(super) fn clean_lsn(
                     if be64(data, 16) != (u64::from(cycle) << 32 | pos) || data[304..320] != *uuid {
                         return Err(invalid("journal record position or UUID"));
                     }
-                    last = Some(pos);
+                    previous = last.replace(pos);
                 }
             } else {
                 if cycle != active - 1 {
@@ -66,12 +67,52 @@ pub(super) fn clean_lsn(
     {
         return Err(invalid("journal needs replay or has unsupported geometry"));
     }
+    let lsn = be64(&header, 16);
+    let cycle = be32(&header, 4);
+    let prev = u64::from(be32(&header, 36));
+    let tail = be64(&header, 24);
+    let tail_pos = tail & u64::from(u32::MAX);
+    let log_lsn = |block: u64| (u64::from(cycle - u32::from(block > pos)) << 32) | block;
+    if prev >= blocks
+        || prev == pos
+        || previous.is_some_and(|p| p != prev)
+        || tail_pos >= blocks
+        || tail == 0
+        || tail > lsn
+        || tail != log_lsn(tail_pos)
+    {
+        return Err(invalid("journal predecessor or tail cursor"));
+    }
+    for cursor in [prev, tail_pos] {
+        let record = image.read(start + cursor * 512, 512)?;
+        if be32(&record, 0) != MAGIC
+            || be32(&record, 8) != 2
+            || be64(&record, 16) != log_lsn(cursor)
+            || record[304..320] != *uuid
+        {
+            return Err(invalid("journal cursor does not identify a record"));
+        }
+        if cursor == prev {
+            let size = be32(&record, 320);
+            let len = be32(&record, 12);
+            if !(16384..=262144).contains(&size)
+                || !size.is_power_of_two()
+                || len == 0
+                || len > size
+                || !len.is_multiple_of(512)
+                || (prev + u64::from(size.div_ceil(32768) + len / 512)) % blocks != pos
+            {
+                return Err(invalid(
+                    "journal predecessor is not contiguous with unmount",
+                ));
+            }
+        }
+    }
     let headers = u64::from(buffer_size.div_ceil(32768));
     if pos + headers + data_len as u64 / 512 != head {
         return Err(invalid("unmount record does not end at journal head"));
     }
     let data = image.read(start + (pos + headers) * 512, data_len)?;
-    let cycle = be32(&header, 4);
     if data
         .as_chunks::<512>()
         .0
@@ -102,5 +143,5 @@ pub(super) fn clean_lsn(
     }) {
         return Err(invalid("journal unmount checksum"));
     }
-    Ok(be64(&header, 16))
+    Ok(lsn)
 }
