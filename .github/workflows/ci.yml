@@ -231,6 +231,12 @@ jobs:
         run: python scripts/ci_command.py python scripts/independent_fat.py --binary target/${{ matrix.target }}/debug/rescue
       - name: Build native release executables
         run: python scripts/ci_command.py cargo build --release --workspace --target ${{ matrix.target }} --locked --offline
+      - name: Read complete differencing VHD guests through the Windows virtual disk driver
+        if: runner.os == 'Windows'
+        run: python scripts/ci_command.py python scripts/e2e_vhd_chain.py --windows-driver --binary target/${{ matrix.target }}/release/${{ matrix.executable }}
+      - name: Cross-check fixed and dynamic VHD bases with Sleuth Kit
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vhd_chain.py --tsk --binary target/${{ matrix.target }}/release/rescue
       - name: Restore seven Windows NTFS deletions across a 4 GiB VHDX BAT chunk boundary
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_chunk.py --binary target/${{ matrix.target }}/release/rescue
