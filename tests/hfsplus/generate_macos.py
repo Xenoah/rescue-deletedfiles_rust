@@ -1,5 +1,6 @@
 """Create genuine unmounted HFS+ and case-sensitive HFSX volumes on owned macOS disk images."""
 from contextlib import contextmanager
+import argparse
 import hashlib
 import json
 import lzma
@@ -17,7 +18,10 @@ FILES = {f'sample.{ext}':(CORPUS/f'sample.{ext}').read_bytes() for ext in
 
 
 def command(*args):
-    return subprocess.run(list(map(str,args)),check=True,capture_output=True,timeout=120).stdout
+    result = subprocess.run(list(map(str,args)),capture_output=True,timeout=120)
+    if result.returncode:
+        raise RuntimeError(f'{args[0]} exited {result.returncode}: {result.stderr.decode(errors="replace")}')
+    return result.stdout
 
 
 @contextmanager
@@ -57,7 +61,8 @@ def generate(case, work):
     with image.open('wb') as f:
         f.truncate(32<<20)
     with owned_disk(image) as dev:
-        command('/sbin/newfs_hfs',*(['-s'] if case=='hfsx' else []),'-v','Rescue QA',dev.replace('/dev/disk','/dev/rdisk'))
+        command('/sbin/newfs_hfs',*(['-s'] if case.startswith('hfsx') else []),
+                *(['-J','1M'] if case.endswith('journaled') else []),'-v','Rescue QA',dev.replace('/dev/disk','/dev/rdisk'))
         with mounted(dev,mount):
             (mount/'.metadata_never_index').touch()
             (mount/'deleted').mkdir()
@@ -97,8 +102,12 @@ def generate(case, work):
 
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--journaled-only',action='store_true')
+    options=parser.parse_args()
     reports={}
-    for case in ('hfsplus','hfsx'):
+    cases=('hfsplus-journaled','hfsx-journaled') if options.journaled_only else ('hfsplus','hfsx')
+    for case in cases:
         with tempfile.TemporaryDirectory() as tmp:
             reports[case]=generate(case,Path(tmp))
-    (ROOT/'manifest.json').write_text(json.dumps(reports,indent=2)+'\n')
+    (ROOT/('journaled.json' if options.journaled_only else 'manifest.json')).write_text(json.dumps(reports,indent=2)+'\n')
