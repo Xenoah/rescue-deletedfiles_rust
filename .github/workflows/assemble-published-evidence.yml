@@ -1,0 +1,66 @@
+name: Assemble verified public package reports
+on:
+  push:
+    branches: [qa/assemble-v1.43.0]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+      SOURCE_RUN: '44731553548'
+      RELEASE_TAG: v1.43.0
+      RELEASE_SHA: d0d9712d1c90e8f142f9d7da999270876642adbc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check the tag, four native results and original artifact digests
+        run: |
+          python - <<'PY'
+          import hashlib, io, json, os, subprocess, zipfile
+          from pathlib import Path
+          def gh(*args):
+              return subprocess.check_output(['gh', *args])
+          def api(path):
+              return json.loads(gh('api', 'repos/' + os.environ['GH_REPO'] + '/' + path))
+          run_id, tag, sha = (os.environ[k] for k in ('SOURCE_RUN','RELEASE_TAG','RELEASE_SHA'))
+          assert subprocess.check_output(['git','rev-parse',tag+'^{commit}'], text=True).strip() == sha
+          changes = subprocess.check_output(['git','diff','--name-only',sha,'HEAD'], text=True).splitlines()
+          assert set(changes) == {'.github/workflows/assemble-published-evidence.yml', 'scripts/published_package_report.py'}
+          src = api('actions/runs/' + run_id)
+          assert src['head_sha'] == sha and src['head_branch'] == tag
+          assert src['path'] == '.github/workflows/published-packages.yml' and src['status'] == 'completed'
+          jobs = api('actions/runs/' + run_id + '/jobs')['jobs']
+          platforms = [('windows-2022','windows','x64'),('ubuntu-22.04','linux','x64'),('macos-26-intel','macos','x64'),('macos-26','macos','arm64')]
+          assert {j['name'] for j in jobs if j['conclusion']=='success'} == {f'test ({os}, {p}, {a})' for os,p,a in platforms}
+          assert [j['name'] for j in jobs if j['conclusion']!='success'] == ['attach-evidence']
+          artifacts = api('actions/runs/' + run_id + '/artifacts')['artifacts']
+          root = Path('evidence'); root.mkdir()
+          for _, platform, arch in platforms:
+              item, = [v for v in artifacts if v['name']==f'published-native-{platform}-{arch}']
+              assert not item['expired'] and item['workflow_run']['id'] == int(run_id)
+              blob = gh('api', f"repos/{os.environ['GH_REPO']}/actions/artifacts/{item['id']}/zip")
+              assert len(blob)==item['size_in_bytes'] and 'sha256:'+hashlib.sha256(blob).hexdigest()==item['digest']
+              name = f'published-format-{platform}-{arch}.json'
+              with zipfile.ZipFile(io.BytesIO(blob)) as z:
+                  assert z.namelist()==[name]
+                  (root/name).write_bytes(z.read(name))
+              print(name, item['digest'])
+          PY
+      - name: Rebuild the report from the original results
+        run: |
+          gh release view "$RELEASE_TAG" --json body --jq .body > current-release.md
+          python scripts/published_package_report.py --tag "$RELEASE_TAG" --input-dir evidence --output report --body current-release.md --updated-body updated-release.md
+          (cd report && sha256sum -c PUBLISHED-SHA256SUMS.txt)
+          cat report/published-format-verification.md >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-verification
+          path: report/*
+          retention-days: 90
+          if-no-files-found: error

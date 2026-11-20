@@ -62,7 +62,16 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 43, 0):
         reference = 'svg-native-results.json' if platform == 'linux' else 'svg-results.json'
-        assert run['svg_images'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+        root = Path(__file__).resolve().parents[1]
+        expected_svg = json.loads((root/'docs'/reference).read_text(encoding='utf-8'))
+        # The immutable pre-1.52 test used gzip.compress(mtime=0), which on
+        # Python 3.12 delegates the gzip OS byte to the platform's zlib.
+        fixture = bytearray((root/'tests/svg/rectangle.svgz').read_bytes())
+        fixture[8:10] = bytes([2, 3])
+        assert hashlib.sha256(fixture).hexdigest() == expected_svg['gap_after_record']['svgz']
+        fixture[9] = {'linux':3, 'windows':10, 'macos':19}[platform]
+        expected_svg['gap_after_record']['svgz'] = hashlib.sha256(fixture).hexdigest()
+        assert run['svg_images'] == expected_svg
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 42, 0):
         reference = 'qcow2-snapshot-native-results.json' if platform == 'linux' else 'qcow2-snapshot-results.json'
         assert run['qcow2_snapshots'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
