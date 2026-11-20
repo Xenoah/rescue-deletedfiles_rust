@@ -25,6 +25,7 @@ from e2e_udif import verify as udif_images
 from e2e_compressed_raw import verify as compressed_disks
 from e2e_udif_codecs import verify as modern_udif_codecs
 from e2e_known_extents import verify as known_extents
+from e2e_raid6_layouts import verify as raid6_layouts
 from e2e_parallels import verify as parallels
 from e2e_partition_extents import exercise as partition_extents, large_boundary as partition_extents_4g
 from e2e_vhd import verify as classic_vhd
@@ -259,6 +260,9 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 52, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['raid6_layouts'] = raid6_layouts(binary, Path(tmp), native=a.platform == 'linux')
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 51, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['parallels'] = parallels(binary, Path(tmp), native=a.platform == 'linux')

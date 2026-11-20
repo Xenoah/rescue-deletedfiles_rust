@@ -1,8 +1,10 @@
 //! Bounded, read-only reconstruction from explicit member images. Never repairs a member.
+mod parity;
 use crate::{
     Error, Fingerprint, MissingRange, OutputRoot, ReadState, RecoveryDestination, Result,
     source::Image,
 };
+use parity::Stripe;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -35,7 +37,23 @@ pub enum RaidLayout {
     RightAsymmetric,
     LeftSymmetric,
     RightSymmetric,
+    #[serde(alias = "parity_last")]
     PqLast,
+    #[serde(alias = "parity_first")]
+    PqFirst,
+    #[serde(rename = "left_asymmetric_6")]
+    LeftAsymmetric6,
+    #[serde(rename = "right_asymmetric_6")]
+    RightAsymmetric6,
+    #[serde(rename = "left_symmetric_6")]
+    LeftSymmetric6,
+    #[serde(rename = "right_symmetric_6")]
+    RightSymmetric6,
+    #[serde(rename = "parity_first_6")]
+    ParityFirst6,
+    DdfZeroRestart,
+    DdfNRestart,
+    DdfNContinue,
 }
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -121,23 +139,14 @@ impl RaidConfig {
             return Err(invalid("version, member count, sector size or stripe size"));
         }
         match self.level {
-            Raid5
-                if n < 3
-                    || !matches!(
-                        self.layout,
-                        RaidLayout::LeftAsymmetric
-                            | RaidLayout::RightAsymmetric
-                            | RaidLayout::LeftSymmetric
-                            | RaidLayout::RightSymmetric
-                    ) =>
-            {
+            Raid5 if n < 3 || !RaidLayout::RAID5_LAYOUTS.contains(&self.layout) => {
                 return Err(invalid(
                     "RAID5 requires 3..16 members and an explicit rotating parity layout",
                 ));
             }
-            Raid6 if n < 4 || self.layout != RaidLayout::PqLast => {
+            Raid6 if n < 4 || !RaidLayout::RAID6_LAYOUTS.contains(&self.layout) => {
                 return Err(invalid(
-                    "RAID6 supports only pq_last: fixed P/Q, GF(2^8) polynomial 0x11d, coefficient 2^data_index",
+                    "RAID6 requires 4..16 members and an explicit dual-parity layout",
                 ));
             }
             Raid10 if !n.is_multiple_of(2) => {
@@ -348,28 +357,6 @@ impl RaidSource {
             Ok((vec![0; length], vec![gap(0, length as u64)]))
         }
     }
-    fn parity_positions(&self, stripe: u64) -> (usize, Option<usize>, Vec<usize>) {
-        let c = &self.evidence.config;
-        let n = c.members.len();
-        if c.level == RaidLevel::Raid6 {
-            return (n - 2, Some(n - 1), (0..n - 2).collect());
-        }
-        let p = match c.layout {
-            RaidLayout::LeftAsymmetric | RaidLayout::LeftSymmetric => {
-                n - 1 - (stripe % n as u64) as usize
-            }
-            _ => (stripe % n as u64) as usize,
-        };
-        let data = if matches!(
-            c.layout,
-            RaidLayout::LeftSymmetric | RaidLayout::RightSymmetric
-        ) {
-            (1..n).map(|i| (p + i) % n).collect()
-        } else {
-            (0..n).filter(|i| *i != p).collect()
-        };
-        (p, None, data)
-    }
     pub fn read_available(
         &mut self,
         offset: u64,
@@ -427,12 +414,12 @@ impl RaidSource {
                     let data = n - if c.level == RaidLevel::Raid5 { 1 } else { 2 };
                     let unit = pos / chunk;
                     let stripe = unit / data as u64;
-                    let (p, q, slots) = self.parity_positions(stripe);
+                    let parity = Stripe::new(c.level, c.layout, n, stripe);
                     (
                         (0..n).collect(),
                         stripe * chunk + pos % chunk,
                         (unit % data as u64) as usize,
-                        Some((p, q, slots)),
+                        Some(parity),
                     )
                 }
             };
@@ -469,8 +456,8 @@ impl RaidSource {
                         }
                     })
                     .collect::<Vec<_>>();
-                let result = if let Some((p, q, slots)) = &parity {
-                    reconstruct(&available, *p, *q, slots, data_slot)
+                let result = if let Some(stripe) = &parity {
+                    reconstruct(&available, stripe, data_slot)
                 } else {
                     let mut good = available.iter().flatten();
                     let first = good.next();
@@ -493,7 +480,7 @@ impl RaidSource {
                         .collect(),
                     parity_members: parity
                         .as_ref()
-                        .map(|(p, q, _)| std::iter::once(*p).chain(*q).collect())
+                        .map(|stripe| std::iter::once(stripe.p).chain(stripe.q).collect())
                         .unwrap_or_default(),
                     unavailable: result.is_none(),
                 });
@@ -561,13 +548,11 @@ fn inv(a: u8) -> u8 {
     GF.0[255 - usize::from(GF.1[a as usize])]
 }
 /// Return bytes only if all available redundancy agrees. A missing parity is never invented as evidence.
-fn reconstruct(
-    parts: &[Option<&[u8]>],
-    p: usize,
-    q: Option<usize>,
-    data: &[usize],
-    target: usize,
-) -> Option<Vec<u8>> {
+fn reconstruct(parts: &[Option<&[u8]>], stripe: &Stripe, target: usize) -> Option<Vec<u8>> {
+    let p = stripe.p;
+    let q = stripe.q;
+    let data = &stripe.data;
+    let weights = &stripe.weights;
     let missing = parts.iter().filter(|p| p.is_none()).count();
     if missing > if q.is_some() { 2 } else { 1 } {
         return None;
@@ -584,7 +569,7 @@ fn reconstruct(
         let index = absent[0];
         let use_p = parts[p].is_some();
         let parity = if use_p { parts[p]? } else { parts[q?]? };
-        let scale = if use_p { 1 } else { inv(coefficient(index)) };
+        let scale = if use_p { 1 } else { inv(weights[index]) };
         for at in 0..length {
             let mut value = parity[at];
             for (j, i) in data.iter().enumerate() {
@@ -592,7 +577,7 @@ fn reconstruct(
                     value ^= if use_p {
                         parts[*i]?[at]
                     } else {
-                        mul(parts[*i]?[at], coefficient(j))
+                        mul(parts[*i]?[at], weights[j])
                     };
                 }
             }
@@ -601,8 +586,8 @@ fn reconstruct(
     } else if absent.len() == 2 {
         let a = absent[0];
         let b = absent[1];
-        let ca = coefficient(a);
-        let cb = coefficient(b);
+        let ca = weights[a];
+        let cb = weights[b];
         let divide = inv(ca ^ cb);
         let pp = parts[p]?;
         let qq = parts[q?]?;
@@ -613,7 +598,7 @@ fn reconstruct(
                 if j != a && j != b {
                     let v = parts[*i]?[at];
                     s ^= v;
-                    t ^= mul(v, coefficient(j));
+                    t ^= mul(v, weights[j]);
                 }
             }
             let av = mul(t ^ mul(cb, s), divide);
@@ -631,11 +616,11 @@ fn reconstruct(
     for at in 0..length {
         let mut pv = 0;
         let mut qv = 0;
-        for j in 0..data.len() {
+        for (j, &weight) in weights[..data.len()].iter().enumerate() {
             let v = get(j)[at];
             pv ^= v;
             if q.is_some() {
-                qv ^= mul(v, coefficient(j));
+                qv ^= mul(v, weight);
             }
         }
         if parts[p].is_some_and(|bytes| bytes[at] != pv)
@@ -795,7 +780,7 @@ pub fn search_raid(
     }
     if options.stripe_sizes.is_empty()
         || options.stripe_sizes.len() > 9
-        || options.layouts.len() > 4
+        || options.layouts.len() > RaidLayout::RAID6_LAYOUTS.len()
         || !(1..=256).contains(&options.max_configurations)
         || !(1..=30000).contains(&options.max_milliseconds)
         || options
@@ -803,7 +788,7 @@ pub fn search_raid(
             .iter()
             .any(|s| !(4096..=1024 * 1024).contains(s) || !s.is_power_of_two())
     {
-        return Err(Error::Request("RAID search requires 1..9 power-of-two stripe sizes (4 KiB..1 MiB), <=4 layouts, 1..256 probes, and 1..30000 ms".into()));
+        return Err(Error::Request("RAID search requires 1..9 power-of-two stripe sizes (4 KiB..1 MiB), <=14 layouts, 1..256 probes, and 1..30000 ms".into()));
     }
     // Pin every member before varying any geometry/order. Each subsequent open
     // must match this snapshot, even when templates did not contain fingerprints.
@@ -811,15 +796,16 @@ pub fn search_raid(
         .evidence
         .config;
     let layouts = if options.layouts.is_empty() {
-        if template.level == RaidLevel::Raid5 {
-            vec![
-                RaidLayout::LeftSymmetric,
-                RaidLayout::RightSymmetric,
-                RaidLayout::LeftAsymmetric,
-                RaidLayout::RightAsymmetric,
-            ]
-        } else {
-            vec![template.layout]
+        match template.level {
+            RaidLevel::Raid5 => RaidLayout::RAID5_LAYOUTS.to_vec(),
+            RaidLevel::Raid6 => std::iter::once(template.layout)
+                .chain(
+                    RaidLayout::RAID6_LAYOUTS
+                        .into_iter()
+                        .filter(|layout| *layout != template.layout),
+                )
+                .collect(),
+            _ => vec![template.layout],
         }
     } else {
         options.layouts.clone()

@@ -404,25 +404,22 @@ impl State {
                     }
                 });
         });
-        if self.level == RaidLevel::Raid5 {
+        if matches!(self.level, RaidLevel::Raid5 | RaidLevel::Raid6) {
+            let layouts: &[RaidLayout] = if self.level == RaidLevel::Raid6 {
+                &RaidLayout::RAID6_LAYOUTS
+            } else {
+                &RaidLayout::RAID5_LAYOUTS
+            };
             ui.horizontal_wrapped(|ui| {
-                ui.label(tr!("Pの配置", "P layout"));
+                ui.label(tr!("パリティ配置", "Parity layout"));
                 egui::ComboBox::from_id_salt("raid-layout")
-                    .selected_text(format!("{:?}", self.layout))
+                    .selected_text(self.layout.md_name())
                     .show_ui(ui, |ui| {
-                        for value in [
-                            RaidLayout::LeftSymmetric,
-                            RaidLayout::RightSymmetric,
-                            RaidLayout::LeftAsymmetric,
-                            RaidLayout::RightAsymmetric,
-                        ] {
-                            ui.selectable_value(&mut self.layout, value, format!("{value:?}"));
+                        for &value in layouts {
+                            ui.selectable_value(&mut self.layout, value, value.md_name());
                         }
                     });
             });
-        }
-        if self.level == RaidLevel::Raid6 {
-            ui.label(tr!("P/Qは末尾2メンバー固定、GF 0x11d、係数2^i。対応配置を確認してください。", "P/Q occupy the last two members, with GF 0x11d and coefficients 2^i. Check that this matches your layout."));
         }
         if self.level == RaidLevel::Raid10 {
             ui.label(tr!(

@@ -10,7 +10,7 @@
 | RAID 0 | 指定順の通常ストライピング |
 | RAID 1 | 指定コピーの同一範囲を照合。読めるコピー間の不一致は欠損扱い |
 | RAID 5 | left/right × symmetric/asymmetric。Pの開始位置は左が末尾、右が先頭、1行ごとに回転。非対称はメンバー0からPを飛ばす、対称はPの次からデータを配置 |
-| RAID 6 | `pq_last`。末尾2メンバーが固定P/Q、前方がデータ順。P=XOR、Q=Σ(2^i×D_i)、GF(2^8)多項式0x11d。回転P/Qや独自コントローラーの配置は対応と推測しない |
+| RAID 6 | Linux MDの14配置。両端の固定P/Q、左右の対称・非対称回転、Q固定の移行用配置、DDF互換の3配置。GF(2^8)の多項式は0x11d。Qの係数順は配置に従う |
 | RAID 10 | 隣接する2メンバーを1ミラーペアとし、ペア間を通常ストライプ化 |
 
 セクター512/4096、ストライプはセクター以上1 MiB以下の2の累乗、2〜16メンバー。
@@ -75,3 +75,22 @@ Linuxカーネルの5配列について、欠損条件を含む12論理像・72�
 参照: [Linux raid5.c](https://github.com/torvalds/linux/blob/master/drivers/md/raid5.c)、
 [mdadm manual](https://github.com/md-raid-utilities/mdadm/blob/main/mdadm.8.in)。
 
+
+
+## Linux MDのRAID6配置
+
+停止時点が同じメンバーのRAWコピーを揃えます。Linuxでは `mdadm --examine member.raw` でLayout、Device Role、Data Offset、Chunk Size、Array Size、UUIDとEventsを確認できます。設定JSONの `offset` と `length` は各メンバーのバイト単位の開始位置・使用長です。欠けたスロットは所定の位置に残して `path: null` を指定します。
+
+| mdadmのLayout | 設定JSONのlayout |
+| --- | --- |
+| parity-last / parity-first | `pq_last` / `pq_first` |
+| left-symmetric / right-symmetric | `left_symmetric` / `right_symmetric` |
+| left-asymmetric / right-asymmetric | `left_asymmetric` / `right_asymmetric` |
+| left-symmetric-6 / right-symmetric-6 | `left_symmetric_6` / `right_symmetric_6` |
+| left-asymmetric-6 / right-asymmetric-6 | `left_asymmetric_6` / `right_asymmetric_6` |
+| parity-first-6 | `parity_first_6` |
+| ddf-zero-restart / ddf-N-restart / ddf-N-continue | `ddf_zero_restart` / `ddf_n_restart` / `ddf_n_continue` |
+
+GUIの「RAIDを構成」でRAID6とmdadmの配置名を選択できます。配置の候補探索は指定した配置から始めます。探索時間と試行数に上限があり、整合した候補から自動で復元元を確定することはできません。`rescue raid --config array.json --output disk.rescue-raid.json` で構成を保存すると、通常のスキャンで使えます。
+
+5台の仮想ディスクを使いLinux MDで14通りの実配列を作成しました。各配列のext4で10形式を実際に削除し、2メンバー欠損を指定して論理ディスク全体と削除ファイルを原本に照合しました。3メンバーが同じ範囲で読めない場合は欠損として扱います。2メンバー欠損時にさらに読めたデータが壊れている場合、パリティで検出できないため、元のディスク・ファイルの独立したSHA-256で照合してください。進行中のリシェイプ、古い世代の混在、独自コントローラーのメタデータ自動判別は対象外です。DDF互換試験はLinux MDのデータ配置を検証したものです。[実配列・証跡](../tests/raid6-linux)

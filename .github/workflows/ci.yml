@@ -151,6 +151,9 @@ jobs:
       - name: Recover 21 actual regularly fragmented FAT unlinks with original lengths and whole-file hashes
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_strided_files.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Reconstruct fourteen Linux MD RAID6 layouts and recover ext4 unlinks
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_raid6_layouts.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Verify Parallels snapshot generations with QEMU and recover deleted FAT32 and ext4 files
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_parallels.py --native --binary target/${{ matrix.target }}/debug/rescue

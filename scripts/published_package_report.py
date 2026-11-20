@@ -60,6 +60,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 52, 0):
+        reference = 'raid6-layout-native.json' if platform == 'linux' else 'raid6-layout-results.json'
+        assert run['raid6_layouts'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 51, 0):
         reference = 'parallels-native-results.json' if platform == 'linux' else 'parallels-results.json'
         assert run['parallels'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
