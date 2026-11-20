@@ -1,14 +1,19 @@
 //! Read the internal snapshot directory without changing the active disk.
-use super::{MAX_TABLE_BYTES, Regions, be32, be64, invalid, read_at};
+use super::{COPIED, MAX_TABLE_BYTES, OFFSET, Regions, be32, be64, invalid, read_at};
 use crate::{Error, Result};
 use serde::Serialize;
-use std::{collections::HashSet, fs::File};
+use std::{
+    collections::{BTreeMap, HashSet},
+    fs::File,
+    sync::atomic::{AtomicBool, Ordering},
+};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Qcow2Snapshot {
     pub id: String,
     pub name: String,
     pub guest_bytes: u64,
+    pub vm_state_bytes: u64,
     #[serde(skip)]
     pub(super) l1_offset: u64,
     #[serde(skip)]
@@ -82,11 +87,6 @@ pub(super) fn directory(
         } else {
             u64::from(be32(&fixed, 32))
         };
-        if vm_bytes != 0 {
-            return Err(Error::Unsupported(
-                "QCOW2 snapshots with saved VM memory".into(),
-            ));
-        }
         let guest_bytes = if extra >= 16 {
             be64(&fields, 8)
         } else {
@@ -113,6 +113,7 @@ pub(super) fn directory(
             id,
             name: decode(&strings[id_len..])?,
             guest_bytes,
+            vm_state_bytes: vm_bytes,
             l1_offset: be64(&fixed, 0),
             l1_count,
         });
@@ -125,4 +126,104 @@ pub(super) fn directory(
         }
     }
     Ok(snapshots)
+}
+
+/// Saved machine memory begins at the first L1 slot after the disk. Its
+/// physical data clusters must never be exported through a guest L2 entry.
+#[derive(Default)]
+pub(super) struct SavedMemory {
+    // Each table starts on an L1 boundary; generations may share that table.
+    tables: BTreeMap<u64, u64>,
+}
+
+impl SavedMemory {
+    pub fn record(
+        &mut self,
+        snapshot: &Qcow2Snapshot,
+        l1: &[u8],
+        cluster: u64,
+        entry_bytes: usize,
+    ) -> Result<()> {
+        let table_coverage = cluster * (cluster / entry_bytes as u64);
+        let first = snapshot.guest_bytes.div_ceil(table_coverage);
+        let count = snapshot.vm_state_bytes.div_ceil(table_coverage);
+        if count > (l1.len() / 8) as u64 || first + count > (l1.len() / 8) as u64 {
+            return Err(invalid("QCOW2 saved VM state exceeds its L1 table"));
+        }
+        let mut remaining = snapshot.vm_state_bytes;
+        for index in first..first + count {
+            let table = be64(l1, index as usize * 8) & OFFSET;
+            if table == 0 {
+                return Err(invalid("missing QCOW2 saved VM state L2 table"));
+            }
+            let bytes = remaining.min(table_coverage);
+            let used = self.tables.entry(table).or_insert(0);
+            *used = (*used).max(bytes);
+            remaining -= bytes;
+        }
+        Ok(())
+    }
+
+    pub fn protect(
+        &self,
+        source: &mut File,
+        metadata: &mut Regions,
+        cluster: u64,
+        entry_bytes: usize,
+        length: u64,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
+        if self.tables.is_empty() {
+            return Ok(());
+        }
+        if self.tables.len() as u64 * cluster > 128 << 20 {
+            return Err(Error::Limit("QCOW2 saved VM state mapping tables".into()));
+        }
+        let mut table = vec![0; cluster as usize];
+        let mut protected = HashSet::new();
+        for (&at, &bytes) in &self.tables {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
+            }
+            read_at(source, at, &mut table)?;
+            let mut remaining = bytes;
+            for entry in table
+                .chunks_exact(entry_bytes)
+                .take(bytes.div_ceil(cluster) as usize)
+            {
+                let map = be64(entry, 0);
+                let host = map & OFFSET;
+                if map & !(COPIED | OFFSET) != 0 || host == 0 || !host.is_multiple_of(cluster) {
+                    return Err(invalid(
+                        "QCOW2 saved VM state requires allocated uncompressed clusters",
+                    ));
+                }
+                let used = remaining.min(cluster);
+                let host_bytes = if entry_bytes == 16 {
+                    let bits = be64(entry, 8);
+                    let allocated = bits as u32;
+                    let zeros = (bits >> 32) as u32;
+                    let subcluster = cluster / 32;
+                    if allocated & zeros != 0
+                        || u64::from(allocated.trailing_ones()) * subcluster < used
+                    {
+                        return Err(invalid("unallocated QCOW2 saved VM state subcluster"));
+                    }
+                    u64::from(32 - allocated.leading_zeros()) * subcluster
+                } else {
+                    cluster
+                };
+                // A shared RAM cluster may have already been protected in another generation.
+                // Always validate the length required by this entry before reusing it.
+                if host.checked_add(host_bytes).is_none_or(|end| end > length) {
+                    return Err(invalid("truncated QCOW2 saved VM state cluster"));
+                }
+                if protected.insert(host) {
+                    metadata.add(host, host_bytes, cluster, length)?;
+                }
+                remaining -= used;
+            }
+        }
+        Ok(())
+    }
 }

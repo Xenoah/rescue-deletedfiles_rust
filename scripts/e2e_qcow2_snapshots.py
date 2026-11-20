@@ -1,5 +1,6 @@
 """Recover historical NTFS, FAT32 and ext4 files from QEMU internal disk snapshots."""
 import argparse
+import hashlib
 import json
 import lzma
 from pathlib import Path
@@ -63,7 +64,7 @@ def controls(binary, disk, snapshots, root):
         ("l2_alias_other_snapshot_l1", first_l1, "Q", second_l1),
         ("data_alias_other_snapshot_l1", first_l2, "Q", second_l1),
         ("data_alias_directory", first_l2, "Q", table),
-        ("vm_memory_snapshot", table + 40, "Q", 512),
+        ("vm_state_without_storage", table + 40, "Q", 512),
         ("zero_guest_size", table + 48, "Q", 0),
         ("l1_does_not_cover_snapshot_size", table + 48, "Q", 1 << 55),
     ]:
@@ -101,6 +102,65 @@ def controls(binary, disk, snapshots, root):
     return sorted(names)
 
 
+def memory_controls(binary, disk, snapshots, root):
+    """Reserve machine-state clusters even when a different disk generation is selected."""
+    raw = disk.read_bytes()
+    word = lambda at: struct.unpack_from(">Q", raw, at)[0]
+    number = lambda at: struct.unpack_from(">I", raw, at)[0]
+    cluster = 1 << number(20)
+    extended = number(4) == 3 and word(72) & 16
+    width = 16 if extended else 8
+    mask = 0x00fffffffffffe00
+    directory = word(64)
+    entry = directory
+    for _ in snapshots[:-1]:
+        i, n = struct.unpack_from(">HH", raw, entry + 12)
+        entry += (40 + number(entry + 36) + i + n + 7) & ~7
+    saved = snapshots[-1]
+    l1 = word(entry)
+    span = cluster * (cluster // width)
+    ram_slot = (saved["guest_bytes"] + span - 1) // span
+    ram_l2 = word(l1 + 8 * ram_slot) & mask
+    ram_data = word(ram_l2) & mask
+    guest_l2 = word(l1) & mask
+    other_l2 = word(word(directory)) & mask
+    check(ram_data > 0 and ram_l2 != guest_l2 and saved["vm_state_bytes"] > 0, entry)
+    bad = [
+        ("disk_mapping_aliases_saved_ram", guest_l2, ram_data, saved["id"]),
+        ("earlier_disk_aliases_later_ram", other_l2, ram_data, snapshots[0]["id"]),
+        ("vm_data_aliases_snapshot_directory", ram_l2, directory, saved["id"]),
+        ("vm_data_aliases_another_l1", ram_l2, word(directory), saved["id"]),
+        ("vm_data_beyond_source", ram_l2, (len(raw) // cluster + 1) * cluster, saved["id"]),
+        ("vm_table_absent", l1 + 8 * ram_slot, 0, saved["id"]),
+        ("vm_cluster_absent", ram_l2, 0, saved["id"]),
+        ("compressed_vm_state", ram_l2, (1 << 62) | ram_data, saved["id"]),
+        ("vm_size_exceeds_mapping", entry + 40, (1 << 64) - 1, saved["id"]),
+    ]
+    if extended:
+        bad.append(("vm_subclusters_unallocated", ram_l2 + 8, 0, saved["id"]))
+    names = []
+    for label, at, value, selector in bad:
+        with changed(disk, at, struct.pack(">Q", value)):
+            checked_import(binary, [disk], root / "refused.raw", ["--qcow2-snapshot-id", selector], 4)
+        names.append(label)
+    return sorted(names)
+
+
+def compare_native_snapshot(raw, reference, logical_bytes, active_bytes):
+    # Some QEMU versions export a historical snapshot using the current virtual length.
+    # Compare every historical byte and require the extra area, if present, to be all zero.
+    checksum = hashlib.sha256()
+    check(raw.stat().st_size in (logical_bytes, active_bytes), raw)
+    with lzma.open(reference) as expected, raw.open("rb") as actual:
+        while data := expected.read(1 << 20):
+            check(actual.read(len(data)) == data, reference)
+            checksum.update(data)
+        check(actual.tell() == logical_bytes, reference)
+        while tail := actual.read(1 << 20):
+            check(not any(tail), "unexpected data after historical disk end")
+    return checksum.hexdigest()
+
+
 def verify(binary, root, qemu=None):
     results = {}
     history = json.loads((TESTS / "vdi-chain/manifest.json").read_text())["ext4-depth8"]["deleted"]
@@ -115,7 +175,8 @@ def verify(binary, root, qemu=None):
         check(digest(disk) == info["image_sha256"], disk)
         rows = run(binary, "qcow2-snapshots", "--source", disk, "--json")["snapshots"]
         snapshots = info["snapshots"]
-        check(rows == [{k: s[k] for k in ("id", "name", "guest_bytes")} for s in snapshots], rows)
+        check(rows == [dict(id=s["id"], name=s["name"], guest_bytes=s["guest_bytes"],
+                            vm_state_bytes=s.get("vm_state_bytes", 0)) for s in snapshots], rows)
         checksums, native, deleted = [], [], []
         for index, s in enumerate(snapshots):
             for field in ("id", "name"):
@@ -129,11 +190,10 @@ def verify(binary, root, qemu=None):
             if qemu:
                 other = folder / "qemu.raw"
                 subprocess.run([qemu, "convert", "-l", "snapshot.id=" + s["id"], "-O", "raw", disk, other], check=True)
-                compare_driver(other, TESTS / s["reference"])
-                native.append(digest(other))
+                native.append(compare_native_snapshot(other, TESTS / s["reference"], s["guest_bytes"], snapshots[-1]["guest_bytes"]))
                 other.unlink()
                 if case.name.endswith("ext4"):
-                    deleted.append(verify_deleted_ext4(binary, raw, folder / f"metadata-{index}", history[index], info["originals"]))
+                    deleted.append(verify_deleted_ext4(binary, raw, folder / f"metadata-{index}", history[min(index, len(history) - 1)], info["originals"]))
             if index + 1 < len(snapshots):
                 raw.unlink()
         originals = {k: (CORPUS / k).read_bytes() for k in info["originals"]}
@@ -160,13 +220,16 @@ def verify(binary, root, qemu=None):
             result["qemu_snapshot_sha256"] = native
         if deleted:
             result["ext4_deletions_by_generation"] = deleted
+        if snapshots[-1].get("vm_state_bytes"):
+            result["vm_state_bytes"] = snapshots[-1]["vm_state_bytes"]
+            result["refused"] = memory_controls(binary, disk, snapshots, folder)
         if case.name == "v3-fat32":
             result["refused"] = controls(binary, disk, snapshots, folder)
         check(digest(disk) == info["image_sha256"], disk)
         results[case.name] = result
         print(case.name, len(snapshots), "saved disks and seven deleted originals verified", flush=True)
         shutil.rmtree(folder)
-    check(len(results) == 5, results.keys())
+    check(set(results) == {"v2-ntfs", "v3-ext4", "v3-fat32", "extended-ext4", "compressed-ntfs", "resized-ntfs", "ram-ntfs", "ram-ext4"}, results.keys())
     return results
 
 

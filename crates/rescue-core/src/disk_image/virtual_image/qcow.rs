@@ -190,7 +190,8 @@ impl Qcow {
         // Copy-on-write snapshots can share an L2 table at the same guest position.
         // Reserve every view's metadata even when exporting only one generation.
         let mut l2_positions = HashMap::new();
-        for (at, count) in views {
+        let mut vm_state = snapshot::SavedMemory::default();
+        for (view_index, (at, count)) in views.enumerate() {
             let mut table = vec![0; (count * 8) as usize];
             read_at(source, at, &mut table)?;
             for (index, &raw) in table.as_chunks::<8>().0.iter().enumerate() {
@@ -218,10 +219,14 @@ impl Qcow {
                     _ => {}
                 }
             }
+            if view_index > 0 && snapshots[view_index - 1].vm_state_bytes != 0 {
+                vm_state.record(&snapshots[view_index - 1], &table, cluster, entry_bytes)?;
+            }
             if at == selected_at {
                 l1 = table;
             }
         }
+        vm_state.protect(source, &mut metadata, cluster, entry_bytes, length, cancel)?;
         Ok(Self {
             snapshots,
             backing,
