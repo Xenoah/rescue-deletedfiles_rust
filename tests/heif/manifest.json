@@ -1,0 +1,57 @@
+{
+  "odd.heic": {
+    "bytes": 3455,
+    "sha256": "3147a92f58c4dcaa3fcb19532a6dab8f145b73a404f6f0c12023a3666c0df5f9",
+    "encoder": "libheif/x265"
+  },
+  "alpha.heic": {
+    "bytes": 4036,
+    "sha256": "ab6d8a4dda91c0e86bb0f4633cc96caa80b7e0a3f68602714e6d744e531be20c",
+    "encoder": "libheif/x265"
+  },
+  "ten-bit.heic": {
+    "bytes": 4771,
+    "sha256": "1b4b00e0d29fbe9582532c4ab00f19dc7a992da37640ac64aca156cba6fcfdbf",
+    "encoder": "libheif/x265"
+  },
+  "collection.heic": {
+    "bytes": 6784,
+    "sha256": "ef58157f7c3753925154bdfc104d5f554e1573b2783bead515863816dad9acd3",
+    "encoder": "libheif/x265"
+  },
+  "tiled.heic": {
+    "bytes": 15495,
+    "sha256": "faf14944b4f484c71e336e550902167aee8140f0977c0bdf05f1bce81af8ba96",
+    "encoder": "libheif/x265"
+  },
+  "thumb.heic": {
+    "bytes": 16463,
+    "sha256": "bcf9fe5a8b09a95fa780e232f7337cef480dda5817184f6363e66dc205c3a70c",
+    "encoder": "libheif/x265"
+  },
+  "color.avif": {
+    "bytes": 2390,
+    "sha256": "dcb49408db7a760518a896da463c07d3997697e1b21e06a08f44a1563a00b835",
+    "encoder": "libheif/libaom"
+  },
+  "alpha.avif": {
+    "bytes": 2665,
+    "sha256": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
+    "encoder": "libheif/libaom"
+  },
+  "ten-bit.avif": {
+    "bytes": 3420,
+    "sha256": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
+    "encoder": "libheif/libaom"
+  },
+  "gray.avif": {
+    "bytes": 1578,
+    "sha256": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
+    "encoder": "libheif/libaom"
+  },
+  "ffmpeg.avif": {
+    "bytes": 1707,
+    "sha256": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303",
+    "encoder": "FFmpeg/libaom"
+  }
+}

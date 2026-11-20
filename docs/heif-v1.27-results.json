@@ -1,0 +1,101 @@
+{
+  "portable": {
+    "originals": {
+      "odd.heic": "3147a92f58c4dcaa3fcb19532a6dab8f145b73a404f6f0c12023a3666c0df5f9",
+      "alpha.heic": "ab6d8a4dda91c0e86bb0f4633cc96caa80b7e0a3f68602714e6d744e531be20c",
+      "ten-bit.heic": "1b4b00e0d29fbe9582532c4ab00f19dc7a992da37640ac64aca156cba6fcfdbf",
+      "collection.heic": "ef58157f7c3753925154bdfc104d5f554e1573b2783bead515863816dad9acd3",
+      "tiled.heic": "faf14944b4f484c71e336e550902167aee8140f0977c0bdf05f1bce81af8ba96",
+      "thumb.heic": "bcf9fe5a8b09a95fa780e232f7337cef480dda5817184f6363e66dc205c3a70c",
+      "color.avif": "dcb49408db7a760518a896da463c07d3997697e1b21e06a08f44a1563a00b835",
+      "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
+      "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
+      "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303"
+    },
+    "refused": [
+      "cut-hevc",
+      "cut-av1",
+      "cut-grid",
+      "zero-mdat",
+      "handler",
+      "unknown-primary",
+      "external-data",
+      "out-of-bounds",
+      "protected",
+      "multiple-extents",
+      "missing-configuration",
+      "hevc-array-type",
+      "hevc-unit-length",
+      "hevc-unit-header",
+      "bad-av1-config",
+      "av1-forbidden",
+      "av1-obu-overflow",
+      "grid-rows",
+      "grid-dimension",
+      "grid-cycle",
+      "sequence",
+      "mdat-unreferenced-tail"
+    ]
+  },
+  "linux": {
+    "originals": {
+      "odd.heic": "3147a92f58c4dcaa3fcb19532a6dab8f145b73a404f6f0c12023a3666c0df5f9",
+      "alpha.heic": "ab6d8a4dda91c0e86bb0f4633cc96caa80b7e0a3f68602714e6d744e531be20c",
+      "ten-bit.heic": "1b4b00e0d29fbe9582532c4ab00f19dc7a992da37640ac64aca156cba6fcfdbf",
+      "collection.heic": "ef58157f7c3753925154bdfc104d5f554e1573b2783bead515863816dad9acd3",
+      "tiled.heic": "faf14944b4f484c71e336e550902167aee8140f0977c0bdf05f1bce81af8ba96",
+      "thumb.heic": "bcf9fe5a8b09a95fa780e232f7337cef480dda5817184f6363e66dc205c3a70c",
+      "color.avif": "dcb49408db7a760518a896da463c07d3997697e1b21e06a08f44a1563a00b835",
+      "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
+      "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
+      "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303"
+    },
+    "decoded": {
+      "odd.heic": [
+        "19e76b5ff8bf0970fcedcf904104a82d9d9c1bf7a462523a6d6adfd3cfde48c8"
+      ],
+      "alpha.heic": [
+        "31d2d75279c6f9bdb18b5249f611de0fe05cbed849679e136aadbfcc2599fcb6"
+      ],
+      "ten-bit.heic": [
+        "dd00a982069ed499b85b3c8cafd7ce2d06ce27fa3b1c6b614b8f63e6aba4a34d"
+      ],
+      "collection.heic": [
+        "19e76b5ff8bf0970fcedcf904104a82d9d9c1bf7a462523a6d6adfd3cfde48c8",
+        "a0791c57e41147afd857f37e5d32ab370e83e831f317fedbd0ad79a3b6d6413c"
+      ],
+      "tiled.heic": [
+        "f44e0a565eb29c20c6c58b0554d19377d8b1f03802987b9053c1d0348986c093"
+      ],
+      "thumb.heic": [
+        "9de87e162ae263390dfc9770314cef46a3080b7afbef47ad29e2a2c8e2cce118"
+      ],
+      "color.avif": [
+        "39401e300eb3e7e0ac1cc8feeb6be1b1f65c82d91f276bf29e703f610649e9a5"
+      ],
+      "alpha.avif": [
+        "55891c9a4f474f6f45978b3f10b1572e5017491ef24cb6c4771a905292b12d45"
+      ],
+      "ten-bit.avif": [
+        "206368c17e38305d11163c149138add75214bc71e1aea19a2a4735def5cc9ea2"
+      ],
+      "gray.avif": [
+        "5c559de0e790729430e9948f4860aeb4a571f923ac9816455b680844327f4a41"
+      ],
+      "ffmpeg.avif": [
+        "501e8513decba0cbc77d691e62edd3d3e6f292bba70d115af98e3da8af1c5370"
+      ]
+    },
+    "filesystems": [
+      "fat32",
+      "ext4"
+    ]
+  },
+  "decoder": "libheif 1.19.8",
+  "modes": [
+    "session",
+    "index"
+  ]
+}

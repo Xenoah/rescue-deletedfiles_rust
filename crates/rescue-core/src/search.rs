@@ -194,6 +194,7 @@ impl SearchSettings {
                     && ["pbm-", "pgm-", "ppm-", "pam-"]
                         .iter()
                         .any(|prefix| candidate.id.starts_with(prefix)))
+                || (candidate.id.starts_with("heic-") && name.ends_with(".heic") && ext == "heif")
                 || (candidate.id.starts_with("html-") && name.ends_with(".html") && ext == "htm")
                 || (candidate.id.starts_with("aac-") && name.ends_with(".aac") && ext == "adts")
                 || (candidate.id.starts_with("tif-") && name.ends_with(".tif") && ext == "tiff")

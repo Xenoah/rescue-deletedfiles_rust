@@ -22,6 +22,8 @@ mod tiff;
 pub(crate) use indexed::{resume as resume_indexed, scan as scan_indexed};
 pub use rule::SignatureRule;
 pub(crate) use scope::validate_selection as validate_scope;
+mod bmff;
+mod heif;
 mod html;
 mod jpeg;
 mod json;
@@ -99,6 +101,8 @@ pub(crate) fn validate_estimated_extent(
         "json" => Some(Format::Json),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
+        "heic" | "heif" => Some(Format::Heic),
+        "avif" => Some(Format::Avif),
         "mp4" | "mov" | "m4v" | "m4a" => Some(Format::Mp4),
         "wav" => Some(Format::Wav),
         "webp" => Some(Format::Webp),
@@ -212,6 +216,8 @@ enum Format<'a> {
     Docx,
     Xlsx,
     Pptx,
+    Heic,
+    Avif,
     Mp4,
     Mov,
     Wav,
@@ -266,6 +272,8 @@ impl<'a> Format<'a> {
             Self::Docx => "docx",
             Self::Xlsx => "xlsx",
             Self::Pptx => "pptx",
+            Self::Heic => "heic",
+            Self::Avif => "avif",
             Self::Mp4 => "mp4",
             Self::Mov => "mov",
             Self::Wav => "wav",
@@ -326,7 +334,7 @@ impl<'a> Format<'a> {
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
                 ExtentEvidence::ZipCrcValidated
             }
-            Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
+            Self::Heic | Self::Avif | Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
             | Self::Aiff
             | Self::Aifc
@@ -382,6 +390,7 @@ impl<'a> Format<'a> {
                         Self::Png => ext == "png",
                         Self::Apng => matches!(ext.as_str(), "apng" | "png"),
                         Self::Jpeg => matches!(ext.as_str(), "jpg" | "jpeg" | "jpe"),
+                        Self::Heic => matches!(ext.as_str(), "heic" | "heif"),
                         Self::Package(subtype) => ext == subtype || ext == "zip",
                         other => ext == other.extension(),
                     }
@@ -492,6 +501,8 @@ impl<'a> Format<'a> {
             Self::Zip | Self::Docx | Self::Xlsx | Self::Pptx | Self::Package(_) => {
                 zip::validate(image, at, cancel, budget, boundary)
             }
+            Self::Avif | Self::Heic => heif::validate(self, image, at, cancel, budget, boundary)
+                .map(|bytes| (self, bytes, Vec::new())),
             Self::Mp4 | Self::Mov => movie::validate(image, at, cancel, budget, boundary)
                 .map(|(format, b)| (format, b, Vec::new())),
         }
@@ -583,11 +594,13 @@ fn detect<'a>(
             .any(|f| f.allowed(extensions))
     {
         Some(Format::Zip)
-    } else if bytes.len() >= 8
-        && &bytes[4..8] == b"ftyp"
-        && (Format::Mp4.allowed(extensions) || Format::Mov.allowed(extensions))
-    {
-        Some(Format::Mp4)
+    } else if bytes.len() >= 8 && &bytes[4..8] == b"ftyp" {
+        if let Some(still) = heif::signature(bytes) {
+            still.allowed(extensions).then_some(still)
+        } else {
+            (Format::Mp4.allowed(extensions) || Format::Mov.allowed(extensions))
+                .then_some(Format::Mp4)
+        }
     } else {
         if bytes.starts_with(b"\x1a\x45\xdf\xa3") {
             return [Format::Mkv, Format::Webm]
@@ -661,6 +674,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         Format::Zip | Format::Docx | Format::Xlsx | Format::Pptx => &[
             "ZIP central/local records, decoded lengths and every entry CRC validated. Office classification identifies a container, not document rendering or macro safety. Stored/DEFLATE only, no encryption/multi-volume; 4096 entries, 128 MiB decoded total, 64 MiB per entry.",
         ],
+        Format::Heic | Format::Avif => &[
+            "Item-based HEIC/AVIF still image. Local item locations, codec framing, linked images and bounded media payload were checked. Extent ends at the referenced mdat box; optional trailing boxes and original identity require independent evidence. Pixels are not decoded.",
+        ],
         Format::Mp4 | Format::Mov => &[
             "Non-fragmented MP4/QuickTime container, complete sample tables and mdat ranges validated. Encoded video/audio frames are not decoded; original content is unknown. ftyp required, no zero-sized boxes, 1048576 samples, 256 tracks.",
         ],
@@ -732,7 +748,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -960,6 +976,8 @@ pub(crate) fn recovery_data(
         Format::Docx,
         Format::Xlsx,
         Format::Pptx,
+        Format::Heic,
+        Format::Avif,
         Format::Mp4,
         Format::Mov,
         Format::Wav,
