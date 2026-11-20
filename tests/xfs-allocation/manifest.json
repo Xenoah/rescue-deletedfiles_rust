@@ -1,0 +1,524 @@
+{
+  "xfs-4096-512-4": {
+    "block_bytes": 4096,
+    "sector_bytes": 512,
+    "allocation_groups": 4,
+    "agblocks": 24576,
+    "guest_bytes": 402653184,
+    "guest_sha256": "c6fd547ebf4110f8eea96472c781c8430b76ea9164db12e94c0915eab501f49f",
+    "xz_sha256": "8867b48d2cf2e818ab736c4f533aaa93c2b5b13daa76de7a2afe0242c1f0f6ab",
+    "files": {
+      "sample.bmp": {
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "bytes": 3126,
+        "deleted_offset": 36864,
+        "live_offset": 100700160
+      },
+      "sample.gif": {
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "bytes": 1731,
+        "deleted_offset": 40960,
+        "live_offset": 100704256
+      },
+      "sample.png": {
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "bytes": 102,
+        "deleted_offset": 45056,
+        "live_offset": 100708352
+      },
+      "sample.pdf": {
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "bytes": 1367,
+        "deleted_offset": 49152,
+        "live_offset": 100712448
+      },
+      "sample.webp": {
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "bytes": 184,
+        "deleted_offset": 53248,
+        "live_offset": 100716544
+      },
+      "sample.wav": {
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "bytes": 6478,
+        "deleted_offset": 57344,
+        "live_offset": 100720640
+      },
+      "sample.zip": {
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "bytes": 179,
+        "deleted_offset": 98304,
+        "live_offset": 100761600
+      }
+    },
+    "xfs_info": "meta-data=/tmp/tmpgm5aw0qi/volume.raw isize=512    agcount=4, agsize=24576 blks\n         =                       sectsz=512   attr=2, projid32bit=1\n         =                       crc=1        finobt=1, sparse=1, rmapbt=0\n         =                       reflink=0    bigtime=1 inobtcount=1 nrext64=0\ndata     =                       bsize=4096   blocks=98304, imaxpct=25\n         =                       sunit=0      swidth=0 blks\nnaming   =version 2              bsize=4096   ascii-ci=0, ftype=1\nlog      =internal log           bsize=4096   blocks=16384, version=2\n         =                       sectsz=512   sunit=0 blks, lazy-count=1\nrealtime =none                   extsz=4096   blocks=0, rtextents=0\n",
+    "xfs_db_free_extents": [
+      [
+        0,
+        5,
+        1
+      ],
+      [
+        0,
+        6,
+        1
+      ],
+      [
+        0,
+        7,
+        1
+      ],
+      [
+        0,
+        8,
+        1
+      ],
+      [
+        0,
+        9,
+        7
+      ],
+      [
+        0,
+        24,
+        24552
+      ],
+      [
+        1,
+        5,
+        1
+      ],
+      [
+        1,
+        6,
+        1
+      ],
+      [
+        1,
+        7,
+        1
+      ],
+      [
+        1,
+        8,
+        1
+      ],
+      [
+        1,
+        25,
+        24551
+      ],
+      [
+        2,
+        16389,
+        1
+      ],
+      [
+        2,
+        16390,
+        1
+      ],
+      [
+        2,
+        16391,
+        1
+      ],
+      [
+        2,
+        16392,
+        1
+      ],
+      [
+        2,
+        16393,
+        8183
+      ],
+      [
+        3,
+        5,
+        1
+      ],
+      [
+        3,
+        6,
+        1
+      ],
+      [
+        3,
+        7,
+        1
+      ],
+      [
+        3,
+        8,
+        1
+      ],
+      [
+        3,
+        9,
+        24567
+      ]
+    ],
+    "journal_report": [
+      "xfs_logprint:",
+      "    data device: 0xffffffffffffffff",
+      "    log device: 0xffffffffffffffff daddr: 393256 length: 131072",
+      "",
+      "    log tail: 40 head: 40 state: <CLEAN>",
+      ""
+    ]
+  },
+  "xfs-1024-512-3": {
+    "block_bytes": 1024,
+    "sector_bytes": 512,
+    "allocation_groups": 3,
+    "agblocks": 131072,
+    "guest_bytes": 402653184,
+    "guest_sha256": "69a7d8c6cec871beb75bff7e71daa4d6701f0f10ca194a8708c75158fc3aaa11",
+    "xz_sha256": "dc1cb607ad247df41856b1a75634f9f0b22075cab7ba3f168ad3b72ff0d1b1f3",
+    "files": {
+      "sample.bmp": {
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "bytes": 3126,
+        "deleted_offset": 10240,
+        "live_offset": 201336832
+      },
+      "sample.gif": {
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "bytes": 1731,
+        "deleted_offset": 14336,
+        "live_offset": 201340928
+      },
+      "sample.png": {
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "bytes": 102,
+        "deleted_offset": 16384,
+        "live_offset": 201342976
+      },
+      "sample.pdf": {
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "bytes": 1367,
+        "deleted_offset": 17408,
+        "live_offset": 201344000
+      },
+      "sample.webp": {
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "bytes": 184,
+        "deleted_offset": 19456,
+        "live_offset": 201346048
+      },
+      "sample.wav": {
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "bytes": 6478,
+        "deleted_offset": 20480,
+        "live_offset": 201347072
+      },
+      "sample.zip": {
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "bytes": 179,
+        "deleted_offset": 27648,
+        "live_offset": 201354240
+      }
+    },
+    "xfs_info": "meta-data=/tmp/tmpkn9v10d7/volume.raw isize=512    agcount=3, agsize=131072 blks\n         =                       sectsz=512   attr=2, projid32bit=1\n         =                       crc=1        finobt=1, sparse=1, rmapbt=0\n         =                       reflink=0    bigtime=1 inobtcount=1 nrext64=0\ndata     =                       bsize=1024   blocks=393216, imaxpct=25\n         =                       sunit=0      swidth=0 blks\nnaming   =version 2              bsize=4096   ascii-ci=0, ftype=1\nlog      =internal log           bsize=1024   blocks=65536, version=2\n         =                       sectsz=512   sunit=0 blks, lazy-count=1\nrealtime =none                   extsz=4096   blocks=0, rtextents=0\n",
+    "xfs_db_free_extents": [
+      [
+        0,
+        6,
+        1
+      ],
+      [
+        0,
+        7,
+        1
+      ],
+      [
+        0,
+        8,
+        1
+      ],
+      [
+        0,
+        9,
+        1
+      ],
+      [
+        0,
+        10,
+        22
+      ],
+      [
+        0,
+        64,
+        131008
+      ],
+      [
+        1,
+        65542,
+        1
+      ],
+      [
+        1,
+        65543,
+        1
+      ],
+      [
+        1,
+        65544,
+        1
+      ],
+      [
+        1,
+        65545,
+        1
+      ],
+      [
+        1,
+        65564,
+        4
+      ],
+      [
+        1,
+        65600,
+        65472
+      ],
+      [
+        2,
+        6,
+        1
+      ],
+      [
+        2,
+        7,
+        1
+      ],
+      [
+        2,
+        8,
+        1
+      ],
+      [
+        2,
+        9,
+        1
+      ],
+      [
+        2,
+        10,
+        131062
+      ]
+    ],
+    "journal_report": [
+      "xfs_logprint:",
+      "    data device: 0xffffffffffffffff",
+      "    log device: 0xffffffffffffffff daddr: 262156 length: 131072",
+      "",
+      "    log tail: 40 head: 40 state: <CLEAN>",
+      ""
+    ]
+  },
+  "xfs-4096-4096-4": {
+    "block_bytes": 4096,
+    "sector_bytes": 4096,
+    "allocation_groups": 4,
+    "agblocks": 24576,
+    "guest_bytes": 402653184,
+    "guest_sha256": "6c3eb3aec892f35ebfeefb44f5e8bfd148524d900d537141319eb107829d7d60",
+    "xz_sha256": "ec344064f44c2510141e4d1daaff35d1ac076eb61cc07231d2ffd7fb20ee2533",
+    "files": {
+      "sample.bmp": {
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "bytes": 3126,
+        "deleted_offset": 98304,
+        "live_offset": 100761600
+      },
+      "sample.gif": {
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "bytes": 1731,
+        "deleted_offset": 102400,
+        "live_offset": 100765696
+      },
+      "sample.png": {
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "bytes": 102,
+        "deleted_offset": 106496,
+        "live_offset": 100769792
+      },
+      "sample.pdf": {
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "bytes": 1367,
+        "deleted_offset": 110592,
+        "live_offset": 100773888
+      },
+      "sample.webp": {
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "bytes": 184,
+        "deleted_offset": 114688,
+        "live_offset": 100777984
+      },
+      "sample.wav": {
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "bytes": 6478,
+        "deleted_offset": 118784,
+        "live_offset": 100782080
+      },
+      "sample.zip": {
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "bytes": 179,
+        "deleted_offset": 126976,
+        "live_offset": 100790272
+      }
+    },
+    "xfs_info": "meta-data=/tmp/tmp2s4dt9o4/volume.raw isize=512    agcount=4, agsize=24576 blks\n         =                       sectsz=4096  attr=2, projid32bit=1\n         =                       crc=1        finobt=1, sparse=1, rmapbt=1\n         =                       reflink=1    bigtime=1 inobtcount=1 nrext64=0\ndata     =                       bsize=4096   blocks=98304, imaxpct=25\n         =                       sunit=0      swidth=0 blks\nnaming   =version 2              bsize=4096   ascii-ci=0, ftype=1\nlog      =internal log           bsize=4096   blocks=16384, version=2\n         =                       sectsz=4096  sunit=1 blks, lazy-count=1\nrealtime =none                   extsz=4096   blocks=0, rtextents=0\n",
+    "xfs_db_free_extents": [
+      [
+        0,
+        10,
+        1
+      ],
+      [
+        0,
+        11,
+        1
+      ],
+      [
+        0,
+        12,
+        1
+      ],
+      [
+        0,
+        13,
+        1
+      ],
+      [
+        0,
+        14,
+        1
+      ],
+      [
+        0,
+        15,
+        1
+      ],
+      [
+        0,
+        24,
+        24552
+      ],
+      [
+        1,
+        10,
+        1
+      ],
+      [
+        1,
+        11,
+        1
+      ],
+      [
+        1,
+        12,
+        1
+      ],
+      [
+        1,
+        13,
+        1
+      ],
+      [
+        1,
+        14,
+        1
+      ],
+      [
+        1,
+        15,
+        1
+      ],
+      [
+        1,
+        32,
+        24544
+      ],
+      [
+        2,
+        16394,
+        1
+      ],
+      [
+        2,
+        16395,
+        1
+      ],
+      [
+        2,
+        16396,
+        1
+      ],
+      [
+        2,
+        16397,
+        1
+      ],
+      [
+        2,
+        16398,
+        1
+      ],
+      [
+        2,
+        16399,
+        1
+      ],
+      [
+        2,
+        16400,
+        8176
+      ],
+      [
+        3,
+        10,
+        1
+      ],
+      [
+        3,
+        11,
+        1
+      ],
+      [
+        3,
+        12,
+        1
+      ],
+      [
+        3,
+        13,
+        1
+      ],
+      [
+        3,
+        14,
+        1
+      ],
+      [
+        3,
+        15,
+        1
+      ],
+      [
+        3,
+        16,
+        24560
+      ]
+    ],
+    "journal_report": [
+      "xfs_logprint:",
+      "    data device: 0xffffffffffffffff",
+      "    log device: 0xffffffffffffffff daddr: 393296 length: 131072",
+      "",
+      "    log tail: 88 head: 88 state: <CLEAN>",
+      ""
+    ]
+  }
+}

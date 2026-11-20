@@ -2,6 +2,7 @@
 //! Read buffers can span allocated bytes; only signatures and complete payloads
 //! allowed by the chosen scope are retained. No inference of deletion is made.
 mod hfs;
+mod xfs;
 use crate::disk_image::Ext4Volume;
 use crate::{
     AllocationStatus, CarveScope, Error, FileSystem, Result, Session, SourceRegion, fat,
@@ -19,6 +20,7 @@ enum Backend {
     Fat(Box<fat::AllocationReader>, Image),
     Ext4(Box<Ext4Volume>),
     Hfs(hfs::Map),
+    Xfs(xfs::Map),
 }
 pub(super) struct Scope {
     mode: CarveScope,
@@ -48,7 +50,11 @@ impl Scope {
                 result.warnings.extend(layout.warnings);
             }
             Err(Error::Cancelled) => return Err(Error::Cancelled),
-            Err(_) if hfs::recognized(image) || Ext4Volume::recognized(image) => {
+            Err(_)
+                if hfs::recognized(image)
+                    || Ext4Volume::recognized(image)
+                    || xfs::recognized(image) =>
+            {
                 result.regions.push(unknown(0, image.length));
             }
             Err(error) => result.warning(format!(
@@ -132,6 +138,9 @@ impl Scope {
                         None if Ext4Volume::recognized(&mut image) => {
                             Backend::Ext4(Box::new(Ext4Volume::open_allocation(image)?))
                         }
+                        None if xfs::recognized(&mut image) => {
+                            Backend::Xfs(xfs::Map::open(&mut image, cancel)?)
+                        }
                         None if hfs::recognized(&mut image) => {
                             Backend::Hfs(hfs::Map::open(&mut image, cancel)?)
                         }
@@ -187,6 +196,7 @@ impl Scope {
                     }
                     status
                 }
+                Some(Backend::Xfs(map)) => map.status(at - region.offset, stop - at),
                 Some(Backend::Hfs(map)) => map.status(at - region.offset, stop - at),
                 Some(Backend::Ext4(volume)) => {
                     match volume.carve_status(at - region.offset, stop - at) {
