@@ -436,6 +436,6 @@ rescue import-image --image-type vdi --source child2.vdi \
 
 ### SVGとSVGZの復元
 
-GUIのCarvingまたは `rescue scan --source disk.raw --work-dir scan --mode carve --extension svg --extension svgz --json` で検索できます。SVGはUTF-8のXMLとして要素と属性を検証し、ルート名とSVG名前空間を確認します。SVGZはgzipメンバーのCRC32と展開長を検証し、その中のSVGを確認します。Rescueは画像中のリンクを取得せず、スクリプトも実行しません。
+GUIのCarvingまたは `rescue scan --source disk.raw --work-dir scan --mode carve --extension svg --extension svgz --json` で検索できます。SVGはUTF-8またはBOM付きUTF-16LE/BEのXMLとして要素と属性を検証し、ルート名とSVG名前空間を確認します。SVGZはgzipメンバーのCRC32と展開長を検証し、その中のSVGを確認します。Rescueは画像中のリンクを取得せず、スクリプトも実行しません。
 
 XMLルートの閉じタグより後の改行やコメントは、ディスクの内容検索だけでは元ファイルに属するか確定できません。Cairo・Inkscapeが末尾改行を付けたSVGをFAT32とext4で削除した試験では、内容検索は閉じタグで止まり、ファイルシステムに残っていた長さを使うと各原本の末尾まで一致しました。FATの連続推定は `--estimate-fat-contiguous` で明示的に有効にします。SVGZはメンバー全体の境界を検証できます。[原本と検証手順](../tests/svg/README.md)

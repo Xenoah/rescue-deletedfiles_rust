@@ -659,8 +659,8 @@ fn detect<'a>(
         } else {
             Format::Svg
         })
-    } else if matches!(bytes.first(), Some(b'<' | 0xef))
-        && xml::svg_signature(bytes)
+    } else if ((matches!(bytes.first(), Some(b'<' | 0xef)) && xml::svg_signature(bytes))
+        || (matches!(bytes.first(), Some(0xfe | 0xff)) && xml::utf16_signature(bytes)))
         && Format::Svg.allowed(extensions)
     {
         Some(Format::Svg)
@@ -792,10 +792,10 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
             "UTF-8 HTML5 doctype and balanced HTML tokens checked. An explicit </html> ends at the closing tag. A document with omitted html tags needs a closed element and zero padding or source EOF. No original checksum. External resources and scripts are never opened or executed.",
         ],
         Format::Svg => &[
-            "SVG root in the W3C SVG namespace. UTF-8 XML structure validated through its root end. Trailing whitespace, comments and processing instructions have no independent file boundary. Image appearance and linked resources are unverified.",
+            "SVG root in the W3C SVG namespace. UTF-8 or BOM-tagged UTF-16 XML structure validated through its root end. Trailing whitespace, comments and processing instructions have no independent file boundary. Image appearance and linked resources are unverified.",
         ],
         Format::Svgz => &[
-            "A complete gzip member containing UTF-8 SVG. Member CRC32 and decoded length, XML structure and SVG namespace verified; external resources are never fetched.",
+            "A complete gzip member containing UTF-8 or BOM-tagged UTF-16 SVG. Member CRC32 and decoded length, XML structure and SVG namespace verified; external resources are never fetched.",
         ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",

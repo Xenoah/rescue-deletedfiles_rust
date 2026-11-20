@@ -68,7 +68,10 @@ pub(super) fn gzip(input: &mut Input<'_>) -> Result<(usize, bool)> {
             if stream.total_out() > super::xml::MAX_BYTES as u64
                 || (bytes.is_empty()
                     && !chunk.is_empty()
-                    && !matches!(chunk[0], b'<' | 0xef | b' ' | b'\n' | b'\r' | b'\t'))
+                    && !matches!(
+                        chunk[0],
+                        b'<' | 0xef | 0xfe | 0xff | b' ' | b'\n' | b'\r' | b'\t'
+                    ))
             {
                 document = None;
             } else {

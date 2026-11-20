@@ -81,6 +81,7 @@ def controls(binary, root, sample):
         "not_svg": xml + b"<root/>",
     }
     rejected = []
+    gap_after = {}
     for name, bad in cases.items():
         for ext, data in [("svg", bad), ("svgz", gzip.compress(bad, mtime=0))]:
             disk = root / f"{name}.{ext}"
@@ -111,6 +112,19 @@ def controls(binary, root, sample):
         _, rows = candidates(binary, image, root / ("gap-" + ext), ["--extension", ext], expected=5)
         check(not any(r["supported"] for r in rows), rows)
         rejected.append("unread-payload-" + ext)
+        later_disk = root / ("after-payload-" + ext + ".raw")
+        later_disk.write_bytes(bytes(4096 - len(data)) + data + bytes(8192))
+        acquired = run(binary, "image", "--source", later_disk, "--block-size", "4096",
+                       "--destination", root / ("acquire-after-" + ext), "--json")
+        image = Path(acquired["image"])
+        mark_gap(image, 4096)
+        session, rows = candidates(binary, image, root / ("after-gap-" + ext), ["--extension", ext], expected=5)
+        check(len(rows) == 1 and rows[0]["supported"] and rows[0]["record_sha256"] == sha(data), rows)
+        report = run(binary, "recover", "--session", session, "--all",
+                     "--destination", root / ("after-out-" + ext), "--json")
+        recovered, = report["results"]
+        check(Path(recovered["path"]).read_bytes() == data and recovered["sha256"] == sha(data), ext)
+        gap_after[ext] = recovered["sha256"]
     # A structurally valid color change alters the file hash and the rendered result.
     changed = sample.replace(b"#2a56a0", b"#aa56a0")
     check(changed != sample, sample)
@@ -123,7 +137,26 @@ def controls(binary, root, sample):
     restored = run(binary, "recover", "--session", session, "--all", "--destination", root / "changed-out", "--json")
     comparison = run(binary, "match-hashes", "--report", restored["report"], "--checksums", known, "--json")["comparison"]
     check(comparison["counts"]["not_listed"] == 1, comparison)
-    return dict(refused=sorted(rejected), changed_valid_svg=dict(original=sha(sample), changed=sha(changed), match="not_listed"))
+    for tag, codec, bom in [("le", "utf-16-le", b"\xff\xfe"), ("be", "utf-16-be", b"\xfe\xff")]:
+        svg = sample.decode()
+        word = lambda value: value.to_bytes(2, "little" if tag == "le" else "big")
+        broken = {
+            "other-endian-declaration": bom + ('<?xml version="1.0" encoding="UTF-16' +
+                ("BE" if tag == "le" else "LE") + '"?>' + svg).encode(codec),
+            "byte-declaration": bom + ('<?xml version="1.0" encoding="UTF-8"?>' + svg).encode(codec),
+            "unpaired-surrogate": bom + svg[:-6].encode(codec) + word(0xd800) + svg[-6:].encode(codec),
+            "truncated-code-unit": (bom + svg.encode(codec))[:-1],
+            "different-unicode-end": bom + svg.replace("</svg>", "<日></語></svg>").encode(codec),
+        }
+        for problem, data in broken.items():
+            for ext, contents in [("svg", data), ("svgz", gzip.compress(data, mtime=0))]:
+                label = f"{tag}-{problem}-{ext}"
+                disk = root / (label + ".raw")
+                disk.write_bytes(contents)
+                _, rows = candidates(binary, disk, root / (label + "-scan"), ["--extension", ext], expected=5)
+                check(rows and not any(r["supported"] for r in rows), label)
+                rejected.append(label)
+    return dict(refused=sorted(rejected), gap_after_record=gap_after, changed_valid_svg=dict(original=sha(sample), changed=sha(changed), match="not_listed"))
 
 
 def verify(binary, root, renderer=None):
