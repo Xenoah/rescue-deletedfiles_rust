@@ -1,7 +1,9 @@
 //! Contiguous 8-bit Huffman JPEG. Validate exact entropy consumption independently
 //! before asking the pixel decoder to decode: display decoders can repair truncation.
+mod lossless;
 use super::charge;
 use crate::{Error, Result, source::Image};
+pub(super) use lossless::check_cfa_tile;
 use std::sync::atomic::{AtomicBool, Ordering};
 use zune_core::{bytestream::ZCursor, options::DecoderOptions};
 use zune_jpeg::JpegDecoder;
@@ -69,8 +71,21 @@ impl Input<'_> {
         self.at += 1;
         Ok(value)
     }
+    fn segment(&mut self) -> Result<Vec<u8>> {
+        let length = (usize::from(self.byte()?) << 8) | usize::from(self.byte()?);
+        let count = length
+            .checked_sub(2)
+            .ok_or_else(|| invalid("segment length below two"))?;
+        self.ensure(count)?;
+        let value = self.bytes[self.at..self.at + count].to_vec();
+        self.at += count;
+        Ok(value)
+    }
+}
+
+trait EntropySource {
+    fn byte(&mut self) -> Result<u8>;
     fn marker(&mut self) -> Result<u8> {
-        self.stopped()?;
         if self.byte()? != 0xff {
             return Err(invalid("extra bytes between markers"));
         }
@@ -84,26 +99,22 @@ impl Input<'_> {
             }
         }
     }
-    fn segment(&mut self) -> Result<Vec<u8>> {
-        let length = (usize::from(self.byte()?) << 8) | usize::from(self.byte()?);
-        let count = length
-            .checked_sub(2)
-            .ok_or_else(|| invalid("segment length below two"))?;
-        self.ensure(count)?;
-        let value = self.bytes[self.at..self.at + count].to_vec();
-        self.at += count;
-        Ok(value)
+}
+
+impl EntropySource for Input<'_> {
+    fn byte(&mut self) -> Result<u8> {
+        Input::byte(self)
     }
 }
 
 /// No implicit zero fill, marker seeking or error repair. At an entropy boundary
 /// there may only be 0..7 one padding bits and the expected marker.
-struct Bits<'a, 'b> {
-    input: &'a mut Input<'b>,
+struct Bits<'a, T: EntropySource> {
+    input: &'a mut T,
     byte: u8,
     left: u8,
 }
-impl Bits<'_, '_> {
+impl<T: EntropySource> Bits<'_, T> {
     fn bit(&mut self) -> Result<u32> {
         if self.left == 0 {
             self.byte = self.input.byte()?;
@@ -123,9 +134,13 @@ impl Bits<'_, '_> {
         Ok(value)
     }
     fn boundary(&mut self) -> Result<u8> {
+        self.finish_byte(false)
+    }
+    fn finish_byte(&mut self, allow_zero: bool) -> Result<u8> {
         if self.left > 0 {
             let mask = (1u16 << self.left) - 1;
-            if u16::from(self.byte) & mask != mask {
+            let fill = u16::from(self.byte) & mask;
+            if fill != mask && !(allow_zero && fill == 0) {
                 return Err(invalid("non-one entropy padding"));
             }
         }
@@ -142,7 +157,7 @@ struct Huffman {
     symbols: Vec<u8>,
 }
 impl Huffman {
-    fn parse(counts: &[u8], symbols: &[u8], dc: bool) -> Result<Self> {
+    fn parse(counts: &[u8], symbols: &[u8], allow_complete: bool) -> Result<Self> {
         if symbols.is_empty() || symbols.len() > 256 {
             return Err(invalid("empty or oversized Huffman table"));
         }
@@ -154,8 +169,11 @@ impl Huffman {
         };
         let (mut code, mut index) = (0, 0);
         for (length, &count) in counts.iter().enumerate() {
-            // The all-ones code is forbidden, so fill bits cannot be coefficients.
-            if code + u32::from(count) >= 1 << (length + 1) {
+            // DCT JPEG reserves the all-ones code. Some camera lossless encoders
+            // use a complete table; their sample count and final marker are checked.
+            let capacity = 1 << (length + 1);
+            let used = code + u32::from(count);
+            if used > capacity || (!allow_complete && used == capacity) {
                 return Err(invalid("oversubscribed or all-ones Huffman code"));
             }
             table.first[length] = code;
@@ -163,15 +181,9 @@ impl Huffman {
             code = (code + u32::from(count)) << 1;
             index += usize::from(count);
         }
-        if symbols
-            .iter()
-            .any(|&s| if dc { s > 11 } else { s & 15 > 10 })
-        {
-            return Err(invalid("Huffman symbol outside 8-bit DCT range"));
-        }
         Ok(table)
     }
-    fn symbol(&self, bits: &mut Bits<'_, '_>) -> Result<u8> {
+    fn symbol(&self, bits: &mut Bits<'_, impl EntropySource>) -> Result<u8> {
         let mut code = 0;
         for length in 0..16 {
             code = (code << 1) | bits.bit()?;
@@ -371,7 +383,7 @@ impl Scan {
 
     fn block(
         &self,
-        bits: &mut Bits<'_, '_>,
+        bits: &mut Bits<'_, Input<'_>>,
         tables: &[Option<Huffman>; 8],
         selection: ScanComponent,
         mask: &mut u64,
@@ -548,6 +560,17 @@ pub(super) fn validate(
     budget: &mut u64,
     boundary: u64,
 ) -> Result<Vec<u8>> {
+    validate_with_dimensions(image, offset, cancel, budget, boundary, None)
+}
+
+pub(super) fn validate_with_dimensions(
+    image: &mut Image,
+    offset: u64,
+    cancel: &AtomicBool,
+    budget: &mut u64,
+    boundary: u64,
+    expected: Option<(usize, usize)>,
+) -> Result<Vec<u8>> {
     let mut input = Input {
         image,
         offset,
@@ -614,11 +637,15 @@ pub(super) fn validate(
                     if at + 17 + count > data.len() {
                         return Err(invalid("DHT symbols truncated"));
                     }
-                    tables[usize::from(class) * 4 + usize::from(id)] = Some(Huffman::parse(
-                        counts,
-                        &data[at + 17..at + 17 + count],
-                        class == 0,
-                    )?);
+                    let symbols = &data[at + 17..at + 17 + count];
+                    if symbols
+                        .iter()
+                        .any(|&s| if class == 0 { s > 11 } else { s & 15 > 10 })
+                    {
+                        return Err(invalid("Huffman symbol outside 8-bit DCT range"));
+                    }
+                    tables[usize::from(class) * 4 + usize::from(id)] =
+                        Some(Huffman::parse(counts, symbols, false)?);
                     at += 17 + count;
                 }
             }
@@ -691,6 +718,11 @@ pub(super) fn validate(
     decoder
         .decode_headers()
         .map_err(|e| invalid(&format!("pixel decoder header: {e}")))?;
+    if expected.is_some()
+        && (decoder.dimensions() != expected || !decoder.info().is_some_and(|i| i.components == 3))
+    {
+        return Err(invalid("DNG preview and JPEG frame geometry differ"));
+    }
     let size = decoder
         .output_buffer_size()
         .filter(|&n| n <= MAX_PIXELS)

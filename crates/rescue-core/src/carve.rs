@@ -230,6 +230,7 @@ enum Format<'a> {
     Jp2,
     J2k,
     Tiff,
+    Dng,
     Exr,
     Psd,
     Psb,
@@ -294,6 +295,7 @@ impl<'a> Format<'a> {
             Self::Apng => "apng",
             Self::Jpeg => "jpeg",
             Self::Tiff => "tif",
+            Self::Dng => "dng",
             Self::Jp2 => "jp2",
             Self::J2k => "j2k",
             Self::Exr => "exr",
@@ -393,6 +395,7 @@ impl<'a> Format<'a> {
             }
             Self::Heic | Self::Avif | Self::Mp4 | Self::Mov => ExtentEvidence::MediaStructure,
             Self::Tiff
+            | Self::Dng
             | Self::Jp2
             | Self::J2k
             | Self::Exr
@@ -560,8 +563,9 @@ impl<'a> Format<'a> {
                 let end = photoshop::parse(&mut input, self)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
-            Self::Tiff => {
-                tiff::validate(image, at, cancel, budget, boundary).map(|b| (self, b, Vec::new()))
+            Self::Tiff | Self::Dng => {
+                tiff::validate(image, at, cancel, budget, boundary, self == Self::Dng)
+                    .map(|(kind, bytes)| (kind, bytes, Vec::new()))
             }
             Self::Ttf | Self::Otf | Self::Woff => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
@@ -722,11 +726,14 @@ fn detect<'a>(
         && Format::Mp3.allowed(extensions)
     {
         Some(Format::Mp3)
-    } else if matches!(bytes.first(), Some(b'I' | b'M'))
-        && tiff::signature(bytes)
-        && Format::Tiff.allowed(extensions)
-    {
-        Some(Format::Tiff)
+    } else if matches!(bytes.first(), Some(b'I' | b'M')) && tiff::signature(bytes) {
+        let hint = tiff::dng_hint(bytes);
+        let kind = match hint {
+            Some(true) => Format::Dng,
+            None if !Format::Tiff.allowed(extensions) => Format::Dng,
+            _ => Format::Tiff,
+        };
+        kind.allowed(extensions).then_some(kind)
     } else if matches!(bytes.first(), Some(0 | b'O' | b't' | b'w'))
         && let Some(format) = font::signature(bytes)
         && format.allowed(extensions)
@@ -798,6 +805,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Psd | Format::Psb => &[
             "Photoshop header, resource and layer section bounds, and composite channel lengths were checked. Layer effects and individual channel pixels are not rendered. Raw and PackBits data carry no independent content checksum.",
+        ],
+        Format::Dng => &[
+            "DNG extent ends at the last referenced byte. Unreferenced camera trailers or alignment padding require original file-size metadata. Raw samples have no whole-file checksum; compare against a known original hash.",
         ],
         Format::Tiff => &[
             "Classic TIFF/BigTIFF through the last referenced byte. Each supported page is pixel-decoded. Private pointer tags, subsidiary IFDs and unreferenced trailing padding are excluded. Up to 256 pages and 128 MiB decoded across all pages.",
@@ -1155,6 +1165,7 @@ pub(crate) fn recovery_data(
         Format::Jpeg,
         Format::Pdf,
         Format::Tiff,
+        Format::Dng,
         Format::Jp2,
         Format::J2k,
         Format::Exr,

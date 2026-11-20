@@ -1,0 +1,122 @@
+[
+  {
+    "id": 943,
+    "name": "r943.dng",
+    "make": "Canon",
+    "model": "PowerShot S2 IS",
+    "bytes": 6611520,
+    "sha256": "4435b19b7faffd81c62311b722dd49021a8b2af92bebe89dcbb74a0c9fff3d1b",
+    "source": "https://raw.pixls.us/getfile.php/943/nice/Canon%20-%20PowerShot%20S2%20IS%20-%2010bit%2010bit%20DNG%2C%20CHDK%20ver.%201.4.1%20%284:3%29.DNG",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 6611520,
+    "referenced_sha256": "4435b19b7faffd81c62311b722dd49021a8b2af92bebe89dcbb74a0c9fff3d1b"
+  },
+  {
+    "id": 1272,
+    "name": "r1272.dng",
+    "make": "Canon",
+    "model": "Canon PowerShot A540",
+    "bytes": 7749360,
+    "sha256": "15acc0208610b7b78d2a8ae4da09db94d71ec2bbb7e36dc5a440c9295cda2975",
+    "source": "https://raw.pixls.us/getfile.php/1272/nice/Canon%20-%20Canon%20PowerShot%20A540%20-%2010bit%2010bit%20CHDK%20ver.%201.5.0%20%284:3%29.DNG",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 7749360,
+    "referenced_sha256": "15acc0208610b7b78d2a8ae4da09db94d71ec2bbb7e36dc5a440c9295cda2975"
+  },
+  {
+    "id": 1327,
+    "name": "r1327.dng",
+    "make": "Canon",
+    "model": "Canon PowerShot A410",
+    "bytes": 4219200,
+    "sha256": "f0d2fe47507fadf50008bddbc6bd2c5e39fddbe90cca6bca72dd360fa0e0eb38",
+    "source": "https://raw.pixls.us/getfile.php/1327/nice/Canon%20-%20Canon%20PowerShot%20A410%20-%2010bit%2010bit%20CHDK%20ver.%201.5.0%20%284:3%29.DNG",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 4219200,
+    "referenced_sha256": "f0d2fe47507fadf50008bddbc6bd2c5e39fddbe90cca6bca72dd360fa0e0eb38"
+  },
+  {
+    "id": 2204,
+    "name": "r2204.dng",
+    "make": "Canon",
+    "model": "EOS 5D Mark III",
+    "bytes": 1538165,
+    "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e",
+    "source": "https://raw.pixls.us/getfile.php/2204/nice/Canon%20-%20EOS%205D%20Mark%20III%20-%2014bit%2014bit%20%282.3471882640587%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 1538165,
+    "referenced_sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+  },
+  {
+    "id": 2433,
+    "name": "r2433.dng",
+    "make": "Blackmagic",
+    "model": "Pocket Cinema Camera",
+    "bytes": 2302016,
+    "sha256": "0ce97c657f9f1084cc25f313854bd1d1d8579a76f6b6bde2d2f19b5bceede4c4",
+    "source": "https://raw.pixls.us/getfile.php/2433/nice/Blackmagic%20-%20Pocket%20Cinema%20Camera%20-%2012bit%20%2816:9%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 2302015,
+    "referenced_sha256": "02c3e4dd581d8747879d1cd028c2c571a5dff63c3e2b218ff3b18a5520a5ea9c"
+  },
+  {
+    "id": 2649,
+    "name": "r2649.dng",
+    "make": "Canon",
+    "model": "EOS 5D Mark III",
+    "bytes": 1831164,
+    "sha256": "bc29ac8a37c800346749b9a5a1adc2722357f7f0e49df05a7104454881604b92",
+    "source": "https://raw.pixls.us/getfile.php/2649/nice/Canon%20-%20EOS%205D%20Mark%20III%20-%2016bit%20%2816:9%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 1831164,
+    "referenced_sha256": "bc29ac8a37c800346749b9a5a1adc2722357f7f0e49df05a7104454881604b92"
+  },
+  {
+    "id": 2909,
+    "name": "r2909.dng",
+    "make": "Canon",
+    "model": "Canon DIGITAL IXUS 60",
+    "bytes": 7749360,
+    "sha256": "cbfba320fd5d140b53fa81ff4f55360cb9adf704f58daca75eb8b88903c8e22f",
+    "source": "https://raw.pixls.us/getfile.php/2909/nice/Canon%20-%20Canon%20DIGITAL%20IXUS%2060%20-%2010bit%2010bit%20CHDK%20ver.%201.4.1%20%284:3%29.DNG",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 7749360,
+    "referenced_sha256": "cbfba320fd5d140b53fa81ff4f55360cb9adf704f58daca75eb8b88903c8e22f"
+  },
+  {
+    "id": 4176,
+    "name": "r4176.dng",
+    "make": "Google",
+    "model": "Pixel 4a",
+    "bytes": 13586704,
+    "sha256": "11b38186ee3455376291bcdb3049728a3f9dcd94b9e82ff76855d9f3430e44be",
+    "source": "https://raw.pixls.us/getfile.php/4176/nice/Google%20-%20Pixel%204a%20-%2016bit%20%284:3%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": null,
+    "referenced_sha256": null
+  },
+  {
+    "id": 7316,
+    "name": "r7316.dng",
+    "make": "Blackmagic",
+    "model": "Micro Cinema Camera",
+    "bytes": 2264512,
+    "sha256": "7d359fe7cecd38ce6f791d945ab973735fd161740bac3b5843d92fb556ef7047",
+    "source": "https://raw.pixls.us/getfile.php/7316/nice/Blackmagic%20-%20Micro%20Cinema%20Camera%20-%2012bit%20%2816:9%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": 2264468,
+    "referenced_sha256": "ae5fa4bcdda975e15e4f22974b1a0c82fb4da9dc8cf47114ccdc23a68f62b8f3"
+  },
+  {
+    "id": 7317,
+    "name": "r7317.dng",
+    "make": "Blackmagic",
+    "model": "Micro Cinema Camera",
+    "bytes": 1228096,
+    "sha256": "4c65b8cda205087cfb94d8931811e53e15eb4df538ad67c1b4a3e76c1185b277",
+    "source": "https://raw.pixls.us/getfile.php/7317/nice/Blackmagic%20-%20Micro%20Cinema%20Camera%20-%2012bit%20%2816:9%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "referenced_end": null,
+    "referenced_sha256": null
+  }
+]

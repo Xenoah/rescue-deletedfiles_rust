@@ -68,6 +68,31 @@ impl<'a> Input<'a> {
         }
         Ok(())
     }
+    /// Reuse the standalone JPEG entropy and pixel checks on an embedded DNG preview.
+    pub(super) fn check_jpeg_preview(
+        &mut self,
+        range: std::ops::Range<usize>,
+        geometry: (usize, usize),
+    ) -> Result<()> {
+        self.ensure(range.end)?;
+        let data = super::jpeg::validate_with_dimensions(
+            self.image,
+            self.start + range.start as u64,
+            self.cancel,
+            self.budget,
+            self.start + range.end as u64,
+            Some(geometry),
+        )?;
+        if data.len() != range.len() {
+            return Err(Error::Invalid(
+                "DNG JPEG preview length differs from its strip or tile".into(),
+            ));
+        }
+        Ok(())
+    }
+    pub(super) fn cancel_flag(&self) -> &AtomicBool {
+        self.cancel
+    }
     pub fn check(&self) -> Result<()> {
         if self.cancel.load(Ordering::Relaxed) {
             Err(Error::Cancelled)

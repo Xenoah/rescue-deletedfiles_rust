@@ -1,5 +1,6 @@
 //! Contiguous classic TIFF and BigTIFF pages with bounded strips or tiles.
-use super::{charge, container::Input};
+mod dng;
+use super::{Format, charge, container::Input};
 use crate::{Error, Result, source::Image};
 use std::{
     collections::BTreeSet,
@@ -18,6 +19,28 @@ pub(super) fn signature(b: &[u8]) -> bool {
     matches!(
         b.get(..4),
         Some(b"II\x2a\0" | b"MM\0\x2a" | b"II\x2b\0" | b"MM\0\x2b")
+    )
+}
+
+/// A root IFD outside the scan window must be inspected by the bounded reader.
+pub(super) fn dng_hint(bytes: &[u8]) -> Option<bool> {
+    if !matches!(bytes.get(..4), Some(b"II\x2a\0" | b"MM\0\x2a")) {
+        return Some(false);
+    }
+    let layout = Layout {
+        little: bytes[0] == b'I',
+        big: false,
+    };
+    let root = usize::try_from(layout.number(bytes.get(4..8)?)).ok()?;
+    let start = root.checked_add(2)?;
+    let count = layout.number(bytes.get(root..start)?) as usize;
+    if count > 4096 {
+        return Some(false);
+    }
+    let rows = bytes.get(start..start.checked_add(count * 12)?)?;
+    Some(
+        rows.chunks_exact(12)
+            .any(|r| layout.number(&r[..2]) == 50706),
     )
 }
 
@@ -194,7 +217,8 @@ pub(super) fn validate(
     cancel: &AtomicBool,
     budget: &mut u64,
     boundary: u64,
-) -> Result<Vec<u8>> {
+    require_dng: bool,
+) -> Result<(Format<'static>, Vec<u8>)> {
     let mut input = Input::new(image, at, boundary, cancel, budget)?;
     input.ensure(8)?;
     if !signature(&input.bytes) {
@@ -222,6 +246,18 @@ pub(super) fn validate(
     };
     if offset == 0 {
         return Err(invalid("no image directories"));
+    }
+    if !layout.big {
+        input.ensure(checked_end(offset, 2, input.limit())?)?;
+        let count = layout.offset(&input.bytes[offset..offset + 2], 4096)?;
+        input.ensure(checked_end(offset + 2, count * 12, input.limit())?)?;
+        if dng_hint(&input.bytes) == Some(true) {
+            let bytes = dng::validate(input, layout, offset, extents)?;
+            return Ok((Format::Dng, bytes));
+        }
+    }
+    if require_dng {
+        return Err(invalid("missing classic DNG root directory"));
     }
     while offset != 0 {
         offset = extents.page(&mut input, layout, offset)?;
@@ -256,5 +292,5 @@ pub(super) fn validate(
             decoder.next_image().map_err(err)?;
         }
     }
-    Ok(bytes)
+    Ok((Format::Tiff, bytes))
 }
