@@ -25,3 +25,22 @@ for row in json.loads(Path('tests/camera-raw/sources.json').read_text()):
 PY
 python scripts/verify_camera_raw_metadata.py --binary /path/to/rescue --originals camera-originals
 ```
+
+## Linuxカーネルで削除した場合
+
+Linux 6.12.107の隔離したVMでも、同じ16本を別々のNTFS、FAT32、ext4ディスクの `shoot` ディレクトリーにコピーし、同期して全バイトを読み戻しました。その後 `rm` で16本を削除し、ディレクトリーが空になったことを確認してアンマウントしました。ゲストが記録したディスク全体のSHA-256をホスト側の各RAWと照合し、公開版v1.37.0で次の結果を得ました。[Linuxカーネルで削除した48件の結果](public-v1.37-linux-kernel.json)
+
+| Linuxドライバー | 復元した原本 | 観察結果 |
+| --- | ---: | --- |
+| VFAT（FAT32） | 16/16 | Sleuth Kit経由と内蔵FAT連続配置推定の両方で全バイト・SHA-256が一致 |
+| ext4 | 16/16 | 現在のinodeを使う一覧は0件。内蔵の `ext4-journal` が過去の名前と配置を16件検出し、既知の原本SHA-256を指定して全バイトが一致。不一致のSHA-256では出力を作成せず停止 |
+| ntfs3（NTFS） | メタデータから0/16 | 内蔵NTFSとSleuth Kitの一覧はともに0件。これらの経路ではファイルを指定して復元できなかった |
+
+3つの試験ディスクはそれぞれ192 MiB、ext4とNTFSのブロックまたはクラスタは4 KiB、FAT32は1 KiBクラスタです。ファイルサイズは約1.5 MBから20.8 MBです。3つのRAWすべてで検証前後のSHA-256が一致しました。
+
+ext4で同じ確認を行うには、一覧にある過去のinode番号と、別に保管している完全な原本のSHA-256を指定します。
+
+```sh
+rescue ext4-journal --source ext4.raw --json
+rescue ext4-journal --source ext4.raw --inode INODE --sha256 ORIGINAL_SHA256 --output restored.dng --json
+```

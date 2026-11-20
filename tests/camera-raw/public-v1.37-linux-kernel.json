@@ -1,0 +1,159 @@
+{
+  "binary_sha256": "a2288ff3a582eb814535af46516ff6e87911339bca0e77634680c62e26870c17",
+  "bytes": 110844883,
+  "deletions_per_volume": 16,
+  "disks": {
+    "ext4": {
+      "filesystem_candidates": 0,
+      "historical_bytes_and_sha256": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "inode": 14,
+          "sequence": 3,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "inode": 15,
+          "sequence": 3,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "inode": 16,
+          "sequence": 3,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "inode": 17,
+          "sequence": 3,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "inode": 18,
+          "sequence": 3,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "inode": 19,
+          "sequence": 3,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "inode": 20,
+          "sequence": 3,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "inode": 21,
+          "sequence": 3,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "inode": 22,
+          "sequence": 3,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "inode": 23,
+          "sequence": 3,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "inode": 24,
+          "sequence": 3,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "inode": 25,
+          "sequence": 3,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "inode": 26,
+          "sequence": 3,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "inode": 27,
+          "sequence": 3,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "inode": 28,
+          "sequence": 3,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "inode": 29,
+          "sequence": 3,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "mismatched_hash_refused": true,
+      "source_sha256": "0c12480e56d86fbb3ecae464df4a6ca9644391a2cb28a17e81a3ae5480c9b063"
+    },
+    "fat32": {
+      "fat_estimate_bytes_and_sha256": [
+        "camera.ari",
+        "camera.arw",
+        "camera.cr2",
+        "camera.cr3",
+        "camera.crw",
+        "camera.dcr",
+        "camera.dng",
+        "camera.erf",
+        "camera.gpr",
+        "camera.mrw",
+        "camera.nef",
+        "camera.orf",
+        "camera.pef",
+        "camera.raf",
+        "camera.rw2",
+        "camera.srw"
+      ],
+      "filesystem_bytes_and_sha256": [
+        "camera.ari",
+        "camera.arw",
+        "camera.cr2",
+        "camera.cr3",
+        "camera.crw",
+        "camera.dcr",
+        "camera.dng",
+        "camera.erf",
+        "camera.gpr",
+        "camera.mrw",
+        "camera.nef",
+        "camera.orf",
+        "camera.pef",
+        "camera.raf",
+        "camera.rw2",
+        "camera.srw"
+      ],
+      "filesystem_candidates": 16,
+      "source_sha256": "6e1f030f468e7bb713ff3d63bb2f975528ce3ddb064f5a6991256952810d1b2b"
+    },
+    "ntfs": {
+      "builtin_metadata_candidates": 0,
+      "filesystem_candidates": 0,
+      "source_sha256": "e9d30668bc106ff6cf140e6c6bcb34a17b0dba779358c86c277ae425c91aedfc"
+    }
+  },
+  "disks_unchanged": true,
+  "kernel": "Linux 6.12.107+deb13-cloud-amd64",
+  "source_formats": 16,
+  "version": "rescue 1.37.0"
+}
