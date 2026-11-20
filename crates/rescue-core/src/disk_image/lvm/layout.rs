@@ -2,10 +2,15 @@
 use super::{
     Error, Result, invalid,
     pv::Physical,
+    snapshot::{History, SnapshotInfo},
     text::{Fields, Section, Value},
 };
 use serde::Serialize;
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    io::{Read, Seek, SeekFrom},
+    sync::Arc,
+};
 
 #[derive(Clone, Serialize)]
 pub struct VolumeInfo {
@@ -17,15 +22,50 @@ pub struct VolumeInfo {
     pub bytes: u64,
     pub segments: usize,
     pub max_stripes: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub snapshot: Option<SnapshotInfo>,
 }
 pub(super) struct Group {
     pub volumes: Vec<Volume>,
 }
 pub(super) struct Volume {
     pub info: VolumeInfo,
-    pub segments: Vec<Segment>,
+    pub data: Data,
+    pub history: Option<History>,
+}
+#[derive(Clone)]
+pub(super) struct Data {
+    pub bytes: u64,
+    segments: Arc<[Segment]>,
+}
+impl Data {
+    pub fn read(&self, disks: &mut [Physical], mut pos: u64, mut output: &mut [u8]) -> Result<()> {
+        if pos > self.bytes || output.len() as u64 > self.bytes - pos {
+            return Err(invalid("logical read exceeds volume"));
+        }
+        while !output.is_empty() {
+            let i = self.segments.partition_point(|s| s.start <= pos);
+            let s = &self.segments[i - 1];
+            let local = pos - s.start;
+            let stripe = local / s.stripe_bytes;
+            let within = local % s.stripe_bytes;
+            let lanes = s.lanes.len() as u64;
+            let (slot, base) = s.lanes[(stripe % lanes) as usize];
+            let offset = base + (stripe / lanes) * s.stripe_bytes + within;
+            let count = (s.bytes - local)
+                .min(s.stripe_bytes - within)
+                .min(output.len() as u64) as usize;
+            let (part, rest) = output.split_at_mut(count);
+            disks[slot].file.seek(SeekFrom::Start(offset))?;
+            disks[slot].file.read_exact(part)?;
+            pos += count as u64;
+            output = rest;
+        }
+        Ok(())
+    }
 }
 pub(super) struct Segment {
+    start: u64,
     pub bytes: u64,
     pub stripe_bytes: u64,
     pub lanes: Vec<(usize, u64)>,
@@ -200,6 +240,7 @@ fn segment(
         lanes.push((dev.slot, offset));
     }
     Ok(Segment {
+        start: product(s.num("start_extent")?, extent)?,
         bytes,
         stripe_bytes,
         lanes,
@@ -239,11 +280,14 @@ impl Group {
         let devices = devices(group, extent, pvs)?;
         let lvs = group.section("logical_volumes")?;
         let mut claims = vec![Vec::new(); pvs.len()];
-        let mut volumes = Vec::new();
+        let mut normal = BTreeMap::new();
+        let mut snapshots = BTreeMap::new();
+        let mut hidden = BTreeSet::new();
         let mut ids = BTreeSet::new();
         for lv_name in lvs.keys() {
             let lv = lvs.section(lv_name)?;
-            supported(lv, "VISIBLE", &["READ", "WRITE", "VISIBLE"])?;
+            supported(lv, "READ", &["READ", "WRITE", "VISIBLE"])?;
+            let visible = strings(lv.list("status")?)?.contains(&"VISIBLE");
             if !strings(lv.list("status")?)?.contains(&"READ")
                 || lv.contains_key("origin")
                 || lv.contains_key("external_origin")
@@ -269,6 +313,47 @@ impl Group {
             {
                 return Err(invalid("segment count mismatch"));
             }
+            let first = lv.section("segment1")?;
+            if first.text("type")? == "snapshot" {
+                if !visible
+                    || n != 1
+                    || first.num("start_extent")? != 0
+                    || first.keys().any(|k| {
+                        !matches!(
+                            k.as_str(),
+                            "type"
+                                | "start_extent"
+                                | "extent_count"
+                                | "chunk_size"
+                                | "origin"
+                                | "cow_store"
+                                | "tags"
+                        )
+                    })
+                {
+                    return Err(Error::Unsupported(
+                        "merging or unsupported LVM snapshot segment".into(),
+                    ));
+                }
+                let bytes = product(first.num("extent_count")?, extent)?;
+                let chunk = product(first.num("chunk_size")?, 512)?;
+                let origin = first.text("origin")?.to_string();
+                let store = first.text("cow_store")?.to_string();
+                if !chunk.is_power_of_two()
+                    || !(4096..=4 * 1024 * 1024).contains(&chunk)
+                    || bytes == 0
+                    || origin == store
+                    || snapshots.insert(store, (origin, bytes, chunk)).is_some()
+                {
+                    return Err(invalid(
+                        "invalid snapshot dependencies, length or chunk size",
+                    ));
+                }
+                continue;
+            }
+            if !visible {
+                hidden.insert(lv_name.to_string());
+            }
             let mut bytes = 0u64;
             let mut segments = Vec::new();
             for index in 1..=n {
@@ -292,8 +377,19 @@ impl Group {
                 bytes,
                 segments: segments.len(),
                 max_stripes,
+                snapshot: None,
             };
-            volumes.push(Volume { info, segments });
+            normal.insert(
+                lv_name.clone(),
+                Volume {
+                    info,
+                    data: Data {
+                        bytes,
+                        segments: segments.into(),
+                    },
+                    history: None,
+                },
+            );
         }
         for allocated in &mut claims {
             allocated.sort_unstable();
@@ -303,6 +399,49 @@ impl Group {
                 ));
             }
         }
-        Ok(Self { volumes })
+        if snapshots.keys().ne(hidden.iter()) {
+            return Err(Error::Unsupported(
+                "unmapped hidden LVM volumes or snapshot stores".into(),
+            ));
+        }
+        let mut historical = BTreeMap::new();
+        for (store, (origin, bytes, chunk)) in snapshots {
+            let cow = normal
+                .remove(&store)
+                .ok_or_else(|| invalid("missing snapshot storage"))?;
+            if hidden.contains(&origin) {
+                return Err(Error::Unsupported("nested LVM snapshot origin".into()));
+            }
+            let base = normal
+                .get(&origin)
+                .ok_or_else(|| invalid("missing snapshot origin"))?;
+            if base.info.bytes != bytes || cow.data.bytes < 3 * chunk {
+                return Err(invalid("snapshot origin or store length"));
+            }
+            let mut info = base.info.clone();
+            info.name = store.clone();
+            info.id = cow.info.id;
+            info.snapshot = Some(SnapshotInfo {
+                origin,
+                origin_uuid: base.info.id.clone(),
+                chunk_bytes: chunk,
+                cow_bytes: cow.data.bytes,
+            });
+            historical.insert(
+                store,
+                Volume {
+                    info,
+                    data: base.data.clone(),
+                    history: Some(History {
+                        cow: cow.data,
+                        chunk,
+                    }),
+                },
+            );
+        }
+        normal.append(&mut historical);
+        Ok(Self {
+            volumes: normal.into_values().collect(),
+        })
     }
 }

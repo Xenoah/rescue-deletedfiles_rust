@@ -184,6 +184,9 @@ jobs:
       - name: Restore deleted RAR archives and compare all members with UnRAR
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_rar.py --unrar /usr/bin/unrar --binary target/${{ matrix.target }}/debug/rescue
+      - name: Verify persistent Linux snapshots against kernel readbacks and ext4 inode history
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_lvm2_snapshots.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Verify Linux LVM2 physical metadata and kernel disk readbacks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_lvm2.py --lvm /usr/sbin/lvm --binary target/${{ matrix.target }}/debug/rescue

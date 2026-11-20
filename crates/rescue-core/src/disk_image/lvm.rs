@@ -1,6 +1,7 @@
 //! Read linear and striped LVM2 logical volumes from explicitly supplied physical images.
 mod layout;
 mod pv;
+mod snapshot;
 mod text;
 use super::{
     ImageInput, ImportedFile, RawExpectation, publish_output, split_raw, write_sparse_chunk,
@@ -11,7 +12,6 @@ pub use layout::VolumeInfo;
 use pv::Physical;
 use sha2::{Digest, Sha256};
 use std::{
-    io::{Read, Seek, SeekFrom},
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
@@ -79,30 +79,29 @@ pub fn import_lvm_volume(
         return Err(invalid("ambiguous logical volume name or UUID"));
     }
     let digest = expected.expected_digest(lv.info.bytes)?;
+    let exceptions = lv
+        .history
+        .as_ref()
+        .map(|history| history.load(&mut disks, lv.info.bytes, cancel))
+        .transpose()?;
     publish_output(output, cancel, |out| {
         let mut hash = Sha256::new();
-        let mut buf = vec![0u8; 1024 * 1024];
-        for s in &lv.segments {
-            let mut pos = 0;
-            let lanes = s.lanes.len() as u64;
-            while pos < s.bytes {
-                if cancel.load(Ordering::Relaxed) {
-                    return Err(Error::Cancelled);
-                }
-                let stripe = pos / s.stripe_bytes;
-                let within = pos % s.stripe_bytes;
-                let (slot, base) = s.lanes[(stripe % lanes) as usize];
-                let offset = base + (stripe / lanes) * s.stripe_bytes + within;
-                let n = (s.bytes - pos)
-                    .min(s.stripe_bytes - within)
-                    .min(buf.len() as u64) as usize;
-                let file = &mut disks[slot].file;
-                file.seek(SeekFrom::Start(offset))?;
-                file.read_exact(&mut buf[..n])?;
-                hash.update(&buf[..n]);
-                write_sparse_chunk(out, &buf[..n])?;
-                pos += n as u64;
+        let mut buffer = vec![0u8; 1024 * 1024];
+        let mut pos = 0u64;
+        while pos < lv.info.bytes {
+            if cancel.load(Ordering::Relaxed) {
+                return Err(Error::Cancelled);
             }
+            let n = (lv.info.bytes - pos).min(buffer.len() as u64) as usize;
+            let data = &mut buffer[..n];
+            if let Some((map, history)) = exceptions.as_ref().zip(lv.history.as_ref()) {
+                map.read(&mut disks, &lv.data, history, pos, data)?;
+            } else {
+                lv.data.read(&mut disks, pos, data)?;
+            }
+            hash.update(&*data);
+            write_sparse_chunk(out, data)?;
+            pos += n as u64;
         }
         out.set_len(lv.info.bytes)?;
         for p in &disks {
