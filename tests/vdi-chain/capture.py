@@ -4,8 +4,8 @@ import argparse
 import ctypes as c
 import hashlib
 import json
+import io
 import lzma
-import os
 from pathlib import Path
 import shutil
 import struct
@@ -39,8 +39,8 @@ class VirtualBox:
             fn.argtypes, fn.restype = list(arguments), c.c_int
             return fn
 
-        init = bind(runtime, "RTR3InitEx", u32, u32, c.c_int, ptr, string)
-        require(init(2, 0, 0, None, bytes(self.tool)))
+        init = bind(runtime, "RTR3InitExeNoArguments", u32)
+        require(init(0))
         self.create = bind(disk, "VDCreate", ptr, c.c_int, c.POINTER(ptr))
         self.open = bind(disk, "VDOpen", ptr, string, string, u32, ptr)
         self.diff = bind(
@@ -62,6 +62,8 @@ class VirtualBox:
         self.flush = bind(disk, "VDFlush", ptr)
         self.destroy = bind(disk, "VDDestroy", ptr)
         self.shutdown = bind(disk, "VDShutdown")
+        self.size = bind(disk, "VDGetSize", ptr, u32)
+        self.size.restype = c.c_uint64
 
     def handle(self):
         disk = c.c_void_p()
@@ -123,19 +125,27 @@ class VirtualBox:
         finally:
             require(self.destroy(disk))
 
-        # Reopen a fresh read-only container for each generation.
         for i, guest in enumerate(guests):
-            disk = self.handle()
-            try:
-                for member in members[: i + 1]:
-                    require(self.open(disk, b"VDI", bytes(member), 1, None))
-                for pos in range(0, len(guest), MIB):
-                    expected = guest[pos : pos + MIB]
-                    buf = c.create_string_buffer(len(expected))
-                    require(self.read(disk, pos, buf, len(expected)))
-                    assert buf.raw == expected
-            finally:
-                require(self.destroy(disk))
+            self.compare(members[: i + 1], io.BytesIO(guest))
+
+    def compare(self, members, reference):
+        """Reopen a fresh, read-only VirtualBox container and compare the complete guest."""
+        disk = self.handle()
+        size = 0
+        digest = hashlib.sha256()
+        try:
+            for member in members:
+                require(self.open(disk, b"VDI", bytes(member), 1, None))
+            while expected := reference.read(MIB):
+                buf = c.create_string_buffer(len(expected))
+                require(self.read(disk, size, buf, len(expected)))
+                assert buf.raw == expected
+                digest.update(buf.raw)
+                size += len(expected)
+            assert self.size(disk, 0xFFFFFFFF) == size
+        finally:
+            require(self.destroy(disk))
+        return digest.hexdigest()
 
 
 def fat_snapshots(tmp, out):

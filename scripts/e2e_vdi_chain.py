@@ -7,9 +7,10 @@ import lzma
 from pathlib import Path
 import shutil
 import struct
+import sys
 import tempfile
 
-from e2e import check
+from e2e import check, run
 from e2e_android_sparse import carve
 from e2e_qcow2_backing import checked_import
 from e2e_vhd_chain import compare_driver
@@ -112,7 +113,52 @@ def controls(binary, root, members, final):
     return sorted(names)
 
 
-def verify(binary, root):
+def verify_deleted_ext4(binary, raw, folder, deleted, originals):
+    if not deleted:
+        # The root contains live files at this generation, before any unlink.
+        listing = run(
+            binary, "filesystem", "--source", raw, "--fs-type", "ext4", "--json"
+        )
+        check(not listing["candidates"], listing)
+        return {}
+    restored = run(
+        binary,
+        "filesystem",
+        "--source",
+        raw,
+        "--fs-type",
+        "ext4",
+        "--all",
+        "--destination",
+        folder,
+        "--json",
+    )
+    result = {}
+    for row in restored["results"]:
+        name = row["original_path"]
+        check(
+            name in deleted and row["id"] == str(deleted[name]) and "error" not in row,
+            row,
+        )
+        path = Path(row["path"])
+        check(
+            path.read_bytes() == (CORPUS / name).read_bytes()
+            and row["sha256"] == digest(path) == originals[name],
+            row,
+        )
+        result[name] = row["sha256"]
+    check(result.keys() == deleted.keys(), result)
+    return result
+
+
+def verify(binary, root, vbox_img=None):
+    box = None
+    if vbox_img:
+        sys.path.insert(0, str(REF))
+        from capture import VirtualBox
+
+        box = VirtualBox(vbox_img)
+
     manifest = json.loads((REF / "manifest.json").read_text(encoding="utf-8"))
     result = {}
     for case, fixture in manifest.items():
@@ -120,6 +166,8 @@ def verify(binary, root):
         folder.mkdir()
         selected = []
         guests = []
+        native = []
+        deleted = []
         for i, spec in enumerate(fixture["members"]):
             image = folder / spec["filename"]
             with lzma.open(REF / case / (image.name + ".xz")) as src, image.open(
@@ -146,15 +194,29 @@ def verify(binary, root):
                 and digest(raw) == report["sha256"] == spec["guest_sha256"],
                 image,
             )
-            reference = (
-                REF / case / f"fat-{i}.raw.xz"
-                if case == "fat32-zero"
-                else REF.parent
-                / "vhd-chain"
-                / case
-                / (image.stem + ".vhd.guest.raw.xz")
-            )
+            if case == "ext4-depth8":
+                reference = REF / case / f"ext4-{i}.raw.xz"
+            elif case == "fat32-zero":
+                reference = REF / case / f"fat-{i}.raw.xz"
+            else:
+                reference = (
+                    REF.parent / "vhd-chain" / case / (image.stem + ".vhd.guest.raw.xz")
+                )
             compare_driver(raw, reference)
+            if box:
+                with raw.open("rb") as expected:
+                    native.append(box.compare(list(reversed(selected)), expected))
+                check(native[-1] == spec["guest_sha256"], image)
+                if case == "ext4-depth8":
+                    deleted.append(
+                        verify_deleted_ext4(
+                            binary,
+                            raw,
+                            folder / f"tsk-{i}",
+                            fixture["deleted"][i],
+                            fixture["originals"],
+                        )
+                    )
             guests.append(report["sha256"])
             if i + 1 < len(fixture["members"]):
                 raw.unlink()
@@ -162,7 +224,7 @@ def verify(binary, root):
         paths = {k: (CORPUS / k).read_bytes() for k in fixture["originals"]}
         for indexed in (False, True):
             work = folder / ("indexed" if indexed else "ordinary")
-            if case == "fat32-zero":
+            if case in ("fat32-zero", "ext4-depth8"):
                 copies = carve(binary, raw, work, paths, False, indexed)
             else:
                 copies = recover(
@@ -180,6 +242,10 @@ def verify(binary, root):
         for image, spec in zip(reversed(selected), fixture["members"], strict=True):
             check(digest(image) == spec["sha256"], image)
         result[case] = {"guest_sha256": guests, "originals": copies}
+        if box:
+            result[case]["virtualbox_sha256"] = native
+            if deleted:
+                result[case]["ext4_deleted_by_generation"] = deleted
         print(
             case,
             len(guests),
@@ -187,6 +253,10 @@ def verify(binary, root):
             flush=True,
         )
         shutil.rmtree(folder)
+    if box:
+        from capture import require
+
+        require(box.shutdown())
     return result
 
 
@@ -194,9 +264,14 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--binary", required=True, type=Path)
     p.add_argument("--output", type=Path)
+    p.add_argument(
+        "--vbox-img",
+        type=Path,
+        help="Independently read every guest through VirtualBox and restore ext4 deletions through The Sleuth Kit",
+    )
     a = p.parse_args()
     with tempfile.TemporaryDirectory() as work:
-        result = verify(a.binary.resolve(), Path(work))
+        result = verify(a.binary.resolve(), Path(work), a.vbox_img)
     if a.output:
         a.output.write_text(
             json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8"
