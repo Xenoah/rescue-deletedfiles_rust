@@ -1348,7 +1348,7 @@ impl App {
                             });
                         });
                     }
-                    ui.label(tr!("PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR、PDF、7z・CAB・ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/GIF/BMP/WebP/ICO/CUR, PDF, 7z, CAB, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
+                    ui.label(tr!("PNG/APNG/JPEG/HEIC/AVIF/GIF/BMP/WebP/ICO/CUR、PDF、7z・CAB・ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/HEIC/AVIF/GIF/BMP/WebP/ICO/CUR, PDF, 7z, CAB, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
                 } else {
@@ -2604,7 +2604,7 @@ fn file_icon(ui: &mut egui::Ui, size: f32, candidate: &Candidate) {
     let extension = rescue_core::file_extension(&candidate.name, candidate.stream_name.as_deref())
         .to_ascii_uppercase();
     let color = match extension.as_str() {
-        "PNG" | "JPG" | "JPEG" | "GIF" | "BMP" | "WEBP" | "TIFF" => {
+        "PNG" | "JPG" | "JPEG" | "HEIC" | "HEIF" | "AVIF" | "GIF" | "BMP" | "WEBP" | "TIFF" => {
             egui::Color32::from_rgb(114, 74, 157)
         }
         "MP4" | "MOV" | "AVI" | "MKV" | "M4V" => egui::Color32::from_rgb(178, 87, 33),

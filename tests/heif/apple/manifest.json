@@ -1,0 +1,27 @@
+{
+  "apple-landscape.heic": {
+    "bytes": 13806,
+    "sha256": "e814f641b87c7bc875b51b38cfb048129eed5d22c2b5ee8a9f19e71bac835454",
+    "encoder": "Apple ImageIO (sips)"
+  },
+  "apple-portrait.heic": {
+    "bytes": 7284,
+    "sha256": "c95f46d618c3d10c76ae980d7b7d42b7684ea355db0cb23fa9e8b7bbb48cc423",
+    "encoder": "Apple ImageIO (sips)"
+  },
+  "apple-alpha.heic": {
+    "bytes": 11234,
+    "sha256": "6200f7420ea984e59f1ed7acc55e1664af5222fa306c5b62ce45cbabb103ded8",
+    "encoder": "Apple ImageIO (sips)"
+  },
+  "apple-gray.heic": {
+    "bytes": 7729,
+    "sha256": "e1359bc1589721f8b8d56e8854d5f4bb03dff8e99f17f0ab3da20866a1e5966a",
+    "encoder": "Apple ImageIO (sips)"
+  },
+  "apple-deep.heic": {
+    "bytes": 9332,
+    "sha256": "d94494d683519df44f64d1b1e0db9f48eb8033097a5bf9c9592cf615f2f801b3",
+    "encoder": "Apple ImageIO (sips)"
+  }
+}

@@ -1,0 +1,172 @@
+{
+  "portable": {
+    "originals": {
+      "odd.heic": "3147a92f58c4dcaa3fcb19532a6dab8f145b73a404f6f0c12023a3666c0df5f9",
+      "alpha.heic": "ab6d8a4dda91c0e86bb0f4633cc96caa80b7e0a3f68602714e6d744e531be20c",
+      "ten-bit.heic": "1b4b00e0d29fbe9582532c4ab00f19dc7a992da37640ac64aca156cba6fcfdbf",
+      "collection.heic": "ef58157f7c3753925154bdfc104d5f554e1573b2783bead515863816dad9acd3",
+      "tiled.heic": "faf14944b4f484c71e336e550902167aee8140f0977c0bdf05f1bce81af8ba96",
+      "thumb.heic": "bcf9fe5a8b09a95fa780e232f7337cef480dda5817184f6363e66dc205c3a70c",
+      "color.avif": "dcb49408db7a760518a896da463c07d3997697e1b21e06a08f44a1563a00b835",
+      "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
+      "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
+      "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303",
+      "exif.heic": "4ab5745d303ecb18e04d4534f4379feae1e97ba748da47b3f5593b925ab48880",
+      "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
+      "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
+      "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca",
+      "apple-landscape.heic": "e814f641b87c7bc875b51b38cfb048129eed5d22c2b5ee8a9f19e71bac835454",
+      "apple-portrait.heic": "c95f46d618c3d10c76ae980d7b7d42b7684ea355db0cb23fa9e8b7bbb48cc423",
+      "apple-alpha.heic": "6200f7420ea984e59f1ed7acc55e1664af5222fa306c5b62ce45cbabb103ded8",
+      "apple-gray.heic": "e1359bc1589721f8b8d56e8854d5f4bb03dff8e99f17f0ab3da20866a1e5966a",
+      "apple-deep.heic": "d94494d683519df44f64d1b1e0db9f48eb8033097a5bf9c9592cf615f2f801b3"
+    },
+    "refused": [
+      "cut-hevc",
+      "cut-av1",
+      "cut-grid",
+      "zero-mdat",
+      "handler",
+      "unknown-primary",
+      "external-data",
+      "out-of-bounds",
+      "protected",
+      "multiple-extents",
+      "missing-configuration",
+      "hevc-array-type",
+      "hevc-unit-length",
+      "hevc-unit-header",
+      "bad-av1-config",
+      "av1-forbidden",
+      "av1-obu-overflow",
+      "grid-rows",
+      "grid-dimension",
+      "grid-cycle",
+      "sequence",
+      "mdat-unreferenced-tail"
+    ]
+  },
+  "linux": {
+    "originals": {
+      "odd.heic": "3147a92f58c4dcaa3fcb19532a6dab8f145b73a404f6f0c12023a3666c0df5f9",
+      "alpha.heic": "ab6d8a4dda91c0e86bb0f4633cc96caa80b7e0a3f68602714e6d744e531be20c",
+      "ten-bit.heic": "1b4b00e0d29fbe9582532c4ab00f19dc7a992da37640ac64aca156cba6fcfdbf",
+      "collection.heic": "ef58157f7c3753925154bdfc104d5f554e1573b2783bead515863816dad9acd3",
+      "tiled.heic": "faf14944b4f484c71e336e550902167aee8140f0977c0bdf05f1bce81af8ba96",
+      "thumb.heic": "bcf9fe5a8b09a95fa780e232f7337cef480dda5817184f6363e66dc205c3a70c",
+      "color.avif": "dcb49408db7a760518a896da463c07d3997697e1b21e06a08f44a1563a00b835",
+      "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
+      "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
+      "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303",
+      "exif.heic": "4ab5745d303ecb18e04d4534f4379feae1e97ba748da47b3f5593b925ab48880",
+      "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
+      "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
+      "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca",
+      "apple-landscape.heic": "e814f641b87c7bc875b51b38cfb048129eed5d22c2b5ee8a9f19e71bac835454",
+      "apple-portrait.heic": "c95f46d618c3d10c76ae980d7b7d42b7684ea355db0cb23fa9e8b7bbb48cc423",
+      "apple-alpha.heic": "6200f7420ea984e59f1ed7acc55e1664af5222fa306c5b62ce45cbabb103ded8",
+      "apple-gray.heic": "e1359bc1589721f8b8d56e8854d5f4bb03dff8e99f17f0ab3da20866a1e5966a",
+      "apple-deep.heic": "d94494d683519df44f64d1b1e0db9f48eb8033097a5bf9c9592cf615f2f801b3"
+    },
+    "decoded": {
+      "odd.heic": [
+        "19e76b5ff8bf0970fcedcf904104a82d9d9c1bf7a462523a6d6adfd3cfde48c8"
+      ],
+      "alpha.heic": [
+        "31d2d75279c6f9bdb18b5249f611de0fe05cbed849679e136aadbfcc2599fcb6"
+      ],
+      "ten-bit.heic": [
+        "dd00a982069ed499b85b3c8cafd7ce2d06ce27fa3b1c6b614b8f63e6aba4a34d"
+      ],
+      "collection.heic": [
+        "19e76b5ff8bf0970fcedcf904104a82d9d9c1bf7a462523a6d6adfd3cfde48c8",
+        "a0791c57e41147afd857f37e5d32ab370e83e831f317fedbd0ad79a3b6d6413c"
+      ],
+      "tiled.heic": [
+        "f44e0a565eb29c20c6c58b0554d19377d8b1f03802987b9053c1d0348986c093"
+      ],
+      "thumb.heic": [
+        "9de87e162ae263390dfc9770314cef46a3080b7afbef47ad29e2a2c8e2cce118"
+      ],
+      "color.avif": [
+        "39401e300eb3e7e0ac1cc8feeb6be1b1f65c82d91f276bf29e703f610649e9a5"
+      ],
+      "alpha.avif": [
+        "55891c9a4f474f6f45978b3f10b1572e5017491ef24cb6c4771a905292b12d45"
+      ],
+      "ten-bit.avif": [
+        "206368c17e38305d11163c149138add75214bc71e1aea19a2a4735def5cc9ea2"
+      ],
+      "gray.avif": [
+        "5c559de0e790729430e9948f4860aeb4a571f923ac9816455b680844327f4a41"
+      ],
+      "ffmpeg.avif": [
+        "501e8513decba0cbc77d691e62edd3d3e6f292bba70d115af98e3da8af1c5370"
+      ],
+      "exif.heic": [
+        "aa69c72bff30fc8e98304b06c1878aab3dc441d5c01ca0963427b1f07aa9560f"
+      ],
+      "xmp.heic": [
+        "f191278058ab20d67a3a1bb28590df98b9ac927291016d4b73a9b3f089f224e5"
+      ],
+      "portrait.heic": [
+        "5df2db75292583f7f2474f9f875145ec1704ee65789804352088ff1647ae9e0a"
+      ],
+      "tagged.avif": [
+        "56f023079a3ad495693f3b2d4f152109d90b6d4848f69f3002fc5ff4fdcbb7f3"
+      ],
+      "caption.avif": [
+        "4bf7583dc9dcc9350bfc93bb23ce2fc4df8c4b3db36b429497b9fbeca40e6fc2"
+      ],
+      "apple-landscape.heic": [
+        "09d99e31a995c2104b073ea6f5ad12e15108b64d02d9547778511eaef081637f"
+      ],
+      "apple-portrait.heic": [
+        "0dd7e582e82ab8e66c367474ea5969872b4b672b13ebce402833967a81fd9d50"
+      ],
+      "apple-alpha.heic": [
+        "9dba465de73a82a9643fc1f308aece3b27c89eae749d8dc26305554c3ba8ca7d"
+      ],
+      "apple-gray.heic": [
+        "7e7f4be87581dce8f7af0379ef451a3fe4e2e9639bc93ffdb44c03350a412807"
+      ],
+      "apple-deep.heic": [
+        "a2e40ccb780b5b7886897d230b6bf6b2e24378a38ccb41c5045ed872e4511aac"
+      ]
+    },
+    "metadata": {
+      "exif.heic": {
+        "Exif": "305d393636f2050c19270bb241c58a6a3fdae75d87bc1bc3ee2d99e11d52fc45"
+      },
+      "xmp.heic": {
+        "mime": "ba8e55bb3264c4cd8b2cb660554a02e86762e1411b2a07ee83c45081de405af2"
+      },
+      "portrait.heic": {
+        "Exif": "852246535ddd8722ee446fdfe6edeae7b02e19e37897603f9b8cac9a1cd0d930",
+        "mime": "c6e04168921b61e44a70fe8ed5b7f611b7cb09eef375a4adb1dd34181aea83b3"
+      },
+      "tagged.avif": {
+        "Exif": "9a21c1670189deb638320e3059ecf8bede06a7116218af9e207752c26b1bbc11",
+        "mime": "d05b2be00b5d967baddd2b6e96897d0f2796c8d1b711474427da47d32a1c4e66"
+      },
+      "caption.avif": {
+        "mime": "7478bc0740bd56352f0fec18c634c9f350989d996e0ba09e671caa0e5e582af3"
+      }
+    },
+    "filesystems": [
+      "fat32",
+      "ext4"
+    ]
+  },
+  "decoder": "libheif 1.19.8",
+  "modes": [
+    "session",
+    "index"
+  ],
+  "apple_macos_run": 44652074819,
+  "apple_ubuntu_reference_run": 44653370200
+}

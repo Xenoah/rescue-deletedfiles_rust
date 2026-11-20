@@ -64,7 +64,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, or named extent files for a VMDK descriptor.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -384,7 +384,7 @@ pub fn import_with_raw_expectation(
     }
     if matches!(
         image.image_type.as_deref(),
-        Some("cd-raw" | "compressed-raw" | "udif" | "dmg" | "qcow2" | "vdi")
+        Some("cd-raw" | "compressed-raw" | "udif" | "dmg" | "qcow" | "qcow1" | "qcow2" | "vdi")
     ) {
         return Err(Error::Unsupported(
             "this image format requires a single standalone file".into(),

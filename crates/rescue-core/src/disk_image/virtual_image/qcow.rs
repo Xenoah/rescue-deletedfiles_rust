@@ -1,4 +1,5 @@
 //! Read-only QCOW2 v2/v3 base images. Only metadata inside the selected file is read.
+pub(super) mod v1;
 use super::{Block, Compression, invalid, read_at};
 use crate::{Error, Result};
 use std::{

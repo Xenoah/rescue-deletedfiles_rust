@@ -5,7 +5,7 @@ use rescue_core::disk_image::{ImageInput, ImportedFile};
 #[derive(Clone, Copy, PartialEq)]
 enum Format {
     Vdi,
-    Qcow2,
+    Qcow,
     CompressedRaw,
     Dmg,
     Optical,
@@ -22,7 +22,7 @@ enum Format {
 impl Format {
     const ALL: [Self; 13] = [
         Self::Vdi,
-        Self::Qcow2,
+        Self::Qcow,
         Self::CompressedRaw,
         Self::Dmg,
         Self::Optical,
@@ -47,7 +47,7 @@ impl Format {
             "bin" => Some(Self::Optical),
             "dmg" | "udif" => Some(Self::Dmg),
             "vdi" => Some(Self::Vdi),
-            "qcow2" | "qcow" => Some(Self::Qcow2),
+            "qcow2" | "qcow1" | "qcow" => Some(Self::Qcow),
             "simg" | "sparse" => Some(Self::Android),
             "e01" | "ex01" => Some(Self::Ewf),
             "vhd" => Some(Self::Vhd),
@@ -70,7 +70,7 @@ impl Format {
             Self::Ddrescue => "ddrescue",
             Self::Dmg => "dmg",
             Self::Vdi => "vdi",
-            Self::Qcow2 => "qcow2",
+            Self::Qcow => "qcow",
             Self::Ewf => "ewf-verified",
             Self::Vhd => "vhd",
             Self::Vhdx => "vhdx",
@@ -88,7 +88,7 @@ impl Format {
             Self::Optical => "CD-ROM (Mode 1 / XA Form 1)",
             Self::Dmg => "DMG (UDIF)",
             Self::Vdi => "VDI",
-            Self::Qcow2 => "QCOW2",
+            Self::Qcow => "QCOW / QCOW2",
             Self::Ewf => "E01 / Ex01 (libewf)",
             Self::Vhd => "VHD",
             Self::Vhdx => "VHDX",
@@ -177,7 +177,7 @@ impl App {
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vmdk => {ui.small(tr!("単独の疎・圧縮VMDK、または記述ファイルと明示指定したフラット・分割エクステントを変換します。", "Import standalone sparse or compressed VMDK, or a descriptor and explicitly selected flat or split extent files."));}
-                        Format::Qcow2 => {ui.small(tr!("単独QCOW2のDeflate・Zstandard圧縮と拡張L2テーブルに対応します。","Standalone QCOW2 supports deflate and Zstandard compression and extended L2 tables."));}
+                        Format::Qcow => {ui.small(tr!("単独QCOW v1、QCOW2 v2/v3に対応します。QCOW2 v3はZstandard圧縮と拡張L2にも対応します。","Supports standalone QCOW v1 and QCOW2 v2/v3, including QCOW2 v3 Zstandard and extended L2."));}
                         Format::Vdi | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
