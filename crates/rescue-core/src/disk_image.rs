@@ -63,7 +63,7 @@ pub struct EwfVerification {
 pub struct ImageInput {
     /// Read-only disk, volume, or first image segment.
     pub source: PathBuf,
-    /// Additional image segments in logical order, named VMDK extent files, or explicit QCOW2 backing files from nearest parent to base.
+    /// Additional image segments in logical order, named VMDK extent files, or explicit VHD or QCOW2 backing files from nearest parent to base.
     pub segment: Vec<PathBuf>,
     /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
@@ -345,10 +345,10 @@ pub fn import_with_raw_expectation(
     let kind = image.image_type.as_deref();
     let regular_raw = !crate::is_device(first);
     if (expected.sha256.is_some() || expected.bytes.is_some())
-        && (!matches!(kind, Some("raw" | "qcow" | "qcow1" | "qcow2")) || !regular_raw)
+        && (!matches!(kind, Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd")) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW or QCOW image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, QCOW, or VHD image type and regular files".into(),
         ));
     }
     if regular_raw {
@@ -364,6 +364,12 @@ pub fn import_with_raw_expectation(
         if paths.len() > 1
             && let Some(result) =
                 virtual_image::import_chain(&paths, kind, output, expected, cancel)?
+        {
+            return Ok(result);
+        }
+        if paths.len() > 1
+            && let Some(result) =
+                virtual_image::import_vhd_chain(&paths, kind, output, expected, cancel)?
         {
             return Ok(result);
         }
@@ -391,7 +397,17 @@ pub fn import_with_raw_expectation(
     }
     if matches!(
         image.image_type.as_deref(),
-        Some("cd-raw" | "compressed-raw" | "udif" | "dmg" | "qcow" | "qcow1" | "qcow2" | "vdi")
+        Some(
+            "cd-raw"
+                | "compressed-raw"
+                | "udif"
+                | "dmg"
+                | "qcow"
+                | "qcow1"
+                | "qcow2"
+                | "vdi"
+                | "vhd"
+        )
     ) {
         return Err(Error::Unsupported(
             "this image format requires a single standalone file".into(),
