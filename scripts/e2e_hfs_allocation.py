@@ -33,9 +33,9 @@ def scan(binary, image, work, scope=None, indexed=False, extensions='bmp,gif,png
     return session, rows
 
 
-def restore(binary, image, ref, work, *, shift=0, indexed=False, bounds=None):
+def restore(binary, image, ref, work, *, shift=0, indexed=False, bounds=None, extensions='bmp,gif,png,pdf,webp,wav,zip'):
     before = file_hash(image)
-    session, rows = scan(binary, image, work/'scan', indexed=indexed, bounds=bounds)
+    session, rows = scan(binary, image, work/'scan', indexed=indexed, bounds=bounds, extensions=extensions)
     expected = {v['deleted_offset'] + shift: name for name, v in ref.items() if v['deleted_bytes_retained']}
     check({r['record'] for r in rows} == expected.keys(), (rows, session))
     check(all(r['allocation_status'] == 'unallocated' for r in rows), rows)

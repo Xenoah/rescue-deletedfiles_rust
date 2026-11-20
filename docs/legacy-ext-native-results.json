@@ -1,0 +1,271 @@
+{
+  "ext2-1024": {
+    "fallbacks": [
+      "bad-free-block-count",
+      "bad-free-inode-count",
+      "bitmap-padding",
+      "equal-count-swap-of-live-and-free-blocks",
+      "filesystem-too-long",
+      "foreign-creator",
+      "group-count",
+      "inode-bitmap-count",
+      "invalid-fragment-size",
+      "invalid-root-pointer",
+      "invalid-root-type",
+      "orphan-list",
+      "overlapping-maps",
+      "relocated-inode-table",
+      "requires-replay",
+      "unclean",
+      "uninitialized-map",
+      "unread-bitmap",
+      "wrong-declared-directories",
+      "wrong-root-sector-count"
+    ],
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    },
+    "stale_session": {
+      "original_source_fingerprint_preserved": true,
+      "second_block_reallocated": true,
+      "stale_recovery": "SOURCE_CHANGED"
+    }
+  },
+  "ext2-1024-rev0": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext2-2048": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 1048576,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext2-4096": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext3-1024": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext3-1024-indirect": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "indirect_fallbacks": [
+      "bad-double-indirect",
+      "cyclic-triple-indirect",
+      "duplicate-indirect",
+      "unaccounted-deep-data"
+    ],
+    "live_offsets_excluded": 9,
+    "native_sparse_live_file": "direct,single,double,triple;two hard links",
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext3-2048": {
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 8388608,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "ext3-4096": {
+    "fallbacks": [
+      "bad-free-block-count",
+      "bad-free-inode-count",
+      "bitmap-padding",
+      "equal-count-swap-of-live-and-free-blocks",
+      "filesystem-too-long",
+      "foreign-creator",
+      "group-count",
+      "inode-bitmap-count",
+      "invalid-fragment-size",
+      "invalid-root-pointer",
+      "invalid-root-type",
+      "journal-error",
+      "journal-external-device",
+      "journal-needs-replay",
+      "journal-size-mismatch",
+      "journal-wrong-uuid",
+      "orphan-list",
+      "overlapping-maps",
+      "relocated-inode-table",
+      "requires-replay",
+      "unclean",
+      "uninitialized-map",
+      "unread-bitmap",
+      "wrong-declared-directories",
+      "wrong-root-sector-count"
+    ],
+    "independent_allocation": [
+      "sample.bmp",
+      "sample.gif",
+      "sample.jpg",
+      "sample.pdf",
+      "sample.png",
+      "sample.sqlite",
+      "sample.wav",
+      "sample.webp",
+      "sample.zip"
+    ],
+    "live_offsets_excluded": 9,
+    "partition_byte_offset": 0,
+    "sha256": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  }
+}

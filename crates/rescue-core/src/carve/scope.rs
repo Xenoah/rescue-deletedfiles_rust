@@ -2,6 +2,7 @@
 //! Read buffers can span allocated bytes; only signatures and complete payloads
 //! allowed by the chosen scope are retained. No inference of deletion is made.
 mod hfs;
+mod legacy_ext;
 mod xfs;
 use crate::disk_image::Ext4Volume;
 use crate::{
@@ -19,6 +20,7 @@ enum Backend {
     Ntfs(Box<Ntfs>, Image),
     Fat(Box<fat::AllocationReader>, Image),
     Ext4(Box<Ext4Volume>),
+    LegacyExt(legacy_ext::Map),
     Hfs(hfs::Map),
     Xfs(xfs::Map),
 }
@@ -135,6 +137,9 @@ impl Scope {
                             Box::new(fat::AllocationReader::open(&mut image, cancel)?),
                             image,
                         ),
+                        None if legacy_ext::recognized(&mut image) => {
+                            Backend::LegacyExt(legacy_ext::Map::open(&mut image, cancel)?)
+                        }
                         None if Ext4Volume::recognized(&mut image) => {
                             Backend::Ext4(Box::new(Ext4Volume::open_allocation(image)?))
                         }
@@ -155,7 +160,12 @@ impl Scope {
                 self.current = Some((
                     index,
                     match load {
-                        Ok(backend) => Some(backend),
+                        Ok(backend) => {
+                            if matches!(backend, Backend::LegacyExt(_)) {
+                                self.warnings.insert("EXT_ALLOCATION_EVIDENCE: Unchecksummed ext2/ext3 block maps agree with the occupied blocks reconstructed from filesystem metadata and allocated inodes.".into());
+                            }
+                            Some(backend)
+                        }
                         Err(Error::Cancelled) => return Err(Error::Cancelled),
                         Err(error) => {
                             self.warning(format!(
@@ -196,6 +206,7 @@ impl Scope {
                     }
                     status
                 }
+                Some(Backend::LegacyExt(map)) => map.status(at - region.offset, stop - at),
                 Some(Backend::Xfs(map)) => map.status(at - region.offset, stop - at),
                 Some(Backend::Hfs(map)) => map.status(at - region.offset, stop - at),
                 Some(Backend::Ext4(volume)) => {
