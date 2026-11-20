@@ -1,9 +1,10 @@
-name: Capture Windows differencing VHDX references
+name: Capture Windows 4Kn differencing VHDX references
 on:
   push:
-    branches: [qa/windows-vhdx-chain-reference]
+    branches: [qa/windows-vhdx-4kn-chain-reference]
+    paths: [tests/vhdx-chain/generate_windows.py, tests/vhd-chain/generate_windows.py, scripts/create_vhdx_4kn.py, .github/workflows/vhdx-chain-reference.yml]
 permissions:
-  contents: read
+  contents: write
 jobs:
   capture:
     runs-on: windows-2022
@@ -13,11 +14,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Record seven actual NTFS unlinks per chain and replay all seven generations through Windows
+      - name: Record seven actual NTFS unlinks per chain and replay all five 4Kn generations through Windows
         run: python -u tests/vhdx-chain/generate_windows.py
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-differencing-vhdx
-          path: |
-            tests/vhdx-chain/**/manifest.json
-            tests/vhdx-chain/**/*.xz
+      - name: Preserve both independently replayed native 4Kn captures
+        shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/vhdx-chain/4kn-*
+          git commit -m "Preserve five native 4Kn VHDX generations after fourteen genuine NTFS unlinks"
+          git push origin HEAD:qa/windows-vhdx-4kn-chain-reference

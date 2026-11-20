@@ -30,8 +30,12 @@ def ps(image, cmd):
 def create(image, kind, parent=None):
     check(image.is_absolute() and not image.exists(), image)
     command = [f'create vdisk file="{image}" ' + (f'parent="{parent}"' if parent else 'maximum=96 type=' + kind)]
+    if kind == '4kn' and not parent:
+        from create_vhdx_4kn import create as new_4kn
+        new_4kn(image, 96 << 20)
+        command = []
     if not parent:
-        command += [f'select vdisk file="{image}"', 'attach vdisk', 'convert mbr', 'create partition primary',
+        command += [f'select vdisk file="{image}"', 'attach vdisk', 'convert gpt' if kind == '4kn' else 'convert mbr', 'create partition primary',
                     f'format fs=ntfs quick label={LABEL}', 'assign', 'detach vdisk']
     script = image.with_suffix('.txt')
     script.write_text('\n'.join(command)+'\n', encoding='ascii')
@@ -48,7 +52,7 @@ def attached(image, readonly=False):
             owned = json.loads(ps(image, """
               $d=Get-DiskImage -ImagePath $env:RESCUE_OWNED_VHD|Get-Disk
               if(-not $d.IsReadOnly){throw 'image is writable'}
-              @{number=$d.Number; size=[int64]$d.Size}|ConvertTo-Json -Compress
+              @{number=$d.Number; size=[int64]$d.Size; logical=[int]$d.LogicalSectorSize}|ConvertTo-Json -Compress
             """))
             check(type(owned['number']) is int and owned['number']>0 and (90<<20)<=owned['size']<=(96<<20), owned)
             yield owned
@@ -84,7 +88,7 @@ def logical(image, output=None):
                     archive.write(chunk)
                 digest.update(chunk)
                 hashes.append(hashlib.sha256(chunk).hexdigest())
-    return dict(guest_bytes=owned['size'], guest_sha256=digest.hexdigest(), guest_mib_sha256=hashes)
+    return dict(logical_sector=owned['logical'], guest_bytes=owned['size'], guest_sha256=digest.hexdigest(), guest_mib_sha256=hashes)
 
 
 def archive(image, out):

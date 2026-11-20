@@ -18,9 +18,8 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         for name, kind, depth, layered in [
-            ('fixed-child', 'fixed', 1, False),
-            ('dynamic-child', 'expandable', 1, False),
-            ('dynamic-two-children', 'expandable', 2, True),
+            ('4kn-child', '4kn', 1, False),
+            ('4kn-two-children', '4kn', 2, True),
         ]:
             capture(root, name, kind, depth, layered=layered, durable=True, suffix='.vhdx',
                     destination=ROOT, include_guest=True)
@@ -31,6 +30,7 @@ def main():
             moved = root / ('relocated-' + name)
             (root / name).rename(moved)
             for member in reference['members']:
+                assert member['logical_sector'] == 4096
                 path = moved / member['filename']
                 observed = logical(path)
                 assert observed['guest_sha256'] == member['guest_sha256']
