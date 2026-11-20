@@ -113,16 +113,12 @@ struct Plane {
 
 impl Plane {
     fn from_bounds(bounds: &[u8], depth: usize) -> Result<Self> {
-        let mut fields = bounds.chunks_exact(4);
-        let mut coord = || {
-            fields
-                .next()
-                .and_then(|b| b.try_into().ok())
-                .map(i32::from_be_bytes)
-                .map(i64::from)
-                .ok_or_else(|| invalid("missing layer bounds"))
-        };
-        let (top, left, bottom, right) = (coord()?, coord()?, coord()?, coord()?);
+        let coordinates: &[[u8; 4]; 4] = bounds
+            .as_chunks::<4>()
+            .0
+            .try_into()
+            .map_err(|_| invalid("missing layer bounds"))?;
+        let [top, left, bottom, right] = coordinates.map(|c| i64::from(i32::from_be_bytes(c)));
         let (width, height) = (right - left, bottom - top);
         if !(0..=300000).contains(&width) || !(0..=300000).contains(&height) {
             return Err(invalid("layer bounds"));
