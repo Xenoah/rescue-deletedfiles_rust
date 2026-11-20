@@ -1,0 +1,36 @@
+{
+  "filesystem": "ext4",
+  "members": [
+    {
+      "container_sha256": "c67c5d3bbfcdae4f0629344e32a169512397860cbbb0d6529a41426743561eb1",
+      "filename": "base.qed",
+      "flags": 0,
+      "logical_bytes": 17039360,
+      "logical_sha256": "c62cf7cc21fcdb7c2caaf5c8c1471dcc556325901f211de69f0933ed2a59181a",
+      "reference": "lvm2-snapshots/exhausted-store/active.raw.xz",
+      "tail_bytes": 262144,
+      "tail_marker": "base"
+    },
+    {
+      "container_sha256": "d3967e5e77e6374881d01b50f9b0929ed395ce9754133d97851d96f38f5f1ed2",
+      "filename": "middle.qed",
+      "flags": 1,
+      "logical_bytes": 16843264,
+      "logical_sha256": "8e7cab719548822c712779ab5644ba89b054b280f3fdf8a1b9b3dc851f942f71",
+      "reference": "lvm2-snapshots/exhausted-store/before.raw.xz",
+      "tail_bytes": 66048,
+      "tail_marker": "middle"
+    },
+    {
+      "container_sha256": "6731765c839781b8cea898e7d62df7ecc504ddab8f93c2493ec5c44d6c6b0a97",
+      "filename": "youngest.qed",
+      "flags": 1,
+      "logical_bytes": 17039360,
+      "logical_sha256": "acc1e4acb2625fa54e6e8ba848acbec0d0f6e6349b80267c2bfa96cff4bd428b",
+      "reference": "lvm2-snapshots/exhausted-store/deleted.raw.xz",
+      "tail_bytes": 262144,
+      "tail_marker": "youngest"
+    }
+  ],
+  "version": "qemu-img version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.32)"
+}

@@ -1,0 +1,168 @@
+{
+  "chains": {
+    "short-middle": {
+      "recovered": {
+        "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "refused": [
+        "backing_name_in_header",
+        "backing_name_past_header",
+        "embedded_nul",
+        "extra_after_standalone",
+        "missing_all_parents",
+        "missing_base",
+        "name_disagrees",
+        "non_utf8",
+        "repeated_input",
+        "stored_path",
+        "wrong_hash",
+        "wrong_length",
+        "wrong_order"
+      ],
+      "volumes": [
+        "c62cf7cc21fcdb7c2caaf5c8c1471dcc556325901f211de69f0933ed2a59181a",
+        "8e7cab719548822c712779ab5644ba89b054b280f3fdf8a1b9b3dc851f942f71",
+        "acc1e4acb2625fa54e6e8ba848acbec0d0f6e6349b80267c2bfa96cff4bd428b"
+      ]
+    },
+    "windows-raw": {
+      "recovered": {
+        "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+        "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      },
+      "refused": [
+        "backing_name_in_header",
+        "backing_name_past_header",
+        "different_raw_contents_with_original_hash",
+        "embedded_nul",
+        "missing_all_parents",
+        "missing_base",
+        "name_disagrees",
+        "non_utf8",
+        "repeated_input",
+        "stored_path",
+        "untyped_non_qed_parent",
+        "wrong_hash",
+        "wrong_length",
+        "wrong_order"
+      ],
+      "volumes": [
+        "0708e9ff7f019784a85c6e8dd195d8ae1d6fe5daed8f22f9e7d28e168017cb96",
+        "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+        "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544"
+      ]
+    }
+  },
+  "layouts": {
+    "qemu10-ext4": {
+      "logical_sha256": "2122f3be5486ff7fc9c700682daa31348a00f17fa76ca6e54bf5409221d4dadf",
+      "recovered": {
+        "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      }
+    },
+    "qemu10-fat32": {
+      "logical_sha256": "de1a567e0368ed7b2384d65ea8667800f4e59a2269e907921c3e2015d001b917",
+      "recovered": {
+        "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      }
+    },
+    "qemu10-ntfs": {
+      "logical_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "recovered": {
+        "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+        "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      }
+    },
+    "qemu6-ext4": {
+      "logical_sha256": "5873108c4c3dbcab1c8ea0d9406d7683c372954b6ad4c51e1071c6bed6df1205",
+      "recovered": {
+        "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      }
+    },
+    "qemu6-fat32": {
+      "logical_sha256": "de1a567e0368ed7b2384d65ea8667800f4e59a2269e907921c3e2015d001b917",
+      "recovered": {
+        "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      }
+    },
+    "qemu6-ntfs": {
+      "logical_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "recovered": {
+        "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+        "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+        "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+        "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+        "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+        "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+      }
+    }
+  },
+  "refused": [
+    "autoclear-required",
+    "bad-cluster",
+    "bad-magic",
+    "bad-table",
+    "changed-valid-data-original-digest",
+    "data-outside-file",
+    "data-overlaps-table",
+    "dirty",
+    "duplicate-data",
+    "empty-header",
+    "impossible-size",
+    "l1-beyond-guest",
+    "l1-in-header",
+    "misaligned-data",
+    "misaligned-l2",
+    "overflowing-l1",
+    "overlapping-header",
+    "overlapping-l2",
+    "raw-flag-alone",
+    "table-in-l1",
+    "unaligned-size",
+    "unknown-feature"
+  ]
+}

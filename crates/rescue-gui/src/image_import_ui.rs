@@ -7,6 +7,7 @@ enum Format {
     Lvm,
     Vdi,
     Qcow,
+    Qed,
     CompressedRaw,
     Dmg,
     Optical,
@@ -21,7 +22,7 @@ enum Format {
 }
 
 impl Format {
-    const ALL: [Self; 14] = [
+    const ALL: [Self; 15] = [
         Self::Vdi,
         Self::Qcow,
         Self::CompressedRaw,
@@ -36,6 +37,7 @@ impl Format {
         Self::Android,
         Self::Ddrescue,
         Self::Lvm,
+        Self::Qed,
     ];
 
     fn from_path(path: &str) -> Option<Self> {
@@ -50,6 +52,7 @@ impl Format {
             "dmg" | "udif" => Some(Self::Dmg),
             "pv" | "lvm" => Some(Self::Lvm),
             "vdi" => Some(Self::Vdi),
+            "qed" => Some(Self::Qed),
             "qcow2" | "qcow1" | "qcow" => Some(Self::Qcow),
             "simg" | "sparse" => Some(Self::Android),
             "e01" | "ex01" => Some(Self::Ewf),
@@ -74,6 +77,7 @@ impl Format {
             Self::Dmg => "dmg",
             Self::Lvm => "lvm2",
             Self::Vdi => "vdi",
+            Self::Qed => "qed",
             Self::Qcow => "qcow",
             Self::Ewf => "ewf-verified",
             Self::Vhd => "vhd",
@@ -93,6 +97,7 @@ impl Format {
             Self::Dmg => "DMG (UDIF)",
             Self::Lvm => "LVM2",
             Self::Vdi => "VDI",
+            Self::Qed => "QED",
             Self::Qcow => "QCOW / QCOW2",
             Self::Ewf => "E01 / Ex01 (libewf)",
             Self::Vhd => "VHD",
@@ -110,6 +115,7 @@ impl Format {
                 | Self::Raw
                 | Self::Ewf
                 | Self::Vmdk
+                | Self::Qed
                 | Self::Qcow
                 | Self::Vhd
                 | Self::Vhdx
@@ -395,6 +401,7 @@ impl App {
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vmdk => {ui.small(tr!("差分VMDKでは直近の親からベースまで順に指定します。単独の疎・圧縮VMDKや、記述ファイルとフラット・分割エクステントも選べます。", "For a sparse snapshot, select parents nearest first through the base. You can also import a standalone sparse or compressed VMDK, or a descriptor with its flat or split extents."));}
+                        Format::Qed => {ui.small(tr!("差分QEDは直近の親から順にQEDまたはRAWを指定してください。","For a QED overlay, select its QED or RAW backing files in order from nearest parent to base."));}
                         Format::Qcow => {ui.small(tr!("単独QCOW v1、QCOW2 v2/v3に対応します。差分QCOW2は直近の親から順にRAWまたはQCOW2を指定してください。","For a QCOW2 overlay, select its backing files in order from nearest parent to base (RAW or QCOW2). Standalone QCOW v1 and QCOW2 v2/v3 are also supported."));}
                         Format::Vhdx => {ui.small(tr!("差分VHDXでは、選択した子から近い順に親VHDXを指定します。", "For a differencing VHDX, list its parent files nearest first."));}
                         Format::Vhd => {ui.small(tr!("差分VHDでは、選択した子から近い順に親VHDを指定します。", "For a differencing VHD, select every parent VHD from nearest parent to base."));}
@@ -406,7 +413,7 @@ impl App {
                     }
                     if format.split() {
                         let mut changed = false;
-                        let caption = if format == Format::Lvm {tr!("追加の物理ボリューム（1行1パス、順不同）","Additional physical volumes (one path per line, any order)")} else if matches!(format, Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx) {
+                        let caption = if format == Format::Lvm {tr!("追加の物理ボリューム（1行1パス、順不同）","Additional physical volumes (one path per line, any order)")} else if matches!(format, Format::Vdi | Format::Qed | Format::Qcow | Format::Vhd | Format::Vhdx) {
                             tr!("親ディスク（直近の親から順に1行1パス）","Backing files (nearest parent first, one path per line)")
                         } else if format == Format::Vmdk {
                             tr!("差分の親（直近から順に）、または記述ファイルにある構成ファイル（1行1パス）", "Parent images nearest first, or extents named in the descriptor (one path per line)")
@@ -424,7 +431,7 @@ impl App {
                         if format == Format::Lvm {if changed {state.reset_selection();} state.source_picker(ui,format);}
                     }
                 }
-                if matches!(state.format,Some(Format::Lvm | Format::Raw | Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk)) {
+                if matches!(state.format,Some(Format::Lvm | Format::Raw | Format::Vdi | Format::Qed | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk)) {
                     ui.collapsing(
                         tr!("元ディスクと照合", "Verify against the original disk"),
                         |ui| {
@@ -519,6 +526,7 @@ impl App {
                     Format::Lvm
                         | Format::Raw
                         | Format::Vdi
+                        | Format::Qed
                         | Format::Qcow
                         | Format::Vhd
                         | Format::Vhdx

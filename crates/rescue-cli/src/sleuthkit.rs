@@ -15,7 +15,7 @@ pub struct ImageArgs {
     /// Additional LVM physical volumes in any order, image segments, VMDK extents, or backing files (nearest parent first).
     #[arg(long)]
     segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts lvm2 with --lvm-volume, vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts lvm2 with --lvm-volume, qed, vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     #[arg(long)]
     image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
