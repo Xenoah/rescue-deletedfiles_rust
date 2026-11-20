@@ -1,0 +1,20 @@
+name: Capture actual Apple HFS Plus and HFSX deletions
+on:
+  push:
+    branches: [qa/hfsplus-deletion-reference]
+    paths: [.github/workflows/hfsplus-reference.yml, tests/hfsplus/generate_macos.py]
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format two owned disk images and preserve deleted and live controls
+        run: |
+          sudo "$(command -v python3)" tests/hfsplus/generate_macos.py
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/hfsplus/hfsplus.raw.xz tests/hfsplus/hfsx.raw.xz tests/hfsplus/manifest.json
+          git commit -m "Preserve Apple HFS Plus and HFSX images with real live and deleted controls"
+          git push origin HEAD:qa/hfsplus-deletion-reference
