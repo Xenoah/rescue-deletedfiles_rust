@@ -1,6 +1,7 @@
 //! Allocation-aware candidate search, with explicit fallback for unknown maps.
 //! Read buffers can span allocated bytes; only signatures and complete payloads
 //! allowed by the chosen scope are retained. No inference of deletion is made.
+mod hfs;
 use crate::{
     AllocationStatus, CarveScope, Error, FileSystem, Result, Session, SourceRegion, fat,
     ntfs::{Data, Ntfs, Run},
@@ -15,6 +16,7 @@ use std::{
 enum Backend {
     Ntfs(Box<Ntfs>),
     Fat(Box<fat::AllocationReader>),
+    Hfs(hfs::Map),
 }
 pub(super) struct Scope {
     mode: CarveScope,
@@ -44,6 +46,9 @@ impl Scope {
                 result.warnings.extend(layout.warnings);
             }
             Err(Error::Cancelled) => return Err(Error::Cancelled),
+            Err(_) if hfs::recognized(image) => {
+                result.regions.push(unknown(0, image.length));
+            }
             Err(error) => result.warning(format!(
                 "source layout unavailable ({error}); all selected source bytes are searched"
             )),
@@ -119,6 +124,9 @@ impl Scope {
                         ) => {
                             Backend::Fat(Box::new(fat::AllocationReader::open(&mut image, cancel)?))
                         }
+                        None if hfs::recognized(&mut image) => {
+                            Backend::Hfs(hfs::Map::open(&mut image, cancel)?)
+                        }
                         _ => {
                             return Err(Error::Unsupported(
                                 "no recognized allocation metadata".into(),
@@ -171,6 +179,7 @@ impl Scope {
                     }
                     status
                 }
+                Some((_, Backend::Hfs(map))) => map.status(at - region.offset, stop - at),
                 Some((image, Backend::Fat(fat))) => {
                     match fat.status(image, at - region.offset, stop - at, cancel) {
                         Ok(status) => status,
