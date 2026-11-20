@@ -3,7 +3,7 @@ use super::container::{Input, InputCursor};
 use crate::{Error, Result};
 use quick_xml::{Reader, events::Event};
 
-const MAX_BYTES: usize = 8 * 1024 * 1024;
+pub(super) const MAX_BYTES: usize = 8 * 1024 * 1024;
 const BOM: &[u8] = b"\xef\xbb\xbf";
 
 pub(super) fn signature(bytes: &[u8]) -> bool {
@@ -87,16 +87,31 @@ fn boundary(input: &mut Input<'_>, bom: usize) -> Result<usize> {
     Err(Error::Limit("XML event count exceeds 131072".into()))
 }
 
-pub(super) fn parse(input: &mut Input<'_>) -> Result<(usize, Vec<usize>)> {
-    input.ensure(6)?;
-    let bom = if input.bytes.starts_with(BOM) { 3 } else { 0 };
-    input.ensure(bom + 6)?;
-    if !signature(&input.bytes) {
-        return Err(Error::Invalid("XML declaration missing".into()));
-    }
-    let end = boundary(input, bom)?;
-    input.work(end)?;
-    let xml = std::str::from_utf8(&input.bytes[bom..end])
+/// Look only for an XML root whose local name is svg. Namespace identity is checked after parsing.
+pub(super) fn svg_signature(bytes: &[u8]) -> bool {
+    let bytes = bytes.strip_prefix(BOM).unwrap_or(bytes);
+    let Some(rest) = bytes.strip_prefix(b"<") else {
+        return false;
+    };
+    let token = rest
+        .iter()
+        .take(128)
+        .position(|byte| byte.is_ascii_whitespace() || matches!(byte, b'/' | b'>'));
+    let Some(end) = token else {
+        return false;
+    };
+    let name = &rest[..end];
+    name == b"svg"
+        || name.strip_suffix(b":svg").is_some_and(|prefix| {
+            !prefix.is_empty()
+                && prefix
+                    .iter()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, b'_' | b'-' | b'.'))
+        })
+}
+
+fn document(bytes: &[u8]) -> Result<roxmltree::Document<'_>> {
+    let xml = std::str::from_utf8(bytes.strip_prefix(BOM).unwrap_or(bytes))
         .map_err(|_| Error::Invalid("invalid UTF-8 XML".into()))?;
     let options = roxmltree::ParsingOptions {
         nodes_limit: 65536,
@@ -104,6 +119,82 @@ pub(super) fn parse(input: &mut Input<'_>) -> Result<(usize, Vec<usize>)> {
         entity_resolver: None,
     };
     roxmltree::Document::parse_with_options(xml, options)
-        .map_err(|e| Error::Invalid(format!("XML: {e}")))?;
-    Ok((end, if bom == 0 { Vec::new() } else { vec![bom] }))
+        .map_err(|e| Error::Invalid(format!("XML: {e}")))
+}
+
+fn svg_root(doc: &roxmltree::Document<'_>) -> bool {
+    doc.root_element()
+        .has_tag_name(("http://www.w3.org/2000/svg", "svg"))
+}
+
+/// A gzip member independently delimits its complete XML, including the prolog and epilog.
+pub(super) fn complete_svg(bytes: &[u8]) -> bool {
+    if bytes.len() > MAX_BYTES {
+        return false;
+    }
+    let mut reader = Reader::from_reader(bytes.strip_prefix(BOM).unwrap_or(bytes));
+    let mut depth = 0usize;
+    for i in 0..131072 {
+        match reader.read_event() {
+            Ok(Event::Decl(d)) if i == 0 => {
+                if !d.version().is_ok_and(|v| v.as_ref() == b"1.0")
+                    || d.encoding()
+                        .is_some_and(|e| !e.is_ok_and(|v| v.eq_ignore_ascii_case(b"utf-8")))
+                {
+                    return false;
+                }
+            }
+            Ok(Event::Decl(_) | Event::DocType(_)) | Err(_) => return false,
+            Ok(Event::Start(e)) => {
+                depth += 1;
+                if depth > 256 || e.attributes().take(4097).count() > 4096 {
+                    return false;
+                }
+            }
+            Ok(Event::Empty(e)) if e.attributes().take(4097).count() > 4096 => return false,
+            Ok(Event::End(_)) => {
+                let Some(n) = depth.checked_sub(1) else {
+                    return false;
+                };
+                depth = n;
+            }
+            Ok(Event::Eof) => return depth == 0 && document(bytes).is_ok_and(|doc| svg_root(&doc)),
+            _ => {}
+        }
+    }
+    false
+}
+
+pub(super) fn parse(input: &mut Input<'_>, svg_only: bool) -> Result<(usize, Vec<usize>, bool)> {
+    input.ensure(6)?;
+    let bom = if input.bytes.starts_with(BOM) { 3 } else { 0 };
+    input.ensure(bom + 6)?;
+    if !signature(&input.bytes) && !(svg_only && svg_signature(&input.bytes)) {
+        return Err(Error::Invalid("XML declaration or SVG root missing".into()));
+    }
+    let end = boundary(input, bom)?;
+    input.work(end)?;
+    let doc = document(&input.bytes[..end])?;
+    let svg = svg_root(&doc);
+    if svg_only && !svg {
+        return Err(Error::Invalid("SVG root namespace missing".into()));
+    }
+    let mut internal = Vec::new();
+    if bom != 0 {
+        internal.push(bom);
+    }
+    if svg {
+        for (offset, &byte) in input.bytes[..end].iter().enumerate().skip(bom + 1) {
+            if (byte == b'<' || byte == 0xef)
+                && (svg_signature(&input.bytes[offset..end])
+                    || signature(&input.bytes[offset..end]))
+            {
+                if internal.len() >= 65536 {
+                    return Err(Error::Limit("SVG internal signature limit".into()));
+                }
+                internal.push(offset);
+            }
+        }
+    }
+    Ok((end, internal, svg))
 }

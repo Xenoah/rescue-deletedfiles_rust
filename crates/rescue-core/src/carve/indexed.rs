@@ -170,6 +170,7 @@ pub(crate) fn resume(
                 Format::Zip
                     | Format::Html
                     | Format::Xml
+                    | Format::Svg
                     | Format::Mp3
                     | Format::Tar(_)
                     | Format::J2k
@@ -212,6 +213,7 @@ pub(crate) fn resume(
                 saved.end,
             ) {
                 Ok((found, bytes, records)) => {
+                    let found = found.for_extensions(&settings.extensions);
                     candidate.allocation_status = match scope.status(at, bytes.len() as u64, cancel)
                     {
                         Ok(status) => status,

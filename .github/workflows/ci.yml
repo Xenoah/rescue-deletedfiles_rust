@@ -53,7 +53,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y unrar liblzf1 libcurl3-gnutls libopenexr-dev libheif-examples gddrescue android-sdk-libsparse-utils p7zip-full cabextract libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm xfsprogs e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
+          sudo apt-get install -y librsvg2-bin unrar liblzf1 libcurl3-gnutls libopenexr-dev libheif-examples gddrescue android-sdk-libsparse-utils p7zip-full cabextract libxkbcommon-dev libxkbcommon-x11-0 libx11-xcb1 libxcb-shape0 libxcb-xfixes0 libgl1-mesa-dri libgl1-mesa-dev libegl1-mesa-dev libwayland-dev libx11-dev libxi-dev libxcursor-dev libxrandr-dev xvfb fonts-noto-cjk ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm xfsprogs e2fsprogs qemu-utils sleuthkit testdisk ewf-tools afflib-tools parted lz4 zstd ffmpeg imagemagick dmg2img bchunk xorriso btrfs-progs
       - name: Extract the VirtualBox reference disk reader
         if: runner.os == 'Linux'
         run: bash scripts/ci_virtualbox_reader.sh
@@ -184,6 +184,9 @@ jobs:
       - name: Restore deleted RAR archives and compare all members with UnRAR
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_rar.py --unrar /usr/bin/unrar --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover SVG and SVGZ after real FAT32 and ext4 unlinks and independently render their pixels
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_svg.py --rsvg-convert /usr/bin/rsvg-convert --binary target/${{ matrix.target }}/debug/rescue
       - name: Compare standalone VMDK imports and real deleted Windows files with QEMU
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vmdk.py --independent --binary target/${{ matrix.target }}/debug/rescue

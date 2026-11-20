@@ -432,3 +432,10 @@ rescue import-image --image-type vdi --source child2.vdi \
 ```
 
 論理ディスクの長さ・SHA-256が分かる場合は `--raw-bytes` と `--raw-sha256` で照合できます。上限はベース込み8ファイル、割当表は1ファイル64 MiB・合計128 MiBです。読み取りはRescue単体で実行できます。保存済みのVDI v1.1で、完全な親子関係が残っていることが必要です。暗号化・旧版・undoイメージ、欠落した親、UUIDの組み合わせが一致しない世代は変換できません。[実イメージと生成手順](../tests/vdi-chain/README.md)
+
+
+### SVGとSVGZの復元
+
+GUIのCarvingまたは `rescue scan --source disk.raw --work-dir scan --mode carve --extension svg --extension svgz --json` で検索できます。SVGはUTF-8のXMLとして要素と属性を検証し、ルート名とSVG名前空間を確認します。SVGZはgzipメンバーのCRC32と展開長を検証し、その中のSVGを確認します。Rescueは画像中のリンクを取得せず、スクリプトも実行しません。
+
+XMLルートの閉じタグより後の改行やコメントは、ディスクの内容検索だけでは元ファイルに属するか確定できません。Cairo・Inkscapeが末尾改行を付けたSVGをFAT32とext4で削除した試験では、内容検索は閉じタグで止まり、ファイルシステムに残っていた長さを使うと各原本の末尾まで一致しました。FATの連続推定は `--estimate-fat-contiguous` で明示的に有効にします。SVGZはメンバー全体の境界を検証できます。[原本と検証手順](../tests/svg/README.md)
