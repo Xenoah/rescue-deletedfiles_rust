@@ -89,4 +89,9 @@ if __name__ == "__main__":
     manifest = {name: write_image(name, size, mode, encoder, **settings)
                 for name, size, mode, settings, encoder in profiles}
     boxed_variants(manifest)
+    # The six Apple ImageIO originals come from the separate macOS reference job.
+    for name, entry in json.loads((ROOT / "manifest.json").read_text()).items():
+        if entry["producer"] == "Apple ImageIO (sips)":
+            assert digest((ROOT / name).read_bytes()) == entry["sha256"]
+            manifest[name] = entry
     (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")

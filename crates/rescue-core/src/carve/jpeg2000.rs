@@ -1,4 +1,5 @@
 //! Bounded JPEG 2000 Part 1 images. Tile lengths delimit entropy data even on raw media.
+mod icc;
 use super::{
     Format,
     bmff::{self, BoxRef, be32, be64},
@@ -244,7 +245,7 @@ fn image_header(b: &[u8], header: BoxRef, grid: Geometry) -> Result<()> {
         || be32(data, 4) != grid.width
         || be16(data, 8) != grid.components
         || data[10] != grid.bpc
-        || data[11..] != [7, 0, 0]
+        || !matches!(data[11..], [7, 0 | 1, 0])
     {
         return Err(invalid(
             "image header and codestream disagree or unsupported IHDR",
@@ -252,11 +253,12 @@ fn image_header(b: &[u8], header: BoxRef, grid: Geometry) -> Result<()> {
     }
     let colr = bmff::one(&children, b"colr")?;
     let color = &b[colr.data..colr.end];
-    if color.len() != 7
-        || color[..3] != [1, 0, 0]
-        || !matches!((be32(color, 3), grid.components), (16, 3 | 4) | (17, 1 | 2))
-    {
-        return Err(invalid("unsupported color specification"));
+    match color {
+        [1, 0, 0, space @ ..]
+            if space.len() == 4
+                && matches!((be32(space, 0), grid.components), (16, 3 | 4) | (17, 1 | 2)) => {}
+        [2, 0, 0, profile @ ..] => icc::validate(profile, grid.components)?,
+        _ => return Err(invalid("unsupported color specification")),
     }
     for item in &children {
         match &item.kind {
@@ -269,11 +271,15 @@ fn image_header(b: &[u8], header: BoxRef, grid: Geometry) -> Result<()> {
                 {
                     return Err(invalid("channel definition count"));
                 }
-                for (n, entry) in data[2..].as_chunks::<6>().0.iter().enumerate() {
+                let mut seen = [false; 4];
+                for entry in data[2..].as_chunks::<6>().0 {
+                    let n = usize::from(be16(entry, 0));
+                    if n >= usize::from(grid.components) || std::mem::replace(&mut seen[n], true) {
+                        return Err(invalid("invalid or repeated channel mapping"));
+                    }
                     let alpha =
                         matches!(grid.components, 2 | 4) && n + 1 == usize::from(grid.components);
-                    if usize::from(be16(entry, 0)) != n
-                        || be16(entry, 2) != u16::from(alpha)
+                    if be16(entry, 2) != u16::from(alpha)
                         || usize::from(be16(entry, 4)) != if alpha { 0 } else { n + 1 }
                     {
                         return Err(invalid("unsupported channel mapping"));

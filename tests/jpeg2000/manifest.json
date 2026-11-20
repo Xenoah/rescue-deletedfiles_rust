@@ -1,4 +1,160 @@
 {
+  "apple0.jp2": {
+    "apple_png_decoded_sha256": "4a4b5f2b2cc02cd4ff5d66bf88cd179f732eee3a1fcdc6b85ed498dba88ef8ef",
+    "apple_png_mode": "L",
+    "apple_png_sha256": "54a7cd6208a4c15b5248b283fa10aca022ac3e83232758450a14f3a98897f48f",
+    "apple_source_sha256": "c728fcc1ae4420323f35414f23ee383905ab73b5d43ab776c6f784fb396348ce",
+    "apple_vs_openjpeg": {
+      "different_samples": 0,
+      "max_absolute_sample_delta": 0,
+      "samples": 7081
+    },
+    "bytes": 8523,
+    "decoded_sha256": "4a4b5f2b2cc02cd4ff5d66bf88cd179f732eee3a1fcdc6b85ed498dba88ef8ef",
+    "icc_color_space": "GRAY",
+    "icc_sha256": "73d504558e7d03ef4ff2676ba62c7553ee5bd856b45da2d330e33e012ad61fb3",
+    "input_mode": "L",
+    "mode": "L",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "best",
+    "sha256": "5ef70a1fa61716b198cc0cf71c080541f1e77ab048e9f57a80b236a47fdeb3c3",
+    "size": [
+      97,
+      73
+    ],
+    "source_pixels_sha256": "4a4b5f2b2cc02cd4ff5d66bf88cd179f732eee3a1fcdc6b85ed498dba88ef8ef"
+  },
+  "apple1.jp2": {
+    "apple_png_decoded_sha256": "1f2df3274b3bb8757856fa5acfe72349769031b8ac3f01c292d804b89b3065c4",
+    "apple_png_mode": "RGB",
+    "apple_png_sha256": "32b3cba1f6de7e8394ed4ebfb369072c197ed3fe27ac3270795224dc1e2c4fbc",
+    "apple_source_sha256": "3e6131a5ac9eba85515faf9d513a3760e549b7781387b433145e09bde8b0c48d",
+    "apple_vs_openjpeg": {
+      "different_samples": 0,
+      "max_absolute_sample_delta": 0,
+      "samples": 24336
+    },
+    "bytes": 20265,
+    "decoded_sha256": "1f2df3274b3bb8757856fa5acfe72349769031b8ac3f01c292d804b89b3065c4",
+    "icc_color_space": "RGB",
+    "icc_sha256": "2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+    "input_mode": "RGB",
+    "mode": "RGB",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "best",
+    "sha256": "dbf86d10ea95b0af43946dd6e4f0e1fedfeffe451e2943b0e6e68420be1be747",
+    "size": [
+      104,
+      78
+    ],
+    "source_pixels_sha256": "1f2df3274b3bb8757856fa5acfe72349769031b8ac3f01c292d804b89b3065c4"
+  },
+  "apple2.jp2": {
+    "apple_png_decoded_sha256": "9b25b327b9e569024f9b5cc37b04cad2ff3b15cf1b0f06b4170df09179f13e64",
+    "apple_png_mode": "RGB",
+    "apple_png_sha256": "dd57fe70aba6bfe1b771f9cc700e8e740dc56952d67a28e0d1f5a87d5194c501",
+    "apple_source_sha256": "234f3ab52165f7654ac7174cc958d36b23476aa342ba94656975bf18f5fad5a2",
+    "apple_vs_openjpeg": {
+      "different_samples": 4245,
+      "max_absolute_sample_delta": 1,
+      "samples": 27639
+    },
+    "bytes": 6577,
+    "decoded_sha256": "d658dbfea91d0982840d4fa5671ece17b3ef20ace49def29cb38b49d8064b3be",
+    "icc_color_space": "RGB",
+    "icc_sha256": "2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+    "input_mode": "RGB",
+    "mode": "RGB",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "high",
+    "sha256": "d44c17eaf4d0e2bee628df98e72c85702a5c5c4634a035e9e2c59022d4b4b98c",
+    "size": [
+      111,
+      83
+    ],
+    "source_pixels_sha256": "1840f4274052778e6c03ae0de0c82ce03a6f9f094fc187d4fc6a23a6f961826e"
+  },
+  "apple3.jp2": {
+    "apple_png_decoded_sha256": "d509e1743877f5dad2e7625fb6dc9a43152a23faa81aa306a74281d149d02da5",
+    "apple_png_mode": "L",
+    "apple_png_sha256": "c66c73b50e187c27b6e0c02bb0d7947ea7199d15cb56ce4b9e9c70b20e49dc58",
+    "apple_source_sha256": "5f528b6abb29c72d772c13d5e8ff86da20ca1f73649c50f57cde05e6df674644",
+    "apple_vs_openjpeg": {
+      "different_samples": 888,
+      "max_absolute_sample_delta": 1,
+      "samples": 10384
+    },
+    "bytes": 6579,
+    "decoded_sha256": "9c9f31b0dd2284e94f8cc4295beac96f5a507c32dd5b524818b56d5b9ff8234c",
+    "icc_color_space": "GRAY",
+    "icc_sha256": "73d504558e7d03ef4ff2676ba62c7553ee5bd856b45da2d330e33e012ad61fb3",
+    "input_mode": "L",
+    "mode": "L",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "normal",
+    "sha256": "b39400cd0603fd179e528150837eeb18b2ceee072249fdf82809506c94b7ccee",
+    "size": [
+      118,
+      88
+    ],
+    "source_pixels_sha256": "95d69b45a38fdf33d0f6db29534e58a84b44d3bc595fd45dcd80ace8b13122bc"
+  },
+  "apple4.jp2": {
+    "apple_png_decoded_sha256": "9c29a4ac07ccc7367ee591b40ec9df9ccfdaaccea53bb524d52773ec4a365adf",
+    "apple_png_mode": "RGB",
+    "apple_png_sha256": "ab7d2e30b53b420c62d2c644e7ee6284ae0daee0bb166c90e3a1c76d7436fd72",
+    "apple_source_sha256": "c3617afafa4f71302d85da65192c57b0548170d2d512b5da32fc6694015de0a8",
+    "apple_vs_openjpeg": {
+      "different_samples": 5073,
+      "max_absolute_sample_delta": 1,
+      "samples": 34875
+    },
+    "bytes": 4240,
+    "decoded_sha256": "054073aa642ab5aa29392052dfa1e5aafa543569dc69fdd17cf6d4d021d4fc99",
+    "icc_color_space": "RGB",
+    "icc_sha256": "2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+    "input_mode": "RGB",
+    "mode": "RGB",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "low",
+    "sha256": "953e92546986cfb9aa7309de46ee2ad44cd73bb7815092cb5f183322e8bc5f69",
+    "size": [
+      125,
+      93
+    ],
+    "source_pixels_sha256": "93548412744884b6cb81d1f4f029d0a870fb2e44eefe74c01b002d17d9ab8d9e"
+  },
+  "apple5.jp2": {
+    "apple_png_decoded_sha256": "c5e24617cf2ca413391f77b5641de66c0c19efb947ff4f41bd80fccaef95da12",
+    "apple_png_mode": "RGBA",
+    "apple_png_sha256": "721c9634a73e35dfc9739e01ceb6e3e22e18705a0c0acafa418be0a5acac1faf",
+    "apple_source_sha256": "6eb6e0e4535764f9195d252de38965227b626a0462329378a2059c133acda5db",
+    "apple_vs_openjpeg": {
+      "different_samples": 0,
+      "max_absolute_sample_delta": 0,
+      "samples": 51744
+    },
+    "bytes": 36913,
+    "decoded_sha256": "c5e24617cf2ca413391f77b5641de66c0c19efb947ff4f41bd80fccaef95da12",
+    "icc_color_space": "RGB",
+    "icc_sha256": "2b3aa1645779a9e634744faf9b01e9102b0c9b88fd6deced7934df86b949af7e",
+    "input_mode": "RGBA",
+    "mode": "RGBA",
+    "openjpeg": "2.5.4",
+    "producer": "Apple ImageIO (sips)",
+    "quality": "best",
+    "sha256": "de3eebae210fdb5b9159ed9f511f6b84181f58958c0f293e2d6fdb0b84d20000",
+    "size": [
+      132,
+      98
+    ],
+    "source_pixels_sha256": "c5e24617cf2ca413391f77b5641de66c0c19efb947ff4f41bd80fccaef95da12"
+  },
   "deepgray.j2k": {
     "bytes": 6525,
     "decoded_sha256": "c39af4136333f0291523aecaf5a4983d532888aedf1ae30f812fb7a313021565",

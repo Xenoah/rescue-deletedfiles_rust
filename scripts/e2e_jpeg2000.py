@@ -26,6 +26,27 @@ def pixels(path):
         return list(image.size), image.mode, sha(image.tobytes())
 
 
+def color_managed(path, item):
+    from io import BytesIO
+    from PIL import Image, ImageCms
+    with Image.open(path) as image:
+        def boxes(data):
+            pos = 0
+            while pos < len(data):
+                size, tag = struct.unpack_from('>I4s', data, pos)
+                check(size >= 8 and pos + size <= len(data), (path, tag, size))
+                yield tag, data[pos + 8:pos + size]
+                pos += size
+        header = next(data for tag, data in boxes(path.read_bytes()) if tag == b'jp2h')
+        color = next(data for tag, data in boxes(header) if tag == b'colr')
+        check(color[:3] == bytes([2, 0, 0]), path)
+        profile = color[3:]
+        check(sha(profile) == item['icc_sha256'], path)
+        transformed = ImageCms.profileToProfile(image, ImageCms.getOpenProfile(BytesIO(profile)),
+            ImageCms.createProfile('sRGB'), outputMode='RGB')
+        return sha(transformed.tobytes())
+
+
 def candidates(binary, image, work, args, expected=0):
     scan = run(binary, 'scan', '--source', image, '--mode', 'carve', '--work-dir', work,
                *args, '--json', expected=expected, timeout=180)
@@ -51,6 +72,8 @@ def recover(binary, image, folder, files, manifest, native):
             check(row['status'] == 'completed' and data == files[name] and sha(data) == manifest[name]['sha256'], row)
             if native:
                 verify_pixels(path, manifest[name])
+                if 'icc_sha256' in manifest[name]:
+                    check(color_managed(path, manifest[name]) == color_managed(GOLD / name, manifest[name]), name)
     check(sha(image.read_bytes()) == before, 'source changed')
     print(image.name, len(files), 'JPEG 2000 originals matched in ordinary and indexed recovery', flush=True)
 
@@ -91,6 +114,7 @@ def damaged(binary, folder, files):
         'brand': edit(boxed, 20, b'jpx '),
         'unknown-color': edit(boxed, boxed.index(b'colr') + 10, b'\x22'),
         'header-width': edit(boxed, boxed.index(b'ihdr') + 8, bytes(4)),
+        'invalid-unknown-color-flag': edit(boxed, boxed.index(b'ihdr') + 16, b'\x02'),
         'header-precision': edit(boxed, boxed.index(b'ihdr') + 14, b'\x08'),
         'box-length': edit(boxed, boxed.index(b'jp2c') - 4, struct.pack('>I', len(boxed))),
         'truncated-box': boxed[:-1],
@@ -108,6 +132,19 @@ def damaged(binary, folder, files):
     cases['open-ended-truncation'] = files['lastbox.jp2'][:-2]
     cases['metadata-count'] = boxed + struct.pack('>I4s', 8, b'free') * 257
     cases['short-uuid'] = boxed + struct.pack('>I4s', 9, b'uuid') + b'z'
+    rgb = files['apple1.jp2']
+    profile = rgb.index(b'colr') + 7
+    cases['icc-size'] = edit(rgb, profile, bytes(4))
+    cases['icc-signature'] = edit(rgb, profile + 36, b'nope')
+    cases['icc-space'] = edit(rgb, profile + 16, b'GRAY')
+    cases['icc-tag-count'] = edit(rgb, profile + 128, bytes([255]) * 4)
+    cases['icc-tag-directory-overlap'] = edit(rgb, profile + 136, struct.pack('>I', 0))
+    cases['icc-tag-payload-overlap'] = edit(rgb, profile + 148, rgb[profile+136:profile+140])
+    cases['icc-tag-duplicate'] = edit(rgb, profile + 144, rgb[profile+132:profile+136])
+    cases['icc-curve-length'] = edit(rgb, rgb.index(b'curv', profile) + 8, struct.pack('>I', 100))
+    rgba = files['apple5.jp2']
+    table = rgba.index(b'cdef') + 6
+    cases['alpha-duplicate-channel'] = edit(rgba, table + 6, bytes(2))
     for label, value in cases.items():
         p = folder / (label + '.raw')
         p.write_bytes(value)
@@ -162,7 +199,8 @@ def verify(binary, root, native=False):
             folder.mkdir()
             recover(binary, create(folder, files), folder, files, manifest, True)
         return {'originals': hashes, 'filesystems': ['fat32', 'ext4'],
-                'decoded': {name: m['decoded_sha256'] for name, m in manifest.items()}}
+                'decoded': {name: m['decoded_sha256'] for name, m in manifest.items()},
+                'color_managed_verified': sorted(n for n, m in manifest.items() if 'icc_sha256' in m)}
     disk = root / 'adjacent.raw'
     disk.write_bytes(b'!' * ((1 << 20) - 2) + b''.join(files.values()))
     recover(binary, disk, root, files, manifest, False)
