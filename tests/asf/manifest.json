@@ -1,0 +1,146 @@
+{
+  "gst-audio.wma": {
+    "bytes": 13110,
+    "sha256": "d762a09a7eb5805cb6ce0505a9ad31cfae826760e8d5fc0ccc030306ab71dc72",
+    "streams": [
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "GStreamer 1.26.2 asfmux"
+  },
+  "gst-av.wmv": {
+    "bytes": 29161,
+    "sha256": "aaa23daedade10c5d2edede434d07580de017a8ba0cfa7a91c2f424cc25436ad",
+    "streams": [
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      },
+      {
+        "codec_name": "wmv2",
+        "codec_type": "video"
+      }
+    ],
+    "writer": "GStreamer 1.26.2 asfmux"
+  },
+  "gst-video.wmv": {
+    "bytes": 13235,
+    "sha256": "65d4a8247e266e0b62f588755741168a07b841239e49bee5916b37d2201b40f0",
+    "streams": [
+      {
+        "codec_name": "wmv2",
+        "codec_type": "video"
+      }
+    ],
+    "writer": "GStreamer 1.26.2 asfmux"
+  },
+  "lowrate.wma": {
+    "bytes": 8342,
+    "sha256": "4eebe413181681a623f997cdbfd4285277a3a2e26c9dffef80b16389bc3b7c85",
+    "streams": [
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "motion.wmv": {
+    "bytes": 13133,
+    "sha256": "77d7ae54f7ec0d0658fd247478bb88ee0fecf8d52c4c12b9f8353a468ccd6dcb",
+    "streams": [
+      {
+        "codec_name": "wmv2",
+        "codec_type": "video"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "mp3.asf": {
+    "bytes": 8802,
+    "sha256": "0f7de61944d71d3cfbb70b78fd66e0369c3528d7f02bce613d1ada2a47a4d0f9",
+    "streams": [
+      {
+        "codec_name": "mp3",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "mpeg4.asf": {
+    "bytes": 25017,
+    "sha256": "54370ff6a026ca9cae177193152a264303c59cdeba0a122646693307cde910ea",
+    "streams": [
+      {
+        "codec_name": "msmpeg4v3",
+        "codec_type": "video"
+      },
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "music-video.wmv": {
+    "bytes": 29835,
+    "sha256": "471d9ee6baa348c161261d181f9876c19f9693e32cab1db57203813f9baed45a",
+    "streams": [
+      {
+        "codec_name": "wmv2",
+        "codec_type": "video"
+      },
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "pcm.asf": {
+    "bytes": 67170,
+    "sha256": "bfa2bd3cb42ddfd899d9308a4bf1415db4aa89cf4bc0a95a0921ed021dad8775",
+    "streams": [
+      {
+        "codec_name": "pcm_s16le",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "silent.wmv": {
+    "bytes": 15177,
+    "sha256": "b111cd922a6e895a987e7ec4238182e99f273a9c5b67e72328d6821a215fb777",
+    "streams": [
+      {
+        "codec_name": "wmv1",
+        "codec_type": "video"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "speech.wma": {
+    "bytes": 13418,
+    "sha256": "50205430bf58b8b5eaae3408205d31ab116fe209ce8d4a91b7a19daebffd39b0",
+    "streams": [
+      {
+        "codec_name": "wmav1",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  },
+  "stereo.wma": {
+    "bytes": 14994,
+    "sha256": "de62a5fe13aa4e124d58f81126258475936372ab4be8f29cc25352b64a804d7c",
+    "streams": [
+      {
+        "codec_name": "wmav2",
+        "codec_type": "audio"
+      }
+    ],
+    "writer": "ffmpeg version 7.1.5-0+deb13u1"
+  }
+}

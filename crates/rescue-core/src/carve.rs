@@ -1,6 +1,7 @@
 //! Bounded contiguous image/document/media carving. Deletion and allocation remain unknown.
 mod aac;
 mod aiff;
+mod asf;
 mod avi;
 mod cab;
 mod compressed;
@@ -95,6 +96,9 @@ pub(crate) fn validate_estimated_extent(
         "flac" => Some(Format::Flac),
         "aif" | "aiff" => Some(aiff::signature(&head).unwrap_or(Format::Aiff)),
         "aifc" | "afc" => Some(Format::Aifc),
+        "asf" => Some(Format::Asf),
+        "wma" => Some(Format::Wma),
+        "wmv" => Some(Format::Wmv),
         "aac" | "adts" => Some(Format::Aac),
         "mp3" => Some(Format::Mp3),
         "pbm" => Some(Format::Pbm),
@@ -176,7 +180,12 @@ pub(crate) fn validate_estimated_extent(
         }
         return Ok(true);
     }
-    let (_, validated, _) = format.validate(image, at, cancel, budget, end)?;
+    let (actual, validated, _) = format.validate(image, at, cancel, budget, end)?;
+    if matches!(format, Format::Wma | Format::Wmv) && actual != format {
+        return Err(Error::Invalid(
+            "ASF streams differ from estimated file type".into(),
+        ));
+    }
     if validated.len() as u64 > size {
         return Err(Error::Invalid(
             "validated format exceeds estimated FAT size".into(),
@@ -232,6 +241,9 @@ enum Format<'a> {
     Woff,
     Mp3,
     Aac,
+    Asf,
+    Wma,
+    Wmv,
     Tar(u16),
     Pbm,
     Pgm,
@@ -327,6 +339,9 @@ impl<'a> Format<'a> {
             Self::Ogg => "ogg",
             Self::Gzip => "gz",
             Self::Rar => "rar",
+            Self::Asf => "asf",
+            Self::Wma => "wma",
+            Self::Wmv => "wmv",
             Self::SevenZ => "7z",
             Self::Cab => "cab",
             Self::Ico => "ico",
@@ -409,6 +424,9 @@ impl<'a> Format<'a> {
             | Self::Webm
             | Self::Ogg
             | Self::Cab
+            | Self::Asf
+            | Self::Wmv
+            | Self::Wma
             | Self::Rar
             | Self::SevenZ
             | Self::Gzip
@@ -447,9 +465,12 @@ impl<'a> Format<'a> {
                     }
             })
     }
-    // Preserve the generic extension when a caller explicitly requests XML or gzip only.
+    // Preserve a requested generic container extension when its subtype is filtered out.
     fn for_extensions(self, extensions: &[String]) -> Self {
         match self {
+            Self::Wmv | Self::Wma if !self.allowed(extensions) && Self::Asf.allowed(extensions) => {
+                Self::Asf
+            }
             Self::Svg if !self.allowed(extensions) && Self::Xml.allowed(extensions) => Self::Xml,
             Self::Svgz if !self.allowed(extensions) && Self::Gzip.allowed(extensions) => Self::Gzip,
             other => other,
@@ -497,6 +518,11 @@ impl<'a> Format<'a> {
             }
             Self::Cab => {
                 cab::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
+            }
+            Self::Asf | Self::Wma | Self::Wmv => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (kind, end) = asf::parse(&mut input)?;
+                Ok((kind, input.finish(end)?, Vec::new()))
             }
             Self::Rar => {
                 rar::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
@@ -714,6 +740,10 @@ fn detect<'a>(
         Some(Format::Flac)
     } else if bytes.starts_with(b"MSCF") && Format::Cab.allowed(extensions) {
         Some(Format::Cab)
+    } else if bytes.starts_with(&asf::MAGIC) {
+        [Format::Asf, Format::Wma, Format::Wmv]
+            .into_iter()
+            .find(|f| f.allowed(extensions))
     } else if rar::signature(bytes) && Format::Rar.allowed(extensions) {
         Some(Format::Rar)
     } else if bytes.starts_with(sevenz::MAGIC) && Format::SevenZ.allowed(extensions) {
@@ -783,6 +813,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Cab => &[
             "Validated standalone cabinet layout, CFDATA checksums, and decoded folder/member lengths. Original file name and deletion status are unknown.",
+        ],
+        Format::Asf | Format::Wma | Format::Wmv => &[
+            "Finite ASF container: file and stream properties, fixed packet and payload boundaries, and simple index references checked. Media content has no verified checksum.",
         ],
         Format::Rar => &[
             "RAR archive headers, end record and decoded member checksums verified. The original archive name and deletion status are unknown.",
@@ -1111,6 +1144,9 @@ pub(crate) fn recovery_data(
         .unwrap_or(1);
     let format = [
         Format::Tar(blocking),
+        Format::Asf,
+        Format::Wma,
+        Format::Wmv,
         Format::Rar,
         Format::SevenZ,
         Format::Cab,
@@ -1198,6 +1234,7 @@ pub(crate) fn recovery_data(
         && !matches!(
             (format, actual),
             (Format::Zip, Format::Package(_))
+                | (Format::Asf, Format::Wma | Format::Wmv)
                 | (Format::Xml, Format::Svg)
                 | (Format::Gzip, Format::Svgz)
         )
