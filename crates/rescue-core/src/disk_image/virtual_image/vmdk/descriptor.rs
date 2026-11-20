@@ -105,6 +105,7 @@ impl<'a> Descriptor<'a> {
         let text =
             std::str::from_utf8(&bytes[..end]).map_err(|_| invalid("non-UTF-8 VMDK descriptor"))?;
         let (mut version, mut cid, mut parent, mut kind) = (None, None, None, None);
+        let (mut parent_uuid, mut parent_modification) = (None, None);
         let mut extents = Vec::new();
         for line in text
             .lines()
@@ -120,6 +121,10 @@ impl<'a> Descriptor<'a> {
                     "CID" => &mut cid,
                     "parentCID" => &mut parent,
                     "createType" => &mut kind,
+                    key if key.eq_ignore_ascii_case("ddb.uuid.parent") => &mut parent_uuid,
+                    key if key.eq_ignore_ascii_case("ddb.uuid.parentmodification") => {
+                        &mut parent_modification
+                    }
                     "parentFileNameHint" => {
                         return Err(Error::Unsupported("VMDK parent reference".into()));
                     }
@@ -134,6 +139,15 @@ impl<'a> Descriptor<'a> {
                 }
                 extents.push(extent(line)?);
             }
+        }
+        // VirtualBox can omit the filename hint and leave parentCID at ffffffff even for
+        // differencing VMDKs. Its parent UUID still makes free grains depend on an ancestor.
+        if [parent_uuid, parent_modification]
+            .into_iter()
+            .flatten()
+            .any(|v| v != "\"00000000-0000-0000-0000-000000000000\"")
+        {
+            return Err(Error::Unsupported("VirtualBox VMDK records a parent UUID; a standalone conversion would omit inherited data".into()));
         }
         let kind = kind
             .and_then(|s| s.strip_prefix('"')?.strip_suffix('"'))

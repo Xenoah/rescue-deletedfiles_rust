@@ -27,7 +27,8 @@ def require(code):
 
 
 class VirtualBox:
-    def __init__(self, tool):
+    def __init__(self, tool, backend="VDI"):
+        self.backend = backend.encode("ascii")
         self.tool = tool.resolve()
         folder = self.tool.parent
         runtime = c.CDLL(str(folder / "VBoxRT.so"), mode=c.RTLD_GLOBAL)
@@ -101,7 +102,7 @@ class VirtualBox:
                 "--srcformat",
                 "RAW",
                 "--dstformat",
-                "VDI",
+                self.backend.decode(),
                 "--variant",
                 "Fixed" if fixed else "Standard",
                 "--srcfilename",
@@ -114,11 +115,20 @@ class VirtualBox:
         raw.unlink()
         disk = self.handle()
         try:
-            require(self.open(disk, b"VDI", bytes(members[0]), 0, None))
+            require(self.open(disk, self.backend, bytes(members[0]), 0, None))
             for i, child in enumerate(members[1:], 1):
                 require(
                     self.diff(
-                        disk, b"VDI", bytes(child), 0, None, None, None, 0, None, None
+                        disk,
+                        self.backend,
+                        bytes(child),
+                        0,
+                        None,
+                        None,
+                        None,
+                        0,
+                        None,
+                        None,
                     )
                 )
                 self.write_changes(disk, guests[i - 1], guests[i])
@@ -128,18 +138,20 @@ class VirtualBox:
         for i, guest in enumerate(guests):
             self.compare(members[: i + 1], io.BytesIO(guest))
 
-    def compare(self, members, reference):
+    def compare(self, members, reference, output=None):
         """Reopen a fresh, read-only VirtualBox container and compare the complete guest."""
         disk = self.handle()
         size = 0
         digest = hashlib.sha256()
         try:
             for member in members:
-                require(self.open(disk, b"VDI", bytes(member), 1, None))
+                require(self.open(disk, self.backend, bytes(member), 1, None))
             while expected := reference.read(MIB):
                 buf = c.create_string_buffer(len(expected))
                 require(self.read(disk, size, buf, len(expected)))
                 assert buf.raw == expected
+                if output is not None:
+                    output.write(buf.raw)
                 digest.update(buf.raw)
                 size += len(expected)
             assert self.size(disk, 0xFFFFFFFF) == size

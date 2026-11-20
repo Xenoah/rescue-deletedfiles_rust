@@ -238,6 +238,9 @@ jobs:
       - name: Compare all VDI generations with VirtualBox and restore each ext4 deletion state
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vdi_chain.py --binary target/${{ matrix.target }}/debug/rescue --vbox-img "$RESCUE_TEST_VBOX_IMG"
+      - name: Refuse standalone VirtualBox VMDK children and verify all seven unlinks through the complete chain
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk_vbox_parent.py --binary target/${{ matrix.target }}/debug/rescue --vbox-img "$RESCUE_TEST_VBOX_IMG"
       - name: Recover deleted OpenEXR files and compare every decoded channel with OpenEXR
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_openexr.py --native --binary target/${{ matrix.target }}/debug/rescue

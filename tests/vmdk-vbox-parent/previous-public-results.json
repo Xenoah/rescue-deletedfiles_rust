@@ -1,0 +1,65 @@
+[
+  {
+    "generations": {
+      "child1.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "6811c14978661c1c46142c4aacfdf23cabd9df0f03183a521b740117625a5f1c",
+        "complete_guest_sha256": "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "9adcc76b416ca7c2bdc7d237d939debf85e22436aaeb20692b1eb6b74a77d8c2"
+      },
+      "child2.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "c44ab9070c86abd251191fe172161824d7d656751b62719bde3090d34a3851f8",
+        "complete_guest_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "b66220d97b2863f869a09e8ad75a091395cf00a4b79e7ca30fa68ef61e15cdb1"
+      }
+    },
+    "public_cli_sha256": "00c6e959d4c0471764b112759bf4c7d75a7b4246ca03b75fb9aa7ce1e23ddb63",
+    "source": "VirtualBox 7.2.22 VMDK with parentCID=ffffffff and ddb.uuid.parent",
+    "version": "1.33.0"
+  },
+  {
+    "generations": {
+      "child1.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "6811c14978661c1c46142c4aacfdf23cabd9df0f03183a521b740117625a5f1c",
+        "complete_guest_sha256": "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "9adcc76b416ca7c2bdc7d237d939debf85e22436aaeb20692b1eb6b74a77d8c2"
+      },
+      "child2.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "c44ab9070c86abd251191fe172161824d7d656751b62719bde3090d34a3851f8",
+        "complete_guest_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "b66220d97b2863f869a09e8ad75a091395cf00a4b79e7ca30fa68ef61e15cdb1"
+      }
+    },
+    "public_cli_sha256": "cb8f6b92350f0ab1af711a542c56b7927ede2c11d322c8f114d3c7a442dbf662",
+    "source": "VirtualBox 7.2.22 VMDK with parentCID=ffffffff and ddb.uuid.parent",
+    "version": "1.34.0"
+  },
+  {
+    "generations": {
+      "child1.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "6811c14978661c1c46142c4aacfdf23cabd9df0f03183a521b740117625a5f1c",
+        "complete_guest_sha256": "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "9adcc76b416ca7c2bdc7d237d939debf85e22436aaeb20692b1eb6b74a77d8c2"
+      },
+      "child2.vmdk": {
+        "bytes": 100663296,
+        "child_sha256": "c44ab9070c86abd251191fe172161824d7d656751b62719bde3090d34a3851f8",
+        "complete_guest_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+        "differing_bytes": 4065178,
+        "unaccompanied_sha256": "b66220d97b2863f869a09e8ad75a091395cf00a4b79e7ca30fa68ef61e15cdb1"
+      }
+    },
+    "public_cli_sha256": "fce1f92330f9f833ed9c5b0a844d0e3ce877861e7925869ed9bc2f48a1ba513a",
+    "source": "VirtualBox 7.2.22 VMDK with parentCID=ffffffff and ddb.uuid.parent",
+    "version": "1.35.0"
+  }
+]
