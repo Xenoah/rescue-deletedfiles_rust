@@ -1,0 +1,38 @@
+name: Verify Windows acquisition deadline and resume on a published CLI
+on:
+  push:
+    branches: [qa/windows-acquisition-harness]
+    paths: ['scripts/e2e_acquisition.py', '.github/workflows/windows-acquisition-harness.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify the published Windows package and repeat deadline, reconnect, cancel and full resume
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $name = 'rescue-1.29.0-windows-x64-portable.zip'
+          gh release download v1.29.0 --pattern $name --pattern SHA256SUMS.txt
+          if ($LASTEXITCODE -ne 0) {throw 'release download failed'}
+          $sum = (Get-FileHash -Algorithm SHA256 $name).Hash.ToLower()
+          if (-not ((Get-Content SHA256SUMS.txt) -contains "$sum  $name")) {throw 'published archive digest mismatch'}
+          Expand-Archive $name -DestinationPath unpacked
+          $binary = @(Get-ChildItem unpacked -Recurse -Filter rescue.exe)
+          if ($binary.Count -ne 1) {throw 'expected one CLI'}
+          foreach ($i in 1..3) {
+            python scripts/e2e_acquisition.py --binary $binary[0].FullName --output "proof-$i.json"
+            if ($LASTEXITCODE -ne 0) {throw "acquisition regression on iteration $i"}
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-windows-acquisition
+          path: proof-*.json
