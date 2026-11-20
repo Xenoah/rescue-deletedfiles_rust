@@ -1,0 +1,41 @@
+{
+  "binary_sha256": "ffd77d8e5f0dec31da5d63833831a2e5dd5c772f94415f6b105e5b39ea0a68cf",
+  "dng_root_ifd_offset": 1114112,
+  "filters": {
+    "both": {
+      "indexed": [
+        "bigtiff",
+        "dng",
+        "tiff"
+      ],
+      "ordinary": [
+        "bigtiff",
+        "dng",
+        "tiff"
+      ]
+    },
+    "dng": {
+      "indexed": [
+        "dng"
+      ],
+      "ordinary": [
+        "dng"
+      ]
+    },
+    "tiff": {
+      "indexed": [
+        "bigtiff",
+        "tiff"
+      ],
+      "ordinary": [
+        "bigtiff",
+        "tiff"
+      ]
+    }
+  },
+  "source_hashes": {
+    "bigtiff": "bc825485f06d9c0987e0e0d53f9688a8cfdf041f8bfde5adababc343d8cd3de1",
+    "dng": "530116c5ce0480fc6f3458159095a4df245834b8a17e9e26bd1505e65f182e08",
+    "tiff": "cc852e356b97c142b14c59352d74137c4129ff61a75f837c6fb26977492b7b3e"
+  }
+}

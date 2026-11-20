@@ -60,6 +60,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 49, 0):
+        reference = 'dng-native-results.json' if platform == 'linux' else 'dng-results.json'
+        assert run['camera_dng'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 48, 0):
         reference = 'legacy-ext-native-results.json' if platform == 'linux' else 'legacy-ext-results.json'
         assert run['legacy_ext'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
