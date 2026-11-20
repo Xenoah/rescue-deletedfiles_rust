@@ -1,0 +1,988 @@
+{
+  "byte_exact": 1016,
+  "candidate_sha": "0aefb94f48e0ff5023a4fa3662f5e22d53942315",
+  "cases": {
+    "exfat-contiguous": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "exfat-fragmented": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "fat32-contiguous": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "fat32-fragmented": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "fat32-mtools-delete-cluster-4096": {
+      "byte_exact": 27,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "DOCX",
+          "frontend": "cli",
+          "original": "files/sample.docx",
+          "original_sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "XLSX",
+          "frontend": "cli",
+          "original": "files/sample.xlsx",
+          "original_sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "PPTX",
+          "frontend": "cli",
+          "original": "files/sample.pptx",
+          "original_sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "AVI",
+          "frontend": "cli",
+          "original": "files/sample.avi",
+          "original_sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "WAV",
+          "frontend": "cli",
+          "original": "files/sample.wav",
+          "original_sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "FLAC",
+          "frontend": "cli",
+          "original": "files/sample.flac",
+          "original_sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "SQLite",
+          "frontend": "cli",
+          "original": "files/sample.sqlite",
+          "original_sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "PNG",
+          "frontend": "cli",
+          "original": "files/noise.png",
+          "original_sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "recovered_sha256": null,
+          "status": "failed"
+        }
+      ],
+      "observations": 36
+    },
+    "fat32-mtools-delete-cluster-512": {
+      "byte_exact": 14,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "JPEG",
+          "frontend": "cli",
+          "original": "files/sample.jpg",
+          "original_sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "GIF",
+          "frontend": "cli",
+          "original": "files/sample.gif",
+          "original_sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "BMP",
+          "frontend": "cli",
+          "original": "files/sample.bmp",
+          "original_sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "TIFF",
+          "frontend": "cli",
+          "original": "files/sample.tif",
+          "original_sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "PDF",
+          "frontend": "cli",
+          "original": "files/sample.pdf",
+          "original_sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "DOCX",
+          "frontend": "cli",
+          "original": "files/sample.docx",
+          "original_sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "XLSX",
+          "frontend": "cli",
+          "original": "files/sample.xlsx",
+          "original_sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "PPTX",
+          "frontend": "cli",
+          "original": "files/sample.pptx",
+          "original_sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "MP4",
+          "frontend": "cli",
+          "original": "files/sample.mp4",
+          "original_sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "MOV",
+          "frontend": "cli",
+          "original": "files/sample.mov",
+          "original_sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "AVI",
+          "frontend": "cli",
+          "original": "files/sample.avi",
+          "original_sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "MKV",
+          "frontend": "cli",
+          "original": "files/sample.mkv",
+          "original_sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "WebM",
+          "frontend": "cli",
+          "original": "files/sample.webm",
+          "original_sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "MP3",
+          "frontend": "cli",
+          "original": "files/sample.mp3",
+          "original_sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "WAV",
+          "frontend": "cli",
+          "original": "files/sample.wav",
+          "original_sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "FLAC",
+          "frontend": "cli",
+          "original": "files/sample.flac",
+          "original_sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "Ogg/Vorbis",
+          "frontend": "cli",
+          "original": "files/sample.ogg",
+          "original_sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "AAC/ADTS",
+          "frontend": "cli",
+          "original": "files/sample.aac",
+          "original_sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "M4A/AAC",
+          "frontend": "cli",
+          "original": "files/sample.m4a",
+          "original_sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "SQLite",
+          "frontend": "cli",
+          "original": "files/sample.sqlite",
+          "original_sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "recovered_sha256": null,
+          "status": "failed"
+        },
+        {
+          "format": "PNG",
+          "frontend": "cli",
+          "original": "files/noise.png",
+          "original_sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "recovered_sha256": null,
+          "status": "failed"
+        }
+      ],
+      "observations": 36
+    },
+    "independent-exfat-emulated-delete": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "independent-ntfs-emulated-delete": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "ntfs-ads": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "ntfs-compressed": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "ntfs-contiguous": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "ntfs-contiguous-metadata-lost": {
+      "byte_exact": 33,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "TXT (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.txt",
+          "original_sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "CSV (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.csv",
+          "original_sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        }
+      ],
+      "observations": 36
+    },
+    "ntfs-fragmented": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "ntfs-fragmented-metadata-lost": {
+      "byte_exact": 12,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "JPEG",
+          "frontend": "cli",
+          "original": "files/sample.jpg",
+          "original_sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "GIF",
+          "frontend": "cli",
+          "original": "files/sample.gif",
+          "original_sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "BMP",
+          "frontend": "cli",
+          "original": "files/sample.bmp",
+          "original_sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TIFF",
+          "frontend": "cli",
+          "original": "files/sample.tif",
+          "original_sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "PDF",
+          "frontend": "cli",
+          "original": "files/sample.pdf",
+          "original_sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "DOCX",
+          "frontend": "cli",
+          "original": "files/sample.docx",
+          "original_sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "XLSX",
+          "frontend": "cli",
+          "original": "files/sample.xlsx",
+          "original_sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "PPTX",
+          "frontend": "cli",
+          "original": "files/sample.pptx",
+          "original_sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TXT (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.txt",
+          "original_sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "CSV (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.csv",
+          "original_sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "MP4",
+          "frontend": "cli",
+          "original": "files/sample.mp4",
+          "original_sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "MOV",
+          "frontend": "cli",
+          "original": "files/sample.mov",
+          "original_sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "AVI",
+          "frontend": "cli",
+          "original": "files/sample.avi",
+          "original_sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "MKV",
+          "frontend": "cli",
+          "original": "files/sample.mkv",
+          "original_sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "WebM",
+          "frontend": "cli",
+          "original": "files/sample.webm",
+          "original_sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "MP3",
+          "frontend": "cli",
+          "original": "files/sample.mp3",
+          "original_sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "WAV",
+          "frontend": "cli",
+          "original": "files/sample.wav",
+          "original_sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "FLAC",
+          "frontend": "cli",
+          "original": "files/sample.flac",
+          "original_sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "Ogg/Vorbis",
+          "frontend": "cli",
+          "original": "files/sample.ogg",
+          "original_sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "AAC/ADTS",
+          "frontend": "cli",
+          "original": "files/sample.aac",
+          "original_sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "M4A/AAC",
+          "frontend": "cli",
+          "original": "files/sample.m4a",
+          "original_sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "SQLite",
+          "frontend": "cli",
+          "original": "files/sample.sqlite",
+          "original_sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "PNG",
+          "frontend": "cli",
+          "original": "files/noise.png",
+          "original_sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        }
+      ],
+      "observations": 36
+    },
+    "overwritten-before-scan": {
+      "byte_exact": 0,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "JPEG",
+          "frontend": "cli",
+          "original": "files/sample.jpg",
+          "original_sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "recovered_sha256": "496c991bcb4356d8200a6f76892b8144b1c090550cc98466346bb6f45c591636",
+          "status": "completed"
+        },
+        {
+          "format": "PNG",
+          "frontend": "cli",
+          "original": "files/sample.png",
+          "original_sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "recovered_sha256": "c419a92c7dce5225606f604f79d0d07009ebd882b5d5d41d234b71617b691774",
+          "status": "completed"
+        },
+        {
+          "format": "GIF",
+          "frontend": "cli",
+          "original": "files/sample.gif",
+          "original_sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "recovered_sha256": "be0971780242c0a705335f4b6d2e7ffcdfa5465711854cd12bf4168b80c0fc77",
+          "status": "completed"
+        },
+        {
+          "format": "BMP",
+          "frontend": "cli",
+          "original": "files/sample.bmp",
+          "original_sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+          "recovered_sha256": "17ab5be40234cc2631cfc0743a25369bff9e66064459cbd59726836706802bc6",
+          "status": "completed"
+        },
+        {
+          "format": "TIFF",
+          "frontend": "cli",
+          "original": "files/sample.tif",
+          "original_sha256": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+          "recovered_sha256": "9861c397d9eba5816810155db05b08624d73dd1826598829fa4db98381f4fe2c",
+          "status": "completed"
+        },
+        {
+          "format": "WebP",
+          "frontend": "cli",
+          "original": "files/sample.webp",
+          "original_sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+          "recovered_sha256": "d81bfb50e59a9abbe66f6ae0c6b45c7b9c0bc6eead2cf982118ac4d62b6ffeda",
+          "status": "completed"
+        },
+        {
+          "format": "ICO",
+          "frontend": "cli",
+          "original": "files/sample.ico",
+          "original_sha256": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+          "recovered_sha256": "7b8ec8dd836b564f0c85ad088fc744de820345204e154bc1503e04e9d6fdd9f1",
+          "status": "completed"
+        },
+        {
+          "format": "APNG",
+          "frontend": "cli",
+          "original": "files/sample.apng",
+          "original_sha256": "70d1838fe71b0d4f232ca890c66105e742aa892c31f8d63c592127db54f8ffc6",
+          "recovered_sha256": "6929dc871287c5e3a2d9e99399f4bf688c63dc15b1a627e6cc8da68b423a028c",
+          "status": "completed"
+        },
+        {
+          "format": "PDF",
+          "frontend": "cli",
+          "original": "files/sample.pdf",
+          "original_sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "recovered_sha256": "09c8e48d26919a43272e686b65b19671f7f7b6afb10598e470abf3491a1f6340",
+          "status": "completed"
+        },
+        {
+          "format": "DOCX",
+          "frontend": "cli",
+          "original": "files/sample.docx",
+          "original_sha256": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+          "recovered_sha256": "393038a54c7e8335d71b6c0fdeedae4882cffa242f8c216ba7838f5caebdf1b5",
+          "status": "completed"
+        },
+        {
+          "format": "XLSX",
+          "frontend": "cli",
+          "original": "files/sample.xlsx",
+          "original_sha256": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35",
+          "recovered_sha256": "f24c8732c9e086b4f809ca54b48ea10d627933d09de89f8de42b728beea61615",
+          "status": "completed"
+        },
+        {
+          "format": "PPTX",
+          "frontend": "cli",
+          "original": "files/sample.pptx",
+          "original_sha256": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+          "recovered_sha256": "46b9f0f47a618d4b3fa09ae32aaf99007728132df0e089eeb193de74c3b1abe1",
+          "status": "completed"
+        },
+        {
+          "format": "TXT (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.txt",
+          "original_sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+          "recovered_sha256": "c6e26c3e31bac75ea556356cbbd12190e29f277ea5f9010f8f88d5ab3363a2cf",
+          "status": "completed"
+        },
+        {
+          "format": "CSV (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.csv",
+          "original_sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+          "recovered_sha256": "7f9c9e31ac8256ca2f258583df262dbc7d6f68f2a03043d5c99a4ae5a7396ce9",
+          "status": "completed"
+        },
+        {
+          "format": "JSON",
+          "frontend": "cli",
+          "original": "files/sample.json",
+          "original_sha256": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+          "recovered_sha256": "5552748b5aeb500f57b3d1f4a56e4e9789198918c663e712314ea999026eb896",
+          "status": "completed"
+        },
+        {
+          "format": "HTML",
+          "frontend": "cli",
+          "original": "files/sample.html",
+          "original_sha256": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+          "recovered_sha256": "5b6fb58e61fa475939767d68a446f97f1bff02c0e5935a3ea8bb51e6515783d8",
+          "status": "completed"
+        },
+        {
+          "format": "XML",
+          "frontend": "cli",
+          "original": "files/sample.xml",
+          "original_sha256": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+          "recovered_sha256": "82fcfd5215175da9e65ca7c4fb927a1fb0e61f09d54987c368e8e16ebd9c2969",
+          "status": "completed"
+        },
+        {
+          "format": "RTF",
+          "frontend": "cli",
+          "original": "files/sample.rtf",
+          "original_sha256": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+          "recovered_sha256": "02779466cdec163811d078815c633f21901413081449002f24aa3e80f0b88ef7",
+          "status": "completed"
+        },
+        {
+          "format": "MP4",
+          "frontend": "cli",
+          "original": "files/sample.mp4",
+          "original_sha256": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+          "recovered_sha256": "a7c0e687eaa7a7052c47e13fd565089dc1c2b7d8b3577d06319bdc2828878bf5",
+          "status": "completed"
+        },
+        {
+          "format": "MOV",
+          "frontend": "cli",
+          "original": "files/sample.mov",
+          "original_sha256": "64f75ba30c4050eb9ad3f97c7f34b5dbf587c1af95396fa9a840f70eaacdb0eb",
+          "recovered_sha256": "1f85321b896ac59d0b3aa05bd481315b99ec3b312c1b2edcce557c9baf534edb",
+          "status": "completed"
+        },
+        {
+          "format": "AVI",
+          "frontend": "cli",
+          "original": "files/sample.avi",
+          "original_sha256": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+          "recovered_sha256": "dc6aa033386f751eaa9e05db871b3f128ee72efec6f4dc1fdf5ecfd68d3512fd",
+          "status": "completed"
+        },
+        {
+          "format": "MKV",
+          "frontend": "cli",
+          "original": "files/sample.mkv",
+          "original_sha256": "d98cbb7600d785fafcea55c8f066bd41deee5e7378d3b737f8f9a2af075b2413",
+          "recovered_sha256": "2a10c4a2795840711e84e2e78e86690665a156ae0a03e09bbcc92ad51acf36a0",
+          "status": "completed"
+        },
+        {
+          "format": "WebM",
+          "frontend": "cli",
+          "original": "files/sample.webm",
+          "original_sha256": "ff450d90e108e3152815145f33e9f2c7bcd697db72abefb3c0e33d10460fe81f",
+          "recovered_sha256": "2f3c26d26f29c0b8522f02a44b69db26d242f5949ebbf40d772cb3acb7088136",
+          "status": "completed"
+        },
+        {
+          "format": "MP3",
+          "frontend": "cli",
+          "original": "files/sample.mp3",
+          "original_sha256": "4131ca7d30c906c2c55c85913b0869defee2def72bd1aafc8196bf1b0c22719b",
+          "recovered_sha256": "0e40a09dd6c3d8b503c0095444488c25f0fa19356ddd9b77a16219cb1cec69e6",
+          "status": "completed"
+        },
+        {
+          "format": "WAV",
+          "frontend": "cli",
+          "original": "files/sample.wav",
+          "original_sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "recovered_sha256": "561a2dd1e7c14745382bfe02370fe1c0442d8433b392f8d04abade2f4f7a535d",
+          "status": "completed"
+        },
+        {
+          "format": "FLAC",
+          "frontend": "cli",
+          "original": "files/sample.flac",
+          "original_sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+          "recovered_sha256": "ec2ce0fe749f83cccfcac862e291c25fbc5aded501e84ce77cabc1a0f893421e",
+          "status": "completed"
+        },
+        {
+          "format": "Ogg/Vorbis",
+          "frontend": "cli",
+          "original": "files/sample.ogg",
+          "original_sha256": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+          "recovered_sha256": "8e2a88405cd816c21c28eab8ba4abcd739b75e9aefadbc8a6bd95b28e84669c7",
+          "status": "completed"
+        },
+        {
+          "format": "AAC/ADTS",
+          "frontend": "cli",
+          "original": "files/sample.aac",
+          "original_sha256": "2dbaebf9faa16c95d2dcc809576bd5f8a470aeb60e0404056aaad0c15768344b",
+          "recovered_sha256": "939e0dd43a457dfa65880caf60dcb73a8b413d3af66da13d2201562252a0edfd",
+          "status": "completed"
+        },
+        {
+          "format": "M4A/AAC",
+          "frontend": "cli",
+          "original": "files/sample.m4a",
+          "original_sha256": "afbf4ed33c3840eb23b8e2857176be34f244c4b589b1a52efe4a2d037fbce6d8",
+          "recovered_sha256": "51955adbaa910fea4804a9e011a53f4fc47b4806551a663623248d945f2f1062",
+          "status": "completed"
+        },
+        {
+          "format": "ZIP",
+          "frontend": "cli",
+          "original": "files/sample.zip",
+          "original_sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+          "recovered_sha256": "5e06bfa9ebccfa3d8759270620b6860f0b92be9d69ef7d7802b78ee5b5f07f96",
+          "status": "completed"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": "84ff92691f909a05b224e1c56abb4864f01b4f8e3c854e4bb4c7baf1d3f6d652",
+          "status": "completed"
+        },
+        {
+          "format": "GZIP",
+          "frontend": "cli",
+          "original": "files/sample.gz",
+          "original_sha256": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b",
+          "recovered_sha256": "6778c7c7b6b6c1c273e668169a7652a681da86ad62d03f7c5aa120405069feb2",
+          "status": "completed"
+        },
+        {
+          "format": "XZ",
+          "frontend": "cli",
+          "original": "files/sample.xz",
+          "original_sha256": "210a33da70713913de0569799876dd4ab2ec4f7aeef40efc3a4a962ba00b36fd",
+          "recovered_sha256": "6edd9f6f9cc92cded36e6c4a580933f9c9f1b90562b46903b806f21902a1a54f",
+          "status": "completed"
+        },
+        {
+          "format": "BZIP2",
+          "frontend": "cli",
+          "original": "files/sample.bz2",
+          "original_sha256": "6c7e1fb19f4b8564d9b0d47980eb7635b8111998b3c61eafb4ee3e7c86656816",
+          "recovered_sha256": "f23391587f1c9fc48eabd1e95f4caf16f585ef09941b7bc24f023d228e81ccd5",
+          "status": "completed"
+        },
+        {
+          "format": "SQLite",
+          "frontend": "cli",
+          "original": "files/sample.sqlite",
+          "original_sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "recovered_sha256": "9f1dcbc35c350d6027f98be0f5c8b43b42ca52b7604459c0c42be3aa88913d47",
+          "status": "completed"
+        },
+        {
+          "format": "PNG",
+          "frontend": "cli",
+          "original": "files/noise.png",
+          "original_sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "recovered_sha256": "a470dc63c679450aad71f7ea3389f157e877cdd7b8a6d0a06bafccdfe78d7b9c",
+          "status": "completed"
+        }
+      ],
+      "observations": 36
+    },
+    "whole-disk-gpt": {
+      "byte_exact": 33,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "TXT (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.txt",
+          "original_sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "CSV (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.csv",
+          "original_sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        }
+      ],
+      "observations": 36
+    },
+    "whole-disk-gpt-metadata": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    },
+    "whole-disk-mbr": {
+      "byte_exact": 33,
+      "frontends": {
+        "cli": 36
+      },
+      "mismatches": [
+        {
+          "format": "TXT (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.txt",
+          "original_sha256": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "CSV (UTF-8)",
+          "frontend": "cli",
+          "original": "files/sample.csv",
+          "original_sha256": "0edf157e71dd609509d88affa167fb44ee5427b28db629b6b9aef0e4b7964bd2",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        },
+        {
+          "format": "TAR",
+          "frontend": "cli",
+          "original": "files/sample.tar",
+          "original_sha256": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+          "recovered_sha256": null,
+          "status": "not_recovered"
+        }
+      ],
+      "observations": 36
+    },
+    "whole-disk-mbr-metadata": {
+      "byte_exact": 72,
+      "frontends": {
+        "cli": 36,
+        "mcp": 36
+      },
+      "mismatches": [],
+      "observations": 72
+    }
+  },
+  "cli_sha256": "8a8e3a1c0d2749af938f1eb38e71455337c44d58ff38a55bd52fddd56bdd00d6",
+  "formats": 35,
+  "observations": 1116,
+  "originals": 36,
+  "scope": {
+    "paid_product_comparison": false,
+    "real_device_tested": false,
+    "real_trim_tested": false,
+    "synthetic_regular_images": true,
+    "windows_gui_tested": false
+  }
+}
