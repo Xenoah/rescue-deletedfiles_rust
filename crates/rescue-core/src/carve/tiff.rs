@@ -39,7 +39,9 @@ pub(super) fn dng_hint(bytes: &[u8]) -> Option<bool> {
     }
     let rows = bytes.get(start..start.checked_add(count * 12)?)?;
     Some(
-        rows.chunks_exact(12)
+        rows.as_chunks::<12>()
+            .0
+            .iter()
             .any(|r| layout.number(&r[..2]) == 50706),
     )
 }

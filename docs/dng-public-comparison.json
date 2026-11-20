@@ -1,0 +1,17 @@
+{
+  "disk_sha256": "f8ee1aa3b41a64e0794862d28e05a92085f216e11f5d6123662a8e6a978fc66e",
+  "linux_binary_sha256": "a2288ff3a582eb814535af46516ff6e87911339bca0e77634680c62e26870c17",
+  "modes": {
+    "indexed": {
+      "development_complete_files": 6,
+      "development_referenced_prefixes": 2,
+      "v1_37_dng_candidates": 0
+    },
+    "ordinary": {
+      "development_complete_files": 6,
+      "development_referenced_prefixes": 2,
+      "v1_37_dng_candidates": 0
+    }
+  },
+  "package": "https://github.com/Xenoah/rescue-deletedfiles_rust/releases/tag/v1.37.0"
+}

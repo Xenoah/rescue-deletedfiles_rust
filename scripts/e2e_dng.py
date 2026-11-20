@@ -21,7 +21,43 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
+def uncompressed_tiles(path, meta):
+    data = path.read_bytes()
+    order, _, fields, _ = tiff_rows(data)
+
+    def unsigned(tag):
+        row = fields[tag]
+        ty, count = struct.unpack_from(order+'HI', data, row+2)
+        width, letter = {3:(2,'H'), 4:(4,'I')}[ty]
+        at = row+8 if width*count <= 4 else struct.unpack_from(order+'I', data, row+8)[0]
+        return struct.unpack_from(order + str(count) + letter, data, at)
+
+    w, h, bits = meta['width'], meta['height'], meta['bits']
+    tw, = unsigned(322)
+    th, = unsigned(323)
+    offsets, counts = unsigned(324), unsigned(325)
+    across = (w + tw - 1) // tw
+    size = bits // 8
+    result = bytearray(w*h*2)
+    check(bits in (8,16) and len(offsets)==len(counts)==across*((h+th-1)//th), path)
+    for i,(at,count) in enumerate(zip(offsets,counts)):
+        check(count==tw*th*size and at+count<=len(data), path)
+        left,top=(i%across)*tw,(i//across)*th
+        endian = 'little' if order=='<' else 'big'
+        for y in range(min(th,h-top)):
+            for x in range(min(tw,w-left)):
+                start=at+(y*tw+x)*size
+                value=int.from_bytes(data[start:start+size],endian)
+                struct.pack_into('<H',result,2*((top+y)*w+left+x),value)
+    check(sha(result)==meta['samples_u16le_sha256'],path)
+    return sha(result)
+
+
 def sample_digest(path, meta):
+    # LibRaw 0.20.2 misassembles uncompressed DNG tiles. Check their full raster
+    # independently, including partial edge tiles and the file's TIFF byte order.
+    if meta['encoding']=='raw' and meta['tiled']:
+        return uncompressed_tiles(path, meta)
     with tempfile.TemporaryDirectory() as folder:
         # LibRaw writes beside its input. Keep the checked originals read-only.
         sample = Path(folder) / 'sensor.dng'

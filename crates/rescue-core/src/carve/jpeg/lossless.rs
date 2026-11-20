@@ -85,7 +85,7 @@ pub(in crate::carve) fn check_cfa_tile(
                 {
                     return Err(invalid("lossless JPEG frame and DNG sample counts differ"));
                 }
-                for comp in f[6..].chunks_exact(3) {
+                for comp in f[6..].as_chunks::<3>().0 {
                     if ids.contains(&comp[0]) || comp[1] != 0x11 || comp[2] > 3 {
                         return Err(invalid("lossless JPEG component layout"));
                     }
@@ -117,7 +117,7 @@ pub(in crate::carve) fn check_cfa_tile(
                 }
                 let mut scan_ids = Vec::new();
                 let mut order = Vec::new();
-                for comp in s[1..1 + 2 * nc].chunks_exact(2) {
+                for comp in s[1..1 + 2 * nc].as_chunks::<2>().0 {
                     if !ids.contains(&comp[0]) || scan_ids.contains(&comp[0]) || comp[1] & 15 != 0 {
                         return Err(invalid("lossless JPEG scan component"));
                     }
