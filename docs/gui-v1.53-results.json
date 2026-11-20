@@ -1,0 +1,228 @@
+{
+  "files_byte_exact": 10,
+  "bytes_exact": 31604,
+  "source_unchanged": true,
+  "source_sha256": "09587a62d01d412908d692d1cef93d3073d38a63fd165358339fd102e9838103",
+  "archive_sha256": "af81672ca2a9b683348e2bed295dcf08953e777af51e2c9f70d8ab095f41d919",
+  "actual_ext4_unlinks": {
+    "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+    "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "degraded_raid6": {
+    "layout": "ddf_n_continue",
+    "missing_slots": [
+      0,
+      2
+    ],
+    "members_sha256": {
+      "a": "ae80391c2e8db7dc03d9167815a182160f1d212182baf3bd2ab5247fa583c295",
+      "b": "b5fde1f21ffa2b6e37e1d251706e5a0c4e28dd46bada3fcfaa14e6170f919d53",
+      "c": "04599efbcd37b8ed34681b9612e0f2736b68d4bca192f77ad3eb3719fb82c5aa",
+      "d": "c2b20adf2e81e739d5c666c9aeffde77259e8d4f9aca7cc421d401e38ab95796",
+      "e": "234ac032b63e026afc720ecdd9906b0138bff617d63ffedb4c39a1a18416c6d3",
+      "logical": "09587a62d01d412908d692d1cef93d3073d38a63fd165358339fd102e9838103"
+    },
+    "all_report_rows_have_matching_raid_provenance": true,
+    "logical_sha256": "09587a62d01d412908d692d1cef93d3073d38a63fd165358339fd102e9838103"
+  },
+  "status": "passed",
+  "application_version": "1.53.0",
+  "time_utc": "2026-11-20T12:22:14.601199+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "4452d4587c39d357f33caedce887fd3135c261bae96746e2abc291ad547a5888",
+  "cli_binary_sha256": "f827566c9556b18745f9d96fa25b3334227927e1348a590e0f23ac484d08528c",
+  "files": [
+    {
+      "archive_entry": "bmp_00000000001c8000.bmp",
+      "bytes": 3126,
+      "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+    },
+    {
+      "archive_entry": "flac_00000000001c9000.flac",
+      "bytes": 9478,
+      "sha256": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516"
+    },
+    {
+      "archive_entry": "gif_00000000001cb800.gif",
+      "bytes": 1731,
+      "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+    },
+    {
+      "archive_entry": "jpeg_00000000001cc000.jpg",
+      "bytes": 767,
+      "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+    },
+    {
+      "archive_entry": "pdf_00000000001cc400.pdf",
+      "bytes": 1367,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+    },
+    {
+      "archive_entry": "png_00000000001ccc00.png",
+      "bytes": 102,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    },
+    {
+      "archive_entry": "sqlite_00000000001cd000.sqlite",
+      "bytes": 8192,
+      "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+    },
+    {
+      "archive_entry": "wav_00000000001cf000.wav",
+      "bytes": 6478,
+      "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    {
+      "archive_entry": "webp_00000000001d0c00.webp",
+      "bytes": 184,
+      "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+    },
+    {
+      "archive_entry": "zip_00000000001d1000.zip",
+      "bytes": 179,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 10,
+    "html_sha256": "c6b08534e55cd9be84b3b7cdf1b8c984198ab7022d62c5e9622cd494ce72b22c",
+    "csv_sha256": "5ffb9213f1f55fb898d2de750ce4553cf1daf6aa4f7ae4b4a3839b607c713bca",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 10
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 58720256,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "100a180fe22d09c37139fabdfbd27811c69f7cc61863f0bc71934e74aef6a751",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "d091bfc8bf117638200129e8fad4779ebd10ad66891fa7a96e49e4aefa5ee257",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "68b8b39cc8bd6e7741168f48c247ca728fd6fe36869eac37b7dda12de08bc269"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "de984500a26f3901197755125091729faba2452254cfbd9c7578bb9b5755bdd1"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.53.0/structures-selected.png",
+      "sha256": "23f3d3f12d4be2b28ce049c2ef22e9d8cec7a28a4b3cfc4f9c74865ef1a256fb",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/structures-recovered.png",
+      "sha256": "146b8e3791cba81f842353a0ad91686625fb26064cc0cecd305febd914a822c6",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/custom-recovered.png",
+      "sha256": "23d41847804c03efb1fb6b51a12a28a5c924e6b93ef34302a5fcc66b0e022e29",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/cp932-recovered.png",
+      "sha256": "1a7089ba0479f70ec58f7822ce93a3c90d7d4fbd27c7534b8096e3c93e5968bb",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/exfat-recovered.png",
+      "sha256": "6e14f58a9b697aa0dde2fd00e5acb1dac79f5c7dd992f41a324483ff502fc897",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/hash-saved.png",
+      "sha256": "b52e10f3be567ec1d602ef14f2dcfee2272e07893daa75da61b7e3ac8eb6ef08",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/acq-interrupted.png",
+      "sha256": "8829de0165a0d1811d9cc5b2bafe8ab8392a27ba541cf8f11077f7fe29bab86d",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/acq-resumed.png",
+      "sha256": "1ce9c078f930e2651b34d66c645e5c8e17a8f0e07aa86fa0f0af587bbb5bd646",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/md-entered.png",
+      "sha256": "374b52d48cf6879252cefd95444f300000bf1f6c6f5f17504fe7f3aec3b31539",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.53.0/md-detected.png",
+      "sha256": "367d778adad0600b2c7a893b0711252d761f461812c62f98ebda961f6d9181c1",
+      "width": 1260,
+      "height": 820
+    }
+  ],
+  "linux_md_member_discovery": {
+    "source": "GUI member list deliberately reversed with zero offsets, 4 KiB lengths, 4 KiB stripe and incorrect fixed P/Q layout",
+    "configuration_saved_by_gui": true,
+    "matches_independent_cli_detection": true,
+    "missing_slots": [
+      0,
+      2
+    ],
+    "array_uuid": "5d5d9344:f13eef5d:46d510c7:104c53dd",
+    "events": 17,
+    "detected_layout": "ddf_n_continue",
+    "stripe_bytes": 16384,
+    "present_member_offsets": [
+      1048576,
+      1048576,
+      1048576
+    ]
+  }
+}
