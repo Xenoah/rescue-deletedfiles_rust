@@ -1,0 +1,114 @@
+{
+  "hfsplus": {
+    "bytes": 33554432,
+    "disk_sha256": "6d3c0a0b47f5b266f14139ea3bceac708f623f7355e4f38729f36536eaea9ccb",
+    "signature": "H+",
+    "originals": {
+      "sample.bmp": {
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "bytes": 3126,
+        "deleted_offset": 6037504,
+        "deleted_bytes_retained": true,
+        "live_offset": 6070272
+      },
+      "sample.gif": {
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "bytes": 1731,
+        "deleted_offset": 6041600,
+        "deleted_bytes_retained": true,
+        "live_offset": 6074368
+      },
+      "sample.png": {
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "bytes": 102,
+        "deleted_offset": 6045696,
+        "deleted_bytes_retained": true,
+        "live_offset": 6078464
+      },
+      "sample.pdf": {
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "bytes": 1367,
+        "deleted_offset": 6049792,
+        "deleted_bytes_retained": true,
+        "live_offset": 6082560
+      },
+      "sample.webp": {
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "bytes": 184,
+        "deleted_offset": 6053888,
+        "deleted_bytes_retained": true,
+        "live_offset": 6086656
+      },
+      "sample.wav": {
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "bytes": 6478,
+        "deleted_offset": 6057984,
+        "deleted_bytes_retained": true,
+        "live_offset": 6090752
+      },
+      "sample.zip": {
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "bytes": 179,
+        "deleted_offset": 6066176,
+        "deleted_bytes_retained": true,
+        "live_offset": 6098944
+      }
+    }
+  },
+  "hfsx": {
+    "bytes": 33554432,
+    "disk_sha256": "9b7b4931bb29192bc1e9338211329d3016bd7ca7d6837a40559a0eb6eb14fdd6",
+    "signature": "HX",
+    "originals": {
+      "sample.bmp": {
+        "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "bytes": 3126,
+        "deleted_offset": 6037504,
+        "deleted_bytes_retained": true,
+        "live_offset": 6070272
+      },
+      "sample.gif": {
+        "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "bytes": 1731,
+        "deleted_offset": 6041600,
+        "deleted_bytes_retained": true,
+        "live_offset": 6074368
+      },
+      "sample.png": {
+        "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "bytes": 102,
+        "deleted_offset": 6045696,
+        "deleted_bytes_retained": true,
+        "live_offset": 6078464
+      },
+      "sample.pdf": {
+        "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "bytes": 1367,
+        "deleted_offset": 6049792,
+        "deleted_bytes_retained": true,
+        "live_offset": 6082560
+      },
+      "sample.webp": {
+        "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "bytes": 184,
+        "deleted_offset": 6053888,
+        "deleted_bytes_retained": true,
+        "live_offset": 6086656
+      },
+      "sample.wav": {
+        "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "bytes": 6478,
+        "deleted_offset": 6057984,
+        "deleted_bytes_retained": true,
+        "live_offset": 6090752
+      },
+      "sample.zip": {
+        "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "bytes": 179,
+        "deleted_offset": 6066176,
+        "deleted_bytes_retained": true,
+        "live_offset": 6098944
+      }
+    }
+  }
+}
