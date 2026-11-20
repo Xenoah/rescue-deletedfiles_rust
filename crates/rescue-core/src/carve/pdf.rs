@@ -564,7 +564,18 @@ pub(super) fn validate(
                 input.work(cursor)?;
                 match document(&input.bytes[..cursor + 5], cursor, cancel) {
                     Ok(()) => {
-                        input.ensure((cursor + 5 + 4096).min(input.limit()))?;
+                        // The first token after EOF can rule out an incremental update.
+                        // A missing sector beyond that token is unrelated to this document.
+                        let lookahead = (cursor + 5 + 4096).min(input.limit());
+                        let mut after_eof = Lexer::new(&input.bytes, cursor + 5);
+                        after_eof.skip();
+                        if input
+                            .bytes
+                            .get(after_eof.p)
+                            .is_none_or(|b| *b == b'x' || b.is_ascii_digit())
+                        {
+                            input.ensure(lookahead)?;
+                        }
                         let mut end = cursor + 5;
                         if input.bytes.get(end) == Some(&b'\r') {
                             end += 1;
