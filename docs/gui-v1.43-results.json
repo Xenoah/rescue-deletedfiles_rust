@@ -1,0 +1,217 @@
+{
+  "files_byte_exact": 16,
+  "bytes_exact": 3790,
+  "source_unchanged": true,
+  "source_sha256": "9b99d328076311a0a6ebbb1d1a26b4d7b8e642bd07919c8a526081e4199cb8ed",
+  "archive_sha256": "a28b72fed2af35e0125cbf66ff6d143513be5a71bdc4e94339e0f1ba1cfa543f",
+  "actual_fat32_unlinks": {
+    "be-boundary.svgz": "847d41291b52e8af50a9aa63a6c1806414b54871014a84327d5ea00e7be06c87",
+    "be-rectangle.svgz": "4551a8aee515abae4ae1c0ffbf80f2677cb00c6b05db583cb04b1e8944aab60b",
+    "be-reused.svgz": "a55aa3415a7519d262852d3d226d62f7710026e26d22d7bdb9a4250e27bba30c",
+    "be-unicode.svgz": "2442f060e5cd95e0dddf2a0c4ca74125bd2324e1b98abdd60cabbce1196995bd",
+    "cairo.svgz": "58f5931874dccbd57170b1ca9e7cd8d60f1137b81cf1eaa2b88a615159315983",
+    "clipped.svgz": "a1c0fbd94d42dd31d5c584b76de49f42741ce44c1e2cd5cc6bbedcbe79df58cb",
+    "gradient.svgz": "c217200f725f1aec7a906d01e97eac2e71b9703749fa51bc44b98f6f5ef4a296",
+    "inkscape.svgz": "f7e7a4f631ad3113eefce2c56e5268a0083f8cc919e99edc27acab188829bfba",
+    "le-boundary.svgz": "8d7b6245cdf8155cdb7265948c1f032adedced3bb80568f1f32d252de6e22b6a",
+    "le-rectangle.svgz": "cbb5f046d912651db467d4e87cb591909f7ce260214f4268b24bf2dc88db7e48",
+    "le-reused.svgz": "f827729c83e588c47c6b7cfa33527d16ed21a60cb222d685707e6ff667157a24",
+    "le-unicode.svgz": "373aeece7e7ecf539483e0838171756bdeb94f3ea4c8023f12953f8d70d41c40",
+    "rectangle.svgz": "a2fc79675d6e12f82b2350c7c62d3214553508719833ac5c5963bed83e73f6d8",
+    "reused.svgz": "25f213f5ccce3d8ccadff4178d25cdca2fa2203ad5ddad138c4f29a31ef2da3d",
+    "stroke.svgz": "864b55706742758e92a19f033915f393099cd755ef4653ceb7c2c59f7c0acc7e",
+    "unicode.svgz": "99279b7fad224e758a0882e9185c674d4ac82b25b9151ae094015034cdea9a61"
+  },
+  "status": "passed",
+  "application_version": "1.43.0",
+  "time_utc": "2026-11-20T07:41:39.188978+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "dc8f769318a0c5d14a10691652268431adcb13c4595e4951c16ddc261669153f",
+  "cli_binary_sha256": "8ad9ad6db475aeda23d42c638a386ea975fd7c8b3bd3a3bd5c574841ac9b9c72",
+  "files": [
+    {
+      "archive_entry": "svgz_00000000000a1a00.svgz",
+      "bytes": 215,
+      "sha256": "847d41291b52e8af50a9aa63a6c1806414b54871014a84327d5ea00e7be06c87"
+    },
+    {
+      "archive_entry": "svgz_00000000000a1c00.svgz",
+      "bytes": 215,
+      "sha256": "4551a8aee515abae4ae1c0ffbf80f2677cb00c6b05db583cb04b1e8944aab60b"
+    },
+    {
+      "archive_entry": "svgz_00000000000a1e00.svgz",
+      "bytes": 262,
+      "sha256": "a55aa3415a7519d262852d3d226d62f7710026e26d22d7bdb9a4250e27bba30c"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2000.svgz",
+      "bytes": 309,
+      "sha256": "2442f060e5cd95e0dddf2a0c4ca74125bd2324e1b98abdd60cabbce1196995bd"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2200.svgz",
+      "bytes": 325,
+      "sha256": "58f5931874dccbd57170b1ca9e7cd8d60f1137b81cf1eaa2b88a615159315983"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2400.svgz",
+      "bytes": 193,
+      "sha256": "a1c0fbd94d42dd31d5c584b76de49f42741ce44c1e2cd5cc6bbedcbe79df58cb"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2600.svgz",
+      "bytes": 225,
+      "sha256": "c217200f725f1aec7a906d01e97eac2e71b9703749fa51bc44b98f6f5ef4a296"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2a00.svgz",
+      "bytes": 293,
+      "sha256": "f7e7a4f631ad3113eefce2c56e5268a0083f8cc919e99edc27acab188829bfba"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2c00.svgz",
+      "bytes": 214,
+      "sha256": "8d7b6245cdf8155cdb7265948c1f032adedced3bb80568f1f32d252de6e22b6a"
+    },
+    {
+      "archive_entry": "svgz_00000000000a2e00.svgz",
+      "bytes": 213,
+      "sha256": "cbb5f046d912651db467d4e87cb591909f7ce260214f4268b24bf2dc88db7e48"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3000.svgz",
+      "bytes": 261,
+      "sha256": "f827729c83e588c47c6b7cfa33527d16ed21a60cb222d685707e6ff667157a24"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3200.svgz",
+      "bytes": 310,
+      "sha256": "373aeece7e7ecf539483e0838171756bdeb94f3ea4c8023f12953f8d70d41c40"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3400.svgz",
+      "bytes": 133,
+      "sha256": "a2fc79675d6e12f82b2350c7c62d3214553508719833ac5c5963bed83e73f6d8"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3800.svgz",
+      "bytes": 205,
+      "sha256": "25f213f5ccce3d8ccadff4178d25cdca2fa2203ad5ddad138c4f29a31ef2da3d"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3a00.svgz",
+      "bytes": 180,
+      "sha256": "864b55706742758e92a19f033915f393099cd755ef4653ceb7c2c59f7c0acc7e"
+    },
+    {
+      "archive_entry": "svgz_00000000000a3c00.svgz",
+      "bytes": 237,
+      "sha256": "99279b7fad224e758a0882e9185c674d4ac82b25b9151ae094015034cdea9a61"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 16,
+    "html_sha256": "1321bb92f9bc6f507d41e5f5047aa6e11c418e22adf6895c7f27224d9a4394f9",
+    "csv_sha256": "26ff7ce639ec74833c976090cedf5370407d4e9609e2411ed26ea51e94335077",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 16
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "75cbcb73f21cb479599d798afbb8226645b9a476574c1bddb77066379ed4237f",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "fe1ef013799f22eb413e522412c6c88ff10c15955c232c519811fa93f3b5d255",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "eb398ba5d73fa914168300d708c6008d349baa559359bf511169620a0acf6363"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "51343654f598d4de9d127f868524e42033d5b8b1d01f25c9db39a207564774fb"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.43.0/structures-selected.png",
+      "sha256": "fd323fcb37a6057c9b80c47da74f06d077ad6a6e03cfae50af0ab44a09ea762e",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/structures-recovered.png",
+      "sha256": "a34c299ab15de2f1fe07729fa618e9ac1610ee61b9c9f33311ca7879771ba77f",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/custom-recovered.png",
+      "sha256": "6412c0e620325f37e5a5537aa9a809b982cec7ab6c633ab81ab74dc14b584f93",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/cp932-recovered.png",
+      "sha256": "3a1d035c12201bd1fbbc952d427acc9fda52e3b52c021e2fd85ae0afb4f6a560",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/exfat-recovered.png",
+      "sha256": "53a031e94ed1bc3528867eb07a6763545db846ab5c64c50480d4e4779f1aa632",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/hash-saved.png",
+      "sha256": "a883ff5b56fd89e6f83e3ded760241e0d997971042b7c0a646384fd836d4318c",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/acq-interrupted.png",
+      "sha256": "3be72bbbfc0042e9a8c392cd59dc132673f501a7c85f8f296ea011c6bb9920f3",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.43.0/acq-resumed.png",
+      "sha256": "7dc25a8017fb2663ff1559e0a94feafe7b0a404f6bb803977fd2e60bfcb74567",
+      "width": 1260,
+      "height": 820
+    }
+  ]
+}
