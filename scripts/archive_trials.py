@@ -29,6 +29,6 @@ def recover_archives(binary, root, disk, files, extension, inspect=None):
             check(actual == files[original] and digest(actual) == row['sha256'], original)
             if inspect:
                 inspect(path, original)
-        print(label, len(rows), extension, 'archives restored byte-for-byte with matching SHA-256', flush=True)
+        print(label, len(rows), extension, 'files restored byte-for-byte with matching SHA-256', flush=True)
     check(digest(disk.read_bytes()) == before, 'source changed')
     return {name: h for h, name in originals.items()}

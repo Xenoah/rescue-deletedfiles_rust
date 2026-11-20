@@ -1,0 +1,252 @@
+{
+  "ext4_blender": {
+    "animation.glb": {
+      "animations": [
+        "animationAction_animation"
+      ],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "animation",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "camera-only.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "name": "camera-only",
+          "type": "CAMERA"
+        }
+      ]
+    },
+    "cone.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "ff07a547ed2fbd595ff81354a15008b2ec9e8ebcc414aa1f40942482627269f0",
+          "name": "cone",
+          "triangles": 24,
+          "type": "MESH",
+          "vertices": 52
+        }
+      ]
+    },
+    "cube.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "cube",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "material.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "material",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "textured.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "textured",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "torus.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "c8718733669ff874a2a96b7e3c11282030f6e52a2703612b4e975332f72521e9",
+          "name": "torus",
+          "triangles": 256,
+          "type": "MESH",
+          "vertices": 512
+        }
+      ]
+    },
+    "two-meshes.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "4bb7ff41de1b7f7ccf3698a333dadc7931f9b23a0e754bbb248712fb32ff11d5",
+          "name": "Icosphere",
+          "triangles": 20,
+          "type": "MESH",
+          "vertices": 60
+        },
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "two-meshes",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "uv-sphere.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "e76a7a65ac77570ec036c0fb35f67aa1a4616d080c4ca33e7873ea56ebfb898b",
+          "name": "uv-sphere",
+          "triangles": 224,
+          "type": "MESH",
+          "vertices": 480
+        }
+      ]
+    }
+  },
+  "fat32_blender": {
+    "animation.glb": {
+      "animations": [
+        "animationAction_animation"
+      ],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "animation",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "camera-only.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "name": "camera-only",
+          "type": "CAMERA"
+        }
+      ]
+    },
+    "cone.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "ff07a547ed2fbd595ff81354a15008b2ec9e8ebcc414aa1f40942482627269f0",
+          "name": "cone",
+          "triangles": 24,
+          "type": "MESH",
+          "vertices": 52
+        }
+      ]
+    },
+    "cube.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "cube",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "material.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "material",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "textured.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "textured",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "torus.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "c8718733669ff874a2a96b7e3c11282030f6e52a2703612b4e975332f72521e9",
+          "name": "torus",
+          "triangles": 256,
+          "type": "MESH",
+          "vertices": 512
+        }
+      ]
+    },
+    "two-meshes.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "4bb7ff41de1b7f7ccf3698a333dadc7931f9b23a0e754bbb248712fb32ff11d5",
+          "name": "Icosphere",
+          "triangles": 20,
+          "type": "MESH",
+          "vertices": 60
+        },
+        {
+          "geometry_sha256": "664840140ee1efec6a225380e26e44c1c6d23d5438e51eebfad960866ae41943",
+          "name": "two-meshes",
+          "triangles": 12,
+          "type": "MESH",
+          "vertices": 24
+        }
+      ]
+    },
+    "uv-sphere.glb": {
+      "animations": [],
+      "images": {},
+      "objects": [
+        {
+          "geometry_sha256": "e76a7a65ac77570ec036c0fb35f67aa1a4616d080c4ca33e7873ea56ebfb898b",
+          "name": "uv-sphere",
+          "triangles": 224,
+          "type": "MESH",
+          "vertices": 480
+        }
+      ]
+    }
+  }
+}

@@ -46,6 +46,7 @@ sevenz-rust2 = { version = "0.25.0", default-features = false, features = ["bzip
 lzxd = "0.2.7"
 exr = { version = "=1.74.3", default-features = false }
 hayro-jpeg2000 = { version = "=0.5.0", default-features = false, features = ["std"] }
+gltf-json = { version = "=1.4.1", default-features = false }
 
 [dev-dependencies]
 tempfile.workspace = true

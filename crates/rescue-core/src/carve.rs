@@ -11,6 +11,7 @@ mod extra;
 mod flac;
 mod font;
 mod frame_archive;
+mod glb;
 mod icon;
 mod indexed;
 mod rar;
@@ -129,6 +130,7 @@ pub(crate) fn validate_estimated_extent(
         "ogg" => Some(Format::Ogg),
         "rar" => Some(Format::Rar),
         "7z" => Some(Format::SevenZ),
+        "glb" => Some(Format::Glb),
         "cab" => Some(Format::Cab),
         "gz" => Some(Format::Gzip),
         "ico" => Some(Format::Ico),
@@ -277,6 +279,7 @@ enum Format<'a> {
     Gzip,
     Rar,
     SevenZ,
+    Glb,
     Cab,
     Ico,
     Cur,
@@ -345,6 +348,7 @@ impl<'a> Format<'a> {
             Self::Wma => "wma",
             Self::Wmv => "wmv",
             Self::SevenZ => "7z",
+            Self::Glb => "glb",
             Self::Cab => "cab",
             Self::Ico => "ico",
             Self::Cur => "cur",
@@ -426,6 +430,7 @@ impl<'a> Format<'a> {
             | Self::Mkv
             | Self::Webm
             | Self::Ogg
+            | Self::Glb
             | Self::Cab
             | Self::Asf
             | Self::Wmv
@@ -518,6 +523,11 @@ impl<'a> Format<'a> {
                     _ => mp3::parse(&mut input)?,
                 };
                 Ok((self, input.finish(end)?, internal))
+            }
+            Self::Glb => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let end = glb::parse(&mut input)?;
+                Ok((self, input.finish(end)?, Vec::new()))
             }
             Self::Cab => {
                 cab::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
@@ -745,6 +755,8 @@ fn detect<'a>(
         Some(format).filter(|f| f.allowed(extensions))
     } else if bytes.starts_with(b"fLaC") && Format::Flac.allowed(extensions) {
         Some(Format::Flac)
+    } else if bytes.starts_with(b"glTF\x02\0\0\0") && Format::Glb.allowed(extensions) {
+        Some(Format::Glb)
     } else if bytes.starts_with(b"MSCF") && Format::Cab.allowed(extensions) {
         Some(Format::Cab)
     } else if bytes.starts_with(&asf::MAGIC) {
@@ -820,6 +832,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Flac => &[
             "Native FLAC with known sample count and explicit 8/12/16/20/24-bit frame depth. Frames are decoded with header and frame CRC checks; the PCM MD5 is compared when present. Metadata block boundaries are checked, metadata contents are not interpreted. Decoded i32 samples limited to 128 MiB.",
+        ],
+        Format::Glb => &[
+            "Self-contained binary glTF 2.0. JSON and BIN lengths, resource references, scene hierarchy and embedded data ranges checked. Binary payloads have no original-content checksum.",
         ],
         Format::Cab => &[
             "Validated standalone cabinet layout, CFDATA checksums, and decoded folder/member lengths. Original file name and deletion status are unknown.",
@@ -1159,6 +1174,7 @@ pub(crate) fn recovery_data(
         Format::Wmv,
         Format::Rar,
         Format::SevenZ,
+        Format::Glb,
         Format::Cab,
         Format::Png,
         Format::Apng,

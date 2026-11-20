@@ -1,0 +1,101 @@
+{
+  "animation.glb": {
+    "animations": 1,
+    "bytes": 2360,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "f3ca7ac77fdbc7c75af5911891d53098acc19617909bc31e294a7ae1cb617e15",
+    "triangles": 12,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 24,
+    "warnings": 0
+  },
+  "camera-only.glb": {
+    "animations": 0,
+    "bytes": 436,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "b8c72fb5bf63fdbc1bfbeebe078328453a9ae4ed49c4187c0958b823466941b9",
+    "triangles": 0,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 0,
+    "warnings": 0
+  },
+  "cone.glb": {
+    "animations": 0,
+    "bytes": 2752,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "347a81691040bf817c2c20d9148822945cfd258aacf0c70af65a59026a165776",
+    "triangles": 24,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 52,
+    "warnings": 0
+  },
+  "cube.glb": {
+    "animations": 0,
+    "bytes": 1728,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "triangles": 12,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 24,
+    "warnings": 0
+  },
+  "material.glb": {
+    "animations": 0,
+    "bytes": 1944,
+    "errors": 0,
+    "materials": 1,
+    "sha256": "fd7e2966d5f5f19525a15c05a2fc5fc0427e3b1e0e3c412d5803d74f07c22169",
+    "triangles": 12,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 24,
+    "warnings": 0
+  },
+  "textured.glb": {
+    "animations": 0,
+    "bytes": 2284,
+    "errors": 0,
+    "materials": 1,
+    "sha256": "6c5ff3e7afc4b04427aaf70edfaad7aeef86b84e865611614fbefd08d59d9638",
+    "triangles": 12,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 24,
+    "warnings": 0
+  },
+  "torus.glb": {
+    "animations": 0,
+    "bytes": 18844,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "d914a22c26af20239581100287b53653012f8490b3768791c986a48c58bfa18a",
+    "triangles": 256,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 512,
+    "warnings": 0
+  },
+  "two-meshes.glb": {
+    "animations": 0,
+    "bytes": 4540,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "4afc1545bf01acec53440fa005aff6918297e7ed07bb39eec74f09179be746c6",
+    "triangles": 32,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 84,
+    "warnings": 0
+  },
+  "uv-sphere.glb": {
+    "animations": 0,
+    "bytes": 17632,
+    "errors": 0,
+    "materials": 0,
+    "sha256": "f2fcf1ffedf772f03ac4cb43ca8990d33056d39578b5052fb4282a168545c0d8",
+    "triangles": 224,
+    "version": "2.0.0-dev.3.10",
+    "vertices": 480,
+    "warnings": 0
+  }
+}

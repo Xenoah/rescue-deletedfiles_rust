@@ -1,0 +1,10 @@
+{
+  "ext4": {
+    "bytes": 16777216,
+    "sha256": "c2c93a255a40fc42a1f2e3d5d71368f3b26132e52ad5a5a66bc551906885ae68"
+  },
+  "fat32": {
+    "bytes": 41943040,
+    "sha256": "6dbc7167cf149ff9e0e0feedf75f70f565b3f18fa57cc0bdf4103f568b44616e"
+  }
+}

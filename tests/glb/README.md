@@ -1,0 +1,14 @@
+# Binary glTF 2.0を実ディスクから復元する
+
+Blender 4.3.2の標準エクスポーターで、立方体、UV球、トーラス、円錐、複数メッシュ、材質、アニメーション、埋め込みPNGテクスチャ、カメラのみの9モデルを作成しました。カメラのGLBはJSONチャンクだけ、他はJSONとBINを含みます。Khronos glTF Validator 2.0.0-dev.3.10で9原本すべてのエラー数がゼロであることを確認しました。[原本ごとの頂点数・三角形数・サイズ・SHA-256](manifest.json) · [Blender生成スクリプト](blender_export.py)
+
+Linux 6.12.107の隔離VMでFAT32とext4をそれぞれマウントし、9ファイルを書き込み・読み戻し、全バイトとSHA-256を比較してから通常の `rm` で削除しました。同期、ファイル名の消失、アンマウント後の各ディスク全体のSHA-256を確認しました。`fat32.raw.xz` と `ext4.raw.xz` はそのディスク全体です。[実行したコマンド](guest.sh) · [Linuxの記録](guest.txt.gz) · [ディスク全体のハッシュ](disks.json)
+
+ポータブル試験では上記2ディスクおよび検索窓境界に配置した連続データから、通常・索引の両方で9ファイルを復元します。Linux追加試験ではmtools・e2fsprogsを使ってさらに2ディスクを新しく作成して削除し、復元したファイルを検証します。全件を原本の全バイト・SHA-256と比較します。Blenderを指定すると原本と復元ファイルをそれぞれ再インポートし、各オブジェクト、座標・面の接続、テクスチャ画素、アニメーション名も比較します。
+
+```sh
+python scripts/e2e_glb.py --binary /path/to/rescue
+python scripts/e2e_glb.py --native --blender /usr/bin/blender --binary /path/to/rescue
+```
+
+単一の自己完結型GLB 2.0が対象です。JSONは2 MiB、コンテナーは64 MiBまでです。BINの長さとパディング、バッファー・ビュー・アクセサーの範囲、ノード参照とツリー、埋め込まれたPNG・JPEGの型を検査します。スパースアクセサー、必須拡張、未知のチャンク、外部URIのリソースは対象外です。GLBには復元内容を保証する元ファイルのチェックサムがありません。頂点データが変更されていても構造が整合する例では、元ファイルのSHA-256と比較すると不一致を検出できます。上書きや断片化で連続バイトが失われた場合は、削除前の別コピー、ファイルシステムの管理情報、元の配置などが必要です。Rescueでの復元にBlenderやKhronos Validatorは不要です。[Linuxでのファイル別照合](../../docs/glb-native.json) · [Blenderでの独立検証](../../docs/glb-blender.json)

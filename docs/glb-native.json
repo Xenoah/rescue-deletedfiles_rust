@@ -1,0 +1,75 @@
+{
+  "controls": {
+    "changed": "b3cdb0f59109b5fb962ad1deb13342a6f9f512d492dfa80491be55df2184375d",
+    "gap_survivor": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "original": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "padded_matrix": "a0793329f652dca0ac8de6966925a469ef49b9b50613bcb6c4ca7c2450be5fc4",
+    "rejected": [
+      "external_buffer",
+      "external_texture",
+      "json_only_declares_buffer",
+      "malformed_accessor_bounds",
+      "malformed_json",
+      "node_cycle",
+      "nonzero_bin_padding",
+      "out_of_view",
+      "oversized_json",
+      "range_before_eof",
+      "required_extension",
+      "reversed_chunks",
+      "truncated",
+      "unaligned",
+      "unknown_chunk",
+      "unknown_component",
+      "wrong_accessor",
+      "wrong_asset_version",
+      "wrong_bin_length",
+      "wrong_buffer_length",
+      "wrong_node"
+    ]
+  },
+  "ext4": {
+    "animation.glb": "f3ca7ac77fdbc7c75af5911891d53098acc19617909bc31e294a7ae1cb617e15",
+    "camera-only.glb": "b8c72fb5bf63fdbc1bfbeebe078328453a9ae4ed49c4187c0958b823466941b9",
+    "cone.glb": "347a81691040bf817c2c20d9148822945cfd258aacf0c70af65a59026a165776",
+    "cube.glb": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "material.glb": "fd7e2966d5f5f19525a15c05a2fc5fc0427e3b1e0e3c412d5803d74f07c22169",
+    "textured.glb": "6c5ff3e7afc4b04427aaf70edfaad7aeef86b84e865611614fbefd08d59d9638",
+    "torus.glb": "d914a22c26af20239581100287b53653012f8490b3768791c986a48c58bfa18a",
+    "two-meshes.glb": "4afc1545bf01acec53440fa005aff6918297e7ed07bb39eec74f09179be746c6",
+    "uv-sphere.glb": "f2fcf1ffedf772f03ac4cb43ca8990d33056d39578b5052fb4282a168545c0d8"
+  },
+  "fat32": {
+    "animation.glb": "f3ca7ac77fdbc7c75af5911891d53098acc19617909bc31e294a7ae1cb617e15",
+    "camera-only.glb": "b8c72fb5bf63fdbc1bfbeebe078328453a9ae4ed49c4187c0958b823466941b9",
+    "cone.glb": "347a81691040bf817c2c20d9148822945cfd258aacf0c70af65a59026a165776",
+    "cube.glb": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "material.glb": "fd7e2966d5f5f19525a15c05a2fc5fc0427e3b1e0e3c412d5803d74f07c22169",
+    "textured.glb": "6c5ff3e7afc4b04427aaf70edfaad7aeef86b84e865611614fbefd08d59d9638",
+    "torus.glb": "d914a22c26af20239581100287b53653012f8490b3768791c986a48c58bfa18a",
+    "two-meshes.glb": "4afc1545bf01acec53440fa005aff6918297e7ed07bb39eec74f09179be746c6",
+    "uv-sphere.glb": "f2fcf1ffedf772f03ac4cb43ca8990d33056d39578b5052fb4282a168545c0d8"
+  },
+  "linux_unlink_ext4": {
+    "animation.glb": "f3ca7ac77fdbc7c75af5911891d53098acc19617909bc31e294a7ae1cb617e15",
+    "camera-only.glb": "b8c72fb5bf63fdbc1bfbeebe078328453a9ae4ed49c4187c0958b823466941b9",
+    "cone.glb": "347a81691040bf817c2c20d9148822945cfd258aacf0c70af65a59026a165776",
+    "cube.glb": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "material.glb": "fd7e2966d5f5f19525a15c05a2fc5fc0427e3b1e0e3c412d5803d74f07c22169",
+    "textured.glb": "6c5ff3e7afc4b04427aaf70edfaad7aeef86b84e865611614fbefd08d59d9638",
+    "torus.glb": "d914a22c26af20239581100287b53653012f8490b3768791c986a48c58bfa18a",
+    "two-meshes.glb": "4afc1545bf01acec53440fa005aff6918297e7ed07bb39eec74f09179be746c6",
+    "uv-sphere.glb": "f2fcf1ffedf772f03ac4cb43ca8990d33056d39578b5052fb4282a168545c0d8"
+  },
+  "linux_unlink_fat32": {
+    "animation.glb": "f3ca7ac77fdbc7c75af5911891d53098acc19617909bc31e294a7ae1cb617e15",
+    "camera-only.glb": "b8c72fb5bf63fdbc1bfbeebe078328453a9ae4ed49c4187c0958b823466941b9",
+    "cone.glb": "347a81691040bf817c2c20d9148822945cfd258aacf0c70af65a59026a165776",
+    "cube.glb": "2a7138a060bbe83d148a87cfb4b76a2a6a9a57182d3ccd8aa870ab5fe3902ffa",
+    "material.glb": "fd7e2966d5f5f19525a15c05a2fc5fc0427e3b1e0e3c412d5803d74f07c22169",
+    "textured.glb": "6c5ff3e7afc4b04427aaf70edfaad7aeef86b84e865611614fbefd08d59d9638",
+    "torus.glb": "d914a22c26af20239581100287b53653012f8490b3768791c986a48c58bfa18a",
+    "two-meshes.glb": "4afc1545bf01acec53440fa005aff6918297e7ed07bb39eec74f09179be746c6",
+    "uv-sphere.glb": "f2fcf1ffedf772f03ac4cb43ca8990d33056d39578b5052fb4282a168545c0d8"
+  }
+}
