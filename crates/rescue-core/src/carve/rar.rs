@@ -35,7 +35,7 @@ fn vint(header: &[u8], pos: &mut usize) -> Result<u64> {
 // RAR 4 carries a CRC16 (the low 16 bits of CRC32) and an optional packed
 // data length after its fixed prefix. Locate the end record without searching
 // through compressed payloads that may contain another signature or end marker.
-fn end4(input: &mut Input<'_>) -> Result<usize> {
+fn end4(input: &mut Input<'_>, comment: &mut Option<(u32, u32)>) -> Result<usize> {
     let mut pos = RAR4.len();
     for i in 0..MAX_HEADERS {
         input.ensure(pos + 7)?;
@@ -60,6 +60,18 @@ fn end4(input: &mut Input<'_>) -> Result<usize> {
             // unsupported layouts or exceed our encoded/decoded byte limits.
             0x74 if flags & 0x8000 != 0 && flags & 0x010f == 0 && size >= 32 => {
                 let packed = u32::from_le_bytes(hdr[7..11].try_into().unwrap());
+                end.checked_add(packed as usize)
+                    .filter(|&p| p <= input.limit())
+                    .ok_or_else(invalid)?
+            }
+            0x7a if i == 1 && flags == 0x8000 && size == 35 && &hdr[32..35] == b"CMT" => {
+                let packed = u32::from_le_bytes(hdr[7..11].try_into().unwrap());
+                let unpacked = u32::from_le_bytes(hdr[11..15].try_into().unwrap());
+                let crc = u32::from_le_bytes(hdr[16..20].try_into().unwrap());
+                if unpacked > 1 << 20 || packed > 1 << 20 || hdr[26..28] != [3, 0] {
+                    return Err(invalid());
+                }
+                *comment = Some((unpacked, crc));
                 end.checked_add(packed as usize)
                     .filter(|&p| p <= input.limit())
                     .ok_or_else(invalid)?
@@ -116,7 +128,7 @@ fn quick_open(
     Err(invalid())
 }
 
-fn end5(input: &mut Input<'_>) -> Result<usize> {
+fn end5(input: &mut Input<'_>, comment: &mut Option<(u32, u32)>) -> Result<usize> {
     let mut pos = RAR5.len();
     let mut headers = Vec::new();
     let mut seen_quick_open = false;
@@ -169,6 +181,30 @@ fn end5(input: &mut Input<'_>) -> Result<usize> {
         match kind {
             1 if packed == 0 => (),
             2 if !seen_quick_open => headers.push((pos, end)),
+            3 if i == 1 && flags == 2 && extra == 0 && packed <= 1 << 20 => {
+                if vint(header, &mut body)? != 4
+                    || vint(header, &mut body)? != packed
+                    || vint(header, &mut body)? != 0
+                {
+                    return Err(invalid());
+                }
+                let crc = u32::from_le_bytes(
+                    header
+                        .get(body..body + 4)
+                        .ok_or_else(invalid)?
+                        .try_into()
+                        .unwrap(),
+                );
+                body += 4;
+                if vint(header, &mut body)? != 0
+                    || vint(header, &mut body)? > 1
+                    || vint(header, &mut body)? != 3
+                    || &header[body..] != b"CMT"
+                {
+                    return Err(invalid());
+                }
+                *comment = Some((packed as u32, crc));
+            }
             3 if !seen_quick_open && flags == 6 && extra == 0 && packed > 0 => {
                 if vint(header, &mut body)? != 0
                     || vint(header, &mut body)? != packed
@@ -202,10 +238,11 @@ pub(super) fn validate(
 ) -> Result<Vec<u8>> {
     let mut input = Input::new(image, at, boundary, cancel, budget)?;
     input.ensure(8)?;
+    let mut comment = None;
     let end = if input.bytes.starts_with(RAR4) {
-        end4(&mut input)?
+        end4(&mut input, &mut comment)?
     } else if input.bytes.starts_with(RAR5) {
-        end5(&mut input)?
+        end5(&mut input, &mut comment)?
     } else {
         return Err(invalid());
     };
@@ -254,6 +291,16 @@ pub(super) fn validate(
     }
     if files == 0 {
         return Err(invalid());
+    }
+    if let Some((len, expected)) = comment {
+        input.work(len as usize)?;
+        let decoded = archive
+            .comment_with_options(options)
+            .map_err(|_| invalid())?
+            .ok_or_else(invalid)?;
+        if decoded.len() != len as usize || crc32fast::hash(&decoded) != expected {
+            return Err(invalid());
+        }
     }
     input.work(total as usize)?;
     let tested = archive.test_with_options(options);

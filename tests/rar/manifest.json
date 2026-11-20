@@ -1,4 +1,41 @@
 {
+  "rar4-comment-solid.rar": {
+    "bytes": 536,
+    "comment_sha256": "c192aebd638536fa1c03a9d782db58d01b886f3e34eb606fb646088672a2680f",
+    "flags": "-m5 -s",
+    "format": 4,
+    "members": {
+      "payload/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "payload/sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "payload/sample.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "payload/sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+    },
+    "sha256": "02cb7ef0505e16cbae70b8c1de9282943db542d0f74f1eb1d66839d8fabf88b7"
+  },
+  "rar4-comment-stored.rar": {
+    "bytes": 5238,
+    "comment_sha256": "bff839367f30236e39de223d2b9d6055c5025f0408c9661b0820c3e2e7466fc2",
+    "flags": "-m0",
+    "format": 4,
+    "members": {
+      "payload/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "payload/sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "payload/sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+    },
+    "sha256": "9584c173b5a76ed08816efe7c8ac24efe5e7e662f28148cc33bfbad2cd1684cb"
+  },
+  "rar4-comment-unicode.rar": {
+    "bytes": 35108,
+    "comment_sha256": "046a2ee0e031a032ad06f92f41d793cbc60fa426232ad0f13794f8ae6556e8e3",
+    "flags": "-m3",
+    "format": 4,
+    "members": {
+      "試験/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "試験/sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "試験/sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    "sha256": "86a90bb0ddc2a30ecafec6f458e96c362897d6efd0ba1112b6a2bdbfa11f811c"
+  },
   "rar4-many.rar": {
     "bytes": 26168,
     "flags": "-m1",
@@ -64,6 +101,43 @@
       "payload/sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
     },
     "sha256": "7fa8b44df7871ff3a8bec3d631264c7447091d592eb0a6079b9ad778e9dc38f9"
+  },
+  "rar5-comment-solid.rar": {
+    "bytes": 4072,
+    "comment_sha256": "c192aebd638536fa1c03a9d782db58d01b886f3e34eb606fb646088672a2680f",
+    "flags": "-m5 -s",
+    "format": 5,
+    "members": {
+      "payload/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "payload/sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+      "payload/sample.txt": "1699d296acbdf84e89b5527a9512bffd3601616fda40aa23849d130caf3b7f31",
+      "payload/sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc"
+    },
+    "sha256": "e6dcb64cd668164118e5c56336af128ed27d0a8bb379444ad0e5739d04ef0388"
+  },
+  "rar5-comment-stored.rar": {
+    "bytes": 5195,
+    "comment_sha256": "bff839367f30236e39de223d2b9d6055c5025f0408c9661b0820c3e2e7466fc2",
+    "flags": "-m0",
+    "format": 5,
+    "members": {
+      "payload/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "payload/sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "payload/sample.tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805"
+    },
+    "sha256": "b8947ce295636353cd3e530b35b93b91fb21d09509ade5c6d8ebe4136094cbf9"
+  },
+  "rar5-comment-unicode.rar": {
+    "bytes": 35070,
+    "comment_sha256": "046a2ee0e031a032ad06f92f41d793cbc60fa426232ad0f13794f8ae6556e8e3",
+    "flags": "-m3",
+    "format": 5,
+    "members": {
+      "試験/empty.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "試験/sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "試験/sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    "sha256": "51412e7a1488d43e7bd8b3349f84791649504493abfae7d556db676619a1cd5c"
   },
   "rar5-fast.rar": {
     "bytes": 255,
