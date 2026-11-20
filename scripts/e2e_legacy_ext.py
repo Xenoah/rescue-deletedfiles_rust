@@ -13,7 +13,7 @@ import zipfile
 from e2e import check, run
 from e2e_disks import disk_image
 from e2e_hfs_allocation import restore, scan
-from e2e_imaging import mark_gap
+from e2e_imaging import source_with_gaps
 
 ROOT = Path(__file__).resolve().parents[1] / "tests/legacy-ext"
 EXTENSIONS = "bmp,gif,jpg,pdf,png,sqlite,wav,webp,zip"
@@ -107,9 +107,7 @@ def controls(binary, root, source, ref, include_journal):
         check(value != data, name)
         changed.write_bytes(value)
         unknown(changed, name)
-    acquisition = run(binary, "image", "--source", source, "--destination", root / "map", "--block-size", "4096", "--json")
-    image = Path(acquisition["image"])
-    mark_gap(image, bitmap)
+    image = source_with_gaps(binary, source, root / "map", [(bitmap // 4096 * 4096, 4096)])
     unknown(image, "unread-bitmap", expected_exit=5)
     return sorted([*cases, "unread-bitmap"])
 

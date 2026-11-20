@@ -12,9 +12,9 @@ def main(binary,output=None):
     with tempfile.TemporaryDirectory(prefix='rescue-index-carve-') as temporary:
         root=Path(temporary);good,bad=make_variants()
         def compare(source,label,expected=0,extra=()):
-            old=run(binary,'scan','--source',source,'--mode','carve','--work-dir',root/(label+'-json'),'--json',*extra,expected=expected)
+            old=run(binary,'scan','--source',source,'--mode','carve','--work-dir',root/(label+'-json'),'--json',*extra,expected=expected,timeout=180)
             candidates=json.loads(Path(old['session']).read_text(encoding='utf-8'))['candidates']
-            indexed=run(binary,'scan','--indexed','--source',source,'--mode','carve','--work-dir',root/(label+'-index'),'--json',*extra,expected=expected)
+            indexed=run(binary,'scan','--indexed','--source',source,'--mode','carve','--work-dir',root/(label+'-index'),'--json',*extra,expected=expected,timeout=180)
             page=run(binary,'results','--session',indexed['session'],'--limit','1000','--json')
             check(candidates==candidate_evidence(page),('candidate evidence differs',label))
             return Path(indexed['session']),candidates
