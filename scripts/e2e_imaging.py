@@ -22,6 +22,31 @@ def sha(path):
         return hashlib.file_digest(f,'sha256').hexdigest()
 
 
+def source_with_gaps(binary, source, destination, gaps):
+    """Create a mapped RAW with exactly the specified unavailable byte ranges."""
+    size = source.stat().st_size
+    lines = ["0 +"]
+    position = 0
+    missing = 0
+    for offset, length in sorted(gaps):
+        check(position <= offset < offset + length <= size, (offset, length))
+        if position < offset:
+            lines.append(f"{position} {offset - position} +")
+        lines.append(f"{offset} {length} -")
+        position = offset + length
+        missing += length
+    if position < size:
+        lines.append(f"{position} {size - position} +")
+    mapping = destination.with_suffix(".mapfile")
+    mapping.write_text("\n".join(lines) + "\n", encoding="ascii")
+    result = run(binary, "import-ddrescue", "--source", source, "--map", mapping,
+                 "--destination", destination, "--json", timeout=180)
+    coverage = run(binary, "read-map", "--image", result["path"], "--json")
+    check(coverage["failed_bytes"] == missing and coverage["copied_bytes"] == size - missing
+          and coverage["unattempted_bytes"] == 0, coverage)
+    return Path(result["path"])
+
+
 def mark_gap(image, offset):
     """Independent writer of one Failed record, simulating a permanently bad sector."""
     path=Path(str(image)+'.rmap');data=bytearray(path.read_bytes())
