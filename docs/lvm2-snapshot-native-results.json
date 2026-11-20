@@ -1,5 +1,9 @@
 {
   "changed_data_digest": "55e4a067fe1e3becd4e29b6504d359ad2674fe60b606593f8c3779be781d8f12",
+  "kernel_deferred_merge": [
+    "before",
+    "data"
+  ],
   "layouts": {
     "exhausted-store": {
       "active": {

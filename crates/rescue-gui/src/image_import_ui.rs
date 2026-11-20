@@ -119,9 +119,28 @@ impl Format {
 }
 
 struct ImageChoice {
+    origin: Option<String>,
     id: String,
     name: String,
     bytes: u64,
+}
+
+impl ImageChoice {
+    fn label(&self, lvm: bool) -> String {
+        if let Some(origin) = &self.origin {
+            tr_format!(
+                "{}（{} のスナップショット） · {}",
+                "{} (snapshot of {}) · {}",
+                self.name,
+                origin,
+                self.id
+            )
+        } else if lvm {
+            format!("{} · {}", self.name, self.id)
+        } else {
+            format!("{} · {}", self.id, self.name)
+        }
+    }
 }
 
 struct SelectionLookup {
@@ -222,7 +241,7 @@ impl State {
                 .selected_text(
                     rows.iter()
                         .find(|s| s.id == self.selected_id)
-                        .map_or_else(|| active.to_owned(), |s| format!("{} · {}", s.id, s.name)),
+                        .map_or_else(|| active.to_owned(), |s| s.label(lvm)),
                 )
                 .show_ui(ui, |ui| {
                     if !lvm {
@@ -232,7 +251,7 @@ impl State {
                         ui.selectable_value(
                             &mut self.selected_id,
                             row.id.clone(),
-                            format!("{} · {} ({} B)", row.id, row.name, row.bytes),
+                            format!("{} ({} B)", row.label(lvm), row.bytes),
                         );
                     }
                 })
@@ -277,6 +296,7 @@ impl State {
                                 entries
                                     .into_iter()
                                     .map(|v| ImageChoice {
+                                        origin: v.snapshot.map(|s| s.origin),
                                         id: v.id,
                                         name: format!("{}/{}", v.group, v.name),
                                         bytes: v.bytes,
@@ -293,6 +313,7 @@ impl State {
                             entries
                                 .into_iter()
                                 .map(|v| ImageChoice {
+                                    origin: None,
                                     id: v.id,
                                     name: v.name,
                                     bytes: v.guest_bytes,

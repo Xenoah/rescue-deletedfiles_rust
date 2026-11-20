@@ -179,7 +179,21 @@ def damaged(binary, root):
 def verify(binary, root, native=False):
     layouts = {p.name: verify_layout(binary, root / p.name, p, native) for p in sorted(GOLD.iterdir())
                if (p / "manifest.json").exists()}
-    return {"layouts": layouts, **damaged(binary, root)}
+    case = GOLD / "deferred-merge"
+    recorded = json.loads((case / "merge.json").read_text(encoding="utf-8"))
+    pvs = []
+    for name, digest in recorded["physical"].items():
+        data = lzma.decompress((case / (name + ".raw.xz")).read_bytes())
+        check(sha(data) == digest, name)
+        pv = root / (name + "-deferred.pv")
+        pv.write_bytes(data)
+        pvs.append(pv)
+    for volume in [recorded["origin"], recorded["snapshot"]]:
+        out = root / ("merge-" + volume + ".img")
+        failure = subprocess.run([binary, "import-image", *source_args(pvs), "--lvm-volume", volume,
+                                  "--output", out, "--json"], capture_output=True)
+        check(failure.returncode != 0 and not out.exists() and b"merging" in failure.stdout + failure.stderr, volume)
+    return {"layouts": layouts, "kernel_deferred_merge": ["before", "data"], **damaged(binary, root)}
 
 
 if __name__ == "__main__":
