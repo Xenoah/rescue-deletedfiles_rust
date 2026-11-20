@@ -64,7 +64,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y librsvg2-bin unrar liblzf1 libcurl3-gnutls libopenexr-dev libheif-examples gddrescue android-sdk-libsparse-utils ffmpeg p7zip-full cabextract ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm xfsprogs e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
+          sudo apt-get install -y lvm2 librsvg2-bin unrar liblzf1 libcurl3-gnutls libopenexr-dev libheif-examples gddrescue android-sdk-libsparse-utils ffmpeg p7zip-full cabextract ntfs-3g dosfstools mtools exfatprogs exfat-fuse mdadm xfsprogs e2fsprogs qemu-utils sleuthkit ewf-tools afflib-tools bchunk xorriso
       - name: Extract the VirtualBox reference disk reader
         if: runner.os == 'Linux'
         run: bash scripts/ci_virtualbox_reader.sh

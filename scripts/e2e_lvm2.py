@@ -3,6 +3,8 @@ import argparse
 import hashlib
 import json
 import lzma
+import os
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -142,6 +144,35 @@ def controls(binary, root):
     modified[0].write_bytes(data)
     refuse("metadata-disagreement", [modified[0], pvs[1]])
 
+    for label, field, value in [
+        ("long-text", 48, 5 << 20), ("into-header", 40, 0), ("metadata-area-offset", 24, 4608),
+        ("precommit", 64, 512), ("out-of-area", 40, 1 << 20),
+    ]:
+        data = bytearray(pvs[0].read_bytes())
+        struct.pack_into("<Q", data, 4096 + field, value)
+        struct.pack_into("<I", data, 4096, checksum(data[4100:4608]))
+        modified[0].write_bytes(data)
+        refuse(label, [modified[0], pvs[1]])
+    for tag, field, value in [("label-sector-index", 520, 3), ("pv-recorded-length", 576, (32 << 20) - 512),
+                              ("pe-base", 584, 32768), ("overlap-mda", 616, 1 << 20)]:
+        data = bytearray(pvs[0].read_bytes())
+        struct.pack_into("<Q", data, field, value)
+        struct.pack_into("<I", data, 528, checksum(data[532:1024]))
+        modified[0].write_bytes(data)
+        refuse(tag, [modified[0], pvs[1]])
+    wrapped = root / "wrapped-mda-stripe4"
+    if wrapped.exists():
+        data = bytearray((wrapped / "pv-a.raw").read_bytes())
+        data[4096 + 512] ^= 1
+        modified[0].write_bytes(data)
+        refuse("wrapped-text-tail", [modified[0], wrapped / "pv-b.raw"])
+    mapped = root / "missing-sector.raw"
+    mapped.write_bytes(pvs[0].read_bytes())
+    mapped.with_suffix(".raw.rmap").write_text("unread", encoding="ascii")
+    refuse("physical-read-map", [mapped, pvs[1]])
+    short = root / "truncated-physical.raw"
+    short.write_bytes(pvs[0].read_bytes()[:-512])
+    refuse("truncated-pv", [short, pvs[1]])
     # A valid data alteration cannot be attributed to a bad metadata checksum.
     data = bytearray(pvs[0].read_bytes())
     data[(1 << 20) + 100] ^= 1
@@ -159,18 +190,64 @@ def controls(binary, root):
     return sorted(rejected)
 
 
-def verify(binary, root):
+def independent_metadata(reader, work, folder):
+    # LVM's pvck reads regular capture files directly. It can read both copies and a wrapped MDA.
+    system = work / "lvm-config"
+    system.mkdir(exist_ok=True)
+    env = dict(os.environ, LVM_SYSTEM_DIR=str(system))
+    checks = {}
+    for key in ("pv-a", "pv-b"):
+        pv = folder / (key + ".raw")
+        args = [reader, "pvck", "--nolocking", "--dump"]
+        output = subprocess.run([*args, "headers", pv], env=env, text=True,
+                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=True).stdout
+        with pv.open("rb") as disk:
+            disk.seek(544)
+            uuid = disk.read(32).decode("ascii")
+            check("pv_header.pv_uuid " + uuid in output, key)
+            areas = re.findall(r"mda_header_(\d+)\.start (\d+)", output)
+            if not areas:
+                disk.seek(616)
+                check(disk.read(16) == bytes(16), key)
+            copies = []
+            for num, start in areas:
+                start = int(start)
+                disk.seek(start)
+                header = disk.read(512)
+                area_size, pos, length = struct.unpack_from("<QQQ", header, 32)
+                first = min(length, area_size - pos)
+                disk.seek(start + pos)
+                data = disk.read(first)
+                if first < length:
+                    disk.seek(start + 512)
+                    data += disk.read(length - first)
+                dest = folder / f"{key}-mda{num}.txt"
+                subprocess.run([*args, "metadata", "--settings", f"mda_num={num}", "--file", dest, pv],
+                               env=env, capture_output=True, check=True)
+                check(data.endswith(b"\0") and dest.read_bytes() + b"\0" == data, (key, num))
+                copies.append(dict(sha256=sha(data), wrapped=first < length))
+            checks[key] = dict(uuid=uuid, copies=copies)
+    return checks
+
+
+def verify(binary, root, reader=None):
     cases = {folder.name: real(binary, root / folder.name, folder)
              for folder in sorted(GOLD.iterdir()) if (folder / "manifest.json").exists()}
-    return {"layouts": cases, "refused": controls(binary, root)}
+    result = {"layouts": cases, "refused": controls(binary, root)}
+    if reader:
+        result["pvck"] = {name: independent_metadata(reader, root, root / name) for name in cases}
+        check(result["pvck"]["wrapped-mda-stripe4"]["pv-a"]["copies"][0]["wrapped"], "active circular text")
+        check(len(result["pvck"]["dual-mda-extent3-stripe16"]["pv-b"]["copies"]) == 2, "rear metadata")
+    return result
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
+    parser.add_argument("--lvm", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
-        result = verify(args.binary.resolve(), Path(tmp))
+        result = verify(args.binary.resolve(), Path(tmp), args.lvm)
     if args.output:
         args.output.write_text(json.dumps(result, sort_keys=True, indent=2) + "\n", encoding="utf-8")

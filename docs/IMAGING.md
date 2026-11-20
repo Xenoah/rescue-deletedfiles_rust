@@ -439,3 +439,17 @@ rescue import-image --image-type vdi --source child2.vdi \
 GUIのCarvingまたは `rescue scan --source disk.raw --work-dir scan --mode carve --extension svg --extension svgz --json` で検索できます。SVGはUTF-8またはBOM付きUTF-16LE/BEのXMLとして要素と属性を検証し、ルート名とSVG名前空間を確認します。SVGZはgzipメンバーのCRC32と展開長を検証し、その中のSVGを確認します。Rescueは画像中のリンクを取得せず、スクリプトも実行しません。
 
 XMLルートの閉じタグより後の改行やコメントは、ディスクの内容検索だけでは元ファイルに属するか確定できません。Cairo・Inkscapeが末尾改行を付けたSVGをFAT32とext4で削除した試験では、内容検索は閉じタグで止まり、ファイルシステムに残っていた長さを使うと各原本の末尾まで一致しました。FATの連続推定は `--estimate-fat-contiguous` で明示的に有効にします。SVGZはメンバー全体の境界を検証できます。[原本と検証手順](../tests/svg/README.md)
+
+### Linux LVM2の論理ボリューム
+
+物理ボリューム（PV）ごとのイメージを用意し、同じグループのすべてのPVを指定します。イメージ中に記録されたデバイス名は開きません。各PVをUUIDで照合するため、追加のPVはどの順番でも指定できます。
+
+```sh
+rescue lvm-volumes --source first.pv --segment second.pv --json
+rescue import-image --image-type lvm2 --source first.pv --segment second.pv --lvm-volume data --output data.raw --json
+rescue scan --source data.raw --work-dir scan --mode carve --json
+```
+
+2行目の `data` には、一覧に表示された論理ボリューム名またはUUIDを指定します。元の論理ディスクのSHA-256や長さが分かる場合は `--raw-sha256` と `--raw-bytes` で照合できます。GUIでは「イメージをRAWに変換」でLVM2を選び、各PVを指定して「論理ボリューム一覧」から選択します。
+
+内蔵機能は通常の連結・ストライプ配置を扱います。グループのコピーが一致しない場合や、必要なPVが欠けている場合は読み出しを中止します。LVMスナップショット、thin・cache・ミラー・RAIDを含むグループには、対応するLinux LVM2環境を使用してください。LUKS内のPVを読み取るには、鍵を使って復号したイメージが必要です。[実ディスクと検証方法](../tests/lvm2/README.md)

@@ -1,0 +1,296 @@
+{
+  "layouts": {
+    "dual-mda-extent3-stripe16": {
+      "linear": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "bvxcQR-6IIX-9P3R-Xx27-h2Hh-zTp2-vnNSoB",
+        "id": "jJ5WaX-5xWe-mWWG-MJXA-QzwP-J6Dq-aCI2SW",
+        "matched": {
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 1,
+        "name": "linear",
+        "segments": 2,
+        "sequence": 4,
+        "volume_sha256": "f551bedc2cfb1253c61e7f56b5afd814301de22b8b5dd41de34703e6ddc6ba66"
+      },
+      "striped": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "bvxcQR-6IIX-9P3R-Xx27-h2Hh-zTp2-vnNSoB",
+        "id": "T6t5ro-SBcx-OS2P-iyRk-gp1f-APv5-wFZxaI",
+        "matched": {
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 2,
+        "name": "striped",
+        "segments": 1,
+        "sequence": 4,
+        "volume_sha256": "944c60eadff938ae6b0a58dd42ce25d7b2360b4d731df0282f1504eedcfaabba"
+      }
+    },
+    "extent8-stripe64": {
+      "linear": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "PFW7bP-ReQc-InrZ-Yyer-oZbX-mCeM-oF45GI",
+        "id": "bEjdvp-9ZjM-LmJF-PWT3-3a63-qDBY-RtAhmB",
+        "matched": {
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 1,
+        "name": "linear",
+        "segments": 2,
+        "sequence": 4,
+        "volume_sha256": "05a15988992460d4a180757a8275c315b27ac4adbd1c001ceacc0ea6b347f38e"
+      },
+      "striped": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "PFW7bP-ReQc-InrZ-Yyer-oZbX-mCeM-oF45GI",
+        "id": "gGEy1c-fr1J-HEiV-uopf-dR2M-tWol-DDF1bc",
+        "matched": {
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 2,
+        "name": "striped",
+        "segments": 1,
+        "sequence": 4,
+        "volume_sha256": "17c021ce9e39f57f7bb470fdc46057337ffa3cdbcb14727f5ceacfdbb80fcc8e"
+      }
+    },
+    "one-mda-stripe4": {
+      "linear": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "9rXZzE-Y4K7-zeCK-jbzR-gabV-w63b-BkeUGS",
+        "id": "0ydSeP-wdYE-vNgq-WeaS-zlrL-ocre-A1kQry",
+        "matched": {
+          "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 1,
+        "name": "linear",
+        "segments": 1,
+        "sequence": 30,
+        "volume_sha256": "dcc93f9ba8a2101ec35cec787e95da7ed9ed12d15032a75ea9c186dcded990fb"
+      },
+      "striped": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "9rXZzE-Y4K7-zeCK-jbzR-gabV-w63b-BkeUGS",
+        "id": "0AYtQT-0qEE-yIl8-Tx87-AEca-6VTa-6tXXAB",
+        "matched": {
+          "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 2,
+        "name": "striped",
+        "segments": 1,
+        "sequence": 30,
+        "volume_sha256": "21fe0265775b4fe778fc8a0ac7e2b6138e8ffc2414c11a751416eb450f978ca3"
+      }
+    },
+    "wrapped-mda-stripe4": {
+      "linear": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "urbSV5-9ZBF-1LfP-kV0e-yCRL-UFwD-L9cjg7",
+        "id": "LQWY5D-307c-JOGg-EOsH-OPCG-Oeyq-0Y14QK",
+        "matched": {
+          "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 1,
+        "name": "linear",
+        "segments": 1,
+        "sequence": 31,
+        "volume_sha256": "b822936c46ed7f2934e8673d56846a1a6747ade199353f0205c507b78448da68"
+      },
+      "striped": {
+        "bytes": 16777216,
+        "group": "rescue_vg",
+        "group_id": "urbSV5-9ZBF-1LfP-kV0e-yCRL-UFwD-L9cjg7",
+        "id": "jy8NFN-z5XF-RfCg-rJJ1-FTQJ-Aeoo-juKs1o",
+        "matched": {
+          "noise.png": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e",
+          "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+          "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+          "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+          "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+          "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+          "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+          "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+        },
+        "max_stripes": 2,
+        "name": "striped",
+        "segments": 1,
+        "sequence": 31,
+        "volume_sha256": "09c1d1a6595af73aae44a66d033fb8de958f1826d084bebd3a707e1b87e0fc29"
+      }
+    }
+  },
+  "pvck": {
+    "dual-mda-extent3-stripe16": {
+      "pv-a": {
+        "copies": [
+          {
+            "sha256": "241a076e535d9bc7a73c2384d4c494dc54bd6ebac35eedc40ad7164884331ac2",
+            "wrapped": false
+          },
+          {
+            "sha256": "241a076e535d9bc7a73c2384d4c494dc54bd6ebac35eedc40ad7164884331ac2",
+            "wrapped": false
+          }
+        ],
+        "uuid": "8nf1a5Arku3aY7jCcN2LmQFhRqcnnwoB"
+      },
+      "pv-b": {
+        "copies": [
+          {
+            "sha256": "241a076e535d9bc7a73c2384d4c494dc54bd6ebac35eedc40ad7164884331ac2",
+            "wrapped": false
+          },
+          {
+            "sha256": "241a076e535d9bc7a73c2384d4c494dc54bd6ebac35eedc40ad7164884331ac2",
+            "wrapped": false
+          }
+        ],
+        "uuid": "b4NMkpUuFTMBh82MOeADWd1Cz1XYD6b9"
+      }
+    },
+    "extent8-stripe64": {
+      "pv-a": {
+        "copies": [
+          {
+            "sha256": "f6e90903fd8730d40ccb88cc34ea32d18ea9061f15be6d37202e067158e7b090",
+            "wrapped": false
+          }
+        ],
+        "uuid": "3wjwsLh4IqLvmldebBgMAZYw3T9cSw6k"
+      },
+      "pv-b": {
+        "copies": [
+          {
+            "sha256": "f6e90903fd8730d40ccb88cc34ea32d18ea9061f15be6d37202e067158e7b090",
+            "wrapped": false
+          }
+        ],
+        "uuid": "PnNSjWwYE1rNNi5ElLP8Wd2TiNZRI4qi"
+      }
+    },
+    "one-mda-stripe4": {
+      "pv-a": {
+        "copies": [
+          {
+            "sha256": "d388fc433c331611750c1ae4cddc4a37da7a22f0acd14ec92707efd0ab8e585a",
+            "wrapped": false
+          }
+        ],
+        "uuid": "iScEoa42EM1uZya0fwqENlCutWCLVw8E"
+      },
+      "pv-b": {
+        "copies": [],
+        "uuid": "4gV7xBRyCM1vYIe9wqJj6VfmHLitMvA3"
+      }
+    },
+    "wrapped-mda-stripe4": {
+      "pv-a": {
+        "copies": [
+          {
+            "sha256": "832cfbbbc8b47bba9834eeecc6a67a3950f3775b1cd9411c7c0cc48c75bd0524",
+            "wrapped": true
+          }
+        ],
+        "uuid": "VGuqUHRXiSuxxXUpr0lt7U7FjN2e978R"
+      },
+      "pv-b": {
+        "copies": [],
+        "uuid": "kHkX1QUGNx1IEJJYQniPyCZfQPW85ORS"
+      }
+    }
+  },
+  "refused": [
+    "changed-valid-data",
+    "double-seqno",
+    "duplicate-pv",
+    "extent-count",
+    "gap-in-lv",
+    "into-header",
+    "invalid-stripe-count",
+    "invalid-stripe-size",
+    "label",
+    "label-crc",
+    "label-sector-index",
+    "logical-digest",
+    "logical-length",
+    "long-text",
+    "mda-crc",
+    "mda-signature",
+    "metadata-area-offset",
+    "metadata-disagreement",
+    "metadata-text-crc",
+    "missing-pv",
+    "out-of-area",
+    "overlap",
+    "overlap-mda",
+    "partial-group",
+    "past-pv-end",
+    "pe-base",
+    "physical-read-map",
+    "precommit",
+    "pv-recorded-length",
+    "raid",
+    "second-metadata-copy",
+    "snapshot",
+    "thin",
+    "truncated-pv",
+    "unknown-pv",
+    "unknown-volume",
+    "unrelated-group",
+    "wrapped-text-tail"
+  ]
+}
