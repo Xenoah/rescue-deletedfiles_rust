@@ -203,7 +203,7 @@ impl App {
                         }
                     }
                 }
-                if matches!(state.format,Some(Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx)) {
+                if matches!(state.format,Some(Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk)) {
                     ui.collapsing(
                         tr!("元ディスクと照合", "Verify against the original disk"),
                         |ui| {
@@ -308,7 +308,7 @@ impl App {
                     rescue_core::disk_image::import_android(&request.source, &output, &cancel)
                 } else if matches!(
                     format,
-                    Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx
+                    Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk
                 ) {
                     let bytes = if expected_size.is_empty() {
                         None

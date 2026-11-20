@@ -252,6 +252,9 @@ jobs:
       - name: Restore seven Windows NTFS deletions across a 4 GiB VHDX BAT chunk boundary
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vhdx_chunk.py --binary target/${{ matrix.target }}/release/rescue
+      - name: Verify original disk hashes for rewritten QEMU VMDK descriptors across 2 GiB
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_vmdk_cid_boundary.py --binary target/${{ matrix.target }}/release/rescue
       - name: Recover across QEMU's actual 2 GiB flat and sparse VMDK split
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_vmdk_boundary.py --binary target/${{ matrix.target }}/release/rescue

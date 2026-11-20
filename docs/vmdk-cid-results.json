@@ -23,6 +23,20 @@
       "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
       "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
     },
+    "refused": [
+      "different_final_key",
+      "exceeds_cid_shrink",
+      "extra_nul_before_suffix",
+      "full_width_cid",
+      "incorrect_guest_hash",
+      "incorrect_guest_length",
+      "invalid_guest_hash",
+      "missing_final_newline",
+      "non_numeric_tools_version",
+      "suffix_introduces_extent",
+      "suffix_introduces_parent",
+      "unrelated_suffix"
+    ],
     "retained_suffix": "0a"
   },
   "10.0-twoGbMaxExtentFlat": {
@@ -88,6 +102,20 @@
       "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
       "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
     },
+    "refused": [
+      "different_final_key",
+      "exceeds_cid_shrink",
+      "extra_nul_before_suffix",
+      "full_width_cid",
+      "incorrect_guest_hash",
+      "incorrect_guest_length",
+      "invalid_guest_hash",
+      "missing_final_newline",
+      "non_numeric_tools_version",
+      "suffix_introduces_extent",
+      "suffix_introduces_parent",
+      "unrelated_suffix"
+    ],
     "retained_suffix": "0a"
   },
   "6.2-twoGbMaxExtentSparse": {
