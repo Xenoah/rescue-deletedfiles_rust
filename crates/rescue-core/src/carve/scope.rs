@@ -2,6 +2,7 @@
 //! Read buffers can span allocated bytes; only signatures and complete payloads
 //! allowed by the chosen scope are retained. No inference of deletion is made.
 mod hfs;
+use crate::disk_image::Ext4Volume;
 use crate::{
     AllocationStatus, CarveScope, Error, FileSystem, Result, Session, SourceRegion, fat,
     ntfs::{Data, Ntfs, Run},
@@ -14,15 +15,16 @@ use std::{
 };
 
 enum Backend {
-    Ntfs(Box<Ntfs>),
-    Fat(Box<fat::AllocationReader>),
+    Ntfs(Box<Ntfs>, Image),
+    Fat(Box<fat::AllocationReader>, Image),
+    Ext4(Box<Ext4Volume>),
     Hfs(hfs::Map),
 }
 pub(super) struct Scope {
     mode: CarveScope,
     path: PathBuf,
     regions: Vec<SourceRegion>,
-    current: Option<(usize, Option<(Image, Backend)>)>,
+    current: Option<(usize, Option<Backend>)>,
     warnings: BTreeSet<String>,
     length: u64,
 }
@@ -46,7 +48,7 @@ impl Scope {
                 result.warnings.extend(layout.warnings);
             }
             Err(Error::Cancelled) => return Err(Error::Cancelled),
-            Err(_) if hfs::recognized(image) => {
+            Err(_) if hfs::recognized(image) || Ext4Volume::recognized(image) => {
                 result.regions.push(unknown(0, image.length));
             }
             Err(error) => result.warning(format!(
@@ -112,17 +114,23 @@ impl Scope {
                 .as_ref()
                 .is_none_or(|(loaded, _)| *loaded != index)
             {
-                let load = (|| -> Result<(Image, Backend)> {
+                let load = (|| -> Result<Backend> {
                     let mut image = Image::open_region(&self.path, Some(&region))?;
                     let backend = match region.filesystem {
-                        Some(FileSystem::Ntfs) => Backend::Ntfs(Box::new(Ntfs::open(&mut image)?)),
+                        Some(FileSystem::Ntfs) => {
+                            Backend::Ntfs(Box::new(Ntfs::open(&mut image)?), image)
+                        }
                         Some(
                             FileSystem::Fat12
                             | FileSystem::Fat16
                             | FileSystem::Fat32
                             | FileSystem::Exfat,
-                        ) => {
-                            Backend::Fat(Box::new(fat::AllocationReader::open(&mut image, cancel)?))
+                        ) => Backend::Fat(
+                            Box::new(fat::AllocationReader::open(&mut image, cancel)?),
+                            image,
+                        ),
+                        None if Ext4Volume::recognized(&mut image) => {
+                            Backend::Ext4(Box::new(Ext4Volume::open_allocation(image)?))
                         }
                         None if hfs::recognized(&mut image) => {
                             Backend::Hfs(hfs::Map::open(&mut image, cancel)?)
@@ -133,7 +141,7 @@ impl Scope {
                             ));
                         }
                     };
-                    Ok((image, backend))
+                    Ok(backend)
                 })();
                 self.current = Some((
                     index,
@@ -156,7 +164,7 @@ impl Scope {
                 .as_mut()
                 .and_then(|(_, backend)| backend.as_mut())
             {
-                Some((image, Backend::Ntfs(ntfs))) => {
+                Some(Backend::Ntfs(ntfs, image)) => {
                     let first =
                         (at - region.offset) / ntfs.geometry.cluster * ntfs.geometry.cluster;
                     let end = (stop - region.offset)
@@ -179,8 +187,20 @@ impl Scope {
                     }
                     status
                 }
-                Some((_, Backend::Hfs(map))) => map.status(at - region.offset, stop - at),
-                Some((image, Backend::Fat(fat))) => {
+                Some(Backend::Hfs(map)) => map.status(at - region.offset, stop - at),
+                Some(Backend::Ext4(volume)) => {
+                    match volume.carve_status(at - region.offset, stop - at) {
+                        Ok(status) => status,
+                        Err(error) => {
+                            self.warning(format!(
+                                "region {}: {error}; allocation of this range is unknown",
+                                region.offset
+                            ));
+                            AllocationStatus::Unknown
+                        }
+                    }
+                }
+                Some(Backend::Fat(fat, image)) => {
                     match fat.status(image, at - region.offset, stop - at, cancel) {
                         Ok(status) => status,
                         Err(Error::Cancelled) => return Err(Error::Cancelled),

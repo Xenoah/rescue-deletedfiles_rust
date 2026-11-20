@@ -1,6 +1,6 @@
 //! Read ext4 metadata checksums, allocation maps and extent records.
 use super::{bad, le16, le32};
-use crate::{Error, Image, Result, crc32c::update};
+use crate::{AllocationStatus, Error, Image, Result, crc32c::update};
 use std::collections::BTreeMap;
 
 #[derive(Clone, Copy)]
@@ -11,9 +11,10 @@ struct Group {
     block_sum: u32,
     inode_sum: u32,
     flags: u16,
+    free_blocks: u32,
 }
 
-pub(super) struct Volume {
+pub(crate) struct Volume {
     pub image: Image,
     pub block_size: usize,
     pub blocks: u64,
@@ -22,6 +23,7 @@ pub(super) struct Volume {
     pub inode_size: usize,
     pub first_inode: u32,
     seed: u32,
+    verify_free_counts: bool,
     first: u64,
     per_group: u32,
     inodes_per: u32,
@@ -32,12 +34,23 @@ pub(super) struct Volume {
 }
 
 impl Volume {
-    pub fn open(mut image: Image) -> Result<Self> {
+    pub fn open(image: Image) -> Result<Self> {
+        Self::parse(image, true)
+    }
+
+    pub(crate) fn recognized(image: &mut Image) -> bool {
+        image.length >= 2048 && image.read(1024 + 56, 2).is_ok_and(|b| b == [0x53, 0xef])
+    }
+
+    pub(crate) fn open_allocation(image: Image) -> Result<Self> {
+        Self::parse(image, false)
+    }
+
+    fn parse(mut image: Image, require_journal: bool) -> Result<Self> {
         let sb = image.read(1024, 1024)?;
         let incompat = le32(&sb, 96);
         let readonly = le32(&sb, 100);
         if le16(&sb, 56) != 0xef53
-            || le32(&sb, 92) & 4 == 0
             || incompat & 0xc0 != 0xc0
             || incompat & !0x22c2 != 0
             || readonly & 0x400 == 0
@@ -45,9 +58,17 @@ impl Volume {
             || sb[373] != 1
             || le16(&sb, 254) != 64
             || le32(&sb, 72) != 0
-            || le16(&sb, 58) & 1 == 0
+            || le16(&sb, 58) != 1
+            || le32(&sb, 232) != 0
         {
-            return Err(Error::Unsupported("expected clean ext4 with extents, 64-bit groups, internal journal and metadata checksums".into()));
+            return Err(Error::Unsupported(
+                "expected clean ext4 with extents, 64-bit groups and metadata checksums".into(),
+            ));
+        }
+        if require_journal && le32(&sb, 92) & 4 == 0 {
+            return Err(Error::Unsupported(
+                "ext4 volume has no internal journal".into(),
+            ));
         }
         if update(u32::MAX, &sb[..1020]) != le32(&sb, 1020) {
             return Err(bad("ext4 superblock checksum mismatch"));
@@ -108,9 +129,12 @@ impl Volume {
                 block_sum: sum(24, 56),
                 inode_sum: sum(26, 58),
                 flags: le16(group, 18),
+                free_blocks: sum(12, 44),
             };
             if !(first..blocks).contains(&g.block_map)
                 || !(first..blocks).contains(&g.inode_map)
+                || u64::from(g.free_blocks)
+                    > (blocks - first - i as u64 * u64::from(per_group)).min(u64::from(per_group))
                 || g.table < first
                 || g.table.checked_add(table_blocks).is_none_or(|n| n > blocks)
                 || tables.insert(g.table, i).is_some()
@@ -118,6 +142,12 @@ impl Volume {
                 return Err(bad("invalid group metadata address"));
             }
             groups.push(g);
+        }
+        let free_blocks = u64::from(le32(&sb, 12)) | (u64::from(le32(&sb, 344)) << 32);
+        if !require_journal
+            && groups.iter().map(|g| u64::from(g.free_blocks)).sum::<u64>() != free_blocks
+        {
+            return Err(bad("ext4 group free counts disagree with superblock"));
         }
         let mut end = 0;
         for &start in tables.keys() {
@@ -136,6 +166,7 @@ impl Volume {
             first_inode,
             seed,
             first,
+            verify_free_counts: !require_journal,
             per_group,
             inodes_per,
             inodes,
@@ -224,6 +255,18 @@ impl Volume {
             if update(self.seed, &bytes) != expected {
                 return Err(bad("allocation bitmap checksum mismatch"));
             }
+            if self.verify_free_counts && !inode {
+                let valid = (self.blocks - self.first - group as u64 * u64::from(self.per_group))
+                    .min(u64::from(self.per_group)) as usize;
+                let whole = valid / 8;
+                let mut used: u32 = bytes[..whole].iter().map(|byte| byte.count_ones()).sum();
+                if !valid.is_multiple_of(8) {
+                    used += (bytes[whole] & ((1u8 << (valid % 8)) - 1)).count_ones();
+                }
+                if valid as u32 - used != g.free_blocks {
+                    return Err(bad("ext4 free count disagrees with allocation bitmap"));
+                }
+            }
             self.maps.insert((group, inode), bytes);
         }
         Ok(&self.maps[&(group, inode)])
@@ -234,6 +277,54 @@ impl Volume {
         let group = (index / self.inodes_per) as usize;
         let bit = index % self.inodes_per;
         Ok(self.allocation_map(group, true)?[(bit / 8) as usize] & (1 << (bit % 8)) == 0)
+    }
+
+    /// Scan every known part, even after an unreadable group. One allocated
+    /// block anywhere in the payload excludes it from unallocated-only carving.
+    pub(crate) fn carve_status(&mut self, at: u64, length: u64) -> Result<AllocationStatus> {
+        let size = self.block_size as u64;
+        let end = at.checked_add(length).ok_or(Error::SourceChanged)?;
+        let mut block = at / size;
+        let stop = end.div_ceil(size).min(self.blocks);
+        if length == 0 {
+            return Ok(AllocationStatus::Unknown);
+        }
+        if block < self.first {
+            return Ok(AllocationStatus::Conflict); // 1 KiB filesystems reserve block zero.
+        }
+        let per_group = u64::from(self.per_group);
+        let mut failure = None;
+        while block < stop {
+            let index = block - self.first;
+            let group = (index / per_group) as usize;
+            let first_bit = (index % per_group) as usize;
+            let count = (stop - block).min(per_group - first_bit as u64);
+            match self.allocation_map(group, false) {
+                Ok(map) => {
+                    let end_bit = first_bit + count as usize;
+                    for (i, &byte) in map[first_bit / 8..end_bit.div_ceil(8)].iter().enumerate() {
+                        let base = (first_bit / 8 + i) * 8;
+                        let low = first_bit.saturating_sub(base);
+                        let high = (end_bit - base).min(8);
+                        let mask = (0xffu8 << low) & (0xffu8 >> (8 - high));
+                        if byte & mask != 0 {
+                            return Ok(AllocationStatus::Conflict);
+                        }
+                    }
+                }
+                Err(error) => {
+                    failure.get_or_insert(error);
+                }
+            }
+            block += count;
+        }
+        if let Some(error) = failure {
+            return Err(error);
+        }
+        if end > self.blocks * size {
+            return Err(bad("range includes space outside ext4 allocation groups"));
+        }
+        Ok(AllocationStatus::Unallocated)
     }
 
     pub fn blocks_free(&mut self, start: u64, len: u64) -> Result<()> {
