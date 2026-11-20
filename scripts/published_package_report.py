@@ -60,6 +60,19 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 26, 0):
+        assert run['qcow2_subclusters'] == run['android_sparse']
+        if platform == 'linux':
+            images = run['qemu_subclusters']
+            assert set(images) == {'fat32', 'ext4', 'windows-ntfs'}
+            assert images['windows-ntfs']['originals'] == run['windows_vhdx']['fixed']
+            assert all(images[f]['originals'] == run['qcow2_subclusters'] and images[f]['extended_l2']
+                       for f in ('fat32', 'ext4'))
+            assert images['fat32']['compression'] == images['windows-ntfs']['compression'] == 'zstd'
+            assert all(i['compressed_clusters'] > 0 for i in images.values())
+            shifted = run['shifted_ddrescue_partitions']
+            reference = json.loads((Path(__file__).resolve().parents[1]/'docs/ddrescue-shifted-v1.25-results.json').read_text())
+            assert shifted == reference
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 25, 0):
         assert run['ddrescue_map'] == run['android_sparse']
         if platform == 'linux':

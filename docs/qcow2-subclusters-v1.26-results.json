@@ -1,0 +1,61 @@
+{
+  "application_version": "1.26.0",
+  "linux_release_cli_sha256": "356419607f8855bced25aa6e78938ce100e2c1ee3f6ccf72e53cce9be394f258",
+  "producer": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+  "disks": {
+    "fat32": {
+      "disk_bytes": 41959424,
+      "disk_sha256": "36eb5055a6b76b5f3e371a9e25613635f8b4dc688218e6aaa8dc4a03d5f1b9ef",
+      "image_sha256": "abd5f3e21e426ecedce38c9e496772e0264b2efc473a48c54fe98747f6fedcf2",
+      "originals": {
+        "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "cluster_size": 16384,
+      "compression": "zstd",
+      "extended_l2": true,
+      "compressed_clusters": 5
+    },
+    "ext4": {
+      "disk_bytes": 16842752,
+      "disk_sha256": "98abf0f12a0b1ec29c7691da0d2c28fb15d3f40227182091e6dbda81133c8fb0",
+      "image_sha256": "ab62f06b543cbe66b65f5bc3e6eb2696d7eeb53784f3580ca6a7c5366336150e",
+      "originals": {
+        "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+        "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+        "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+        "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+      },
+      "cluster_size": 65536,
+      "compression": "zlib",
+      "extended_l2": true,
+      "compressed_clusters": 7
+    },
+    "windows-ntfs": {
+      "disk_bytes": 100663296,
+      "disk_sha256": "8321c53ffa0b74f35ddad54cb0f7937f616320b43add6e6c5b92ec3f54b7f9f0",
+      "image_sha256": "fef9f5fa531b587567ba74950417635d59be716fbfaed11093acd8509df0cb47",
+      "originals": {
+        "sample.html": "73bcdcda001bdf97b397fde3f43fe6f2204914ab4497cfef2b16d5248018c8f1",
+        "sample.json": "d18658973aaa4bc9923f5f827e9fa1a045fa29432a98ac0275b8949a156d6db8",
+        "sample.rtf": "c5dd0b6f823bb8d82dec35b817e91886d90c59e5da91d9c39f32044cdac45f36",
+        "sample.xml": "ab17aef21f10377cb6e09f4038afebb4b1dbdb8808b45a4ff3067289c948cccc",
+        "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+        "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6",
+        "sample.gz": "f86e02977789ecdcc596d59f96b5fc12d05d98f8bf7183ab26909e23a2ec046b"
+      },
+      "cluster_size": 65536,
+      "compression": "zstd",
+      "extended_l2": false,
+      "compressed_clusters": 46
+    }
+  }
+}

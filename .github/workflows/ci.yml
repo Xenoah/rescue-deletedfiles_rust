@@ -92,6 +92,12 @@ jobs:
       - name: Real ext2/3/4 deletions, split RAW and virtual disks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_extended_filesystems.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover shifted GNU ddrescue acquisitions of Windows MBR and 4Kn GPT partitions
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_ddrescue_partitions.py --binary target/${{ matrix.target }}/debug/rescue
+      - name: Compare QCOW2 Zstandard and extended L2 imports with QEMU and real deletions
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_qcow2_subclusters.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover GNU ddrescue captures of real deletions with independent coverage checks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_ddrescue.py --native --binary target/${{ matrix.target }}/debug/rescue
