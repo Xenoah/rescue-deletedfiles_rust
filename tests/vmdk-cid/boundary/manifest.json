@@ -1,0 +1,42 @@
+{
+  "10.0-twoGbMaxExtentSparse": {
+    "cid": "460fb",
+    "descriptor_sha256": "eab1d7e78828deec499793d5fb6decf1e83a1dac935fb4818373f01fd900f35d",
+    "guest_bytes": 2213809152,
+    "guest_sha256": "9bb2b942fd942e74adc9edf24e958cf20efebb070293bb05195fefc8696e193c",
+    "kind": "twoGbMaxExtentSparse",
+    "parts": {
+      "volume-s001.vmdk": {
+        "bytes": 3276800,
+        "sha256": "f6eb0b7cd824f001356d29197e378a751005bbcd0627e175b6affca55dbdc527",
+        "xz_sha256": "a238fba4805e7cf8d39de5a916774e025b89d5cdc72e11f4a2ad367ed9fb7f80"
+      },
+      "volume-s002.vmdk": {
+        "bytes": 196608,
+        "sha256": "6a87cc8fa1c7301aec2eaca7b21ac4b7628e7ad0434828c7ad34eb4a29b7f916",
+        "xz_sha256": "1ebfaf64b90e81e215fc68392912cc9de7bb5de5d619f982af2a0c6040f9a9e9"
+      }
+    },
+    "qemu": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)",
+    "retained_suffix": "220a"
+  },
+  "6.2-twoGbMaxExtentFlat": {
+    "cid": "a77b8",
+    "descriptor_sha256": "d5956030d1792ee2493c939a0ccff6435b01f0f9889764cc423d2dbbc1f27945",
+    "guest_bytes": 2213809152,
+    "guest_sha256": "9bb2b942fd942e74adc9edf24e958cf20efebb070293bb05195fefc8696e193c",
+    "kind": "twoGbMaxExtentFlat",
+    "parts": {
+      "volume-f001.vmdk": {
+        "bytes": 2147483648,
+        "sha256": "9515ffcdb1080e9e4d0afc82bc9043af26cf45b5dc5625336bf624b91fe779ab"
+      },
+      "volume-f002.vmdk": {
+        "bytes": 66325504,
+        "sha256": "c72731807a3d99695887b757d56f5c63bd11dc6a7221fbf0a70d1b274bcc8946"
+      }
+    },
+    "qemu": "qemu-img version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.32)",
+    "retained_suffix": "220a"
+  }
+}

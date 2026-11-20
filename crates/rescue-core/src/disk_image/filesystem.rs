@@ -127,7 +127,16 @@ pub fn filesystem(request: FilesystemRequest, cancel: &AtomicBool) -> Result<(Va
             output.set_extension(ext);
         }
         extract.push(id.into());
-        let mut row = match write_output("icat", &extract, &output, Some(entry.size), cancel) {
+        let mut row = match write_output(
+            "icat",
+            &extract,
+            &output,
+            super::RawExpectation {
+                bytes: Some(entry.size),
+                sha256: None,
+            },
+            cancel,
+        ) {
             Ok(v) => json!(v),
             Err(Error::Cancelled) => return Err(Error::Cancelled),
             Err(e) => {

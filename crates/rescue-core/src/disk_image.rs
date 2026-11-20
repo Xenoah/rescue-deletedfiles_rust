@@ -216,7 +216,7 @@ fn write_output(
     tool: &str,
     args: &[OsString],
     output: &Path,
-    expected_size: Option<u64>,
+    expected: RawExpectation,
     cancel: &AtomicBool,
 ) -> Result<ImportedFile> {
     publish_output(output, cancel, |file| {
@@ -230,7 +230,7 @@ fn write_output(
                     break;
                 }
                 bytes += n as u64;
-                if expected_size.is_some_and(|size| bytes > size) {
+                if expected.bytes.is_some_and(|size| bytes > size) {
                     return Err(Error::Invalid("output exceeds the recorded length".into()));
                 }
                 file.write_all(&buf[..n])?;
@@ -238,13 +238,14 @@ fn write_output(
             }
             Ok(bytes)
         })?;
-        if expected_size.is_some_and(|size| bytes != size)
-            || (expected_size.is_none() && bytes == 0)
+        if expected.bytes.is_some_and(|size| bytes != size)
+            || (expected.bytes.is_none() && bytes == 0)
         {
             return Err(Error::Invalid(
                 "reader returned an incomplete output".into(),
             ));
         }
+        split_raw::verify_digest(&digest, expected.expected_digest(bytes)?)?;
         Ok((bytes, digest))
     })
 }
@@ -347,11 +348,11 @@ pub fn import_with_raw_expectation(
     if (expected.sha256.is_some() || expected.bytes.is_some())
         && (!matches!(
             kind,
-            Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx")
+            Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
         ) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW, QCOW, VHD or VHDX image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
         ));
     }
     if regular_raw {
@@ -382,7 +383,9 @@ pub fn import_with_raw_expectation(
         {
             return Ok(result);
         }
-        if let Some(result) = virtual_image::import_segments(&paths, kind, output, cancel)? {
+        if let Some(result) =
+            virtual_image::import_segments(&paths, kind, output, expected, cancel)?
+        {
             return Ok(result);
         }
         if paths.len() == 1 {
@@ -423,7 +426,7 @@ pub fn import_with_raw_expectation(
         ));
     }
     args.extend(paths);
-    write_output("img_cat", &args, output, None, cancel)
+    write_output("img_cat", &args, output, expected, cancel)
 }
 
 mod filesystem;

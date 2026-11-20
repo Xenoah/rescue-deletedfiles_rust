@@ -2,7 +2,9 @@
 use super::{Descriptor, Storage, Vmdk, invalid, region};
 use crate::{
     Error, Result,
-    disk_image::{ImportedFile, publish_output, virtual_image::Disk},
+    disk_image::{
+        ImportedFile, RawExpectation, publish_output, split_raw::verify_digest, virtual_image::Disk,
+    },
 };
 use sha2::{Digest, Sha256};
 use std::{
@@ -35,6 +37,7 @@ pub(in crate::disk_image) fn import_segments(
     paths: &[OsString],
     kind: Option<&str>,
     output: &Path,
+    expected: RawExpectation,
     cancel: &AtomicBool,
 ) -> Result<Option<ImportedFile>> {
     if kind.is_some_and(|s| s != "vmdk") {
@@ -147,6 +150,7 @@ pub(in crate::disk_image) fn import_segments(
             return Err(invalid("overlapping VMDK component ranges"));
         }
     }
+    let expected_digest = expected.expected_digest(length)?;
     let result = publish_output(output, cancel, |out| {
         let mut offset = 0u64;
         let mut digest = Sha256::new();
@@ -184,6 +188,7 @@ pub(in crate::disk_image) fn import_segments(
                 return Err(Error::SourceChanged);
             }
         }
+        verify_digest(&digest, expected_digest)?;
         out.set_len(length)?;
         Ok((length, digest))
     })?;

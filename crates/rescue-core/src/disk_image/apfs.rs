@@ -280,7 +280,16 @@ pub fn apfs(request: ApfsRequest, cancel: &AtomicBool) -> Result<(Value, bool)> 
             out.set_extension(ext);
         }
         args.push(id.into());
-        let mut row = match write_output("icat", &args, &out, Some(entry.size), cancel) {
+        let mut row = match write_output(
+            "icat",
+            &args,
+            &out,
+            super::RawExpectation {
+                bytes: Some(entry.size),
+                sha256: None,
+            },
+            cancel,
+        ) {
             Ok(file) => json!(file),
             Err(Error::Cancelled) => return Err(Error::Cancelled),
             Err(e) => {

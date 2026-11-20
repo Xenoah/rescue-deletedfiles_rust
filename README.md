@@ -2,13 +2,13 @@
 
 Rust製のファイル復元ソフト。Windows・Linux・macOSのGUI・CLI・MCPが共通エンジンを使います。復元できるファイルの数と、元の内容との一致を重視しています。
 
-**最新公開版はv1.36.0です。** Windowsの差分VHDXから削除済みファイルを復元できます。
+**最新公開版はv1.37.0です。** QEMUが識別子を書き直したVMDKを読み取り、論理ディスクを既知のSHA-256と照合できます。
 
-[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/latest) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.36.0/docs/RELEASE-v1.36.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44698552771)
+[リリース・ダウンロード](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/latest) · [変更内容](https://github.com/Xenoah/rescue-deletedfiles_rust/blob/v1.37.0/docs/RELEASE-v1.37.0.md) · [インストール](docs/INSTALL.md) · [公開パッケージの検証](https://github.com/Xenoah/rescue-deletedfiles_rust/actions/runs/44701961729)
 
 VirtualBox製の差分VMDKを使用する場合は、親を省略する前に公開版で確認された制限をご確認ください。[該当するディスクの判別と復元手順](docs/IMAGING.md#vmdkの内蔵読み取り)
 
-![v1.36.0で復元したファイル](docs/images/v1.36.0/structures-recovered.png)
+![v1.37.0で復元したファイル](docs/images/v1.37.0/structures-recovered.png)
 
 ## ダウンロード
 
@@ -16,18 +16,18 @@ VirtualBox製の差分VMDKを使用する場合は、親を省略する前に公
 
 | 環境 | インストーラー | ポータブル |
 | --- | --- | --- |
-| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-windows-x64-portable.zip) |
-| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-linux-x64-portable.tar.gz) |
-| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-macos-arm64-portable.zip) |
-| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/rescue-1.36.0-macos-x64-portable.zip) |
+| Windows x64 | [セットアップEXE](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-windows-x64-setup.exe) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-windows-x64-portable.zip) |
+| Linux x64 | [DEB](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-linux-x64.deb) | [tar.gz](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-linux-x64-portable.tar.gz) |
+| macOS Apple Silicon | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-macos-arm64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-macos-arm64-portable.zip) |
+| macOS Intel | [PKG](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-macos-x64.pkg) | [ZIP](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/rescue-1.37.0-macos-x64-portable.zip) |
 
-リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.36.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
+リリース添付は8配布物と[共通SHA-256](https://github.com/Xenoah/rescue-deletedfiles_rust/releases/download/v1.37.0/SHA256SUMS.txt)の9点です。画面・コーパス・検証JSONはリポジトリとActionsに保存します。GitHubの自動生成ソースコードは別枠です。
 
 Windowsは発行元署名なし、macOSはアドホック署名・公証なし。Linuxはglibc 2.35以降、macOSは13以降です。[起動条件](docs/INSTALL.md)を確認してください。
 
-## v1.36.0の対応範囲
+## v1.37.0の対応範囲
 
-子から順に指定したVHDXの識別子を照合し、論理セクターごとに親子のデータを読みます。Windowsが作成した512バイト・4 KiBの両セクター構成で、実際に削除したNTFSファイルを原本の全バイトとSHA-256で照合しました。[利用手順と実測結果](docs/RELEASE-v1.36.0.md)
+QEMU 6.2・10.0で生成した単独・分割VMDKで、全ディスクのバイト列とSHA-256を照合しました。2 GiB境界を含む10イメージで、NTFSから削除した7ファイルを通常・索引スキャンの両方で原本と照合しました。[利用手順と実測結果](docs/RELEASE-v1.37.0.md)
 
 ## できること
 
@@ -75,6 +75,6 @@ cargo clippy --workspace --all-targets --locked -- -D warnings
 python scripts/run_integration.py --binary target/debug/rescue
 ```
 
-標準の統合試験は94群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。[v1.36.0の検証結果と制限](docs/RELEASE-v1.36.0.md)。
+標準の統合試験は95群です。WindowsのUIA・実キー入力・Microsoft日本語IMEは通常権限のGUIで別途検証します。[v1.37.0の検証結果と制限](docs/RELEASE-v1.37.0.md)。
 
 過去の記録: [v1.0リリース](docs/RELEASE-v1.0.md) · [v1.0受入](docs/V1_ACCEPTANCE.md) · [1 TiB・1,000万候補の実測](docs/PERFORMANCE-v1.md) · [商用製品との同一入力比較](docs/COMPARISON-v1.md) · [v1.1以降のバックログ](docs/BACKLOG_V1_1.md)。過去の画像や計測を現行版の実績として数えません。
