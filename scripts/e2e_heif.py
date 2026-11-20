@@ -21,9 +21,19 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def decoded(source):
+def decoded(source, gray_icc=False):
     """Fingerprint PNG dimensions, sample format, palette, transparency and inflated scanlines."""
     with tempfile.TemporaryDirectory() as tmp:
+        if gray_icc:
+            # Ubuntu 22.04's PNG writer cannot put Apple's gray ICC profile in RGB PNG.
+            # Keep the fully decoded planar samples and their dimensions instead.
+            image = Path(tmp)/'image.y4m'
+            subprocess.run(['heif-convert',source,image],check=True,capture_output=True)
+            data = image.read_bytes()
+            header, frame, pixels = data.split(b'\n',2)
+            check(header.startswith(b'YUV4MPEG2 W84 H64 ') and frame==b'FRAME'
+                  and len(pixels)==84*64*3//2, source)
+            return [sha(data)]
         subprocess.run(['heif-convert', source, Path(tmp)/'image.png'], check=True, capture_output=True)
         hashes = []
         for image in sorted(Path(tmp).glob('*.png')):
@@ -117,7 +127,7 @@ def recover(binary, root, disk, files, references, metadata):
             if original in metadata:
                 check(all(data.count(b)==1 for b in metadata[original].values()), original)
             if references:
-                check(decoded(path)==references[original], original)
+                check(decoded(path, original=='apple-gray.heic')==references[original], original)
                 if original in metadata:
                     from heif_photo_metadata import read_metadata
                     check(read_metadata(path)==metadata[original], original)
@@ -127,7 +137,7 @@ def recover(binary, root, disk, files, references, metadata):
 
 def verify(binary, root, native=False):
     paths, meta = {}, {}
-    for parent in (GOLD, GOLD/'metadata'):
+    for parent in (GOLD, GOLD/'metadata', GOLD/'apple'):
         manifest = json.loads((parent/'manifest.json').read_text(encoding='utf-8'))
         check(not meta.keys() & manifest.keys(), 'duplicate HEIF fixture')
         meta.update(manifest)
@@ -138,7 +148,7 @@ def verify(binary, root, native=False):
     hashes = {name:sha(data) for name,data in files.items()}
     check(all(meta[name]['bytes']==len(data) and meta[name]['sha256']==hashes[name] for name,data in files.items()), meta)
     if native:
-        references = {name:decoded(path) for name,path in paths.items()}
+        references = {name:decoded(path, name=='apple-gray.heic') for name,path in paths.items()}
         from heif_photo_metadata import read_metadata
         for name, blocks in metadata.items():
             check(read_metadata(paths[name])==blocks, name)

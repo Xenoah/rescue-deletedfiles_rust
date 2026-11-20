@@ -16,7 +16,12 @@
       "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
       "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
       "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
-      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca"
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca",
+      "apple-landscape.heic": "e814f641b87c7bc875b51b38cfb048129eed5d22c2b5ee8a9f19e71bac835454",
+      "apple-portrait.heic": "c95f46d618c3d10c76ae980d7b7d42b7684ea355db0cb23fa9e8b7bbb48cc423",
+      "apple-alpha.heic": "6200f7420ea984e59f1ed7acc55e1664af5222fa306c5b62ce45cbabb103ded8",
+      "apple-gray.heic": "e1359bc1589721f8b8d56e8854d5f4bb03dff8e99f17f0ab3da20866a1e5966a",
+      "apple-deep.heic": "d94494d683519df44f64d1b1e0db9f48eb8033097a5bf9c9592cf615f2f801b3"
     },
     "refused": [
       "cut-hevc",
@@ -60,7 +65,12 @@
       "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
       "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
       "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
-      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca"
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca",
+      "apple-landscape.heic": "e814f641b87c7bc875b51b38cfb048129eed5d22c2b5ee8a9f19e71bac835454",
+      "apple-portrait.heic": "c95f46d618c3d10c76ae980d7b7d42b7684ea355db0cb23fa9e8b7bbb48cc423",
+      "apple-alpha.heic": "6200f7420ea984e59f1ed7acc55e1664af5222fa306c5b62ce45cbabb103ded8",
+      "apple-gray.heic": "e1359bc1589721f8b8d56e8854d5f4bb03dff8e99f17f0ab3da20866a1e5966a",
+      "apple-deep.heic": "d94494d683519df44f64d1b1e0db9f48eb8033097a5bf9c9592cf615f2f801b3"
     },
     "decoded": {
       "odd.heic": [
@@ -111,6 +121,21 @@
       ],
       "caption.avif": [
         "4bf7583dc9dcc9350bfc93bb23ce2fc4df8c4b3db36b429497b9fbeca40e6fc2"
+      ],
+      "apple-landscape.heic": [
+        "09d99e31a995c2104b073ea6f5ad12e15108b64d02d9547778511eaef081637f"
+      ],
+      "apple-portrait.heic": [
+        "0dd7e582e82ab8e66c367474ea5969872b4b672b13ebce402833967a81fd9d50"
+      ],
+      "apple-alpha.heic": [
+        "9dba465de73a82a9643fc1f308aece3b27c89eae749d8dc26305554c3ba8ca7d"
+      ],
+      "apple-gray.heic": [
+        "7e7f4be87581dce8f7af0379ef451a3fe4e2e9639bc93ffdb44c03350a412807"
+      ],
+      "apple-deep.heic": [
+        "a2e40ccb780b5b7886897d230b6bf6b2e24378a38ccb41c5045ed872e4511aac"
       ]
     },
     "metadata": {
@@ -141,5 +166,7 @@
   "modes": [
     "session",
     "index"
-  ]
+  ],
+  "apple_macos_run": 44652074819,
+  "apple_ubuntu_reference_run": 44653370200
 }
