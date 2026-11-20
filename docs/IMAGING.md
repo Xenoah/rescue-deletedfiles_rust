@@ -151,6 +151,8 @@ monolithicFlat・twoGbMaxExtentFlat・twoGbMaxExtentSparseでは、記述ファ�
 rescue import-image --source disk.vmdk --segment disk-s001.vmdk --segment disk-s002.vmdk --image-type vmdk --output disk.raw --json
 ```
 
+論理ディスク全体の既知の長さとSHA-256は、明示的にVMDKを選んだうえで `--raw-bytes` と `--raw-sha256` に指定できます。誤った長さやハッシュの場合は完成したRAWを作成しません。QEMUがCIDを書き直して終端直後に以前の行末が残った場合、検証できた範囲で読み取ります。[QEMU 6.2・10.0の実測値と制限](RELEASE-v1.37.0.md)
+
 記述ファイルに書かれたベース名と指定したファイル名を照合し、FLATの開始セクター、SPARSEの容量、ZEROの長さを確認します。別のフォルダーに集めたコピーでも元の構成ファイル名が必要です。構成ファイルが欠けたイメージや差分イメージでは、親や欠けた部分を補ってから変換してください。VMFS、古いCOWD、暗号化イメージには、その形式と必要な鍵を扱える外部ツールが必要です。[分割イメージの実証記録](../tests/vmdk-split/README.md)
 
 ## VHDXの内蔵読み取り
