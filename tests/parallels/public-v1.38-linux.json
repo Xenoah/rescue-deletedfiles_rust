@@ -1,0 +1,36 @@
+{
+  "binary_sha256": "f363e6838beff6c1eb1b2cc394d54cdb96bcc13ec2c4a3665dc66431ba0e4e60",
+  "results": {
+    "base": {
+      "copied_container_bytes": true,
+      "exit_code": 0,
+      "expected_guest_bytes": 16777216,
+      "expected_guest_sha256": "571c41ad269f5f6accb10dd7c6070e5a3db8595febb0a0b126c77413a906d01f",
+      "input_bytes": 4063232,
+      "matched_guest": false,
+      "returned_bytes": 4063232,
+      "returned_sha256": "adcf7bdd11d34c72fbc2da717b59a2a8d8381da185db782317eed799e6499b9b"
+    },
+    "child": {
+      "copied_container_bytes": true,
+      "exit_code": 0,
+      "expected_guest_bytes": 16777216,
+      "expected_guest_sha256": "26ed183d07121ba7ff9eb55e55c28cd247d91b2ef528493a3295d82478571835",
+      "input_bytes": 262144,
+      "matched_guest": false,
+      "returned_bytes": 262144,
+      "returned_sha256": "942b5cc52cabc015d87d0fd17935a622c3e41d6806a4937c3c382b4a194606ca"
+    },
+    "descriptor": {
+      "copied_container_bytes": true,
+      "exit_code": 0,
+      "expected_guest_bytes": 16777216,
+      "expected_guest_sha256": "26ed183d07121ba7ff9eb55e55c28cd247d91b2ef528493a3295d82478571835",
+      "input_bytes": 1468,
+      "matched_guest": false,
+      "returned_bytes": 1468,
+      "returned_sha256": "036ae620591af16c655b7a54243503ef3385500d095430a870ade61831ca5fac"
+    }
+  },
+  "version": "1.38.0"
+}

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<Parallels_disk_image>
+  <Disk_Parameters>
+    <Disk_size>32768</Disk_size>
+    <Cylinders>64</Cylinders>
+    <Heads>16</Heads>
+    <Sectors>32</Sectors>
+    <Padding>0</Padding>
+  </Disk_Parameters>
+  <StorageData>
+    <Storage>
+      <Start>0</Start>
+      <End>32768</End>
+      <Blocksize>128</Blocksize>
+      <Image>
+        <GUID>{5fbaabe3-6958-40ff-92a7-860e329aab41}</GUID>
+        <Type>Plain</Type>
+        <File>flat.hds</File>
+      </Image>
+    </Storage>
+  </StorageData>
+  <Snapshots>
+    <TopGUID>{5fbaabe3-6958-40ff-92a7-860e329aab41}</TopGUID>
+    <Shot>
+      <GUID>{5fbaabe3-6958-40ff-92a7-860e329aab41}</GUID>
+      <ParentGUID>{00000000-0000-0000-0000-000000000000}</ParentGUID>
+    </Shot>
+  </Snapshots>
+</Parallels_disk_image>

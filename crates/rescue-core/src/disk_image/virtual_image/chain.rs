@@ -25,7 +25,19 @@ pub(super) fn flatten<T>(
     output: &Path,
     expected: RawExpectation,
     cancel: &AtomicBool,
+    read: impl FnMut(&mut Layer<T>, u64, &mut [u8], &mut usize) -> Result<bool>,
+) -> Result<ImportedFile> {
+    flatten_checked(members, size, output, expected, cancel, read, None)
+}
+
+pub(super) fn flatten_checked<T>(
+    members: &mut [Layer<T>],
+    size: u64,
+    output: &Path,
+    expected: RawExpectation,
+    cancel: &AtomicBool,
     mut read: impl FnMut(&mut Layer<T>, u64, &mut [u8], &mut usize) -> Result<bool>,
+    descriptor: Option<(&File, &Metadata)>,
 ) -> Result<ImportedFile> {
     let expected_digest = expected.expected_digest(size)?;
     publish_output(output, cancel, |out| {
@@ -56,9 +68,13 @@ pub(super) fn flatten<T>(
         }
         crate::disk_image::split_raw::verify_digest(&digest, expected_digest)?;
         out.set_len(size)?;
-        for m in &*members {
-            let after = m.file.metadata()?;
-            if after.len() != m.before.len() || after.modified()? != m.before.modified()? {
+        for (file, before) in members
+            .iter()
+            .map(|m| (&m.file, &m.before))
+            .chain(descriptor)
+        {
+            let after = file.metadata()?;
+            if after.len() != before.len() || after.modified()? != before.modified()? {
                 return Err(Error::SourceChanged);
             }
         }

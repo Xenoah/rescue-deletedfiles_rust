@@ -68,7 +68,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, named VMDK extent files, or explicit VHD or QCOW2 backing files from nearest parent to base.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts qed, vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts parallels, qed, vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -364,7 +364,18 @@ pub fn import_with_snapshot(
     if (expected.sha256.is_some() || expected.bytes.is_some())
         && (!matches!(
             kind,
-            Some("raw" | "qed" | "vdi" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
+            Some(
+                "raw"
+                    | "parallels"
+                    | "qed"
+                    | "vdi"
+                    | "qcow"
+                    | "qcow1"
+                    | "qcow2"
+                    | "vhd"
+                    | "vhdx"
+                    | "vmdk"
+            )
         ) || !regular_raw)
     {
         return Err(Error::Request(
@@ -386,6 +397,11 @@ pub fn import_with_snapshot(
         }
         if kind == Some("android-sparse") || (kind.is_none() && android::has_magic(first)?) {
             return Err(Error::Request("use import-android with a new destination directory to preserve unrecorded Android sparse ranges".into()));
+        }
+        if let Some(result) =
+            virtual_image::import_parallels(&paths, kind, output, expected, cancel)?
+        {
+            return Ok(result);
         }
         if let Some(result) = ewf::import(&paths, kind, output, cancel)? {
             return Ok(result);

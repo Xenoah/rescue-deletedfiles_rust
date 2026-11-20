@@ -1,0 +1,18 @@
+{
+  "guest_sha256": {
+    "base": "571c41ad269f5f6accb10dd7c6070e5a3db8595febb0a0b126c77413a906d01f",
+    "first": "0a76d743b0c0c1b015793d518a8fe4d6a96d6a6230f3f62d049e1965310c7228",
+    "second": "26ed183d07121ba7ff9eb55e55c28cd247d91b2ef528493a3295d82478571835"
+  },
+  "member_sha256": {
+    "complete.hds": "5a6e01224eeacf640a1cccc0f7bc7b9ad5721e57d37ac1be12bbc67d20fdce1d",
+    "extended/native.hds": "adcf7bdd11d34c72fbc2da717b59a2a8d8381da185db782317eed799e6499b9b",
+    "extended/native.hds.{1a9beded-5807-4c84-bec8-73ce69b6f7d7}": "fdf5b41733621e3b5acfbb419fe0fa60a19454750b711eeceb6b180f9304f440",
+    "extended/native.hds.{b35f99ce-2729-43c4-b2f5-4fd0ad50586e}": "942b5cc52cabc015d87d0fd17935a622c3e41d6806a4937c3c382b4a194606ca",
+    "flat/flat.hds.{84be8e3d-e944-4684-a667-8db7700fa1a9}": "247d156f327986c878e1ec79ea8d7321966e479180421bf8be3247c975d40e4b",
+    "legacy/native.hds": "094008ec80f6650fc1eee27437813b562b337d5172454006738ca87bd8c41701",
+    "legacy/native.hds.{1a9beded-5807-4c84-bec8-73ce69b6f7d7}": "3d54cacd6a100ea4bf021b65178fc1aa9a44ca9ea3f5a8067e08eb93fbe996e2",
+    "legacy/native.hds.{b35f99ce-2729-43c4-b2f5-4fd0ad50586e}": "6297742c486504a5c03b2758614c89feaeb76714f1fe3aea994a17e7bb9f058a"
+  },
+  "ntfs_source_sha256": "e9be9a63db8489817a84c30738968ddcd8b0aa339fba1af05b9d0b97b1e1927a"
+}

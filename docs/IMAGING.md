@@ -464,3 +464,17 @@ rescue scan --source data.raw --work-dir scan --mode carve --json
 `rescue import-image --source guest.qed --image-type qed --output guest.raw --json` で単独のQEDをRAW化できます。差分ディスクは子を `--source`、すべての親を直近のものから順に `--segment` で指定します。親のファイル名と記録上の形式を照合します。親はQED、または作成時に明示的にRAWと記録されたものに対応します。確認できる論理ディスクの長さとSHA-256があれば `--raw-bytes` と `--raw-sha256` を指定してください。
 
 未割り当てクラスタは親から継承し、明示的なゼロクラスタと短い親の終端を越える範囲はゼロとして読みます。チェックが必要なディスク、未対応の機能、パスを含む親参照、競合する割り当ては拒否します。これらの診断やQED以外の親の読み出しには、元のディスク一式のコピーをQEMUで開いてください。親の内容のチェックサムは形式に含まれません。欠落した親にしか存在しないデータを読み戻すには別のコピーが必要です。[QEMUで作成したディスクと検証手順](../tests/qed/README.md)
+
+### Parallels・OpenVZの仮想ディスク
+
+停止した仮想マシンから、対象世代の `DiskDescriptor.xml` とそこに記載された全データファイルをコピーします。GUIの「イメージをRAWに変換」でParallelsを選択するか、次のように全ファイルを明示します。メンバーの指定順は任意です。元の論理ディスクのSHA-256があれば `--raw-sha256` で照合できます。
+
+```sh
+rescue import-image --image-type parallels --source DiskDescriptor.xml \
+  --segment base.hds --segment snapshot.hds --output guest.raw --json
+rescue scan --source guest.raw --work-dir scan --json
+```
+
+拡張HDSの旧形式と新形式、RAWベース、1ストレージの直線状のスナップショットチェーン（ベースを含め8世代まで）に対応します。割り当て済みのゼロは旧世代のデータを隠します。疎なHDSが単体で残っている場合、親を参照する差分かどうかをヘッダーだけでは確定できません。単体変換には独立に取得した対象世代の論理RAWのSHA-256が必要です。同じファイル名と容量を持つ別の世代を取り違えた場合にも、この照合が役立ちます。
+
+分岐、分割ストレージ、暗号化、形式拡張、使用中のイメージは対象外です。完全なファイル一式を元のParallels・OpenVZ環境で開き、対象世代をRAWへ書き出してください。鍵のない暗号化や上書き済みのデータは復元できません。公開版v1.38.0の自動判別はHDSや記述子をそのままRAWとしてコピーする場合があります。旧版を使う場合は先に対応ツールで論理RAWへ変換してください。[実イメージと照合結果](../tests/parallels/README.md)

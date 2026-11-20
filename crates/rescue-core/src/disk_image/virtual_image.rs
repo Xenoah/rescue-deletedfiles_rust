@@ -1,7 +1,9 @@
 //! Read logical sectors from virtual disks. No host path stored in an image is opened.
 mod chain;
+mod parallels;
 mod qcow;
 mod qed;
+pub(super) use parallels::import as import_parallels;
 pub(super) use qed::import as import_qed;
 mod vdi;
 mod vhd;
