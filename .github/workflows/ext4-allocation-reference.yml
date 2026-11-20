@@ -1,0 +1,20 @@
+name: Capture real ext4 free-space controls
+on:
+  push:
+    branches: [qa/ext4-free-space-reference]
+    paths: [.github/workflows/ext4-allocation-reference.yml, tests/ext4-allocation/generate_linux.py]
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format owned images, write controls and unlink original files using the Linux kernel
+        run: |
+          sudo python3 tests/ext4-allocation/generate_linux.py
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add tests/ext4-allocation/*.raw.xz tests/ext4-allocation/manifest.json
+          git commit -m "Preserve real Linux ext4 deletions and allocated controls for three block sizes"
+          git push origin HEAD:qa/ext4-free-space-reference
