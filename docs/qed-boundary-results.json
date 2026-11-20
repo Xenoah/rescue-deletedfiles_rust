@@ -1,0 +1,47 @@
+{
+  "bytes": 4311744512,
+  "deleted": {
+    "noise.png": {
+      "bytes": 12420,
+      "offset": 4294949376,
+      "sha256": "5cf21710bdaf39f8c8b9535e0ea78eb876ea0336719677ac7b56eb6a5f0ab20e"
+    },
+    "sample.gif": {
+      "bytes": 1731,
+      "offset": 4294962688,
+      "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+    },
+    "sample.jpg": {
+      "bytes": 767,
+      "offset": 4294964736,
+      "sha256": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8"
+    },
+    "sample.pdf": {
+      "bytes": 1367,
+      "offset": 4294965760,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+    },
+    "sample.png": {
+      "bytes": 102,
+      "offset": 4294967808,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    },
+    "sample.sqlite": {
+      "bytes": 8192,
+      "offset": 4294968832,
+      "sha256": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c"
+    },
+    "sample.wav": {
+      "bytes": 6478,
+      "offset": 4294977024,
+      "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    "sample.zip": {
+      "bytes": 179,
+      "offset": 4294984192,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  },
+  "logical_sha256": "43e699ab56a328b1010c0ac798e8973fc64cdf97976b8399d50a778f68690589",
+  "partition_offset": 4284986880
+}

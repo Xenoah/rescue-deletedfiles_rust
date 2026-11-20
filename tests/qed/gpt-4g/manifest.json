@@ -1,0 +1,22 @@
+{
+  "bytes": 4311744512,
+  "logical_sha256": "43e699ab56a328b1010c0ac798e8973fc64cdf97976b8399d50a778f68690589",
+  "mmls": [
+    "GUID Partition Table (EFI)",
+    "Offset Sector: 0",
+    "Units are in 512-byte sectors",
+    "",
+    "      Slot      Start        End          Length       Description",
+    "000:  Meta      0000000000   0000000000   0000000001   Safety Table",
+    "001:  -------   0000000000   0008369114   0008369115   Unallocated",
+    "002:  Meta      0000000001   0000000001   0000000001   GPT Header",
+    "003:  Meta      0000000002   0000000033   0000000032   Partition Table",
+    "004:  000       0008369115   0008401882   0000032768   recovery",
+    "005:  -------   0008401883   0008421375   0000019493   Unallocated"
+  ],
+  "offset": 4284986880,
+  "partition_sha256": "2122f3be5486ff7fc9c700682daa31348a00f17fa76ca6e54bf5409221d4dadf",
+  "partitioner": "parted (GNU parted) 3.6",
+  "qed_sha256": "32cd31de1ce83a5c4d0d4e84f4a335aa48e850430e53fd3e1c46bd3a3d2aa444",
+  "qemu": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)"
+}

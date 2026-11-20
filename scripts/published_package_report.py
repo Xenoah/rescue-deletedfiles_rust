@@ -60,6 +60,13 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 46, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        reference = 'qed-native-results.json' if platform == 'linux' else 'qed-results.json'
+        assert run['qed'] == json.loads((docs/reference).read_text(encoding='utf-8'))
+        assert run['sparse_carve'] == json.loads((docs/'sparse-carve-results.json').read_text(encoding='utf-8'))
+        if platform == 'linux':
+            assert run['qed_boundary'] == json.loads((docs/'qed-boundary-results.json').read_text(encoding='utf-8'))
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 45, 0):
         reference = 'lvm2-snapshot-native-results.json' if platform == 'linux' else 'lvm2-snapshot-results.json'
         assert run['lvm2_snapshots'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))

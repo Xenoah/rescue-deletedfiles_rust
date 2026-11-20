@@ -63,6 +63,9 @@ from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
 from e2e_rar import verify as rar_archives
 from e2e_svg import verify as svg_images
 from e2e_lvm2 import verify as lvm2_volumes
+from e2e_qed import verify as qed_images
+from e2e_qed_boundary import verify as qed_boundary
+from e2e_sparse_carve import verify as sparse_carve
 from e2e_lvm2_snapshots import verify as lvm2_snapshots
 from e2e_qcow2_snapshots import verify as qcow2_snapshots
 from e2e_vmdk_chain import verify as vmdk_chain
@@ -251,6 +254,14 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 46, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['qed'] = qed_images(binary, Path(tmp), native=a.platform == 'linux')
+        with tempfile.TemporaryDirectory() as tmp:
+            result['sparse_carve'] = sparse_carve(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['qed_boundary'] = qed_boundary(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 45, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['lvm2_snapshots'] = lvm2_snapshots(binary, Path(tmp), native=a.platform == 'linux')

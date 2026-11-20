@@ -11,3 +11,9 @@ python scripts/e2e_qed.py --binary target/release/rescue --native --output qed-r
 ```
 
 The native check additionally uses QEMU's read-only check, map and conversion commands. The Rescue import runs with an empty PATH. The suite compares actual bytes and SHA-256 in the full logical disks and in files recovered with both scan modes. It rejects malformed tables, invalid references, dirty images, missing parents, untyped RAW parents and changed contents when an original digest is known. The caller supplies every parent. A matching name cannot authenticate the original contents.
+
+The separate `gpt-4g` fixture is a 4,311,744,512-byte sparse guest. GNU Parted created its GPT. The ext4 partition was placed so four deleted files start below the 4 GiB logical address and four above. Its payload is the existing Linux device-mapper capture. Only the QED container and the GPT sectors are stored here. On Linux, the following additional test reconstructs a sparse reference, compares all logical bytes and SHA-256, checks QEMU's comparison and The Sleuth Kit's partition listing, and recovers the eight originals with both search modes.
+
+```sh
+python scripts/e2e_qed_boundary.py --binary target/release/rescue --output boundary.json
+```
