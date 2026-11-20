@@ -31,9 +31,10 @@ jobs:
               for name,meta in manifest.items():
                   data=(root/name).read_bytes()
                   assert len(data)==meta['bytes'] and hashlib.sha256(data).hexdigest()==meta['sha256']
-                  path=Path(tmp)/(name+'.png')
+                  path=Path(tmp)/(name+'.jpg')
                   subprocess.run(['heif-convert',root/name,path],check=True)
-                  assert path.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
+                  rendered = path.read_bytes()
+                  assert rendered.startswith(b'\xff\xd8') and rendered.endswith(b'\xff\xd9')
           PY
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
