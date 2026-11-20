@@ -60,6 +60,17 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 27, 0):
+        reference = json.loads((Path(__file__).resolve().parents[1]/'docs/heif-v1.27-results.json').read_text())
+        assert run['heif_photos'] == reference['portable']
+        if platform == 'linux':
+            photos = run['heif_deleted']
+            assert photos['originals'] == reference['portable']['originals']
+            assert photos['filesystems'] == ['fat32','ext4']
+            assert photos['metadata'] == reference['linux']['metadata']
+            assert set(photos['decoded']) == set(photos['originals'])
+            assert all(len(frames) == (2 if name == 'collection.heic' else 1)
+                       for name, frames in photos['decoded'].items())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 26, 0):
         assert run['qcow2_subclusters'] == run['android_sparse']
         if platform == 'linux':
