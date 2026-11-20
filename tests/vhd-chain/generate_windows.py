@@ -95,28 +95,47 @@ def archive(image, out):
     return dict(filename=image.name, bytes=image.stat().st_size, sha256=sha(image), xz_sha256=sha(dest))
 
 
-def capture(root, case, kind, depth):
+def capture(root, case, kind, depth, layered=False, durable=False):
     folder = root/case
     folder.mkdir()
     base = folder/'base.vhd'
     create(base, kind)
-    originals = {name:(ROOT.parent/'corpus/files'/name).read_bytes() for name in NAMES}
+    names = ['sample.'+ext for ext in ('avi','docx','flac','pptx','sqlite','tar','wav')] if layered else NAMES
+    originals = {name:(ROOT.parent/'corpus/files'/name).read_bytes() for name in names}
+    def contents(name, level):
+        body = bytearray(originals[name])
+        if layered:
+            for rev, start in [(1,512), (2,4096)]:
+                check(len(body) >= start+512, name)
+                if level < rev:
+                    body[start:start+512] = bytes(b ^ 0x39 for b in body[start:start+512])
+        return bytes(body)
     marker = (bytes(range(1, 251))*9000)[:2<<20]
     with attached(base) as mount:
         target=mount/'deletions'
         target.mkdir()
         for name, data in originals.items():
-            (target/name).write_bytes(data)
+            (target/name).write_bytes(contents(name, 0))
         (mount/'write-control.bin').write_bytes(marker)
         sync_volume(mount)
-        check(all((target/n).read_bytes() == v for n,v in originals.items()), case)
+        check(all((target/n).read_bytes() == contents(n,0) for n in originals), case)
     disks = [base]
     proofs = [logical(base)]
     for level in range(1, depth+1):
         image = folder/f'child{level}.vhd'
         create(image, 'differencing', disks[-1])
         with attached(image) as mount:
-            check(all((mount/'deletions'/name).read_bytes() == raw for name,raw in originals.items()), case)
+            check(all((mount/'deletions'/name).read_bytes() == contents(name,level-1) for name in originals), case)
+            if layered:
+                offset = 512 if level == 1 else 4096
+                for name, raw in originals.items():
+                    with (mount/'deletions'/name).open('r+b') as f:
+                        f.seek(offset)
+                        f.write(raw[offset:offset+512])
+                        if durable:
+                            f.flush()
+                            os.fsync(f.fileno())
+                    check((mount/'deletions'/name).read_bytes() == contents(name, level), name)
             with (mount/'write-control.bin').open('r+b') as control:
                 at = level * 4096
                 control.seek(at)
@@ -126,6 +145,8 @@ def capture(root, case, kind, depth):
                 control.seek(at+1024)
                 control.write(bytes([level])*512)
             if level == depth:
+                if durable:
+                    sync_volume(mount)
                 for name in originals:
                     (mount/'deletions'/name).unlink()
                 check(not list((mount/'deletions').iterdir()), case)

@@ -1,8 +1,10 @@
 """Import Windows differencing VHDs and recover real NTFS deletions through each overlay."""
 import argparse
 import filecmp
+import hashlib
 import json
 import lzma
+import mmap
 import os
 from pathlib import Path
 import shutil
@@ -11,10 +13,10 @@ import subprocess
 import sys
 import tempfile
 
-from e2e import check
+from e2e import check, run
 from e2e_qcow2_backing import checked_import
 from e2e_vhd import sign
-from e2e_vhdx import digest, native_import, recover, verify_guest
+from e2e_vhdx import CORPUS, digest, native_import, recover, verify_guest
 
 REF = Path(__file__).resolve().parents[1]/'tests/vhd-chain'
 
@@ -112,9 +114,71 @@ def controls(binary, root, chain, metadata):
     return sorted(cases)
 
 
+def check_unflushed(binary, raw, folder, metadata):
+    # The application reread its last write before unlink. The captured
+    # Microsoft guest still contains the previous 512 bytes in every file.
+    offsets = {}
+    proof = {}
+    with raw.open('rb') as f, mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ) as guest:
+        for name, sha256 in metadata['originals'].items():
+            original = (CORPUS/name).read_bytes()
+            previous = bytearray(original)
+            previous[4096:4608] = bytes(b ^ 0x39 for b in previous[4096:4608])
+            check(hashlib.sha256(original).hexdigest() == sha256, name)
+            at = guest.find(previous)
+            check(at >= 0 and guest.find(previous, at+1) == -1, name)
+            offsets[name] = at
+            proof[name] = dict(original_sha256=sha256, retained_sha256=hashlib.sha256(previous).hexdigest(),
+                               changed_offset=4096, changed_bytes=512)
+    for mode in ([], ['--indexed']):
+        session = run(binary, 'scan', *mode, '--source', raw, '--work-dir', folder/('scan'+str(len(mode))), '--json')
+        rows = run(binary,'results','--session',session['session'],'--json')['candidates']
+        check({r['name'] for r in rows} == proof.keys(), rows)
+        report = run(binary, 'recover', '--session', session['session'], '--all',
+                     '--destination', folder/('out'+str(len(mode))), '--json')
+        for row in report['results']:
+            path = Path(row['path'])
+            retained = proof[path.name]['retained_sha256']
+            check(digest(path) == row['sha256'] == retained, path.name)
+    for name, at in offsets.items():
+        layout = folder/(name+'.layout.json')
+        layout.write_text(json.dumps(dict(schema_version=1, sha256=proof[name]['original_sha256'],
+                          extents=[dict(offset=at, length=(CORPUS/name).stat().st_size)])),encoding='utf-8')
+        target = folder/(name+'.verified')
+        run(binary,'recover-extents','--source',raw,'--layout',layout,'--output',target,'--json',expected=4)
+        check(not target.exists(), name)
+    return proof
+
+
+def sector_sources(raw, chain, originals):
+    # Independently locate each original in the Windows guest and check the
+    # MSB-first sector-presence bitmap in the three known Windows VHD layers.
+    layers = [path.read_bytes() for path in chain]
+    def owner(at):
+        for nr, data in enumerate(layers):
+            bat, = struct.unpack_from('>Q', data, 512+16)
+            block_bytes, = struct.unpack_from('>I', data, 512+32)
+            index, within = divmod(at, block_bytes)
+            slot, = struct.unpack_from('>I', data, bat+index*4)
+            sector = within//512
+            if slot != 0xffffffff and data[slot*512+sector//8] & (0x80 >> (sector%8)):
+                return chain[nr].name
+        raise AssertionError(('missing payload sector',at))
+    result = {}
+    with raw.open('rb') as f, mmap.mmap(f.fileno(),0,access=mmap.ACCESS_READ) as guest:
+        for name in originals:
+            b = (CORPUS/name).read_bytes()
+            offset = guest.find(b)
+            check(offset >= 0 and offset % 512 == 0, name)
+            check(owner(offset + 512) == 'child1.vhd' and owner(offset + 4096) == 'child2.vhd', name)
+            result[name] = sorted({owner(offset+i) for i in range(0,len(b),512)})
+    check(sum(len(v)==3 for v in result.values()) == 4, result)
+    return result
+
+
 def verify(binary, root, tsk=False, windows_driver=False):
     result={}
-    for case in ('fixed-child','dynamic-child','dynamic-two-children'):
+    for case in ('fixed-child','dynamic-child','dynamic-two-children','dynamic-nonresident','dynamic-flushed'):
         ref=REF/case
         metadata=json.loads((ref/'manifest.json').read_text())
         folder=root/case
@@ -143,8 +207,14 @@ def verify(binary, root, tsk=False, windows_driver=False):
                 independent_base(path,raw,folder)
             if len(chain) < len(metadata['members']):
                 raw.unlink()
-        hashes=recover(binary,raw,folder/'regular',metadata,folder='deletions')
-        check(recover(binary,raw,folder/'indexed',metadata,indexed=True,folder='deletions')==hashes,case)
+        if case == 'dynamic-nonresident':
+            proof = dict(unflushed_files=check_unflushed(binary,raw,folder,metadata))
+        else:
+            hashes = recover(binary,raw,folder/'regular',metadata,folder='deletions')
+            check(recover(binary,raw,folder/'indexed',metadata,indexed=True,folder='deletions') == hashes,case)
+            proof = dict(originals=hashes)
+            if case == 'dynamic-flushed':
+                proof['file_sectors_from_vhd'] = sector_sources(raw,chain,hashes)
         raw.unlink()
         if case=='dynamic-two-children':
             result['refusals']=controls(binary,folder,chain,metadata)
@@ -171,8 +241,10 @@ def verify(binary, root, tsk=False, windows_driver=False):
         verify_guest(raw,report,metadata['members'][-1])
         for item in metadata['members']:
             check(digest(folder/item['filename'])==item['sha256'],item['filename'])
-        result[case]=dict(guest_sha256=report['sha256'], members=len(chain), originals=hashes)
-        print(case,len(chain),'Windows VHDs, 7 actual NTFS deletions matched all original bytes and SHA-256',flush=True)
+        result[case]=dict(guest_sha256=report['sha256'], members=len(chain), **proof)
+        message = ('7 previous versions identified; current SHA-256 rejected for all 7' if 'unflushed_files' in proof
+                   else '7 actual NTFS deletions matched all original bytes and SHA-256')
+        print(case,len(chain),'Windows VHDs,',message,flush=True)
         shutil.rmtree(folder)
     return result
 
