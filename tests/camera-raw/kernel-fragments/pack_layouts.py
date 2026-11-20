@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 
-def parse_map(path, originals, disk):
+def parse_map(path, originals, disk, *, require_fragmented=True):
     names = {p.name for p in originals.glob("camera.*") if p.is_file()}
     files = {}
     apis = set()
@@ -35,7 +35,7 @@ def parse_map(path, originals, disk):
                 extents.append({"offset": offset, "length": size})
                 position += size
             elif words[0] == "END" and words[1:] in (["FIEMAP"], ["FIBMAP"]) and name is not None:
-                if position != length or len(extents) < 2:
+                if position != length or not extents or (require_fragmented and len(extents) < 2):
                     raise ValueError(f"Incomplete or unfragmented camera file {name}")
                 h = hashlib.sha256()
                 with source.open("rb") as truth:

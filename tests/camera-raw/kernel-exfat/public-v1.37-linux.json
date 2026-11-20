@@ -1,0 +1,325 @@
+{
+  "actual_unlinks": 32,
+  "binary_sha256": "a2288ff3a582eb814535af46516ff6e87911339bca0e77634680c62e26870c17",
+  "sleuthkit": "The Sleuth Kit ver 4.12.1",
+  "sources_unchanged": true,
+  "version": "rescue 1.37.0",
+  "volumes": {
+    "contiguous": {
+      "controls": {
+        "allocation_bit_set": {
+          "file_written": false,
+          "metadata_supported": false,
+          "warnings": [
+            "UNSUPPORTED: unsupported: deleted extents overlap a live file/directory or allocated exFAT bitmap bits"
+          ]
+        },
+        "data_byte_changed": {
+          "matches_original": false,
+          "metadata_supported": true,
+          "observed_sha256": "4db3bfed1074fb598928cf867db6235297b775393e75c01f662fa4f12c8f591a"
+        }
+      },
+      "extent_evidence": "no_fat_chain",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "native_byte_exact": true,
+          "runs": 1,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab",
+          "sleuthkit_byte_exact": true,
+          "sleuthkit_output_sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+        }
+      },
+      "map_api": [
+        "FIBMAP"
+      ],
+      "source_sha256": "a9fcd8b195e23cbde89187a1450b4579c280389b031ee542cc96d5c59b9dac15"
+    },
+    "fragmented": {
+      "controls": {
+        "allocation_bit_set": {
+          "file_written": false,
+          "metadata_supported": false,
+          "warnings": [
+            "UNSUPPORTED: unsupported: deleted extents overlap a live file/directory or allocated exFAT bitmap bits"
+          ]
+        },
+        "cleared_chain": {
+          "file_written": false,
+          "metadata_supported": false,
+          "warnings": [
+            "UNSUPPORTED: unsupported: deleted cluster chain is cleared/cut; multi-cluster positions are not guessed"
+          ]
+        },
+        "data_byte_changed": {
+          "matches_original": false,
+          "metadata_supported": true,
+          "observed_sha256": "4db3bfed1074fb598928cf867db6235297b775393e75c01f662fa4f12c8f591a"
+        },
+        "self_linked_chain": {
+          "file_written": false,
+          "metadata_supported": false,
+          "warnings": [
+            "INVALID_IMAGE: invalid image: FAT: cluster-chain loop"
+          ]
+        }
+      },
+      "extent_evidence": "residual_fat_chain",
+      "files": {
+        "camera.ari": {
+          "bytes": 11529396,
+          "native_byte_exact": true,
+          "runs": 176,
+          "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "9d6b8d1b4ee07768c5886072a666d54303f48d7207ab702ff04f8a0b5b93c803"
+        },
+        "camera.arw": {
+          "bytes": 6160384,
+          "native_byte_exact": true,
+          "runs": 94,
+          "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "7a8a117607df576aa9c38477575cf5b698635c7005015f9b06f7f49991dd3b44"
+        },
+        "camera.cr2": {
+          "bytes": 5805950,
+          "native_byte_exact": true,
+          "runs": 89,
+          "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "d37a6c88506e7b4accd1caadd6626af8ca30fe880cffc5fd35678ee34e5b9ed0"
+        },
+        "camera.cr3": {
+          "bytes": 5273174,
+          "native_byte_exact": true,
+          "runs": 81,
+          "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "69b6e2e66ead8c7a614df4c00dec0e80c5a9e04f3c7dd95cc30f710847997852"
+        },
+        "camera.crw": {
+          "bytes": 2300702,
+          "native_byte_exact": true,
+          "runs": 36,
+          "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "c3578ea487547e72a4d3e91337e34b6e66fb82514a00cb17fb63abd32e3eb562"
+        },
+        "camera.dcr": {
+          "bytes": 7547392,
+          "native_byte_exact": true,
+          "runs": 116,
+          "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "8bb0d4be68c562134030c8ff4a7ab8e80f9ceb6b2cf62c5eab38a7a94c7e9898"
+        },
+        "camera.dng": {
+          "bytes": 1538165,
+          "native_byte_exact": true,
+          "runs": 24,
+          "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "0def95504d7977bb66d91635dc592281ff68e1c6abf398909eda2aca0585aa31"
+        },
+        "camera.erf": {
+          "bytes": 9958994,
+          "native_byte_exact": true,
+          "runs": 152,
+          "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "f9aad74bb9c44535977040857f523a5196d60ac5d98c06f7952edec9a4a37bc9"
+        },
+        "camera.gpr": {
+          "bytes": 3045278,
+          "native_byte_exact": true,
+          "runs": 47,
+          "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "a0980831366abe7657867d23f2c458fcab46a593b90e1e71ab1d205c1b7fea13"
+        },
+        "camera.mrw": {
+          "bytes": 6422144,
+          "native_byte_exact": true,
+          "runs": 98,
+          "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "404ba0f991f35d79f4087d2823214b6145e74cb3e0cfed0384e23abd1ddfa40b"
+        },
+        "camera.nef": {
+          "bytes": 3236017,
+          "native_byte_exact": true,
+          "runs": 50,
+          "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "798800910621deb297125b1e38a39d55d01179712b61f09a3c9fb0889daf6cf4"
+        },
+        "camera.orf": {
+          "bytes": 7614592,
+          "native_byte_exact": true,
+          "runs": 117,
+          "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "39977a2db3b2d8f58d83c5a1726e3170dfb14039ed660a810447ae2b3d6e3ded"
+        },
+        "camera.pef": {
+          "bytes": 9561139,
+          "native_byte_exact": true,
+          "runs": 146,
+          "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "dd82d233824e2f71d731c84bd0616cb521f5e7488c7ecfbd65b73fae053d7d49"
+        },
+        "camera.raf": {
+          "bytes": 6851240,
+          "native_byte_exact": true,
+          "runs": 105,
+          "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "ea65d6bb2cc3a3ca28e3a831886cc04410d3e64bae5a02636bed8c97d55bcfb8"
+        },
+        "camera.rw2": {
+          "bytes": 3249664,
+          "native_byte_exact": true,
+          "runs": 50,
+          "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "2aaa576608d3c5d1edc136c3100be4ac7fedc32f3168090d6fed66b4b0ef5862"
+        },
+        "camera.srw": {
+          "bytes": 20750652,
+          "native_byte_exact": true,
+          "runs": 176,
+          "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab",
+          "sleuthkit_byte_exact": false,
+          "sleuthkit_output_sha256": "694b70b673105dbfb1d3f50dd759ecba511e47d44b6836829e7df98134c8bf1d"
+        }
+      },
+      "map_api": [
+        "FIBMAP"
+      ],
+      "source_sha256": "d1a9c22f4b9541ef0e3e0a5be9abad7851777eafc7135cb759d2d2072140ee42"
+    }
+  }
+}
