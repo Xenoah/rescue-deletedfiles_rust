@@ -62,6 +62,43 @@
     ],
     "source_pixels_sha256": "c8670a81d25ab06c12ba503debb7618b4b1c8736d8de92aed8eaa820964a055e"
   },
+  "free.jp2": {
+    "bytes": 19016,
+    "decoded_sha256": "7177bbb89cf86ed396f02a83fae5150e27006c519696a9736c714c9a167d37c0",
+    "layout": "free",
+    "mode": "RGB",
+    "producer": "OpenJPEG",
+    "settings": {
+      "mct": 1,
+      "num_resolutions": 4,
+      "tile_size": [
+        40,
+        32
+      ]
+    },
+    "sha256": "5fc59d2a5c7b53293f2d6ff803a24a9da962766f45cec7ef03335d181955633b",
+    "size": [
+      103,
+      79
+    ],
+    "source": "rgbtile.jp2",
+    "source_pixels_sha256": "7177bbb89cf86ed396f02a83fae5150e27006c519696a9736c714c9a167d37c0"
+  },
+  "lastbox.jp2": {
+    "bytes": 3096,
+    "decoded_sha256": "bf95c7ce7693735983226d6e33dfb24000be9bf17ddce6d30be1e0e3f16bf00d",
+    "layout": "lastbox",
+    "mode": "L",
+    "producer": "OpenJPEG",
+    "settings": {},
+    "sha256": "cfd91282c33a291c7c65746a012ab3001c0d971fcc6ce158a233c94779d4db69",
+    "size": [
+      65,
+      47
+    ],
+    "source": "mono.jp2",
+    "source_pixels_sha256": "bf95c7ce7693735983226d6e33dfb24000be9bf17ddce6d30be1e0e3f16bf00d"
+  },
   "layers.j2k": {
     "bytes": 12249,
     "decoded_sha256": "edac53072bd6aa624fb238a6beb535719e9005fa963ccc65d2d8359276881cab",
@@ -82,6 +119,23 @@
     ],
     "source_pixels_sha256": "edac53072bd6aa624fb238a6beb535719e9005fa963ccc65d2d8359276881cab"
   },
+  "longbox.jp2": {
+    "bytes": 7517,
+    "decoded_sha256": "a6402f439a7e88bea5945807adda2773dcaf3755dd790d0e8f13b3124131c7d7",
+    "layout": "longbox",
+    "mode": "I;16",
+    "producer": "OpenJPEG",
+    "settings": {
+      "num_resolutions": 4
+    },
+    "sha256": "5904d497030799a7d603b6f05432f93b5aaf2d73ad954bb549473e08b080f5a5",
+    "size": [
+      80,
+      59
+    ],
+    "source": "deepgray.jp2",
+    "source_pixels_sha256": "a6402f439a7e88bea5945807adda2773dcaf3755dd790d0e8f13b3124131c7d7"
+  },
   "lossy.jp2": {
     "bytes": 8293,
     "decoded_sha256": "de0beb603ddfe572d84e4ab438af9817f3efafcd63ef8cb7f680823efaf16e44",
@@ -101,6 +155,29 @@
       101,
       82
     ],
+    "source_pixels_sha256": "7ccc7e61143340abf99b2508077053451196a14ac2df3bd26cc5cba81a36f781"
+  },
+  "metadata.jp2": {
+    "bytes": 8420,
+    "decoded_sha256": "de0beb603ddfe572d84e4ab438af9817f3efafcd63ef8cb7f680823efaf16e44",
+    "layout": "metadata",
+    "mode": "RGB",
+    "producer": "OpenJPEG",
+    "settings": {
+      "irreversible": true,
+      "mct": 1,
+      "progression": "RLCP",
+      "quality_layers": [
+        9,
+        3
+      ]
+    },
+    "sha256": "1c740821da410adf0ea3df9c136ba031e1a3603f4d39362c476203eed370a6c2",
+    "size": [
+      101,
+      82
+    ],
+    "source": "lossy.jp2",
     "source_pixels_sha256": "7ccc7e61143340abf99b2508077053451196a14ac2df3bd26cc5cba81a36f781"
   },
   "mono.jp2": {
@@ -174,5 +251,22 @@
       79
     ],
     "source_pixels_sha256": "7177bbb89cf86ed396f02a83fae5150e27006c519696a9736c714c9a167d37c0"
+  },
+  "uuid.jp2": {
+    "bytes": 15989,
+    "decoded_sha256": "a964394e33f2dcd510e8cd73580d9ca5703d3b0c04a346f7d74818a890117d4b",
+    "layout": "uuid",
+    "mode": "RGBA",
+    "producer": "OpenJPEG",
+    "settings": {
+      "num_resolutions": 4
+    },
+    "sha256": "3bba15dfe354374ab569531058279cfdcc2885577d9ca96fdc7445fdbd07f932",
+    "size": [
+      77,
+      53
+    ],
+    "source": "rgba.jp2",
+    "source_pixels_sha256": "a964394e33f2dcd510e8cd73580d9ca5703d3b0c04a346f7d74818a890117d4b"
   }
 }

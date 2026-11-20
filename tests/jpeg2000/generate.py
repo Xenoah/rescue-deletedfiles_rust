@@ -43,6 +43,34 @@ def write_image(name, size, mode, encoder="OpenJPEG", **settings):
                 "decoded_sha256": digest(decoded), "source_pixels_sha256": digest(pixels)}
 
 
+def boxed_variants(manifest):
+    def box(kind, payload, extended=False):
+        if extended:
+            return struct.pack(">I4sQ", 1, kind, 16 + len(payload)) + payload
+        return struct.pack(">I4s", 8 + len(payload), kind) + payload
+    xml = box(b"xml ", b"<capture><owner>Rescue</owner></capture>")
+    uuid = box(b"uuid", bytes.fromhex("e448eef3a2cc4029a68bdbfe24e89922") + b"scan-42")
+    for i, source in enumerate(("mono.jp2", "deepgray.jp2", "rgba.jp2", "lossy.jp2", "rgbtile.jp2")):
+        original = (ROOT / source).read_bytes()
+        pos = original.index(b"jp2c") - 4
+        stream = original[pos + 8:]
+        # Write valid Part 1 box layouts around the actual encoder's codestream.
+        layout = [
+            ("lastbox", xml + struct.pack(">I4s", 0, b"jp2c") + stream),
+            ("longbox", box(b"jp2c", stream, extended=True)),
+            ("uuid", original[pos:] + uuid),
+            ("metadata", xml + original[pos:] + uuid + xml),
+            ("free", original[pos:] + box(b"free", bytes(range(32)), extended=True)),
+        ][i]
+        name = layout[0] + ".jp2"
+        output = ROOT / name
+        output.write_bytes(original[:pos] + layout[1])
+        with Image.open(output) as image:
+            assert digest(image.tobytes()) == manifest[source]["decoded_sha256"]
+        manifest[name] = dict(manifest[source], bytes=output.stat().st_size,
+                              sha256=digest(output.read_bytes()), layout=layout[0], source=source)
+
+
 if __name__ == "__main__":
     profiles = [
         ("mono.jp2", (65, 47), "L", {}, "OpenJPEG"),
@@ -60,4 +88,5 @@ if __name__ == "__main__":
     ]
     manifest = {name: write_image(name, size, mode, encoder, **settings)
                 for name, size, mode, settings, encoder in profiles}
+    boxed_variants(manifest)
     (ROOT / "manifest.json").write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")

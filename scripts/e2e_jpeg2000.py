@@ -101,6 +101,13 @@ def damaged(binary, folder, files):
     first = tile.index(b'\xff\x90')
     second = first + int.from_bytes(tile[first+6:first+10], 'big')
     cases['duplicate-tile'] = edit(tile, second + 4, b'\x00\x00')
+    extended = files['longbox.jp2']
+    start = extended.index(b'jp2c') - 4
+    cases['extended-length-overflow'] = edit(extended, start + 8, bytes([255]) * 8)
+    cases['extended-length-too-small'] = edit(extended, start + 8, struct.pack('>Q', 15))
+    cases['open-ended-truncation'] = files['lastbox.jp2'][:-2]
+    cases['metadata-count'] = boxed + struct.pack('>I4s', 8, b'free') * 257
+    cases['short-uuid'] = boxed + struct.pack('>I4s', 9, b'uuid') + b'z'
     for label, value in cases.items():
         p = folder / (label + '.raw')
         p.write_bytes(value)
@@ -120,6 +127,26 @@ def damaged(binary, folder, files):
         check(len(rows) == 2 and any(r['supported'] and r['record_sha256'] == sha(boxed) for r in rows)
               and any(not r['supported'] and r['record'] == 12288 - 100 for r in rows), rows)
     return sorted(cases)
+
+
+def changed_comment(binary, root, files):
+    # A real codestream comment can change without altering any pixel. Compare the output
+    # against the original whole-file digest to expose what structural checks cannot detect.
+    source = files['mono.jp2']
+    pos = source.index(b'Created by OpenJPEG')
+    altered = source[:pos] + b'c' + source[pos + 1:]
+    disk = root / 'altered.jp2'
+    disk.write_bytes(altered)
+    session, rows = candidates(binary, disk, root / 'altered-scan', ['--extension', 'jp2'])
+    check(len(rows) == 1 and rows[0]['supported'] and rows[0]['record_sha256'] == sha(altered), rows)
+    saved = run(binary, 'recover', '--session', session, '--all', '--destination', root / 'altered-output', '--json')
+    path = Path(saved['results'][0]['path'])
+    check(path.read_bytes() == altered and sha(altered) != sha(source), path)
+    sums = root / 'original.sha256'
+    sums.write_text(sha(source) + '  mono.jp2\n')
+    result = run(binary, 'match-hashes', '--report', saved['report'], '--checksums', sums, '--json')['comparison']
+    check(result['counts'] == {'matched': 0, 'not_listed': 1, 'not_comparable': 0}, result)
+    return {'original': sha(source), 'altered': sha(altered), 'comparison': 'not_listed'}
 
 
 def verify(binary, root, native=False):
@@ -148,7 +175,8 @@ def verify(binary, root, native=False):
             want = {sha(b[b.index(b'\xff\x4f\xff\x51'):b.index(b'\xff\xd9', b.index(b'\xff\x4f\xff\x51'))+2])
                     for b in files.values()}
         check({r['record_sha256'] for r in rows} == want, (ext, rows))
-    return {'originals': hashes, 'refused': damaged(binary, root, files)}
+    return {'originals': hashes, 'refused': damaged(binary, root, files),
+            'changed_comment': changed_comment(binary, root, files)}
 
 
 if __name__ == '__main__':

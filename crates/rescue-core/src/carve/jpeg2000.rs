@@ -224,6 +224,10 @@ fn box_at(input: &mut Input<'_>, pos: usize) -> Result<BoxRef> {
     if size == 0 {
         return Err(invalid("unbounded box"));
     }
+    let kind = &input.bytes[pos + 4..pos + 8];
+    if (kind == b"ftyp" && size > 4096) || (kind == b"jp2h" && size > 1024 * 1024) {
+        return Err(invalid("header box size limit"));
+    }
     let end = pos + usize64(size)?;
     input.ensure(end)?;
     bmff::header(&input.bytes, pos, end)
@@ -286,6 +290,30 @@ fn metadata(kind: &[u8]) -> bool {
     matches!(kind, b"xml " | b"uuid" | b"free")
 }
 
+fn trailing_metadata(input: &mut Input<'_>, mut pos: usize) -> Result<usize> {
+    for count in 0..=256 {
+        if pos + 8 > input.limit() {
+            return Ok(pos);
+        }
+        match input.ensure(pos + 8) {
+            Err(Error::MissingRanges(_)) => return Ok(pos),
+            other => other?,
+        }
+        let kind = &input.bytes[pos + 4..pos + 8];
+        if matches!(kind, b"jp2c" | b"jp2h") {
+            return Err(invalid("multiple JP2 streams or headers"));
+        }
+        if !metadata(kind) {
+            return Ok(pos);
+        }
+        if count == 256 {
+            break;
+        }
+        pos = box_at(input, pos)?.end;
+    }
+    Err(invalid("metadata box count"))
+}
+
 fn boxed(input: &mut Input<'_>) -> Result<(usize, usize, usize, Geometry)> {
     input.ensure(12)?;
     if &input.bytes[..12] != BOX_SIGNATURE {
@@ -304,42 +332,32 @@ fn boxed(input: &mut Input<'_>) -> Result<(usize, usize, usize, Geometry)> {
     let mut pos = ftyp.end;
     let mut header = None;
     for _ in 0..256 {
+        input.ensure(pos + 8)?;
+        let kind = &input.bytes[pos + 4..pos + 8];
+        if kind == b"jp2c" {
+            let header = header.ok_or_else(|| invalid("missing JP2 header"))?;
+            // A final LBox=0 codestream extends to EOF. Its EOC provides the independent
+            // end on raw media, even with unrelated sectors or the next file immediately after it.
+            if be32(&input.bytes, pos) == 0 {
+                let start = pos + 8;
+                let (end, grid) = codestream(input, start, input.limit())?;
+                image_header(&input.bytes, header, grid)?;
+                return Ok((end, start, end, grid));
+            }
+            let item = box_at(input, pos)?;
+            let (end, grid) = codestream(input, item.data, item.end)?;
+            if end != item.end {
+                return Err(invalid("bytes after codestream EOC inside box"));
+            }
+            image_header(&input.bytes, header, grid)?;
+            return Ok((trailing_metadata(input, end)?, item.data, end, grid));
+        }
+        if kind != b"jp2h" && !metadata(kind) {
+            return Err(invalid("unrecognized top-level box"));
+        }
         let item = box_at(input, pos)?;
         match &item.kind {
             b"jp2h" if header.is_none() => header = Some(item),
-            b"jp2c" => {
-                let header = header.ok_or_else(|| invalid("missing JP2 header"))?;
-                let (end, grid) = codestream(input, item.data, item.end)?;
-                if end != item.end {
-                    return Err(invalid("bytes after codestream EOC inside box"));
-                }
-                image_header(&input.bytes, header, grid)?;
-                pos = end;
-                for _ in 0..256 {
-                    if pos + 8 > input.limit() {
-                        break;
-                    }
-                    match input.ensure(pos + 8) {
-                        Err(Error::MissingRanges(_)) => break,
-                        other => other?,
-                    }
-                    let kind = &input.bytes[pos + 4..pos + 8];
-                    if matches!(kind, b"jp2c" | b"jp2h") {
-                        return Err(invalid("multiple JP2 streams or headers"));
-                    }
-                    if !metadata(kind) {
-                        return Ok((pos, item.data, end, grid));
-                    }
-                    pos = box_at(input, pos)?.end;
-                }
-                if pos + 8 <= input.limit()
-                    && input.bytes.len() >= pos + 8
-                    && metadata(&input.bytes[pos + 4..pos + 8])
-                {
-                    return Err(invalid("metadata box count"));
-                }
-                return Ok((pos, item.data, end, grid));
-            }
             kind if metadata(kind) => {}
             _ => return Err(invalid("unrecognized top-level box")),
         }
