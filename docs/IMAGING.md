@@ -352,3 +352,29 @@ rescue ext4-journal --source volume.raw --inode 13 --output recovered.bin --allo
 `rescue scan --source disk.raw --mode carve --extension cab --work-dir scan --json` は、連続して残ったCAB 1.3を元の圧縮バイトに戻します。無圧縮、MSZIP、32 KiB〜2 MiBのウィンドウを使うLZXに対応し、フォルダーごとの圧縮履歴、各データブロックのチェックサム、展開長とファイルの配置を照合します。メンバーの名前を使ってホスト側のファイルを開く処理はありません。
 
 内蔵処理の上限はCAB全体で64 MiB、展開後128 MiBです。複数巻にまたがるもの、Quantum圧縮、チェックサムのないブロック、署名付き・用途不明の非ゼロ予約領域は対象外です。署名や分割されたファイルには、必要な全巻とそれらを扱える外部ツールが必要です。CABのブロックチェックサムは暗号学的な原本照合には使えません。[Windows・Linuxでの実ファイルの照合](../tests/cab/README.md)
+
+## GNU ddrescueで取得したRAWとマップ
+
+取得を停止した時点のRAWと同じ取得作業のmapfileを一組で指定します。変換には追加ツールは不要です。新しい保存先には `image.rescue.raw`、Rescueの読取マップ `image.rescue.raw.rmap`、入力マップの複製 `ddrescue.map` を保存します。以降のスキャン・復元には同じフォルダー内の `image.rescue.raw` を指定します。
+
+```sh
+rescue import-ddrescue --source capture.dd --map capture.map --destination mapped --json
+rescue read-map --image mapped/image.rescue.raw --json
+```
+
+| GNUマップのブロック | Rescueでの扱い |
+| --- | --- |
+| `+` 取得完了 | RAWからコピーし、ブロックのSHA-256を記録 |
+| `*` トリミング前、`/` スクレイピング前、`-` 不良セクター | 読み取り失敗。元RAWに以前のデータが残っていても復元対象から除外 |
+| `?` 未試行、マップの範囲外 | 未取得 |
+
+JSONには上記の各状態のバイト数、使用した位置、元マップのSHA-256を記録します。全体の `sha256` は未取得・失敗部分をゼロにした**出力RAWのハッシュ**です。元媒体の完全性を確認するには、別途記録した原本のハッシュが必要です。GNUマップには元データの内容ハッシュやディスク識別子がなく、別の取得のマップや推定・編集済みマップを自動判定できません。取得再開は元のGNU ddrescueのRAW・マップで行ってください。
+
+標準では取得RAWの長さと元ディスクの長さが同じと扱います。末尾の読み取り失敗でRAWが短いときは元ディスクの既知の容量を `--logical-bytes` に指定できます。GNU ddrescueの `-i` と `-o` で入力と保存位置をずらした場合は、同じ値をバイト単位で渡します。GUIの「GNU ddrescue (RAW + map)」は同じ位置・長さで取得したRAWを対象とします。
+
+```sh
+rescue import-ddrescue --source partition.dd --map disk.map --destination mapped-part \
+  --input-position 1048576 --output-position 0 --logical-bytes 134217728 --json
+```
+
+マップ内部の境界は512バイト単位です。最終セクターは端数を許容します。マップの空行、コメント、10進・16進・8進の位置に対応します。重複・逆順・内部の空白範囲・取得完了なのにRAWの外を指す範囲・現在のフェーズがF（充填）またはG（推定生成）のマップは拒否します。入力上限は論理16 TiB、マップ32 MiB、100万行・100万読取レコードです。上書き・TRIM等で消えたバイトや復号鍵はマップから復元できません。検証手順で取得を再現する場合にGNU ddrescueとddrescuelogを使用します。

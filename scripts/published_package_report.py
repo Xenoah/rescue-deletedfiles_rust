@@ -60,6 +60,17 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 25, 0):
+        assert run['ddrescue_map'] == run['android_sparse']
+        if platform == 'linux':
+            captures = run['gnu_ddrescue']
+            assert set(captures) == {'fat32', 'ext4', 'windows-ntfs'}
+            assert captures['windows-ntfs']['recovered'] == run['windows_vhdx']['fixed']
+            for fs in ['fat32', 'ext4']:
+                assert captures[fs]['recovered'] == run['ddrescue_map']
+                fault = captures[fs]['with_read_error']
+                assert fault['stale_wav_refused'] and fault['failed_sector'] != fault['untried_sector']
+                assert fault['recovered'] == {k:v for k,v in run['ddrescue_map'].items() if k != 'sample.wav'}
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 24, 0):
         segments = run['split_raw']
         assert segments['originals'] == run['windows_vhdx']['fixed'] and segments['segments'] == 8

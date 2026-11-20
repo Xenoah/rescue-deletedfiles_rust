@@ -313,6 +313,26 @@ enum Command {
         #[arg(long)]
         json: bool,
     },
+    /// Import a GNU ddrescue RAW and its acquisition map into a new mapped image directory.
+    ImportDdrescue {
+        #[arg(long)]
+        source: PathBuf,
+        #[arg(long)]
+        map: PathBuf,
+        #[arg(long)]
+        destination: PathBuf,
+        /// Known original disk length. Defaults to the capture length for same-offset acquisitions.
+        #[arg(long)]
+        logical_bytes: Option<u64>,
+        /// Original input position corresponding to the capture output position (GNU -i).
+        #[arg(long, requires = "output_position")]
+        input_position: Option<u64>,
+        /// Capture position corresponding to the specified original input position (GNU -o).
+        #[arg(long, requires = "input_position")]
+        output_position: Option<u64>,
+        #[arg(long)]
+        json: bool,
+    },
     /// Expand a standalone Android sparse image into a RAW and a read map in a new directory.
     ImportAndroid {
         #[arg(long)]
@@ -563,6 +583,33 @@ fn run(cli: Cli) -> Result<i32, Error> {
         eprintln!("{}", json!({"read_access":access}));
     }
     match cli.command {
+        Command::ImportDdrescue {
+            source,
+            map,
+            destination,
+            logical_bytes,
+            input_position,
+            output_position,
+            json: compact,
+        } => {
+            use rescue_core::disk_image::{DdrescueLayout, import_ddrescue};
+            let layout = DdrescueLayout {
+                logical_bytes,
+                input_position: input_position.unwrap_or(0),
+                output_position: output_position.unwrap_or(0),
+            };
+            print(
+                json!(import_ddrescue(
+                    &source,
+                    &map,
+                    &destination,
+                    layout,
+                    &cancel
+                )?),
+                compact,
+            );
+            Ok(0)
+        }
         Command::ImportAndroid {
             source,
             destination,

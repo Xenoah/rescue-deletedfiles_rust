@@ -39,6 +39,7 @@ from e2e_netpbm import verify as netpbm_images
 from e2e_sevenz import verify as sevenz_archives
 from e2e_cab import verify as cabinet_archives
 from e2e_android_sparse import portable as android_sparse, native as aosp_deletions
+from e2e_ddrescue import portable as ddrescue_map, native as gnu_ddrescue
 from e2e_split_raw import portable as split_raw, native as gnu_split_raw, large as large_split_raw
 from e2e_strided_files import portable as strided_files, native as deleted_strided_files
 from e2e_whole_hash import portable as whole_hash_files, native as deleted_whole_hash_files
@@ -225,6 +226,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 25, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['ddrescue_map'] = ddrescue_map(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['gnu_ddrescue'] = gnu_ddrescue(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 24, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['split_raw'] = split_raw(binary, Path(tmp))
