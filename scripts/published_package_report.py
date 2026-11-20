@@ -60,6 +60,11 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 39, 0):
+        vmdk_reference = json.loads((Path(__file__).resolve().parents[1]/'docs/vmdk-vbox-parent-results.json').read_text(encoding='utf-8'))
+        assert run['vmdk_vbox_parent'] == vmdk_reference['native' if platform == 'linux' else 'portable']
+        reference = 'vdi-chain-native-results.json' if platform == 'linux' else 'vdi-chain-results.json'
+        assert run['vdi_chain'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 38, 0):
         docs = Path(__file__).resolve().parents[1] / 'docs'
         reference = json.loads((docs/'openexr-results.json').read_text(encoding='utf-8'))

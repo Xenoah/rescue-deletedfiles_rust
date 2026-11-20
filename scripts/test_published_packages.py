@@ -59,6 +59,8 @@ from e2e_strided_files import portable as strided_files, native as deleted_strid
 from e2e_whole_hash import portable as whole_hash_files, native as deleted_whole_hash_files
 from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
+from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
+from e2e_vdi_chain import verify as vdi_chain
 from e2e_openexr import verify as openexr_files
 from e2e_vmdk_cid import verify as vmdk_cid
 from e2e_vmdk_cid_boundary import verify as vmdk_cid_boundary
@@ -243,6 +245,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 39, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path(os.environ['RESCUE_TEST_VBOX_IMG']) if a.platform == 'linux' else None
+            result['vdi_chain'] = vdi_chain(binary, Path(tmp), reader)
+        with tempfile.TemporaryDirectory() as tmp:
+            result['vmdk_vbox_parent'] = vmdk_vbox_parent(binary, Path(tmp), reader)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 38, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['openexr'] = openexr_files(binary, Path(tmp))
