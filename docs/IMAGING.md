@@ -405,7 +405,7 @@ Windowsで7ファイルずつ削除したMBR・512バイトセクターとGPT・
 
 QCOW2は単独イメージと、親を直近からベースまで明示したチェーンに対応します。親を指定するには子イメージの後に各親を `--segment` で渡します。外部データファイル、暗号化、未解決のdirty/corruptフラグは拒否します。[親の種類・照合条件とQEMUとの実測](RELEASE-v1.32.0.md) Zstandardのウィンドウは8 MiBまで、クラスタは2 MiBまでです。クラスタを展開して元の長さと記録されたフレームチェックサムを確認します。書き出したRAWの正しさを独立に確かめるには、原本のSHA-256と照合してください。[QEMU生成の検証イメージ](../tests/qcow2-subclusters/README.md)
 
-QCOW2単独ファイルの内部スナップショットは、`rescue qcow2-snapshots --source disk.qcow2 --json` でID、名前、ゲストディスク容量を一覧できます。`rescue import-image --source disk.qcow2 --image-type qcow2 --qcow2-snapshot-id 2 --output snapshot.raw --json` で選択した時点を読み出せます。`--qcow2-snapshot-name` は名前が一意な場合に使えます。選択を省略すると現在のディスクを読み出します。GUIではQCOW変換の内部スナップショットIDを入力してください。既知の論理SHA-256は `--raw-sha256` で照合できます。外部親と内部スナップショットの併用、VMメモリを含むイメージは対象外です。上限は256スナップショット、ディレクトリ16 MiB、L1表の総量64 MiBです。[実ファイルと再現手順](../tests/qcow2-snapshots/README.md)
+QCOW2単独ファイルの内部スナップショットは、`rescue qcow2-snapshots --source disk.qcow2 --json` でID、名前、ゲストディスク容量を一覧できます。`rescue import-image --source disk.qcow2 --image-type qcow2 --qcow2-snapshot-id 2 --output snapshot.raw --json` で選択した時点を読み出せます。`--qcow2-snapshot-name` は名前が一意な場合に使えます。選択を省略すると現在のディスクを読み出します。GUIではQCOW変換で内部スナップショットIDを入力するか、一覧を開いて世代を選択します。既知の論理SHA-256は `--raw-sha256` で照合できます。容量変更前の世代は記録された当時の長さで出力します。VMメモリを含む場合はビューごとのメモリ格納範囲を確認してディスクから除きます。メモリが非圧縮の通常クラスタまたは割り当て済みサブクラスタにある場合に対応します。VM自体の再開にはQEMUが必要です。外部親と内部スナップショットの併用は対象外です。上限は256スナップショット、ディレクトリ16 MiB、L1表の総量64 MiBです。[実ファイルと再現手順](../tests/qcow2-snapshots/README.md)
 
 
 ## 初代QCOW v1の復元

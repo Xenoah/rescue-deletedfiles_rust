@@ -61,6 +61,7 @@ from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
 from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
 from e2e_rar import verify as rar_archives
+from e2e_qcow2_snapshots import verify as qcow2_snapshots
 from e2e_vmdk_chain import verify as vmdk_chain
 from e2e_vdi_chain import verify as vdi_chain
 from e2e_openexr import verify as openexr_files
@@ -247,6 +248,10 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 42, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path('/usr/bin/qemu-img') if a.platform == 'linux' else None
+            result['qcow2_snapshots'] = qcow2_snapshots(binary, Path(tmp), reader)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 41, 0):
         with tempfile.TemporaryDirectory() as tmp:
             reader = Path('/usr/bin/unrar') if a.platform == 'linux' else None

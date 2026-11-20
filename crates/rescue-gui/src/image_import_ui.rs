@@ -1,6 +1,6 @@
 //! Convert local container files to a logical RAW source for the normal scan workflow.
 use super::*;
-use rescue_core::disk_image::{ImageInput, ImportedFile};
+use rescue_core::disk_image::{ImageInput, ImportedFile, Qcow2Snapshot};
 
 #[derive(Clone, Copy, PartialEq)]
 enum Format {
@@ -106,6 +106,17 @@ impl Format {
     }
 }
 
+struct SnapshotLookup {
+    cancel: Arc<AtomicBool>,
+    result: mpsc::Receiver<rescue_core::Result<Vec<Qcow2Snapshot>>>,
+}
+
+impl Drop for SnapshotLookup {
+    fn drop(&mut self) {
+        self.cancel.store(true, Ordering::Relaxed);
+    }
+}
+
 #[derive(Default)]
 pub(super) struct State {
     pub open: bool,
@@ -116,6 +127,8 @@ pub(super) struct State {
     raw_sha256: String,
     raw_bytes: String,
     qcow2_snapshot_id: String,
+    snapshots: Option<Vec<Qcow2Snapshot>>,
+    lookup: Option<SnapshotLookup>,
     pub output: String,
     worker: Option<thread::JoinHandle<()>>,
     error: Option<Text>,
@@ -127,7 +140,7 @@ impl State {
             self.first = source.to_owned();
             self.format = Format::from_path(source);
             self.segments.clear();
-            self.qcow2_snapshot_id.clear();
+            self.reset_snapshots();
             self.ddrescue_map.clear();
             self.raw_sha256.clear();
             self.raw_bytes.clear();
@@ -135,6 +148,96 @@ impl State {
         }
         self.error = None;
         self.open = true;
+    }
+
+    fn reset_snapshots(&mut self) {
+        self.lookup = None;
+        self.snapshots = None;
+        self.qcow2_snapshot_id.clear();
+    }
+
+    fn snapshot_picker(&mut self, ui: &mut egui::Ui) {
+        if let Some(lookup) = &self.lookup {
+            match lookup.result.try_recv() {
+                Ok(result) => {
+                    self.lookup = None;
+                    match result {
+                        Ok(rows) => {
+                            if !rows.iter().any(|row| row.id == self.qcow2_snapshot_id) {
+                                self.qcow2_snapshot_id.clear();
+                            }
+                            self.snapshots = Some(rows);
+                        }
+                        Err(err) => {
+                            self.error = Some(message!(
+                                "一覧を取得できませんでした。{err}",
+                                "Could not list snapshots. {err}"
+                            ))
+                        }
+                    }
+                }
+                Err(mpsc::TryRecvError::Disconnected) => {
+                    self.lookup = None;
+                    self.error = Some(message!(
+                        "読み取りが中断しました。",
+                        "Snapshot listing was interrupted."
+                    ));
+                }
+                Err(mpsc::TryRecvError::Empty) => {}
+            }
+        }
+        if let Some(rows) = &self.snapshots {
+            let active = tr!("現在のディスク", "Active disk");
+            let label = ui.label(tr!("スナップショット", "Snapshot")).id;
+            egui::ComboBox::from_id_salt("qcow2-snapshot")
+                .selected_text(
+                    rows.iter()
+                        .find(|s| s.id == self.qcow2_snapshot_id)
+                        .map_or_else(|| active.to_owned(), |s| format!("{} · {}", s.id, s.name)),
+                )
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut self.qcow2_snapshot_id, String::new(), active);
+                    for row in rows {
+                        ui.selectable_value(
+                            &mut self.qcow2_snapshot_id,
+                            row.id.clone(),
+                            format!("{} · {} ({} B)", row.id, row.name, row.guest_bytes),
+                        );
+                    }
+                })
+                .response
+                .labelled_by(label);
+        } else {
+            text_row(
+                ui,
+                tr!(
+                    "内部スナップショットID（空欄で現在の状態）",
+                    "Internal snapshot ID (leave empty for the active disk)"
+                ),
+                &mut self.qcow2_snapshot_id,
+                "",
+            );
+            if ui
+                .add_enabled(
+                    self.lookup.is_none() && !self.first.is_empty(),
+                    egui::Button::new(tr!("スナップショット一覧", "List snapshots")),
+                )
+                .clicked()
+            {
+                let path = PathBuf::from(&self.first);
+                let cancel = Arc::new(AtomicBool::new(false));
+                let worker_cancel = Arc::clone(&cancel);
+                let (send, result) = mpsc::channel();
+                let context = ui.ctx().clone();
+                self.error = None;
+                self.lookup = Some(SnapshotLookup { cancel, result });
+                thread::spawn(move || {
+                    let rows = rescue_core::disk_image::list_qcow2_snapshots(&path, &worker_cancel);
+                    let _ = send.send(rows);
+                    context.request_repaint();
+                });
+            }
+        }
     }
 
     pub fn join(&mut self) {
@@ -159,7 +262,7 @@ impl App {
                 if state.first != old {
                     state.format = Format::from_path(&state.first);
                     state.segments.clear();
-                    state.qcow2_snapshot_id.clear();
+                    state.reset_snapshots();
                     state.ddrescue_map.clear();
                     state.raw_sha256.clear();
                     state.raw_bytes.clear();
@@ -190,7 +293,7 @@ impl App {
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format == Format::Qcow {
-                        text_row(ui, tr!("内部スナップショットID（空欄で現在の状態）", "Internal snapshot ID (leave empty for the active disk)"), &mut state.qcow2_snapshot_id, "");
+                        state.snapshot_picker(ui);
                     }
                     if format.split() {
                         let caption = if matches!(format, Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx) {
@@ -248,6 +351,7 @@ impl App {
             });
         });
         if modal.should_close() || close || start {
+            state.lookup = None;
             state.open = false;
         }
         if start {
