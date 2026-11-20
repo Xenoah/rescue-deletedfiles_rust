@@ -12,7 +12,7 @@ import tempfile
 from e2e import check, run
 from e2e_apple_partitions import make_image
 from e2e_disks import disk_image
-from e2e_imaging import mark_gap
+from e2e_imaging import source_with_gaps
 from e2e_known_extents import CORPUS, manifest, restore, sha
 from e2e_legacy_ext import ROOT as LEGACY, build_boundary
 from verify_camera_raw_metadata import digest
@@ -264,24 +264,11 @@ def exercise(binary, root):
             check(output.read_bytes() == bytes(9) + files["png"] + bytes(11), label)
             output.unlink()
             if label == "dos":
-                acq = run(
-                    binary,
-                    "image",
-                    "--source",
-                    image,
-                    "--destination",
-                    stage / "acquired",
-                    "--block-size",
-                    "512",
-                    "--json",
-                )
-                acquired = Path(acq["image"])
-                # Neither this partition's boot sector nor the decoy boot sector is needed
-                # to apply a known layout. Only the partition table and requested bytes are mandatory.
+                # The MBR stays readable. Both volume boot sectors and the following sector
+                # on the selected volume are missing, while its next sector remains intact.
                 decoy = next(other for other in table["regions"] if other["index"] != index)
-                mark_gap(acquired, decoy["offset"])
-                mark_gap(acquired, region["offset"])
-                mark_gap(acquired, region["offset"] + 512)
+                acquired = source_with_gaps(binary, image, stage / "acquired",
+                                            [(decoy["offset"], 512), (region["offset"], 1024)])
                 # Requested bytes are truly zero, yet the corresponding position on the disk was not acquired.
                 gapped = dict(
                     manifest(bytes(128), [{"offset": 512, "length": 128}]), schema_version=2, partition=index
