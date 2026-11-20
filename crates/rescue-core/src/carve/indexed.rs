@@ -132,7 +132,7 @@ pub(crate) fn resume(
             (count + SIGNATURE_LOOKAHEAD).min(saved.end - start) as usize,
         )?;
         saved.missing |= !gaps.is_empty();
-        for index in 0..count as usize {
+        for index in signature_offsets(&buffer, count as usize, settings.signature_rule.as_ref()) {
             let at = start + index as u64;
             if index.is_multiple_of(4096) && cancel.load(Ordering::Relaxed) {
                 header.cancelled = true;
@@ -170,6 +170,7 @@ pub(crate) fn resume(
                 Format::Zip
                     | Format::Html
                     | Format::Xml
+                    | Format::Svg
                     | Format::Mp3
                     | Format::Tar(_)
                     | Format::J2k
@@ -212,6 +213,7 @@ pub(crate) fn resume(
                 saved.end,
             ) {
                 Ok((found, bytes, records)) => {
+                    let found = found.for_extensions(&settings.extensions);
                     candidate.allocation_status = match scope.status(at, bytes.len() as u64, cancel)
                     {
                         Ok(status) => status,

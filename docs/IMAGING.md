@@ -110,7 +110,7 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。複数ファイルのVMDKでは記述ファイルを先頭にし、構成ファイルを1行ずつ指定します。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI、対応するQCOW2・クラシックVHD・VHDXはアプリ内で読み取ります。差分VHDXは子からベースまでを明示的に指定します。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFFには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+固定・可変VDIと差分VDI、対応するQCOW2・クラシックVHD・VHDXはアプリ内で読み取ります。差分VHDXは子からベースまでを明示的に指定します。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFFには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
 
 ### 分割RAWを元の順番に結合する
 
@@ -141,7 +141,17 @@ RAWチャンクをコピーし、FILLの4バイトパターンを展開します
 
 ## VMDKの内蔵読み取り
 
-**VirtualBox製の差分VMDKを子だけで変換すると、親から読み継ぐデータが欠ける場合があります。** v1.33.0・v1.34.0・v1.35.0の公開Linux版で、親をUUIDだけで指定した96 MiBの子を単独で変換すると、成功と表示されても2世代それぞれで4,065,178バイトが原本と異なりました。該当するVMDKは、親子一式をVirtualBoxで読み取り専用で開き、対象世代のディスク全体をRAWとして書き出してからRescueでスキャンしてください。完全な親子を使った試験では7件のNTFS削除ファイルが原本と一致しました。[再現した実イメージとファイル別の検証](https://github.com/Xenoah/rescue-deletedfiles_rust/tree/578cd7241b194390b68002fbf5e28393f6169d63/tests/vmdk-vbox-parent)
+差分スナップショットでは、対象の子と、その世代の直近の親からベースまでの全ファイルを選択します。子が変更したグレインを優先し、明示的に消去したグレインはゼロ、未割当グレインは親から読み取ります。QEMU形式の親CID・ファイル名、およびVirtualBox形式の親UUID・更新UUIDを照合します。ディスクリプターのパスを自動で開くことはありません。
+
+```sh
+rescue import-image --image-type vmdk --source child2.vmdk \
+  --segment child1.vmdk --segment base.vmdk --output guest.raw --json
+```
+
+この方式で扱える差分は、埋め込みディスクリプターを持つmonolithicSparseです。ベースにはzlib圧縮のstreamOptimizedも指定できます。ベースを含めて8ファイル、グレイン表は合計128 MiBまでです。親CIDを使うファイル名のヒントは単一のファイル名に対応します。絶対パス・ディレクトリ付きのヒント、分割スナップショット、VMFS・SEsparse、暗号化された構成は、対応するVMware製品などで親子一式を読み取り専用で開き、対象世代をRAWに書き出してください。親の欠落や上書きがある場合は、残存する完全な世代または別のコピーが必要です。親のIDを維持したままデータ部分だけが変化したときは、元の論理ディスクの既知のSHA-256を `--raw-sha256` に指定して検出できます。[21世代の全ディスクと削除ファイルの実測](../tests/vmdk-chain/README.md)
+
+
+**旧版でVirtualBox製の差分VMDKを子だけで変換すると、親から読み継ぐデータが欠ける場合があります。** v1.33.0・v1.34.0・v1.35.0の公開Linux版で、親をUUIDだけで指定した96 MiBの子を単独で変換すると、成功と表示されても2世代それぞれで4,065,178バイトが原本と異なりました。該当するVMDKは、親子一式をVirtualBoxで読み取り専用で開き、対象世代のディスク全体をRAWとして書き出してからRescueでスキャンしてください。完全な親子を使った試験では7件のNTFS削除ファイルが原本と一致しました。[再現した実イメージとファイル別の検証](https://github.com/Xenoah/rescue-deletedfiles_rust/tree/578cd7241b194390b68002fbf5e28393f6169d63/tests/vmdk-vbox-parent)
 
 `rescue import-image --source guest.vmdk --image-type vmdk --output guest.raw --json` は、クリーンな単独のmonolithicSparse・streamOptimizedを読み取ります。ディスクリプターの容量・親の有無・単一エクステントの宣言、グレインディレクトリと割り当て表の範囲を検証します。冗長な表が存在する場合は両方を比較し、同じ物理領域を複数のグレインが参照する場合は拒否します。ホスト上でイメージを改名しても読み取れます。ディスクリプター中のパスは開きません。
 
@@ -155,7 +165,7 @@ rescue import-image --source disk.vmdk --segment disk-s001.vmdk --segment disk-s
 
 論理ディスク全体の既知の長さとSHA-256は、明示的にVMDKを選んだうえで `--raw-bytes` と `--raw-sha256` に指定できます。誤った長さやハッシュの場合は完成したRAWを作成しません。QEMUがCIDを書き直して終端直後に以前の行末が残った場合、検証できた範囲で読み取ります。[QEMU 6.2・10.0の実測値と制限](RELEASE-v1.37.0.md)
 
-記述ファイルに書かれたベース名と指定したファイル名を照合し、FLATの開始セクター、SPARSEの容量、ZEROの長さを確認します。別のフォルダーに集めたコピーでも元の構成ファイル名が必要です。構成ファイルが欠けたイメージや差分イメージでは、親や欠けた部分を補ってから変換してください。VMFS、古いCOWD、暗号化イメージには、その形式と必要な鍵を扱える外部ツールが必要です。[分割イメージの実証記録](../tests/vmdk-split/README.md)
+記述ファイルに書かれたベース名と指定したファイル名を照合し、FLATの開始セクター、SPARSEの容量、ZEROの長さを確認します。別のフォルダーに集めたコピーでも元の構成ファイル名が必要です。構成ファイルが欠けている場合は元のエクステントをそろえてください。VMFS、古いCOWD、暗号化イメージには、その形式と必要な鍵を扱える外部ツールが必要です。[分割イメージの実証記録](../tests/vmdk-split/README.md)
 
 ## VHDXの内蔵読み取り
 
@@ -345,6 +355,12 @@ rescue ext4-journal --source volume.raw --inode 13 --output recovered.bin --allo
 
 対象はメタデータチェックサムを持つ64ビットext4、チェックサムv3の内部ジャーナル、inode内のエクステントまたは検証できる外部エクステントツリーが残っているファイルです。外部ツリーは同じ世代か、それ以前の連続してコミットされたジャーナルから読みます。ジャーナルの循環で古い世代が失われた場合、上書きやTRIMで元データが失われた場合、暗号化・インラインデータなど非対応の配置では、この方法で原本を復元できません。[実ファイルの照合記録](../tests/ext4-journal-reference/README.md) · [16～17個のエクステントに分かれたファイル](../tests/ext4-journal-extents/README.md)
 
+## RARの内容検索
+
+`rescue scan --source disk.raw --mode carve --extension rar --work-dir scan --json` は、連続領域に残っている単独のRAR 4・RAR 5アーカイブを検索します。開始から終了ヘッダーまでの長さとヘッダーCRCを照合し、各メンバーを展開してCRC32またはBLAKE2spを検証します。ソリッド圧縮、日本語名、空のメンバー、チェックサム付きのアーカイブコメント、元のヘッダーと一致するRAR5のクイックオープン記録に対応します。復元するのは元のアーカイブのバイト列です。
+
+1候補の上限は入力64 MiB、展開後のメンバー合計64 MiB、ヘッダー4,096個、RAR5の辞書32 MiB、コメント1 MiBです。暗号化、分割ボリューム、リカバリーレコード、未対応のサービス情報には元のボリューム一式と対応するRARツールが必要です。パスワード付きの場合はパスワードも必要です。断片化している場合はファイルシステムの割り当て情報を使う復元も確認してください。構造と内部CRCを保って再作成されたアーカイブを識別するには、元のアーカイブのSHA-256が必要です。[実測値とファイルごとのSHA-256](rar-native-results.json)
+
 ## 7zアーカイブの内容検索
 
 `rescue scan --source disk.raw --mode carve --extension 7z --work-dir scan --json` は、管理情報を失った連続領域から7zファイルを探します。開始ヘッダーと次ヘッダーのCRC、各データストリームの復号サイズとメンバーCRCを検証します。復元時には圧縮されたままの元バイトを保存します。空メンバー、ソリッド圧縮、LZMA・LZMA2・Deflate・BZip2などに対応します。
@@ -389,7 +405,10 @@ Windowsで7ファイルずつ削除したMBR・512バイトセクターとGPT・
 
 `rescue import-image --source guest.qcow2 --output guest.raw --json` で、QEMUのQCOW2 v3でZstandard圧縮したクラスタと、拡張L2テーブルを使ったイメージを直接読み取れます。GUIでは「イメージをRAWに変換」でQCOW2を選択します。拡張L2テーブルでは各クラスタの32個のサブクラスタを個別に判定し、明示的なゼロと未割り当て部分をゼロとして書き出します。ホストファイルの同じ位置に残っている古いデータは復元元から除きます。
 
-QCOW2は単独イメージと、親を直近からベースまで明示したチェーンに対応します。親を指定するには子イメージの後に各親を `--segment` で渡します。内部スナップショット、外部データファイル、暗号化、未解決のdirty/corruptフラグは拒否します。[親の種類・照合条件とQEMUとの実測](RELEASE-v1.32.0.md) Zstandardのウィンドウは8 MiBまで、クラスタは2 MiBまでです。クラスタを展開して元の長さと記録されたフレームチェックサムを確認します。書き出したRAWの正しさを独立に確かめるには、原本のSHA-256と照合してください。[QEMU生成の検証イメージ](../tests/qcow2-subclusters/README.md)
+QCOW2は単独イメージと、親を直近からベースまで明示したチェーンに対応します。親を指定するには子イメージの後に各親を `--segment` で渡します。外部データファイル、暗号化、未解決のdirty/corruptフラグは拒否します。[親の種類・照合条件とQEMUとの実測](RELEASE-v1.32.0.md) Zstandardのウィンドウは8 MiBまで、クラスタは2 MiBまでです。クラスタを展開して元の長さと記録されたフレームチェックサムを確認します。書き出したRAWの正しさを独立に確かめるには、原本のSHA-256と照合してください。[QEMU生成の検証イメージ](../tests/qcow2-subclusters/README.md)
+
+QCOW2単独ファイルの内部スナップショットは、`rescue qcow2-snapshots --source disk.qcow2 --json` でID、名前、ゲストディスク容量を一覧できます。`rescue import-image --source disk.qcow2 --image-type qcow2 --qcow2-snapshot-id 2 --output snapshot.raw --json` で選択した時点を読み出せます。`--qcow2-snapshot-name` は名前が一意な場合に使えます。選択を省略すると現在のディスクを読み出します。GUIではQCOW変換で内部スナップショットIDを入力するか、一覧を開いて世代を選択します。既知の論理SHA-256は `--raw-sha256` で照合できます。容量変更前の世代は記録された当時の長さで出力します。VMメモリを含む場合はビューごとのメモリ格納範囲を確認してディスクから除きます。メモリが非圧縮の通常クラスタまたは割り当て済みサブクラスタにある場合に対応します。VM自体の再開にはQEMUが必要です。外部親と内部スナップショットの併用は対象外です。上限は256スナップショット、ディレクトリ16 MiB、L1表の総量64 MiBです。[実ファイルと再現手順](../tests/qcow2-snapshots/README.md)
+
 
 ## 初代QCOW v1の復元
 
@@ -403,3 +422,45 @@ rescue scan --source guest.raw --work-dir scan --json
 512バイト単位のゲストディスクで、4 KiBを含む512 B〜64 KiBのクラスタ、割り当てのない領域、通常クラスタ、バイト長を明示したraw DEFLATEクラスタに対応します。ゲストの未割り当て部分はゼロとして書き出します。テーブルとデータが重なる配置、複数のゲストクラスタが同じデータを参照する配置、切れた圧縮ストリーム、宣言サイズと異なる出力を拒否し、失敗・取消時は未完成のRAWを破棄します。L1テーブルは32 MiBまで、離れた物理範囲は524,288件までです。
 
 外部の親を持つイメージと暗号化イメージは取り込めません。親チェーンまたは鍵を揃えて、対応するQEMU環境で展開してください。DEFLATEには原本を証明するチェックサムがないため、元ディスクや元ファイルの独立したハッシュがあれば照合してください。
+
+
+### VirtualBoxの差分VDI
+
+子イメージを `--source` に指定し、直近の親から固定・可変のベースまで `--segment` を繰り返します。VDIに記録されたイメージUUIDと更新UUIDの両方を照合します。GUIのVDI取り込みでも同じ順番で親を指定できます。
+
+```sh
+rescue import-image --image-type vdi --source child2.vdi \
+  --segment child1.vdi --segment base.vdi --output guest.raw --json
+```
+
+論理ディスクの長さ・SHA-256が分かる場合は `--raw-bytes` と `--raw-sha256` で照合できます。上限はベース込み8ファイル、割当表は1ファイル64 MiB・合計128 MiBです。読み取りはRescue単体で実行できます。保存済みのVDI v1.1で、完全な親子関係が残っていることが必要です。暗号化・旧版・undoイメージ、欠落した親、UUIDの組み合わせが一致しない世代は変換できません。[実イメージと生成手順](../tests/vdi-chain/README.md)
+
+
+### SVGとSVGZの復元
+
+GUIのCarvingまたは `rescue scan --source disk.raw --work-dir scan --mode carve --extension svg --extension svgz --json` で検索できます。SVGはUTF-8またはBOM付きUTF-16LE/BEのXMLとして要素と属性を検証し、ルート名とSVG名前空間を確認します。SVGZはgzipメンバーのCRC32と展開長を検証し、その中のSVGを確認します。Rescueは画像中のリンクを取得せず、スクリプトも実行しません。
+
+XMLルートの閉じタグより後の改行やコメントは、ディスクの内容検索だけでは元ファイルに属するか確定できません。Cairo・Inkscapeが末尾改行を付けたSVGをFAT32とext4で削除した試験では、内容検索は閉じタグで止まり、ファイルシステムに残っていた長さを使うと各原本の末尾まで一致しました。FATの連続推定は `--estimate-fat-contiguous` で明示的に有効にします。SVGZはメンバー全体の境界を検証できます。[原本と検証手順](../tests/svg/README.md)
+
+### Linux LVM2の論理ボリューム
+
+物理ボリューム（PV）ごとのイメージを用意し、同じグループのすべてのPVを指定します。イメージ中に記録されたデバイス名は開きません。各PVをUUIDで照合するため、追加のPVはどの順番でも指定できます。
+
+```sh
+rescue lvm-volumes --source first.pv --segment second.pv --json
+rescue import-image --image-type lvm2 --source first.pv --segment second.pv --lvm-volume data --output data.raw --json
+rescue scan --source data.raw --work-dir scan --mode carve --json
+```
+
+2行目の `data` には、一覧に表示された論理ボリューム名またはUUIDを指定します。元の論理ディスクのSHA-256や長さが分かる場合は `--raw-sha256` と `--raw-bytes` で照合できます。GUIでは「イメージをRAWに変換」でLVM2を選び、各PVを指定して「論理ボリューム一覧」から選択します。
+
+内蔵機能は通常の連結・ストライプ配置と、それらに対するLinuxの従来型永続スナップショットを扱います。グループのコピーが一致しない場合や、必要なPVが欠けている場合は読み出しを中止します。thin・cache・ミラー・RAID、マージ中のスナップショットを含むグループには、対応するLinux LVM2環境を使用してください。LUKS内のPVを読み取るには、鍵を使って復号したイメージが必要です。[実ディスクと検証方法](../tests/lvm2/README.md)
+
+
+従来型のLVMスナップショットは、一覧に表示されたスナップショット名またはそのUUIDを `--lvm-volume` に指定します。一覧の `snapshot.origin` が元のボリューム、`chunk_bytes` が保存単位、`cow_bytes` が変更前のデータを保持する領域の容量です。書き出す論理ディスクの長さは元のボリュームの長さです。候補の一覧はグループのメタデータを調べ、実際の変換時に選択した世代の保存領域を検査します。容量不足でLinuxが無効にした世代は拒否し、影響のない元ボリュームや別の世代を個別に選べます。ファイル名を失ったext4では削除前の世代に名前が残っている場合もあります。[カーネルで作成したスナップショットと検証記録](../tests/lvm2-snapshots/README.md)
+
+## QEMU Enhanced Disk（QED）
+
+`rescue import-image --source guest.qed --image-type qed --output guest.raw --json` で単独のQEDをRAW化できます。差分ディスクは子を `--source`、すべての親を直近のものから順に `--segment` で指定します。親のファイル名と記録上の形式を照合します。親はQED、または作成時に明示的にRAWと記録されたものに対応します。確認できる論理ディスクの長さとSHA-256があれば `--raw-bytes` と `--raw-sha256` を指定してください。
+
+未割り当てクラスタは親から継承し、明示的なゼロクラスタと短い親の終端を越える範囲はゼロとして読みます。チェックが必要なディスク、未対応の機能、パスを含む親参照、競合する割り当ては拒否します。これらの診断やQED以外の親の読み出しには、元のディスク一式のコピーをQEMUで開いてください。親の内容のチェックサムは形式に含まれません。欠落した親にしか存在しないデータを読み戻すには別のコピーが必要です。[QEMUで作成したディスクと検証手順](../tests/qed/README.md)

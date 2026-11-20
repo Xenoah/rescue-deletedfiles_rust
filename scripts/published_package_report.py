@@ -60,6 +60,36 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 46, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        reference = 'qed-native-results.json' if platform == 'linux' else 'qed-results.json'
+        assert run['qed'] == json.loads((docs/reference).read_text(encoding='utf-8'))
+        assert run['sparse_carve'] == json.loads((docs/'sparse-carve-results.json').read_text(encoding='utf-8'))
+        if platform == 'linux':
+            assert run['qed_boundary'] == json.loads((docs/'qed-boundary-results.json').read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 45, 0):
+        reference = 'lvm2-snapshot-native-results.json' if platform == 'linux' else 'lvm2-snapshot-results.json'
+        assert run['lvm2_snapshots'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 44, 0):
+        reference = 'lvm2-native-results.json' if platform == 'linux' else 'lvm2-results.json'
+        assert run['lvm2_volumes'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 43, 0):
+        reference = 'svg-native-results.json' if platform == 'linux' else 'svg-results.json'
+        assert run['svg_images'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 42, 0):
+        reference = 'qcow2-snapshot-native-results.json' if platform == 'linux' else 'qcow2-snapshot-results.json'
+        assert run['qcow2_snapshots'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 41, 0):
+        reference = 'rar-native-results.json' if platform == 'linux' else 'rar-results.json'
+        assert run['rar_archives'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 40, 0):
+        reference = 'vmdk-chain-native-results.json' if platform == 'linux' else 'vmdk-chain-results.json'
+        assert run['vmdk_chain'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 39, 0):
+        vmdk_reference = json.loads((Path(__file__).resolve().parents[1]/'docs/vmdk-vbox-parent-results.json').read_text(encoding='utf-8'))
+        assert run['vmdk_vbox_parent'] == vmdk_reference['native' if platform == 'linux' else 'portable']
+        reference = 'vdi-chain-native-results.json' if platform == 'linux' else 'vdi-chain-results.json'
+        assert run['vdi_chain'] == json.loads((Path(__file__).resolve().parents[1]/'docs'/reference).read_text(encoding='utf-8'))
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 38, 0):
         docs = Path(__file__).resolve().parents[1] / 'docs'
         reference = json.loads((docs/'openexr-results.json').read_text(encoding='utf-8'))

@@ -1,0 +1,22 @@
+{
+  "indexed": {
+    "compact.tar": "722994e77fd50ff60415eb7d76a4b482554a2f59a9cb4fd7f4feb588dec2a815",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.ico": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+    "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+    "sample.mp4": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "ordinary": {
+    "compact.tar": "722994e77fd50ff60415eb7d76a4b482554a2f59a9cb4fd7f4feb588dec2a815",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.ico": "1cf9a8002031c4878d3372d56503086c3f5edaec71d7805094dc4a16b35c6389",
+    "sample.jpg": "1009ce0cc3d0cba4faa9c63cdb271330c99b143d52c46da3f5ec40db0f52cbe8",
+    "sample.mp4": "f8c9337264857e10aee1be330b26a2afffef982850c954c5d14957995ff3c30e",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  }
+}

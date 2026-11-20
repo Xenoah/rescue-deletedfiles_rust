@@ -128,6 +128,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "aho-corasick"
+version = "1.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c982642fa9e8606056828ee9a8505737230110bb1099153c79efe865c59d12ba"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "ambient-authority"
 version = "0.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -535,6 +544,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "blake2s_simd"
+version = "1.0.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2380c0236432f7b22a70229df30f218f5293870c056beb76f5ca068e3273a366"
+dependencies = [
+ "arrayvec",
+ "constant_time_eq",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -837,6 +856,12 @@ name = "const-oid"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be95d4a884358a21a199689323c29e9256b4a1b315e22f183d155422041d3a9a"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d52eff69cd5e647efe296129160853a42795992097e8af39800e1060caeea9b"
 
 [[package]]
 name = "core-foundation"
@@ -2911,6 +2936,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ca45419789ae5a7899559e9512e58ca889e41f04f1f2445e9f4b290ceccd1d08"
 
 [[package]]
+name = "rars"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1da01c12cc3255e4c42fbd643820efad0c179e98362770f992eff6ba436cba3c"
+dependencies = [
+ "aho-corasick",
+ "blake2s_simd",
+ "crc32fast",
+ "libc",
+]
+
+[[package]]
 name = "raw-window-handle"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2957,7 +2994,7 @@ checksum = "19b30a45b0cd0bcca8037f3d0dc3421eaf95327a17cad11964fb8179b4fc4832"
 
 [[package]]
 name = "rescue-cli"
-version = "1.38.0"
+version = "1.46.0"
 dependencies = [
  "clap",
  "ctrlc",
@@ -2970,7 +3007,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-core"
-version = "1.38.0"
+version = "1.46.0"
 dependencies = [
  "base64",
  "blake2",
@@ -2992,6 +3029,7 @@ dependencies = [
  "md-5",
  "png",
  "quick-xml",
+ "rars",
  "roxmltree",
  "rusqlite",
  "rustix 1.1.6",
@@ -3017,7 +3055,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-gui"
-version = "1.38.0"
+version = "1.46.0"
 dependencies = [
  "eframe",
  "egui_extras",
@@ -3030,7 +3068,7 @@ dependencies = [
 
 [[package]]
 name = "rescue-mcp"
-version = "1.38.0"
+version = "1.46.0"
 dependencies = [
  "rescue-core",
  "serde_json",

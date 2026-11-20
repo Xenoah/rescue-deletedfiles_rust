@@ -199,7 +199,7 @@
         "sha256": "e353f37b12aefbb9f9b29490e837cfee05d9bda70804b3562839a3285c1df1e5"
       }
     ],
-    "note": "dispatch 0.2.0 declares MIT in the exact published Cargo.toml but supplies no license file. The MIT text below is from the same author Steven Sheldon\u2019s objc project; its separate pinned URL is recorded."
+    "note": "dispatch 0.2.0 declares MIT in the exact published Cargo.toml but supplies no license file. The MIT text below is from the same author Steven Sheldon’s objc project; its separate pinned URL is recorded."
   },
   {
     "package": "dispatch2",
@@ -630,6 +630,19 @@
         "path": "licenses/etemesi254/zune-image/69502ce83fdfecdd0beefd677e2abb3781b29d98/LICENSE-ZLIB",
         "url": "https://raw.githubusercontent.com/etemesi254/zune-image/69502ce83fdfecdd0beefd677e2abb3781b29d98/LICENSE-ZLIB",
         "sha256": "7fa429541e55b1509909e058f2d21a37467e4958ec713b357f6e0cf9dc4ee352"
+      }
+    ]
+  },
+  {
+    "package": "blake2s_simd",
+    "version": "1.0.5",
+    "repo": "oconnor663/blake2_simd",
+    "commit": "47714dc3c424e82213d7f2eb4a833e3843017be5",
+    "files": [
+      {
+        "path": "licenses/oconnor663/blake2_simd/47714dc3c424e82213d7f2eb4a833e3843017be5/LICENSE",
+        "url": "https://raw.githubusercontent.com/oconnor663/blake2_simd/47714dc3c424e82213d7f2eb4a833e3843017be5/LICENSE",
+        "sha256": "27e0387973d6b8507cb15f825f6f26e0278d4d5857082c1f56b49a7b39a90183"
       }
     ]
   }

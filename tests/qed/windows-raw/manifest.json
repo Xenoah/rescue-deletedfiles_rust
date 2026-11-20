@@ -1,0 +1,35 @@
+{
+  "filesystem": "ntfs",
+  "members": [
+    {
+      "container_sha256": "0708e9ff7f019784a85c6e8dd195d8ae1d6fe5daed8f22f9e7d28e168017cb96",
+      "filename": "base.raw",
+      "logical_bytes": 100663296,
+      "logical_sha256": "0708e9ff7f019784a85c6e8dd195d8ae1d6fe5daed8f22f9e7d28e168017cb96",
+      "reference": "vhd-chain/dynamic-flushed/base.vhd.guest.raw.xz",
+      "tail_bytes": 0,
+      "tail_marker": ""
+    },
+    {
+      "container_sha256": "269b087c3108cc1901d06ee0f00f28c2a3fe5028ed70dedb93b761e5455649ed",
+      "filename": "middle.qed",
+      "flags": 5,
+      "logical_bytes": 100663296,
+      "logical_sha256": "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+      "reference": "vhd-chain/dynamic-flushed/child1.vhd.guest.raw.xz",
+      "tail_bytes": 0,
+      "tail_marker": ""
+    },
+    {
+      "container_sha256": "a017223b56c149cca1637ac066096d7b0258b55808d75067a566a02a8a7db580",
+      "filename": "youngest.qed",
+      "flags": 1,
+      "logical_bytes": 100663296,
+      "logical_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "reference": "vhd-chain/dynamic-flushed/child2.vhd.guest.raw.xz",
+      "tail_bytes": 0,
+      "tail_marker": ""
+    }
+  ],
+  "version": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)"
+}

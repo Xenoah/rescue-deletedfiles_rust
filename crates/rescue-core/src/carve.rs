@@ -12,6 +12,7 @@ mod font;
 mod frame_archive;
 mod icon;
 mod indexed;
+mod rar;
 mod rtf;
 mod rule;
 mod scope;
@@ -106,6 +107,8 @@ pub(crate) fn validate_estimated_extent(
         ),
         "html" | "htm" => Some(Format::Html),
         "xml" => Some(Format::Xml),
+        "svg" => Some(Format::Svg),
+        "svgz" => Some(Format::Svgz),
         "json" => Some(Format::Json),
         "rtf" => Some(Format::Rtf),
         "zip" | "docx" | "xlsx" | "pptx" | "odt" | "ods" | "odp" => Some(Format::Zip),
@@ -120,6 +123,7 @@ pub(crate) fn validate_estimated_extent(
         "mkv" => Some(Format::Mkv),
         "webm" => Some(Format::Webm),
         "ogg" => Some(Format::Ogg),
+        "rar" => Some(Format::Rar),
         "7z" => Some(Format::SevenZ),
         "cab" => Some(Format::Cab),
         "gz" => Some(Format::Gzip),
@@ -141,6 +145,20 @@ pub(crate) fn validate_estimated_extent(
     let Some(format) = format else {
         return Ok(false);
     };
+    if format == Format::Svg {
+        if size > xml::MAX_BYTES as u64 {
+            return Err(Error::Limit("SVG XML exceeds 8 MiB".into()));
+        }
+        let mut input = container::Input::new(image, at, end, cancel, budget)?;
+        input.ensure(size as usize)?;
+        input.work(size as usize)?;
+        if !xml::complete_svg(&input.bytes[..size as usize]) {
+            return Err(Error::Invalid(
+                "invalid SVG document in estimated extent".into(),
+            ));
+        }
+        return Ok(true);
+    }
     if matches!(
         format,
         Format::Html | Format::Pbm | Format::Pgm | Format::Ppm | Format::Pam
@@ -221,6 +239,8 @@ enum Format<'a> {
     Pam,
     Html,
     Xml,
+    Svg,
+    Svgz,
     Json,
     Rtf,
     Pdf,
@@ -242,6 +262,7 @@ enum Format<'a> {
     Webm,
     Ogg,
     Gzip,
+    Rar,
     SevenZ,
     Cab,
     Ico,
@@ -282,6 +303,8 @@ impl<'a> Format<'a> {
             Self::Pam => "pam",
             Self::Html => "html",
             Self::Xml => "xml",
+            Self::Svg => "svg",
+            Self::Svgz => "svgz",
             Self::Json => "json",
             Self::Rtf => "rtf",
             Self::Pdf => "pdf",
@@ -303,6 +326,7 @@ impl<'a> Format<'a> {
             Self::Webm => "webm",
             Self::Ogg => "ogg",
             Self::Gzip => "gz",
+            Self::Rar => "rar",
             Self::SevenZ => "7z",
             Self::Cab => "cab",
             Self::Ico => "ico",
@@ -374,6 +398,8 @@ impl<'a> Format<'a> {
             | Self::Pam
             | Self::Html
             | Self::Xml
+            | Self::Svg
+            | Self::Svgz
             | Self::Json
             | Self::Rtf
             | Self::Ico
@@ -383,6 +409,7 @@ impl<'a> Format<'a> {
             | Self::Webm
             | Self::Ogg
             | Self::Cab
+            | Self::Rar
             | Self::SevenZ
             | Self::Gzip
             | Self::Wav
@@ -420,6 +447,14 @@ impl<'a> Format<'a> {
                     }
             })
     }
+    // Preserve the generic extension when a caller explicitly requests XML or gzip only.
+    fn for_extensions(self, extensions: &[String]) -> Self {
+        match self {
+            Self::Svg if !self.allowed(extensions) && Self::Xml.allowed(extensions) => Self::Xml,
+            Self::Svgz if !self.allowed(extensions) && Self::Gzip.allowed(extensions) => Self::Gzip,
+            other => other,
+        }
+    }
     fn validate(
         self,
         image: &mut Image,
@@ -443,17 +478,28 @@ impl<'a> Format<'a> {
                 let end = netpbm::parse(self, &mut input, false)?;
                 Ok((self, input.finish(end)?, Vec::new()))
             }
-            Self::Html | Self::Xml | Self::Mp3 => {
+            Self::Xml | Self::Svg => {
+                let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
+                let (end, internal, svg) = xml::parse(&mut input, self == Self::Svg)?;
+                Ok((
+                    if svg { Self::Svg } else { Self::Xml },
+                    input.finish(end)?,
+                    internal,
+                ))
+            }
+            Self::Html | Self::Mp3 => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let (end, internal) = match self {
                     Self::Html => html::parse(&mut input, false)?,
-                    Self::Xml => xml::parse(&mut input)?,
                     _ => mp3::parse(&mut input)?,
                 };
                 Ok((self, input.finish(end)?, internal))
             }
             Self::Cab => {
                 cab::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
+            }
+            Self::Rar => {
+                rar::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
             }
             Self::SevenZ => {
                 sevenz::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
@@ -512,12 +558,18 @@ impl<'a> Format<'a> {
             }
             Self::Ico | Self::Cur => icon::validate(self, image, at, cancel, budget, boundary)
                 .map(|b| (self, b, Vec::new())),
-            Self::Avi | Self::Mkv | Self::Webm | Self::Ogg | Self::Gzip => {
+            Self::Avi | Self::Mkv | Self::Webm | Self::Ogg | Self::Gzip | Self::Svgz => {
                 let mut input = container::Input::new(image, at, boundary, cancel, budget)?;
                 let (format, end) = match self {
                     Self::Avi => (self, avi::parse(&mut input)?),
                     Self::Ogg => (self, streams::ogg(&mut input)?),
-                    Self::Gzip => (self, streams::gzip(&mut input)?),
+                    Self::Gzip | Self::Svgz => {
+                        let (end, svg) = streams::gzip(&mut input)?;
+                        if self == Self::Svgz && !svg {
+                            return Err(Error::Invalid("gzip payload is not supported SVG".into()));
+                        }
+                        (if svg { Self::Svgz } else { Self::Gzip }, end)
+                    }
                     _ => ebml::parse(&mut input)?,
                 };
                 Ok((format, input.finish(end)?, Vec::new()))
@@ -546,6 +598,23 @@ impl<'a> Format<'a> {
                 .map(|(format, b)| (format, b, Vec::new())),
         }
     }
+}
+
+// Built-in signatures all require a nonzero byte within the detector's lookahead.
+// Keep that overlap for signatures such as ISO BMFF and tar whose magic follows the start.
+fn signature_offsets(
+    buffer: &[u8],
+    count: usize,
+    rule: Option<&SignatureRule>,
+) -> std::ops::Range<usize> {
+    if rule.is_some() {
+        return 0..count;
+    }
+    let Some(first) = buffer.iter().position(|&byte| byte != 0) else {
+        return 0..0;
+    };
+    let last = buffer.iter().rposition(|&byte| byte != 0).unwrap();
+    first.saturating_sub(SIGNATURE_LOOKAHEAD as usize)..count.min(last + 1)
 }
 
 fn detect<'a>(
@@ -600,9 +669,23 @@ fn detect<'a>(
         Some(Format::Html)
     } else if matches!(bytes.first(), Some(0x3c | 0xef))
         && xml::signature(bytes)
-        && Format::Xml.allowed(extensions)
+        && (Format::Xml.allowed(extensions) || Format::Svg.allowed(extensions))
     {
-        Some(Format::Xml)
+        Some(if Format::Xml.allowed(extensions) {
+            Format::Xml
+        } else {
+            Format::Svg
+        })
+    } else if ((matches!(bytes.first(), Some(b'<' | 0xef)) && xml::svg_signature(bytes))
+        || (matches!(bytes.first(), Some(0xfe | 0xff)) && xml::utf16_signature(bytes)))
+        && Format::Svg.allowed(extensions)
+    {
+        Some(Format::Svg)
+    } else if bytes.starts_with(&[0x1f, 0x8b, 8])
+        && Format::Svgz.allowed(extensions)
+        && !Format::Gzip.allowed(extensions)
+    {
+        Some(Format::Svgz)
     } else if bytes.first() == Some(&0xff)
         && aac::signature(bytes)
         && Format::Aac.allowed(extensions)
@@ -631,6 +714,8 @@ fn detect<'a>(
         Some(Format::Flac)
     } else if bytes.starts_with(b"MSCF") && Format::Cab.allowed(extensions) {
         Some(Format::Cab)
+    } else if rar::signature(bytes) && Format::Rar.allowed(extensions) {
+        Some(Format::Rar)
     } else if bytes.starts_with(sevenz::MAGIC) && Format::SevenZ.allowed(extensions) {
         Some(Format::SevenZ)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
@@ -699,6 +784,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         Format::Cab => &[
             "Validated standalone cabinet layout, CFDATA checksums, and decoded folder/member lengths. Original file name and deletion status are unknown.",
         ],
+        Format::Rar => &[
+            "RAR archive headers, end record and decoded member checksums verified. The original archive name and deletion status are unknown.",
+        ],
         Format::SevenZ => &[
             "The contiguous 7z start and next headers and the decoded stream entries were CRC-checked. This does not establish deletion or the original filename.",
         ],
@@ -719,6 +807,12 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Html => &[
             "UTF-8 HTML5 doctype and balanced HTML tokens checked. An explicit </html> ends at the closing tag. A document with omitted html tags needs a closed element and zero padding or source EOF. No original checksum. External resources and scripts are never opened or executed.",
+        ],
+        Format::Svg => &[
+            "SVG root in the W3C SVG namespace. UTF-8 or BOM-tagged UTF-16 XML structure validated through its root end. Trailing whitespace, comments and processing instructions have no independent file boundary. Image appearance and linked resources are unverified.",
+        ],
+        Format::Svgz => &[
+            "A complete gzip member containing UTF-8 or BOM-tagged UTF-16 SVG. Member CRC32 and decoded length, XML structure and SVG namespace verified; external resources are never fetched.",
         ],
         Format::Xml => &[
             "Declared UTF-8 XML 1.0 through its matching root end tag. XML names, namespaces, attributes and predefined/numeric entities are validated. DTDs are excluded. Trailing comments, processing instructions and whitespace have no independent boundary and are excluded. 8 MiB and 65536 nodes per document.",
@@ -809,7 +903,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/RAR/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -830,7 +924,7 @@ pub(crate) fn scan_range(
             (count + SIGNATURE_LOOKAHEAD).min(boundary - offset) as usize,
         )?;
         missing |= !gaps.is_empty();
-        for index in 0..count as usize {
+        for index in signature_offsets(&buffer, count as usize, settings.signature_rule.as_ref()) {
             let rest = &buffer[index..];
             let Some(format) = detect(
                 rest,
@@ -862,6 +956,7 @@ pub(crate) fn scan_range(
                 Format::Zip
                     | Format::Html
                     | Format::Xml
+                    | Format::Svg
                     | Format::Mp3
                     | Format::Tar(_)
                     | Format::J2k
@@ -903,6 +998,7 @@ pub(crate) fn scan_range(
             };
             match parsed {
                 Ok((validated_format, bytes, records)) => {
+                    let validated_format = validated_format.for_extensions(extensions);
                     candidate.allocation_status = match scope.status(at, bytes.len() as u64, cancel)
                     {
                         Ok(status) => status,
@@ -1015,6 +1111,7 @@ pub(crate) fn recovery_data(
         .unwrap_or(1);
     let format = [
         Format::Tar(blocking),
+        Format::Rar,
         Format::SevenZ,
         Format::Cab,
         Format::Png,
@@ -1041,6 +1138,8 @@ pub(crate) fn recovery_data(
         Format::Pam,
         Format::Html,
         Format::Xml,
+        Format::Svg,
+        Format::Svgz,
         Format::Json,
         Format::Rtf,
         Format::Zip,
@@ -1095,7 +1194,14 @@ pub(crate) fn recovery_data(
     let (actual, bytes, _) =
         format.validate(image, candidate.record, cancel, &mut budget, boundary)?;
     // Sessions made before package classification recorded ODF/EPUB as generic ZIP.
-    if actual != format && !(format == Format::Zip && matches!(actual, Format::Package(_))) {
+    if actual != format
+        && !matches!(
+            (format, actual),
+            (Format::Zip, Format::Package(_))
+                | (Format::Xml, Format::Svg)
+                | (Format::Gzip, Format::Svgz)
+        )
+    {
         return Err(Error::SourceChanged);
     }
     if candidate.record_sha256 != format!("{:x}", Sha256::digest(&bytes)) {

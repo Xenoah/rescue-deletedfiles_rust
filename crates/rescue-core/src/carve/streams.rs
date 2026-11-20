@@ -7,7 +7,7 @@ fn gzip_error() -> Error {
     Error::Invalid("invalid gzip member header, DEFLATE stream, CRC or output length".into())
 }
 
-pub(super) fn gzip(input: &mut Input<'_>) -> Result<usize> {
+pub(super) fn gzip(input: &mut Input<'_>) -> Result<(usize, bool)> {
     input.ensure(10)?;
     let flags = input.bytes[3];
     if !input.bytes.starts_with(&[0x1f, 0x8b, 8]) || flags & 0xe0 != 0 {
@@ -48,6 +48,7 @@ pub(super) fn gzip(input: &mut Input<'_>) -> Result<usize> {
     }
     let mut stream = Decompress::new(false);
     let mut crc = crc32fast::Hasher::new();
+    let mut document = Some(Vec::new());
     let mut buffer = vec![0; 32 * 1024];
     loop {
         input.ensure(pos + 1)?;
@@ -61,6 +62,21 @@ pub(super) fn gzip(input: &mut Input<'_>) -> Result<usize> {
         input.work(written)?;
         if stream.total_out() > 128 * 1024 * 1024 {
             return Err(Error::Limit("gzip decoded member exceeds 128 MiB".into()));
+        }
+        if let Some(bytes) = &mut document {
+            let chunk = &buffer[..written];
+            if stream.total_out() > super::xml::MAX_BYTES as u64
+                || (bytes.is_empty()
+                    && !chunk.is_empty()
+                    && !matches!(
+                        chunk[0],
+                        b'<' | 0xef | 0xfe | 0xff | b' ' | b'\n' | b'\r' | b'\t'
+                    ))
+            {
+                document = None;
+            } else {
+                bytes.extend_from_slice(chunk);
+            }
         }
         crc.update(&buffer[..written]);
         pos += consumed;
@@ -77,7 +93,13 @@ pub(super) fn gzip(input: &mut Input<'_>) -> Result<usize> {
     {
         return Err(gzip_error());
     }
-    Ok(pos + 8)
+    let svg = if let Some(bytes) = document {
+        input.work(bytes.len())?;
+        super::xml::complete_svg(&bytes)
+    } else {
+        false
+    };
+    Ok((pos + 8, svg))
 }
 
 // Ogg uses the non-reflected CRC-32 polynomial with zero initial/final XOR.

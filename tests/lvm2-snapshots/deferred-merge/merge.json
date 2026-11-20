@@ -1,0 +1,9 @@
+{
+  "native": "Linux lvconvert --merge history/before delayed because history/data remained open.",
+  "origin": "data",
+  "physical": {
+    "pv-a": "6e41acb0b7859ce3def8067e74879b29c742360b0a39c32f6bbd6f4b4ca187e2",
+    "pv-b": "718547a1174002d50999b5f1a6a0afadc28b3231539d5dc531be0650404efe3a"
+  },
+  "snapshot": "before"
+}

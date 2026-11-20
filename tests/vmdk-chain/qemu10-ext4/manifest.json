@@ -1,0 +1,94 @@
+{
+  "members": [
+    {
+      "cid": "c244a405",
+      "filename": "base.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "cb68c2a9a786480ae17bdf250ccaf19a23f868e473b9ae78797b9c55b04ffa31",
+      "parent_cid": "ffffffff",
+      "parent_name": null,
+      "reference": "vdi-chain/ext4-depth8/ext4-0.raw.xz",
+      "sha256": "bd9333bb0089a5c224e2c4796d6c4f55b204e96c193ba5ede8f682bd378c3387"
+    },
+    {
+      "cid": "ebd6490d",
+      "filename": "child1.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "e5c09e945169addb3bb250763b3b838bb723934bbb3b637a3b8a60d2c5da6786",
+      "parent_cid": "c244a405",
+      "parent_name": "base.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-1.raw.xz",
+      "sha256": "9e4ac9df758a782cf7fca37ff8674824af38489529b212e432fea093fcbcd797"
+    },
+    {
+      "cid": "eb2d7d4e",
+      "filename": "child2.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "9530e9ff32c987ddb45d6f8ba75cbeffc3099c788bf747ae6a5498d0287bc6a4",
+      "parent_cid": "ebd6490d",
+      "parent_name": "child1.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-2.raw.xz",
+      "sha256": "c47a1e6413218e8f19730c450f658f2dbc9768b3a1de21794dd8dc1fea6b899b"
+    },
+    {
+      "cid": "516cbf6a",
+      "filename": "child3.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "e797bee4cdde8d10198a9ca6d272b2fcb54d8fe98e9b13d77e3b4e7c58d03229",
+      "parent_cid": "eb2d7d4e",
+      "parent_name": "child2.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-3.raw.xz",
+      "sha256": "eaabe7eb471d9008b9a038dd7c669401185d0d5dbf9872d7b1f3a3c6fa892f1e"
+    },
+    {
+      "cid": "f331dd86",
+      "filename": "child4.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "5d825a2941a628322b229335f811330d5e1047973f9c4c1b81fa280d2263c8f9",
+      "parent_cid": "516cbf6a",
+      "parent_name": "child3.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-4.raw.xz",
+      "sha256": "187ac5bfd36aec04a1fecf85267232c7185352c604f63c3f179ad0953fa2af47"
+    },
+    {
+      "cid": "96bb448c",
+      "filename": "child5.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "2aa9b4e3c1c1ebf481193b02a8c685a71882567fcd38e05c14c07c91bf900169",
+      "parent_cid": "f331dd86",
+      "parent_name": "child4.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-5.raw.xz",
+      "sha256": "d294da54c11f53998d0a5d812cba3b5ce6db45cd448cbbf6ffe0eb7025c1248b"
+    },
+    {
+      "cid": "51711b83",
+      "filename": "child6.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "117e7676ab83d835a336ce9309cce24c73922cf25ca6958e8c1b93b033eaeac7",
+      "parent_cid": "96bb448c",
+      "parent_name": "child5.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-6.raw.xz",
+      "sha256": "f9dd174b90b80cc66d4455287f1a0670315708fa60e6f11447e925eb766abc44"
+    },
+    {
+      "cid": "d1348fe",
+      "filename": "child7.vmdk",
+      "guest_bytes": 25165824,
+      "guest_sha256": "51c7f6b6241ce29df3dd64a51a40a4795a7051a0e29e72c113845b35a987bd36",
+      "parent_cid": "51711b83",
+      "parent_name": "child6.vmdk",
+      "reference": "vdi-chain/ext4-depth8/ext4-7.raw.xz",
+      "sha256": "0fe253f5989f549e5ca9f9125e081c18fdf319b38f86870e5ce4e982967c605f"
+    }
+  ],
+  "originals": {
+    "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "qemu": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)"
+}

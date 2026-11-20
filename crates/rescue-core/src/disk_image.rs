@@ -1,4 +1,6 @@
 //! Read standalone disk containers and external forensic images into logical RAW files.
+mod lvm;
+pub use lvm::{VolumeInfo as LvmVolumeInfo, import_lvm_volume, list_lvm_volumes};
 mod split_raw;
 pub use split_raw::{RawExpectation, RawSegment, RawVerification};
 mod ddrescue;
@@ -36,6 +38,7 @@ use std::{
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
+pub use virtual_image::{Qcow2Snapshot, Qcow2SnapshotSelector, list_qcow2_snapshots};
 
 /// Logical RAW file or recovered inode that has been published without overwriting an existing file.
 #[derive(Debug, serde::Serialize)]
@@ -65,7 +68,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, named VMDK extent files, or explicit VHD or QCOW2 backing files from nearest parent to base.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts qed, vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -341,19 +344,41 @@ pub fn import_with_raw_expectation(
     expected: RawExpectation<'_>,
     cancel: &AtomicBool,
 ) -> Result<ImportedFile> {
+    import_with_snapshot(image, output, expected, None, cancel)
+}
+
+pub fn import_with_snapshot(
+    image: &ImageInput,
+    output: &Path,
+    expected: RawExpectation<'_>,
+    selector: Option<Qcow2SnapshotSelector<'_>>,
+    cancel: &AtomicBool,
+) -> Result<ImportedFile> {
     let (mut args, paths) = image.arguments(Some(output))?;
     let first = Path::new(&paths[0]);
     let kind = image.image_type.as_deref();
+    if kind == Some("lvm2") {
+        return Err(Error::Request("select a logical volume with --lvm-volume; lvm-volumes lists available names and UUIDs".into()));
+    }
     let regular_raw = !crate::is_device(first);
     if (expected.sha256.is_some() || expected.bytes.is_some())
         && (!matches!(
             kind,
-            Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
+            Some("raw" | "qed" | "vdi" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
         ) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, QED, VDI, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
         ));
+    }
+    if selector.is_some() {
+        if paths.len() != 1 || !regular_raw || !matches!(kind, None | Some("qcow" | "qcow2")) {
+            return Err(Error::Request(
+                "select an internal snapshot from a single QCOW2 file".into(),
+            ));
+        }
+        return virtual_image::import(first, Some("qcow2"), selector, output, expected, cancel)?
+            .ok_or_else(|| Error::Unsupported("a QCOW2 image is required".into()));
     }
     if regular_raw {
         if kind == Some("raw") {
@@ -388,10 +413,22 @@ pub fn import_with_raw_expectation(
         {
             return Ok(result);
         }
+        if paths.len() > 1
+            && let Some(result) =
+                virtual_image::import_vdi_chain(&paths, kind, output, expected, cancel)?
+        {
+            return Ok(result);
+        }
+        if paths.len() == 1
+            && let Some(result) =
+                virtual_image::import(first, kind, None, output, expected, cancel)?
+        {
+            return Ok(result);
+        }
+        if let Some(result) = virtual_image::import_qed(&paths, kind, output, expected, cancel)? {
+            return Ok(result);
+        }
         if paths.len() == 1 {
-            if let Some(result) = virtual_image::import(first, kind, output, expected, cancel)? {
-                return Ok(result);
-            }
             if let Some(result) = udif::import(first, kind, output, cancel)? {
                 return Ok(result);
             }

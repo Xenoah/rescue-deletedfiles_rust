@@ -59,6 +59,17 @@ from e2e_strided_files import portable as strided_files, native as deleted_strid
 from e2e_whole_hash import portable as whole_hash_files, native as deleted_whole_hash_files
 from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
+from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
+from e2e_rar import verify as rar_archives
+from e2e_svg import verify as svg_images
+from e2e_lvm2 import verify as lvm2_volumes
+from e2e_qed import verify as qed_images
+from e2e_qed_boundary import verify as qed_boundary
+from e2e_sparse_carve import verify as sparse_carve
+from e2e_lvm2_snapshots import verify as lvm2_snapshots
+from e2e_qcow2_snapshots import verify as qcow2_snapshots
+from e2e_vmdk_chain import verify as vmdk_chain
+from e2e_vdi_chain import verify as vdi_chain
 from e2e_openexr import verify as openexr_files
 from e2e_vmdk_cid import verify as vmdk_cid
 from e2e_vmdk_cid_boundary import verify as vmdk_cid_boundary
@@ -243,6 +254,44 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 46, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['qed'] = qed_images(binary, Path(tmp), native=a.platform == 'linux')
+        with tempfile.TemporaryDirectory() as tmp:
+            result['sparse_carve'] = sparse_carve(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['qed_boundary'] = qed_boundary(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 45, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['lvm2_snapshots'] = lvm2_snapshots(binary, Path(tmp), native=a.platform == 'linux')
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 44, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path('/usr/sbin/lvm') if a.platform == 'linux' else None
+            result['lvm2_volumes'] = lvm2_volumes(binary, Path(tmp), reader)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 43, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            renderer = Path('/usr/bin/rsvg-convert') if a.platform == 'linux' else None
+            result['svg_images'] = svg_images(binary, Path(tmp), renderer)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 42, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path('/usr/bin/qemu-img') if a.platform == 'linux' else None
+            result['qcow2_snapshots'] = qcow2_snapshots(binary, Path(tmp), reader)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 41, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path('/usr/bin/unrar') if a.platform == 'linux' else None
+            result['rar_archives'] = rar_archives(binary, Path(tmp), reader)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 40, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path(os.environ['RESCUE_TEST_VBOX_IMG']) if a.platform == 'linux' else None
+            qemu = 'qemu-img' if a.platform == 'linux' else None
+            result['vmdk_chain'] = vmdk_chain(binary, Path(tmp), qemu, reader)
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 39, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            reader = Path(os.environ['RESCUE_TEST_VBOX_IMG']) if a.platform == 'linux' else None
+            result['vdi_chain'] = vdi_chain(binary, Path(tmp), reader)
+        with tempfile.TemporaryDirectory() as tmp:
+            result['vmdk_vbox_parent'] = vmdk_vbox_parent(binary, Path(tmp), reader)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 38, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['openexr'] = openexr_files(binary, Path(tmp))
