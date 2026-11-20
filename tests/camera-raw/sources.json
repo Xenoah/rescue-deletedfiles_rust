@@ -1,0 +1,162 @@
+[
+  {
+    "name": "camera.ari",
+    "make": "Arri",
+    "model": "Alexa Mini",
+    "mode": "",
+    "sha256": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a",
+    "source": "https://raw.pixls.us/getfile.php/3497/nice/Arri%20-%20Alexa%20Mini.ari",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 11529396
+  },
+  {
+    "name": "camera.arw",
+    "make": "Sony",
+    "model": "ILCE-7S",
+    "mode": "14bit 14bit compressed (3:2)",
+    "sha256": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07",
+    "source": "https://raw.pixls.us/getfile.php/1582/nice/Sony%20-%20ILCE-7S%20-%2014bit%2014bit%20compressed%20%283:2%29.ARW",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 6160384
+  },
+  {
+    "name": "camera.cr2",
+    "make": "Canon",
+    "model": "EOS 40D",
+    "mode": "sRAW2 (sRAW) (3:2)",
+    "sha256": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+    "source": "https://raw.pixls.us/getfile.php/2102/nice/Canon%20-%20EOS%2040D%20-%20sRAW2%20%28sRAW%29%20%283:2%29.CR2",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 5805950
+  },
+  {
+    "name": "camera.cr3",
+    "make": "Canon",
+    "model": "EOS R6",
+    "mode": "3:2",
+    "sha256": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778",
+    "source": "https://raw.pixls.us/getfile.php/4659/nice/Canon%20-%20EOS%20R6%20-%203:2.CR3",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 5273174
+  },
+  {
+    "name": "camera.crw",
+    "make": "Canon",
+    "model": "PowerShot G1",
+    "mode": "RAW (4:3)",
+    "sha256": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a",
+    "source": "https://raw.pixls.us/getfile.php/2073/nice/Canon%20-%20PowerShot%20G1%20-%20RAW%20%284:3%29.crw",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 2300702
+  },
+  {
+    "name": "camera.dcr",
+    "make": "Kodak",
+    "model": "DCS760C",
+    "mode": "12bit (3:2)",
+    "sha256": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8",
+    "source": "https://raw.pixls.us/getfile.php/1347/nice/Kodak%20-%20DCS760C%20-%2012bit%20%283:2%29.DCR",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 7547392
+  },
+  {
+    "name": "camera.dng",
+    "make": "Canon",
+    "model": "EOS 5D Mark III",
+    "mode": "14bit 14bit (2.3471882640587)",
+    "sha256": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e",
+    "source": "https://raw.pixls.us/getfile.php/2204/nice/Canon%20-%20EOS%205D%20Mark%20III%20-%2014bit%2014bit%20%282.3471882640587%29.dng",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 1538165
+  },
+  {
+    "name": "camera.erf",
+    "make": "Epson",
+    "model": "R-D1",
+    "mode": "12bit (3:2)",
+    "sha256": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4",
+    "source": "https://raw.pixls.us/getfile.php/2680/nice/Epson%20-%20R-D1%20-%2012bit%20%283:2%29.ERF",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 9958994
+  },
+  {
+    "name": "camera.gpr",
+    "make": "GoPro",
+    "model": "HERO7 Black",
+    "mode": "16bit (4:3)",
+    "sha256": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66",
+    "source": "https://raw.pixls.us/getfile.php/2908/nice/GoPro%20-%20HERO7%20Black%20-%2016bit%20%284:3%29.GPR",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 3045278
+  },
+  {
+    "name": "camera.mrw",
+    "make": "Minolta",
+    "model": "DiMAGE 5",
+    "mode": "4:3",
+    "sha256": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+    "source": "https://raw.pixls.us/getfile.php/7795/nice/Minolta%20-%20DiMAGE%205%20-%204:3.MRW",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 6422144
+  },
+  {
+    "name": "camera.nef",
+    "make": "Nikon",
+    "model": "D2H",
+    "mode": "12bit 12bit compressed (Lossy (type 1)) (3:2)",
+    "sha256": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914",
+    "source": "https://raw.pixls.us/getfile.php/5227/nice/Nikon%20-%20D2H%20-%2012bit%2012bit%20compressed%20%28Lossy%20%28type%201%29%29%20%283:2%29.NEF",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 3236017
+  },
+  {
+    "name": "camera.orf",
+    "make": "Olympus",
+    "model": "E-10",
+    "mode": "16bit (4:3)",
+    "sha256": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+    "source": "https://raw.pixls.us/getfile.php/5424/nice/Olympus%20-%20E-10%20-%2016bit%20%284:3%29.ORF",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 7614592
+  },
+  {
+    "name": "camera.pef",
+    "make": "Pentax",
+    "model": "K10D",
+    "mode": "12bit 12bit compressed (3:2)",
+    "sha256": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3",
+    "source": "https://raw.pixls.us/getfile.php/2239/nice/Pentax%20-%20K10D%20-%2012bit%2012bit%20compressed%20%283:2%29.PEF",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 9561139
+  },
+  {
+    "name": "camera.raf",
+    "make": "Fujifilm",
+    "model": "FinePix S5000",
+    "mode": "4:3",
+    "sha256": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297",
+    "source": "https://raw.pixls.us/getfile.php/2726/nice/Fujifilm%20-%20FinePix%20S5000%20-%204:3.RAF",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 6851240
+  },
+  {
+    "name": "camera.rw2",
+    "make": "Panasonic",
+    "model": "DMC-LX7",
+    "mode": "1:1",
+    "sha256": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+    "source": "https://raw.pixls.us/getfile.php/7008/nice/Panasonic%20-%20DMC-LX7%20-%201:1.RW2",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 3249664
+  },
+  {
+    "name": "camera.srw",
+    "make": "Samsung",
+    "model": "NX500",
+    "mode": "12bit 12bit normal compression (3:2)",
+    "sha256": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab",
+    "source": "https://raw.pixls.us/getfile.php/3668/nice/Samsung%20-%20NX500%20-%2012bit%2012bit%20normal%20compression%20%283:2%29.SRW",
+    "license": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "bytes": 20750652
+  }
+]

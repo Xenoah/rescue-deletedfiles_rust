@@ -1,0 +1,89 @@
+{
+  "binary_sha256": "a2288ff3a582eb814535af46516ff6e87911339bca0e77634680c62e26870c17",
+  "disks": {
+    "ext4": {
+      "filesystem_bytes_and_sha256": [
+        "camera.ari",
+        "camera.arw",
+        "camera.cr2",
+        "camera.cr3",
+        "camera.crw",
+        "camera.dcr",
+        "camera.dng",
+        "camera.erf",
+        "camera.gpr",
+        "camera.mrw",
+        "camera.nef",
+        "camera.orf",
+        "camera.pef",
+        "camera.raf",
+        "camera.rw2",
+        "camera.srw"
+      ],
+      "source_sha256": "dfdbcf844e0647f8781e1044c73b11036d9499e439da719bbf53f32e7d5b63f1"
+    },
+    "fat32": {
+      "default_cleared_chains_refused": 16,
+      "fat_estimate_bytes_and_sha256": [
+        "camera.ari",
+        "camera.arw",
+        "camera.cr2",
+        "camera.cr3",
+        "camera.crw",
+        "camera.dcr",
+        "camera.dng",
+        "camera.erf",
+        "camera.gpr",
+        "camera.mrw",
+        "camera.nef",
+        "camera.orf",
+        "camera.pef",
+        "camera.raf",
+        "camera.rw2",
+        "camera.srw"
+      ],
+      "filesystem_bytes_and_sha256": [
+        "camera.ari",
+        "camera.arw",
+        "camera.cr2",
+        "camera.cr3",
+        "camera.crw",
+        "camera.dcr",
+        "camera.dng",
+        "camera.erf",
+        "camera.gpr",
+        "camera.mrw",
+        "camera.nef",
+        "camera.orf",
+        "camera.pef",
+        "camera.raf",
+        "camera.rw2",
+        "camera.srw"
+      ],
+      "source_sha256": "d2d63c333788ba5219585c11f43d85ad04ba2cfe4a01aded944d7a9a5dfd0365"
+    }
+  },
+  "disks_unchanged": true,
+  "file_sha256": {
+    "camera.ari": "4d487a43d1259049d6f7145049ec33da378681dab1278a8eb3941ac231cc844a",
+    "camera.arw": "a35ebb2fbec929daa5beb20d1ce5c15a8aac7b1a7a231455387f3df8a7442e07",
+    "camera.cr2": "ba644e7dd2abe74eca260e67f0206ff113bf0f62e710f8130611e964d6be5bf1",
+    "camera.cr3": "74abb0a113d075ad9887a058082f40dd2a938c4813a08474d82356f11a027778",
+    "camera.crw": "f39be5acf14057ce04527fd8d0574e57ec8ed5fed082d7bfaff763075a44ee8a",
+    "camera.dcr": "d0e6bd0a3339daff884e73a08fed8e75b20fe05bba438fc185e3f0bd019d0da8",
+    "camera.dng": "1d77dcc6cdb839b10c1948f0b4471984ab48cf15e973fb77520584cee72b603e",
+    "camera.erf": "09d8e533d93116294a9f3e161ed868e929454c7b946e083b644bd6bb75bcb5e4",
+    "camera.gpr": "f7d8a5b693bc173a777164dbad48921c8d145d602d5422925a13090404514b66",
+    "camera.mrw": "d60bfd80bcb1f7b9c88b14a5e46ea27885bbf92d990ab30b3939288678fea0d9",
+    "camera.nef": "155edb938f884ea7372ce98d4ff5f965c3e413b43b95bc9923da6e92082cf914",
+    "camera.orf": "2bfdade72439017a60a47aad1e5bbcb1aca36f2be7a21e94a4257a678fb6f4da",
+    "camera.pef": "e35ae4154a468be3154f5f462e884ba5941f010d3e8f23d347fbec14809f44d3",
+    "camera.raf": "dabd5e74521a6980156be9fd4b88d0c37b0fe4d0e0e6f5c12db8cffff1b76297",
+    "camera.rw2": "d142a23aca836053ed53e9ce3cb3ed2d434541d734d71a94a6eefadcd08bd31b",
+    "camera.srw": "156e43118811bcecb6fcc600b5f41ee1773c4f00b6a5b2dd72e177e35f6596ab"
+  },
+  "native_deletions": 32,
+  "original_bytes": 110844883,
+  "source_formats": 16,
+  "version": "rescue 1.37.0"
+}
