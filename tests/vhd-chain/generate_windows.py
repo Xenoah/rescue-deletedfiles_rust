@@ -1,5 +1,5 @@
 """Capture Windows-created differencing VHDs and the logical bytes presented by the Windows driver."""
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 import hashlib
 import json
 import lzma
@@ -71,15 +71,17 @@ def attached(image, readonly=False):
         ps(image, 'Dismount-DiskImage -ImagePath $env:RESCUE_OWNED_VHD')
 
 
-def logical(image):
+def logical(image, output=None):
     digest = hashlib.sha256()
     hashes = []
     with attached(image, readonly=True) as owned:
-        with open(r'\\.\PhysicalDrive' + str(owned['number']), 'rb', buffering=0) as source:
+        with (lzma.open(output, 'wb', preset=3) if output else nullcontext()) as archive, open(r'\\.\PhysicalDrive' + str(owned['number']), 'rb', buffering=0) as source:
             for offset in range(0, owned['size'], 1<<20):
                 length = min(1<<20, owned['size'] - offset)
                 chunk = source.read(length)
                 check(len(chunk) == length, (image, offset))
+                if archive is not None:
+                    archive.write(chunk)
                 digest.update(chunk)
                 hashes.append(hashlib.sha256(chunk).hexdigest())
     return dict(guest_bytes=owned['size'], guest_sha256=digest.hexdigest(), guest_mib_sha256=hashes)
@@ -95,10 +97,18 @@ def archive(image, out):
     return dict(filename=image.name, bytes=image.stat().st_size, sha256=sha(image), xz_sha256=sha(dest))
 
 
-def capture(root, case, kind, depth, layered=False, durable=False):
+def capture(root, case, kind, depth, layered=False, durable=False, suffix=".vhd", destination=ROOT, include_guest=False):
     folder = root/case
     folder.mkdir()
-    base = folder/'base.vhd'
+    out = destination/case
+    out.mkdir()
+    def proof(image):
+        output = out/(image.name+'.guest.raw.xz') if include_guest else None
+        result = logical(image, output)
+        if output:
+            result['guest_xz_sha256'] = hashlib.sha256(output.read_bytes()).hexdigest()
+        return result
+    base = folder/('base' + suffix)
     create(base, kind)
     names = ['sample.'+ext for ext in ('avi','docx','flac','pptx','sqlite','tar','wav')] if layered else NAMES
     originals = {name:(ROOT.parent/'corpus/files'/name).read_bytes() for name in names}
@@ -120,9 +130,9 @@ def capture(root, case, kind, depth, layered=False, durable=False):
         sync_volume(mount)
         check(all((target/n).read_bytes() == contents(n,0) for n in originals), case)
     disks = [base]
-    proofs = [logical(base)]
+    proofs = [proof(base)]
     for level in range(1, depth+1):
-        image = folder/f'child{level}.vhd'
+        image = folder/f'child{level}{suffix}'
         create(image, 'differencing', disks[-1])
         with attached(image) as mount:
             check(all((mount/'deletions'/name).read_bytes() == contents(name,level-1) for name in originals), case)
@@ -152,9 +162,7 @@ def capture(root, case, kind, depth, layered=False, durable=False):
                 check(not list((mount/'deletions').iterdir()), case)
             sync_volume(mount)
         disks.append(image)
-        proofs.append(logical(image))
-    out=ROOT/case
-    out.mkdir()
+        proofs.append(proof(image))
     result = [dict(**archive(image,out), **proof) for image,proof in zip(disks,proofs)]
     check(len({v['guest_sha256'] for v in result}) == len(disks), case)
     reference = dict(windows=platform.platform(), parent_type=kind, members=result,
