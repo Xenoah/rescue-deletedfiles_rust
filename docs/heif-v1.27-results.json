@@ -11,7 +11,12 @@
       "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
       "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
       "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
-      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303"
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303",
+      "exif.heic": "4ab5745d303ecb18e04d4534f4379feae1e97ba748da47b3f5593b925ab48880",
+      "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
+      "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
+      "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca"
     },
     "refused": [
       "cut-hevc",
@@ -50,7 +55,12 @@
       "alpha.avif": "c3b97238d1ae095d5c01c795bd1483cc6a0d8beb0dfee37b3402f38ff378f9be",
       "ten-bit.avif": "68031c66f0cb8085cf9cc5efd6feddf058f9fa99be8a416bc1c40084466dbdb5",
       "gray.avif": "dfd2aa923858668198647b6186d861cd8298391086c15ee22b693e4f605d6222",
-      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303"
+      "ffmpeg.avif": "c712b858f6930c6454c3f59334a42f8bab27273aac1e1e71e894af9b3a19c303",
+      "exif.heic": "4ab5745d303ecb18e04d4534f4379feae1e97ba748da47b3f5593b925ab48880",
+      "xmp.heic": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
+      "portrait.heic": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
+      "tagged.avif": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
+      "caption.avif": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca"
     },
     "decoded": {
       "odd.heic": [
@@ -86,7 +96,41 @@
       ],
       "ffmpeg.avif": [
         "501e8513decba0cbc77d691e62edd3d3e6f292bba70d115af98e3da8af1c5370"
+      ],
+      "exif.heic": [
+        "aa69c72bff30fc8e98304b06c1878aab3dc441d5c01ca0963427b1f07aa9560f"
+      ],
+      "xmp.heic": [
+        "f191278058ab20d67a3a1bb28590df98b9ac927291016d4b73a9b3f089f224e5"
+      ],
+      "portrait.heic": [
+        "5df2db75292583f7f2474f9f875145ec1704ee65789804352088ff1647ae9e0a"
+      ],
+      "tagged.avif": [
+        "56f023079a3ad495693f3b2d4f152109d90b6d4848f69f3002fc5ff4fdcbb7f3"
+      ],
+      "caption.avif": [
+        "4bf7583dc9dcc9350bfc93bb23ce2fc4df8c4b3db36b429497b9fbeca40e6fc2"
       ]
+    },
+    "metadata": {
+      "exif.heic": {
+        "Exif": "305d393636f2050c19270bb241c58a6a3fdae75d87bc1bc3ee2d99e11d52fc45"
+      },
+      "xmp.heic": {
+        "mime": "ba8e55bb3264c4cd8b2cb660554a02e86762e1411b2a07ee83c45081de405af2"
+      },
+      "portrait.heic": {
+        "Exif": "852246535ddd8722ee446fdfe6edeae7b02e19e37897603f9b8cac9a1cd0d930",
+        "mime": "c6e04168921b61e44a70fe8ed5b7f611b7cb09eef375a4adb1dd34181aea83b3"
+      },
+      "tagged.avif": {
+        "Exif": "9a21c1670189deb638320e3059ecf8bede06a7116218af9e207752c26b1bbc11",
+        "mime": "d05b2be00b5d967baddd2b6e96897d0f2796c8d1b711474427da47d32a1c4e66"
+      },
+      "caption.avif": {
+        "mime": "7478bc0740bd56352f0fec18c634c9f350989d996e0ba09e671caa0e5e582af3"
+      }
     },
     "filesystems": [
       "fat32",

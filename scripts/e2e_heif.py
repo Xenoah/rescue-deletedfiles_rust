@@ -1,5 +1,6 @@
 """Recover HEIC and AVIF still images and compare native decoded images and full file contents."""
 import argparse
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -96,7 +97,7 @@ def damaged(binary, root, files):
     return list(cases)
 
 
-def recover(binary, root, disk, files, references):
+def recover(binary, root, disk, files, references, metadata):
     by_hash = {sha(data):name for name,data in files.items()}
     before = sha(disk.read_bytes())
     for name, flags in [('session', []), ('index', ['--indexed'])]:
@@ -113,29 +114,44 @@ def recover(binary, root, disk, files, references):
             original = by_hash[result['sha256']]
             data = path.read_bytes()
             check(data==files[original] and sha(data)==result['sha256'], original)
+            if original in metadata:
+                check(all(data.count(b)==1 for b in metadata[original].values()), original)
             if references:
                 check(decoded(path)==references[original], original)
+                if original in metadata:
+                    from heif_photo_metadata import read_metadata
+                    check(read_metadata(path)==metadata[original], original)
         print(disk.name, name, len(results), 'still images match original bytes and SHA-256', flush=True)
     check(sha(disk.read_bytes())==before, disk)
 
 
 def verify(binary, root, native=False):
-    meta = json.loads((GOLD/'manifest.json').read_text(encoding='utf-8'))
-    files = {name:(GOLD/name).read_bytes() for name in meta}
+    paths, meta = {}, {}
+    for parent in (GOLD, GOLD/'metadata'):
+        manifest = json.loads((parent/'manifest.json').read_text(encoding='utf-8'))
+        check(not meta.keys() & manifest.keys(), 'duplicate HEIF fixture')
+        meta.update(manifest)
+        paths.update({name:parent/name for name in manifest})
+    files = {name:path.read_bytes() for name,path in paths.items()}
+    metadata = {name:{kind:base64.b64decode(data) for kind,data in item['jpeg_metadata'].items()}
+                for name,item in meta.items() if 'jpeg_metadata' in item}
     hashes = {name:sha(data) for name,data in files.items()}
     check(all(meta[name]['bytes']==len(data) and meta[name]['sha256']==hashes[name] for name,data in files.items()), meta)
     if native:
-        references = {name:decoded(GOLD/name) for name in files}
+        references = {name:decoded(path) for name,path in paths.items()}
+        from heif_photo_metadata import read_metadata
+        for name, blocks in metadata.items():
+            check(read_metadata(paths[name])==blocks, name)
         check(all(len(frames)==(2 if name=='collection.heic' else 1) for name,frames in references.items()),references)
         for fs, create in [('fat32',make_deleted_fat), ('ext4',make_deleted_ext4)]:
             folder = root/fs
             folder.mkdir()
             disk = create(folder,files)
-            recover(binary,folder,disk,files,references)
-        return {'originals':hashes,'decoded':references,'filesystems':['fat32','ext4']}
+            recover(binary,folder,disk,files,references,metadata)
+        return {'originals':hashes,'decoded':references,'metadata':{n:{k:sha(b) for k,b in m.items()} for n,m in metadata.items()},'filesystems':['fat32','ext4']}
     disk = root/'adjacent.raw'
     disk.write_bytes(b'!'*((1<<20)-3)+b''.join(files.values()))
-    recover(binary,root,disk,files,None)
+    recover(binary,root,disk,files,None,metadata)
     return {'originals':hashes,'refused':damaged(binary,root,files)}
 
 

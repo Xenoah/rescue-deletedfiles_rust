@@ -1,0 +1,39 @@
+{
+  "exif.heic": {
+    "bytes": 6078,
+    "sha256": "4ab5745d303ecb18e04d4534f4379feae1e97ba748da47b3f5593b925ab48880",
+    "jpeg_metadata": {
+      "Exif": "TU0AKgAAAAgAAwEPAAIAAAAKAAAAMgEQAAIAAAAOAAAAPAESAAMAAAABAAEAAAAAAABSZXNjdWUgUUEAVGVzdCBjYW1lcmEgMQA="
+    }
+  },
+  "xmp.heic": {
+    "bytes": 6363,
+    "sha256": "8b0946e69044eb903fb4af07e0f7dcf40b91c6b173019a309105338ab90e2e3f",
+    "jpeg_metadata": {
+      "mime": "PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgZGM6ZGVzY3JpcHRpb249IuWGmeecnyAyIi8+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg=="
+    }
+  },
+  "portrait.heic": {
+    "bytes": 6621,
+    "sha256": "c0bc8d5b8d3be346c710160431a91eeb91a79dd3f28fd9dda7103dc6f7815f71",
+    "jpeg_metadata": {
+      "Exif": "TU0AKgAAAAgAAwEPAAIAAAAKAAAAMgEQAAIAAAAOAAAAPAESAAMAAAABAAYAAAAAAABSZXNjdWUgUUEAVGVzdCBjYW1lcmEgMwA=",
+      "mime": "PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgZGM6ZGVzY3JpcHRpb249IuWGmeecnyAzIi8+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg=="
+    }
+  },
+  "tagged.avif": {
+    "bytes": 5264,
+    "sha256": "a84792475a508a22a8c0aaafd73a7af15ef1358124edc6999bef31186905ce0e",
+    "jpeg_metadata": {
+      "Exif": "TU0AKgAAAAgAAwEPAAIAAAAKAAAAMgEQAAIAAAAOAAAAPAESAAMAAAABAAMAAAAAAABSZXNjdWUgUUEAVGVzdCBjYW1lcmEgNAA=",
+      "mime": "PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgZGM6ZGVzY3JpcHRpb249IuWGmeecnyA0Ii8+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg=="
+    }
+  },
+  "caption.avif": {
+    "bytes": 5240,
+    "sha256": "2116ba821612eba34266ef80fd06cb0c7fdfce5c5b18969cb9473dab6ae993ca",
+    "jpeg_metadata": {
+      "mime": "PHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyI+PHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj48cmRmOkRlc2NyaXB0aW9uIHhtbG5zOmRjPSJodHRwOi8vcHVybC5vcmcvZGMvZWxlbWVudHMvMS4xLyIgZGM6ZGVzY3JpcHRpb249IuWGmeecnyA1Ii8+PC9yZGY6UkRGPjwveDp4bXBtZXRhPg=="
+    }
+  }
+}
