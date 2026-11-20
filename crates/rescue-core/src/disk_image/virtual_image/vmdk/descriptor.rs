@@ -70,12 +70,38 @@ fn extent(line: &str) -> Result<Extent<'_>> {
     })
 }
 
+// QEMU changes its hexadecimal CID in place. A shorter replacement can leave
+// a few bytes from the end of the preceding descriptor after the new NUL.
+fn valid_padding(text: &str, padding: &[u8], cid: &str) -> bool {
+    let Some(last) = padding.iter().rposition(|&b| b != 0) else {
+        return true;
+    };
+    // At most eight hexadecimal digits were replaced. One of the vacated
+    // positions is occupied by the NUL itself.
+    if last >= 8 - cid.len() || padding.first() != Some(&0) {
+        return false;
+    }
+    let Some(version) = text
+        .lines()
+        .last()
+        .and_then(|line| line.strip_prefix("ddb.toolsVersion = \""))
+        .and_then(|v| v.strip_suffix('"'))
+    else {
+        return false;
+    };
+    let suffix = &padding[1..=last];
+    !version.is_empty()
+        && version.bytes().all(|b| b.is_ascii_digit())
+        && suffix
+            .iter()
+            .all(|b| b.is_ascii_digit() || matches!(b, b'"' | b'\n' | b'\r'))
+        && text.ends_with('\n')
+        && text.as_bytes().ends_with(suffix)
+}
+
 impl<'a> Descriptor<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self> {
         let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
-        if bytes[end..].iter().any(|&b| b != 0) {
-            return Err(invalid("VMDK descriptor has data after NUL"));
-        }
         let text =
             std::str::from_utf8(&bytes[..end]).map_err(|_| invalid("non-UTF-8 VMDK descriptor"))?;
         let (mut version, mut cid, mut parent, mut kind) = (None, None, None, None);
@@ -112,10 +138,15 @@ impl<'a> Descriptor<'a> {
         let kind = kind
             .and_then(|s| s.strip_prefix('"')?.strip_suffix('"'))
             .ok_or_else(|| invalid("missing VMDK createType"))?;
+        let cid = cid
+            .filter(|s| (1..=8).contains(&s.len()) && s.bytes().all(|c| c.is_ascii_hexdigit()))
+            .ok_or_else(|| {
+                Error::Unsupported("VMDK descriptor is incomplete or requires a parent".into())
+            })?;
+        if !valid_padding(text, &bytes[end..], cid) {
+            return Err(invalid("VMDK descriptor has data after NUL"));
+        }
         if version != Some("1")
-            || !cid.is_some_and(|s| {
-                (1..=8).contains(&s.len()) && s.bytes().all(|c| c.is_ascii_hexdigit())
-            })
             || !parent.is_some_and(|s| s.eq_ignore_ascii_case("ffffffff"))
             || extents.is_empty()
         {
