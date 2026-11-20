@@ -154,6 +154,9 @@ jobs:
       - name: Reconstruct fourteen Linux MD RAID6 layouts and recover ext4 unlinks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_raid6_layouts.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Reconstruct Linux MD RAID1 and near-two RAID10 from surviving mirrors
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_md_mirrors.py --native --binary target/${{ matrix.target }}/debug/rescue
       - name: Discover Linux MD superblocks and recover actual ext4 unlinks
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_md_superblocks.py --native --binary target/${{ matrix.target }}/debug/rescue

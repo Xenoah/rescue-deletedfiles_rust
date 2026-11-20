@@ -1,4 +1,4 @@
-//! Discover stopped, clean Linux MD RAID5/6 member geometry from version 1 superblocks.
+//! Discover stopped, clean Linux MD mirror and parity-array geometry from version 1 superblocks.
 use super::{MAX_MEMBERS, RaidConfig, RaidLayout, RaidLevel, RaidMember, invalid, is_raid_path};
 use crate::{Error, Result, source::Image};
 use serde::Serialize;
@@ -52,6 +52,15 @@ fn bytes_from_sectors(count: u64) -> Result<u64> {
 }
 fn array_layout(value: u32, level: RaidLevel) -> Result<RaidLayout> {
     use RaidLayout::*;
+    if level == RaidLevel::Raid1 || level == RaidLevel::Raid10 {
+        // Linux RAID10 encodes near copies in bits 0..7 and far copies in bits 8..15.
+        return match (level, value) {
+            (RaidLevel::Raid1, 0) | (RaidLevel::Raid10, 0x102) => Ok(Fixed),
+            _ => Err(Error::Unsupported(
+                "requires a plain mirror or Linux RAID10 near=2, far=1 without offset".into(),
+            )),
+        };
+    }
     let layout = match value {
         0 => LeftAsymmetric,
         1 => RightAsymmetric,
@@ -126,16 +135,23 @@ impl Member {
             return Err(Error::Unsupported("requires clean, fully synchronized MD members without feature flags (bitmap, reshape, recovery, bad blocks, journal or PPL)".into()));
         }
         let level = match u32_at(&data, 72) {
+            1 => RaidLevel::Raid1,
+            10 => RaidLevel::Raid10,
             5 => RaidLevel::Raid5,
             6 => RaidLevel::Raid6,
             _ => {
                 return Err(Error::Unsupported(
-                    "Linux MD metadata discovery requires RAID5 or RAID6".into(),
+                    "Linux MD metadata discovery requires RAID1, RAID5, RAID6 or near-two RAID10"
+                        .into(),
                 ));
             }
         };
         let count = u32_at(&data, 92) as usize;
-        let minimum = if level == RaidLevel::Raid6 { 4 } else { 3 };
+        let minimum = match level {
+            RaidLevel::Raid1 | RaidLevel::Raid10 => 2,
+            RaidLevel::Raid5 => 3,
+            _ => 4,
+        };
         if !(minimum..=MAX_MEMBERS).contains(&count) {
             return Err(invalid("MD member count exceeds supported geometry"));
         }
@@ -175,8 +191,18 @@ impl Member {
                 "MD component bounds exceed the image or overlap its superblock",
             ));
         }
-        let stripe_bytes = u32::try_from(bytes_from_sectors(u64::from(u32_at(&data, 88)))?)
-            .map_err(|_| invalid("MD stripe size overflow"))?;
+        let chunk_sectors = u32_at(&data, 88);
+        let stripe_bytes = if level == RaidLevel::Raid1 {
+            if chunk_sectors != 0 {
+                return Err(invalid("unexpected chunk size on a Linux MD mirror"));
+            }
+            // No on-disk stripe exists for a mirror. Choose a read unit
+            // dividing the component exactly, including non-64-KiB-aligned tails.
+            1u32 << component_bytes.trailing_zeros().min(16)
+        } else {
+            u32::try_from(bytes_from_sectors(u64::from(chunk_sectors))?)
+                .map_err(|_| invalid("MD stripe size overflow"))?
+        };
         let uuid: [u8; 16] = data[16..32].try_into().unwrap();
         let device_uuid: [u8; 16] = data[168..184].try_into().unwrap();
         if uuid == [0; 16] || device_uuid == [0; 16] {
@@ -204,9 +230,9 @@ impl Member {
 
 /// Read only explicitly selected member images. Slots without a selected current member remain missing.
 pub fn discover_md_members(paths: &[PathBuf], sector_size: u32) -> Result<MdDiscovery> {
-    if !(2..=MAX_MEMBERS).contains(&paths.len()) || !matches!(sector_size, 512 | 4096) {
+    if !(1..=MAX_MEMBERS).contains(&paths.len()) || !matches!(sector_size, 512 | 4096) {
         return Err(invalid(
-            "select 2..16 regular MD member images and a sector size of 512 or 4096",
+            "select 1..16 regular MD member images and a sector size of 512 or 4096",
         ));
     }
     let mut geometry = None;
@@ -250,7 +276,19 @@ pub fn discover_md_members(paths: &[PathBuf], sector_size: u32) -> Result<MdDisc
     }
     let g = geometry.ok_or_else(|| invalid("missing MD members"))?;
     let missing_slots: Vec<_> = (0..g.count).filter(|s| !slots.contains(s)).collect();
-    if missing_slots.len() > if g.level == RaidLevel::Raid6 { 2 } else { 1 } {
+    let can_reconstruct = match g.level {
+        RaidLevel::Raid1 => !slots.is_empty(),
+        RaidLevel::Raid10 => {
+            g.count.is_multiple_of(2)
+                && (0..g.count)
+                    .step_by(2)
+                    .all(|i| slots.contains(&i) || slots.contains(&(i + 1)))
+        }
+        RaidLevel::Raid5 => missing_slots.len() <= 1,
+        RaidLevel::Raid6 => missing_slots.len() <= 2,
+        _ => false,
+    };
+    if !can_reconstruct {
         return Err(invalid(
             "too few current members to reconstruct the MD array",
         ));

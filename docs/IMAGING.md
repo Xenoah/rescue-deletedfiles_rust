@@ -490,3 +490,14 @@ rescue scan --source array.rescue-raid.json --mode carve --work-dir scan --json
 ```
 
 Linux MD管理情報1.0・1.1・1.2のチェックサム、配列とデバイスのUUID、メンバー役割表、イベント世代、配置および領域を検査します。RAID5は1台、RAID6は2台までの欠損に対応します。停止・同期済みで機能フラグがゼロのメンバーが対象です。内部ビットマップ、PPL、ジャーナル、再構築・リシェイプ途中、外部メタデータのIMSM・DDF、旧形式0.90などは対象外です。該当する場合は、別コピーを対応するLinux MD・コントローラーの読み取り専用環境で確認し、正常に組み立てられた世代から論理RAWを取得してください。上書き、同一区間の許容数を超えた欠損、古い世代だけが残った場合は、現在の元データを保証できません。[19配列と世代混在の実測](../tests/md-superblocks)
+
+### Linux MDのミラーから復元する
+
+RAID1は同じ世代の正常なメンバー1台から、偶数台のRAID10 near=2は隣り合う各ペアから最低1台ずつで構成を検出できます。例えば元スロットが0〜3なら、0と2、0と3、1と2、1と3の組み合わせです。管理情報から元スロットを読むため、CLIとGUIどちらも入力順は自由です。RAID1ではディスク上にストライプ幅がなく、表示する読み取り単位は成分長を割り切る最大64 KiBです。
+
+```sh
+rescue raid-md --member survivor.raw --output mirror.rescue-raid.json --json
+rescue raid-md --member slot3.raw --member slot0.raw --output near2.rescue-raid.json --json
+```
+
+同一区間で読み取れた複数コピーの内容が食い違うと、その範囲を復元できません。唯一のコピーの中身が既に上書きされている場合は、元のファイルまたは論理ディスクの既知のSHA-256が必要です。Linux MDのRAID10 far、offset、奇数台、near=2以外は対象外です。対応するLinux環境で別コピーを読み取り専用に組み立ててください。[実際に削除したファイルと欠損時の検証](../tests/md-mirrors)

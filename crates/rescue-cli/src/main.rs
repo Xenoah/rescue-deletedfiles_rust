@@ -391,7 +391,7 @@ enum Command {
     },
     /// Inspect or save an explicit read-only RAID configuration. Members remain unchanged.
     Raid(RaidArgs),
-    /// Identify clean Linux MD RAID5/6 superblocks and order the selected read-only member images.
+    /// Identify clean Linux MD RAID1/5/6 or near-two RAID10 superblocks and order the selected read-only member images.
     RaidMd {
         #[arg(long = "member", required = true)]
         members: Vec<PathBuf>,
