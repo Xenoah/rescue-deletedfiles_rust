@@ -60,6 +60,9 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 33, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        assert run['xfs_allocation'] == json.loads((docs/'xfs-allocation-results.json').read_text())
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 32, 0):
         docs = Path(__file__).resolve().parents[1]/'docs'
         reference = json.loads((docs/'qcow2-backing-results.json').read_text())
