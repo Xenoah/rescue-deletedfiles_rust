@@ -177,7 +177,8 @@ impl App {
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vmdk => {ui.small(tr!("単独の疎・圧縮VMDK、または記述ファイルと明示指定したフラット・分割エクステントを変換します。", "Import standalone sparse or compressed VMDK, or a descriptor and explicitly selected flat or split extent files."));}
-                        Format::Vdi | Format::Qcow2 | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
+                        Format::Qcow2 => {ui.small(tr!("単独QCOW2のDeflate・Zstandard圧縮と拡張L2テーブルに対応します。","Standalone QCOW2 supports deflate and Zstandard compression and extended L2 tables."));}
+                        Format::Vdi | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format.split() {
