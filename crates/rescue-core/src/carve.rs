@@ -600,6 +600,23 @@ impl<'a> Format<'a> {
     }
 }
 
+// Built-in signatures all require a nonzero byte within the detector's lookahead.
+// Keep that overlap for signatures such as ISO BMFF and tar whose magic follows the start.
+fn signature_offsets(
+    buffer: &[u8],
+    count: usize,
+    rule: Option<&SignatureRule>,
+) -> std::ops::Range<usize> {
+    if rule.is_some() {
+        return 0..count;
+    }
+    let Some(first) = buffer.iter().position(|&byte| byte != 0) else {
+        return 0..0;
+    };
+    let last = buffer.iter().rposition(|&byte| byte != 0).unwrap();
+    first.saturating_sub(SIGNATURE_LOOKAHEAD as usize)..count.min(last + 1)
+}
+
 fn detect<'a>(
     bytes: &[u8],
     extensions: &[String],
@@ -907,7 +924,7 @@ pub(crate) fn scan_range(
             (count + SIGNATURE_LOOKAHEAD).min(boundary - offset) as usize,
         )?;
         missing |= !gaps.is_empty();
-        for index in 0..count as usize {
+        for index in signature_offsets(&buffer, count as usize, settings.signature_rule.as_ref()) {
             let rest = &buffer[index..];
             let Some(format) = detect(
                 rest,
