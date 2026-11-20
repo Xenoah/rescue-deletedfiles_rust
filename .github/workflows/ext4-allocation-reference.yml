@@ -1,4 +1,4 @@
-name: Capture real ext4 free-space controls
+name: Capture ext4 32-byte descriptor groups and checksum seed
 on:
   push:
     branches: [qa/ext4-free-space-reference]
@@ -12,9 +12,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Format owned images, write controls and unlink original files using the Linux kernel
         run: |
-          sudo python3 tests/ext4-allocation/generate_linux.py
+          sudo python3 tests/ext4-allocation/generate_linux.py --short-only
           git config user.name github-actions
           git config user.email github-actions@users.noreply.github.com
-          git add tests/ext4-allocation/*.raw.xz tests/ext4-allocation/manifest.json
-          git commit -m "Preserve real Linux ext4 deletions and allocated controls for three block sizes"
+          git add tests/ext4-allocation/*-short.raw.xz tests/ext4-allocation/short.json
+          git commit -m "Preserve ext4 short descriptors and checksum-seed free-space controls"
           git push origin HEAD:qa/ext4-free-space-reference
