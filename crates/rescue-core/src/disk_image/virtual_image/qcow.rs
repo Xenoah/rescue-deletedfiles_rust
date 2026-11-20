@@ -1,5 +1,5 @@
 //! Read-only QCOW2 v2/v3 base images. Only metadata inside the selected file is read.
-use super::{Block, invalid, read_at};
+use super::{Block, Compression, invalid, read_at};
 use crate::{Error, Result};
 use std::{
     collections::BTreeMap,
@@ -10,6 +10,8 @@ use std::{
 const OFFSET: u64 = 0x00ff_ffff_ffff_fe00;
 const COPIED: u64 = 1 << 63;
 const COMPRESSED: u64 = 1 << 62;
+const COMPRESSION_TYPE: u64 = 1 << 3;
+const EXTENDED_L2: u64 = 1 << 4;
 const MAX_TABLE_BYTES: u64 = 32 * 1024 * 1024;
 const MAX_METADATA_REGIONS: usize = 524288;
 
@@ -49,7 +51,9 @@ impl Regions {
 
 pub(super) struct Qcow {
     pub size: u64,
-    pub cluster: u64,
+    cluster: u64,
+    entry_bytes: usize,
+    compression: Compression,
     length: u64,
     version: u32,
     l1: Vec<u8>,
@@ -78,15 +82,39 @@ impl Qcow {
             return Err(invalid("QCOW2 cluster size"));
         }
         let cluster = 1u64 << bits;
+        let mut compression = Compression::QcowDeflate;
+        let mut entry_bytes = 8;
         if version == 3 {
             read_at(source, 72, &mut header[72..])?;
-            if be64(&header, 72) != 0
-                || !(104..=cluster).contains(&u64::from(be32(&header, 100)))
+            let flags = be64(&header, 72);
+            let header_len = u64::from(be32(&header, 100));
+            if flags & !(COMPRESSION_TYPE | EXTENDED_L2) != 0
+                || !(104..=cluster).contains(&header_len)
+                || !header_len.is_multiple_of(8)
                 || be32(&header, 96) > 6
             {
                 return Err(Error::Unsupported(
                     "QCOW2 incompatible features, dirty/corrupt flag or unsupported header".into(),
                 ));
+            }
+            let mut kind = [0; 1];
+            if header_len > 104 {
+                read_at(source, 104, &mut kind)?;
+            }
+            match (flags & COMPRESSION_TYPE != 0, kind[0]) {
+                (false, 0) => {}
+                (true, 1) => compression = Compression::QcowZstd,
+                _ => {
+                    return Err(Error::Unsupported(
+                        "unknown or inconsistent QCOW2 compression type".into(),
+                    ));
+                }
+            }
+            if flags & EXTENDED_L2 != 0 {
+                if cluster < 16 * 1024 {
+                    return Err(invalid("QCOW2 subclusters smaller than one sector"));
+                }
+                entry_bytes = 16;
             }
         }
         let size = be64(&header, 24);
@@ -94,7 +122,7 @@ impl Qcow {
         let l1_at = be64(&header, 40);
         let ref_at = be64(&header, 48);
         let ref_bytes = u64::from(be32(&header, 56)) * cluster;
-        let required = size.div_ceil(cluster * (cluster / 8));
+        let required = size.div_ceil(cluster * (cluster / entry_bytes as u64));
         if size == 0
             || l1_count < required
             || l1_count * 8 > MAX_TABLE_BYTES
@@ -137,27 +165,36 @@ impl Qcow {
             cluster,
             length,
             version,
+            compression,
+            entry_bytes,
             l1,
             metadata,
             cached_l2: None,
             l2: vec![0; cluster as usize],
         })
     }
-    pub fn block(&mut self, source: &mut File, guest: u64) -> Result<Block> {
+    pub fn block(&mut self, source: &mut File, guest: u64) -> Result<(Block, u64)> {
         let index = guest / self.cluster;
-        let per_l2 = self.cluster / 8;
+        let per_l2 = self.cluster / self.entry_bytes as u64;
         let table = be64(&self.l1, (index / per_l2) as usize * 8) & OFFSET;
         if table == 0 {
-            return Ok(Block::Zero);
+            return Ok((Block::Zero, self.cluster));
         }
         if self.cached_l2 != Some(table) {
             read_at(source, table, &mut self.l2)?;
             self.cached_l2 = Some(table);
         }
-        let entry = be64(&self.l2, (index % per_l2) as usize * 8);
+        let position = (index % per_l2) as usize * self.entry_bytes;
+        let entry = be64(&self.l2, position);
+        let extended = self.entry_bytes == 16;
+        let bitmap = if extended {
+            be64(&self.l2, position + 8)
+        } else {
+            0
+        };
         if entry & COMPRESSED != 0 {
-            if entry & COPIED != 0 {
-                return Err(invalid("QCOW2 copied bit on compressed cluster"));
+            if entry & COPIED != 0 || bitmap != 0 {
+                return Err(invalid("QCOW2 reserved flags on compressed cluster"));
             }
             let size_bits = self.cluster.trailing_zeros() - 8;
             let shift = 62 - size_bits;
@@ -165,16 +202,19 @@ impl Qcow {
             let sectors = ((entry >> shift) & ((1u64 << size_bits) - 1)) + 1;
             let bytes = sectors * 512 - (at % 512);
             self.check_data(at, bytes)?;
-            return Ok(Block::Compressed {
-                codec: super::Compression::QcowDeflate,
-                at,
-                bytes: bytes as usize,
-            });
+            return Ok((
+                Block::Compressed {
+                    codec: self.compression,
+                    at,
+                    bytes: bytes as usize,
+                },
+                self.cluster,
+            ));
         }
         let zero = entry & 1 != 0;
         let at = entry & OFFSET;
         if entry & !(COPIED | OFFSET | 1) != 0
-            || (zero && self.version == 2)
+            || (zero && (self.version == 2 || extended))
             || !at.is_multiple_of(self.cluster)
             || (at == 0 && entry & COPIED != 0)
         {
@@ -183,11 +223,36 @@ impl Qcow {
         if at != 0 {
             self.check_data(at, self.cluster)?;
         }
-        if zero || at == 0 {
-            Ok(Block::Zero)
-        } else {
-            Ok(Block::Data(at))
+        if extended {
+            let allocated = bitmap as u32;
+            let zeros = (bitmap >> 32) as u32;
+            if allocated & zeros != 0 || (allocated != 0 && at == 0) {
+                return Err(invalid(
+                    "QCOW2 subcluster bitmap conflicts with cluster allocation",
+                ));
+            }
+            let subcluster = self.cluster / 32;
+            let within = guest % self.cluster;
+            let sub = (within / subcluster) as u32;
+            let is_data = allocated & (1 << sub) != 0;
+            let run = if is_data { allocated } else { !allocated };
+            let consecutive = (run >> sub).trailing_ones();
+            let count = subcluster * u64::from(consecutive);
+            let block = if is_data {
+                Block::Data(at + within)
+            } else {
+                Block::Zero
+            };
+            return Ok((block, count));
         }
+        Ok((
+            if zero || at == 0 {
+                Block::Zero
+            } else {
+                Block::Data(at)
+            },
+            self.cluster,
+        ))
     }
     fn check_data(&self, at: u64, bytes: u64) -> Result<()> {
         let end = at

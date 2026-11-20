@@ -121,7 +121,49 @@ impl Vdi {
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Compression {
     QcowDeflate,
+    QcowZstd,
     VmdkZlib,
+}
+
+impl Compression {
+    fn decode(self, encoded: &[u8], decoded: &mut [u8], cluster: u64, count: u64) -> Result<()> {
+        if self == Self::QcowZstd {
+            let mut decoder =
+                ruzstd::decoding::StreamingDecoder::new_with_max_window_size(encoded, 8 << 20)
+                    .map_err(|_| invalid("invalid QCOW2 Zstandard frame header or window"))?;
+            decoder
+                .read_exact(&mut decoded[..cluster as usize])
+                .map_err(|_| invalid("invalid or short QCOW2 Zstandard frame"))?;
+            let mut extra = [0];
+            if decoder
+                .read(&mut extra)
+                .map_err(|_| invalid("invalid QCOW2 Zstandard end of frame"))?
+                != 0
+                || !decoder.decoder.is_finished()
+                || decoder
+                    .decoder
+                    .get_checksum_from_data()
+                    .is_some_and(|hash| Some(hash) != decoder.decoder.get_calculated_checksum())
+            {
+                return Err(invalid("QCOW2 Zstandard cluster size or checksum"));
+            }
+            // Another cluster may use the remaining bytes in the final host sector.
+            return Ok(());
+        }
+        let wrapped = self == Self::VmdkZlib;
+        let mut stream = Decompress::new(wrapped);
+        let status = stream
+            .decompress(encoded, decoded, FlushDecompress::Finish)
+            .map_err(|_| invalid("invalid compressed virtual disk block"))?;
+        let decoded_length = stream.total_out();
+        if status != Status::StreamEnd
+            || (decoded_length != cluster && !(wrapped && decoded_length == count))
+            || (wrapped && stream.total_in() != encoded.len() as u64)
+        {
+            return Err(invalid("compressed virtual disk block length"));
+        }
+        Ok(())
+    }
 }
 
 enum Block {
@@ -155,7 +197,7 @@ impl Disk {
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
         match self {
             Self::Vdi(v) => Ok((v.block(offset), v.block_size)),
-            Self::Qcow(q) => Ok((q.block(source, offset)?, q.cluster)),
+            Self::Qcow(q) => q.block(source, offset),
             Self::Vhd(v) => v.block(source, offset),
             Self::Vhdx(v) => Ok(v.block(offset)),
             Self::Vmdk(v) => Ok(v.block(offset)),
@@ -202,18 +244,7 @@ impl Disk {
                     encoded.resize(bytes, 0);
                     read_at(source, at, &mut encoded)?;
                     decoded.resize(cluster as usize + 1, 0);
-                    let wrapped = codec == Compression::VmdkZlib;
-                    let mut stream = Decompress::new(wrapped);
-                    let status = stream
-                        .decompress(&encoded, &mut decoded, FlushDecompress::Finish)
-                        .map_err(|_| invalid("invalid compressed virtual disk block"))?;
-                    let decoded_length = stream.total_out();
-                    if status != Status::StreamEnd
-                        || (decoded_length != cluster && !(wrapped && decoded_length == count))
-                        || (wrapped && stream.total_in() != bytes as u64)
-                    {
-                        return Err(invalid("compressed virtual disk block length"));
-                    }
+                    codec.decode(&encoded, &mut decoded, cluster, count)?;
                     file.seek(SeekFrom::Start(base + offset))?;
                     file.write_all(&decoded[..count as usize])?;
                     digest.update(&decoded[..count as usize]);
