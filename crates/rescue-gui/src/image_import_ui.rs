@@ -101,7 +101,7 @@ impl Format {
     fn split(self) -> bool {
         matches!(
             self,
-            Self::Raw | Self::Ewf | Self::Vmdk | Self::Qcow | Self::Vhd | Self::Vhdx
+            Self::Raw | Self::Ewf | Self::Vmdk | Self::Qcow | Self::Vhd | Self::Vhdx | Self::Vdi
         )
     }
 }
@@ -183,11 +183,11 @@ impl App {
                         Format::Qcow => {ui.small(tr!("単独QCOW v1、QCOW2 v2/v3に対応します。差分QCOW2は直近の親から順にRAWまたはQCOW2を指定してください。","For a QCOW2 overlay, select its backing files in order from nearest parent to base (RAW or QCOW2). Standalone QCOW v1 and QCOW2 v2/v3 are also supported."));}
                         Format::Vhdx => {ui.small(tr!("差分VHDXでは、選択した子から近い順に親VHDXを指定します。", "For a differencing VHDX, list its parent files nearest first."));}
                         Format::Vhd => {ui.small(tr!("差分VHDでは、選択した子から近い順に親VHDを指定します。", "For a differencing VHD, select every parent VHD from nearest parent to base."));}
-                        Format::Vdi => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
+                        Format::Vdi => {ui.small(tr!("差分VDIでは、選択した子から固定・可変のベースまで、親VDIを近い順に指定します。", "For a differencing VDI, select its parents nearest first, ending with the fixed or dynamic base."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format.split() {
-                        let caption = if matches!(format, Format::Qcow | Format::Vhd | Format::Vhdx) {
+                        let caption = if matches!(format, Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx) {
                             tr!("親ディスク（直近の親から順に1行1パス）","Backing files (nearest parent first, one path per line)")
                         } else if format == Format::Vmdk {
                             tr!("記述ファイルにある構成ファイル（1行1パス）", "Extent files named in the descriptor (one path per line)")
@@ -203,7 +203,7 @@ impl App {
                         }
                     }
                 }
-                if matches!(state.format,Some(Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk)) {
+                if matches!(state.format,Some(Format::Raw | Format::Vdi | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk)) {
                     ui.collapsing(
                         tr!("元ディスクと照合", "Verify against the original disk"),
                         |ui| {
@@ -308,7 +308,12 @@ impl App {
                     rescue_core::disk_image::import_android(&request.source, &output, &cancel)
                 } else if matches!(
                     format,
-                    Format::Raw | Format::Qcow | Format::Vhd | Format::Vhdx | Format::Vmdk
+                    Format::Raw
+                        | Format::Vdi
+                        | Format::Qcow
+                        | Format::Vhd
+                        | Format::Vhdx
+                        | Format::Vmdk
                 ) {
                     let bytes = if expected_size.is_empty() {
                         None

@@ -65,7 +65,7 @@ pub struct ImageInput {
     pub source: PathBuf,
     /// Additional image segments in logical order, named VMDK extent files, or explicit VHD or QCOW2 backing files from nearest parent to base.
     pub segment: Vec<PathBuf>,
-    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts standalone vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
+    /// Image type such as raw, ewf, vhd, vhdx or vmdk. import-image also accepts vdi, qcow1, qcow2, dmg, cd-raw and compressed-raw. Default: auto-detect.
     pub image_type: Option<String>,
     /// Logical sector size in bytes; default is supplied by the reader.
     pub sector_size: Option<u32>,
@@ -348,11 +348,11 @@ pub fn import_with_raw_expectation(
     if (expected.sha256.is_some() || expected.bytes.is_some())
         && (!matches!(
             kind,
-            Some("raw" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
+            Some("raw" | "vdi" | "qcow" | "qcow1" | "qcow2" | "vhd" | "vhdx" | "vmdk")
         ) || !regular_raw)
     {
         return Err(Error::Request(
-            "expected logical length and SHA-256 require an explicit RAW, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
+            "expected logical length and SHA-256 require an explicit RAW, VDI, QCOW, VHD, VHDX or VMDK image type and regular files".into(),
         ));
     }
     if regular_raw {
@@ -385,6 +385,12 @@ pub fn import_with_raw_expectation(
         }
         if let Some(result) =
             virtual_image::import_segments(&paths, kind, output, expected, cancel)?
+        {
+            return Ok(result);
+        }
+        if paths.len() > 1
+            && let Some(result) =
+                virtual_image::import_vdi_chain(&paths, kind, output, expected, cancel)?
         {
             return Ok(result);
         }

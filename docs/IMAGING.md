@@ -110,7 +110,7 @@ rescue filesystem --source disk.raw --fs-type ext4 --all --destination recovered
 2. 元ファイルを選んで形式を確認します。分割RAW・E01の場合は、先頭のファイルに続くセグメントを順番どおりに1行ずつ入力できます。複数ファイルのVMDKでは記述ファイルを先頭にし、構成ファイルを1行ずつ指定します。
 3. 新しいRAWファイルの保存先を指定し、「変換してスキャン元に設定」を選びます。完了すると、復元元がRAWに切り替わり、バイト数とSHA-256が画面下に表示されます。
 
-単独VDI、対応するQCOW2・クラシックVHD・VHDXはアプリ内で読み取ります。差分VHDXは子からベースまでを明示的に指定します。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFFには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
+固定・可変VDIと差分VDI、対応するQCOW2・クラシックVHD・VHDXはアプリ内で読み取ります。差分VHDXは子からベースまでを明示的に指定します。E01・Ex01にはlibewfの `ewfinfo`・`ewfverify`・`ewfexport`、外部読み取りを使うVMDK・AFFには、各形式を読み取れるThe Sleuth Kitの `img_cat` が必要です。変換処理は既存ファイルを上書きせず、エラーや取消時には未完成のRAWを破棄します。
 
 ### 分割RAWを元の順番に結合する
 
@@ -401,3 +401,15 @@ rescue scan --source guest.raw --work-dir scan --json
 512バイト単位のゲストディスクで、4 KiBを含む512 B〜64 KiBのクラスタ、割り当てのない領域、通常クラスタ、バイト長を明示したraw DEFLATEクラスタに対応します。ゲストの未割り当て部分はゼロとして書き出します。テーブルとデータが重なる配置、複数のゲストクラスタが同じデータを参照する配置、切れた圧縮ストリーム、宣言サイズと異なる出力を拒否し、失敗・取消時は未完成のRAWを破棄します。L1テーブルは32 MiBまで、離れた物理範囲は524,288件までです。
 
 外部の親を持つイメージと暗号化イメージは取り込めません。親チェーンまたは鍵を揃えて、対応するQEMU環境で展開してください。DEFLATEには原本を証明するチェックサムがないため、元ディスクや元ファイルの独立したハッシュがあれば照合してください。
+
+
+### VirtualBoxの差分VDI
+
+子イメージを `--source` に指定し、直近の親から固定・可変のベースまで `--segment` を繰り返します。VDIに記録されたイメージUUIDと更新UUIDの両方を照合します。GUIのVDI取り込みでも同じ順番で親を指定できます。
+
+```sh
+rescue import-image --image-type vdi --source child2.vdi \
+  --segment child1.vdi --segment base.vdi --output guest.raw --json
+```
+
+論理ディスクの長さ・SHA-256が分かる場合は `--raw-bytes` と `--raw-sha256` で照合できます。上限はベース込み8ファイル、割当表は1ファイル64 MiB・合計128 MiBです。読み取りはRescue単体で実行できます。保存済みのVDI v1.1で、完全な親子関係が残っていることが必要です。暗号化・旧版・undoイメージ、欠落した親、UUIDの組み合わせが一致しない世代は変換できません。[実イメージと生成手順](../tests/vdi-chain/README.md)

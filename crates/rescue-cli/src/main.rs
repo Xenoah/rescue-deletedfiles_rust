@@ -302,10 +302,10 @@ enum Command {
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
-        /// Verify the logical disk length for an explicitly selected RAW, QCOW, VHD, VHDX or VMDK image type.
+        /// Verify the logical disk length for an explicitly selected RAW, VDI, QCOW, VHD, VHDX or VMDK image type.
         #[arg(long)]
         raw_bytes: Option<u64>,
-        /// Verify the logical disk SHA-256 before publishing an explicitly selected RAW, QCOW, VHD, VHDX or VMDK conversion.
+        /// Verify the logical disk SHA-256 before publishing an explicitly selected RAW, VDI, QCOW, VHD, VHDX or VMDK conversion.
         #[arg(long)]
         raw_sha256: Option<String>,
         #[arg(long)]

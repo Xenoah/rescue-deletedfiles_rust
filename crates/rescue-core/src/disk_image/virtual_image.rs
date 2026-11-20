@@ -1,6 +1,7 @@
 //! Read logical sectors from virtual disks. No host path stored in an image is opened.
 mod chain;
 mod qcow;
+mod vdi;
 mod vhd;
 mod vhdx;
 mod vmdk;
@@ -15,6 +16,8 @@ use std::{
     path::Path,
     sync::atomic::{AtomicBool, Ordering},
 };
+use vdi::Vdi;
+pub(super) use vdi::import_vdi_chain;
 pub(super) use vhd::backing::import_vhd_chain;
 pub(super) use vhdx::import_vhdx_chain;
 pub(super) use vmdk::import_segments;
@@ -36,90 +39,6 @@ fn read_at(source: &mut File, offset: u64, bytes: &mut [u8]) -> Result<()> {
 
 fn le32(bytes: &[u8], pos: usize) -> u32 {
     u32::from_le_bytes(bytes[pos..pos + 4].try_into().unwrap())
-}
-
-struct Vdi {
-    size: u64,
-    block_size: u64,
-    data_offset: u64,
-    extra: u64,
-    blocks: Vec<u8>,
-}
-
-impl Vdi {
-    fn open(source: &mut File, length: u64) -> Result<Self> {
-        let mut h = [0; 456];
-        read_at(source, 0, &mut h)?;
-        if &h[64..68] != b"\x7f\x10\xda\xbe"
-            || le32(&h, 68) != 0x10001
-            || le32(&h, 72) < 384
-            || !matches!(le32(&h, 76), 1 | 2)
-            || le32(&h, 80) != 0
-            || h[424..456].iter().any(|v| *v != 0)
-        {
-            return Err(Error::Unsupported(
-                "VDI requires a standalone fixed or dynamic v1.1 base image".into(),
-            ));
-        }
-        let map_offset = u64::from(le32(&h, 340));
-        let data_offset = u64::from(le32(&h, 344));
-        let sector_size = le32(&h, 360);
-        let size = u64::from_le_bytes(h[368..376].try_into().unwrap());
-        let block_size = u64::from(le32(&h, 376));
-        let extra = u64::from(le32(&h, 380));
-        let count = u64::from(le32(&h, 384));
-        let used = le32(&h, 388);
-        if !matches!(sector_size, 512 | 4096)
-            || size == 0
-            || !size.is_multiple_of(u64::from(sector_size))
-            || !(512..=64 * 1024 * 1024).contains(&block_size)
-            || !block_size.is_power_of_two()
-            || extra > block_size
-            || !extra.is_multiple_of(u64::from(sector_size))
-            || count != size.div_ceil(block_size)
-            || count > 16 * 1024 * 1024
-            || u64::from(used) > count
-            || (le32(&h, 76) == 2 && u64::from(used) != count)
-            || map_offset < 72 + u64::from(le32(&h, 72))
-            || data_offset < map_offset + count * 4
-            || data_offset + u64::from(used) * (block_size + extra) > length
-        {
-            return Err(invalid(
-                "inconsistent VDI header, allocation table or backing length",
-            ));
-        }
-        let mut blocks = vec![0; count as usize * 4];
-        read_at(source, map_offset, &mut blocks)?;
-        let mut seen = vec![false; used as usize];
-        for &bytes in blocks.as_chunks::<4>().0 {
-            let slot = u32::from_le_bytes(bytes);
-            if matches!(slot, 0xffff_fffe | 0xffff_ffff) {
-                if le32(&h, 76) == 2 {
-                    return Err(invalid("unallocated fixed VDI block"));
-                }
-            } else if slot >= used || std::mem::replace(&mut seen[slot as usize], true) {
-                return Err(invalid("invalid or duplicate VDI block mapping"));
-            }
-        }
-        if seen.contains(&false) {
-            return Err(invalid("unreferenced allocated VDI block"));
-        }
-        Ok(Self {
-            size,
-            block_size,
-            data_offset,
-            extra,
-            blocks,
-        })
-    }
-
-    fn block(&self, guest_offset: u64) -> Block {
-        let slot = le32(&self.blocks, (guest_offset / self.block_size) as usize * 4);
-        let physical = (slot < 0xffff_fffe).then(|| {
-            self.data_offset + u64::from(slot) * (self.block_size + self.extra) + self.extra
-        });
-        physical.map_or(Block::Zero, Block::Data)
-    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -204,7 +123,7 @@ impl Disk {
     }
     fn block(&mut self, source: &mut File, offset: u64) -> Result<(Block, u64)> {
         match self {
-            Self::Vdi(v) => Ok((v.block(offset), v.block_size)),
+            Self::Vdi(v) => Ok(v.standalone_block(offset)),
             Self::Qcow(q) => q.block(source, offset),
             Self::QcowV1(q) => q.block(source, offset),
             Self::Vhd(v) => v.block(source, offset),
@@ -353,7 +272,13 @@ pub(super) fn import(
         Some("vhd") => Disk::Vhd(vhd::Vhd::open(&mut source, before.len(), cancel)?),
         Some("qcow1") => Disk::QcowV1(qcow::v1::Legacy::open(&mut source, before.len(), cancel)?),
         Some("qcow2") => Disk::Qcow(qcow::Qcow::open(&mut source, before.len(), cancel)?),
-        Some("vdi") => Disk::Vdi(Vdi::open(&mut source, before.len())?),
+        Some("vdi") => Disk::Vdi(Vdi::open(
+            &mut source,
+            before.len(),
+            false,
+            vdi::MAX_TABLE,
+            cancel,
+        )?),
         _ => return Ok(None),
     };
     let expected_digest = expected.expected_digest(disk.size())?;
