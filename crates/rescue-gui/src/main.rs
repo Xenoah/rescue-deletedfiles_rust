@@ -2604,8 +2604,8 @@ fn file_icon(ui: &mut egui::Ui, size: f32, candidate: &Candidate) {
     let extension = rescue_core::file_extension(&candidate.name, candidate.stream_name.as_deref())
         .to_ascii_uppercase();
     let color = match extension.as_str() {
-        "PNG" | "JPG" | "JPEG" | "HEIC" | "HEIF" | "AVIF" | "PSD" | "PSB" | "GIF" | "BMP"
-        | "WEBP" | "TIFF" => egui::Color32::from_rgb(114, 74, 157),
+        "PNG" | "JPG" | "JPEG" | "HEIC" | "HEIF" | "AVIF" | "JP2" | "J2K" | "J2C" | "JPC"
+        | "PSD" | "PSB" | "GIF" | "BMP" | "WEBP" | "TIFF" => egui::Color32::from_rgb(114, 74, 157),
         "MP4" | "MOV" | "AVI" | "MKV" | "M4V" => egui::Color32::from_rgb(178, 87, 33),
         "MP3" | "WAV" | "FLAC" | "AAC" | "M4A" => egui::Color32::from_rgb(44, 119, 99),
         "ZIP" | "7Z" | "RAR" | "GZ" | "BZ2" => egui::Color32::from_rgb(142, 106, 22),

@@ -47,6 +47,7 @@ from e2e_ext4_allocation import verify as ext4_allocation
 from e2e_hfs_allocation import verify as hfs_allocation
 from e2e_qcow1_geometry import verify as qcow1_geometry
 from e2e_photoshop import verify as photoshop_documents
+from e2e_jpeg2000 import verify as jpeg2000
 from e2e_heif import verify as heif_photos
 from e2e_qcow2_backing import native as qcow_chain_native, portable as qcow_chain_portable
 from e2e_qcow2_subclusters import portable as qcow_modern, native as qemu_modern
@@ -237,6 +238,12 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 35, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['jpeg2000'] = jpeg2000(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['jpeg2000_deleted'] = jpeg2000(binary, Path(tmp), native=True)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 34, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['vhd_chain'] = vhd_chain(binary, Path(tmp), tsk=a.platform == 'linux', windows_driver=a.platform == 'windows')

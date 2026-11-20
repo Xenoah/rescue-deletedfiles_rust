@@ -60,6 +60,12 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 35, 0):
+        docs = Path(__file__).resolve().parents[1] / 'docs'
+        reference = json.loads((docs/'jpeg2000-results.json').read_text(encoding='utf-8'))
+        assert run['jpeg2000'] == reference['portable']
+        if platform == 'linux':
+            assert run['jpeg2000_deleted'] == reference['native']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 34, 0):
         docs = Path(__file__).resolve().parents[1]/'docs'
         assert run['vhd_chain'] == json.loads((docs/'vhd-backing-results.json').read_text())
