@@ -55,6 +55,49 @@
       "wrong_parent_basename"
     ]
   },
+  "qemu10-stream-ntfs": {
+    "grain_bytes": [
+      65536,
+      65536,
+      65536,
+      32768
+    ],
+    "guest_sha256": [
+      "0708e9ff7f019784a85c6e8dd195d8ae1d6fe5daed8f22f9e7d28e168017cb96",
+      "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+      "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544"
+    ],
+    "originals": {
+      "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+      "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+      "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+      "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+      "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+      "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    "refused": [
+      "base_missing",
+      "child_only",
+      "compressed_member_claims_ancestor",
+      "damaged_inherited_zlib",
+      "duplicate_parent_hint",
+      "extra_after_base",
+      "middle_missing",
+      "mismatched_parent_cid",
+      "missing_parent_hint",
+      "parent_cid_absent",
+      "parent_hint_absolute",
+      "parent_hint_traversal",
+      "parents_reordered",
+      "repeated_content_id",
+      "reused_path",
+      "wrong_guest_hash",
+      "wrong_guest_length",
+      "wrong_parent_basename"
+    ]
+  },
   "qemu6-fat32": {
     "explicit_zero_grains": 16,
     "guest_sha256": [

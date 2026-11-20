@@ -1,0 +1,54 @@
+{
+  "members": [
+    {
+      "cid": "e717896f",
+      "filename": "base.vmdk",
+      "guest_bytes": 100663296,
+      "guest_sha256": "0708e9ff7f019784a85c6e8dd195d8ae1d6fe5daed8f22f9e7d28e168017cb96",
+      "parent_cid": "ffffffff",
+      "parent_name": null,
+      "reference": "vhd-chain/dynamic-flushed/base.vhd.guest.raw.xz",
+      "sha256": "bcc997596ca7a5a701e170a3f47881110c7e3e44fd6485d5fffa975c137fdd4f"
+    },
+    {
+      "cid": "4e495751",
+      "filename": "child1.vmdk",
+      "guest_bytes": 100663296,
+      "guest_sha256": "8072b65caa67acba8c388e8375f9be205b607b796e508af3ec473e947cd8b1dd",
+      "parent_cid": "e717896f",
+      "parent_name": "base.vmdk",
+      "reference": "vhd-chain/dynamic-flushed/child1.vhd.guest.raw.xz",
+      "sha256": "5a8d66bfd9b7c32e46b668b1dc84035e49762da2b4ded15e716a992b250168db"
+    },
+    {
+      "cid": "17b1ffd6",
+      "filename": "child2.vmdk",
+      "guest_bytes": 100663296,
+      "guest_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "parent_cid": "4e495751",
+      "parent_name": "child1.vmdk",
+      "reference": "vhd-chain/dynamic-flushed/child2.vhd.guest.raw.xz",
+      "sha256": "4f5d6738bccbf2fff83316aa319d4839ac04beacebdd4b53d9cf2337fa0f3be9"
+    },
+    {
+      "cid": "b498d4cd",
+      "filename": "child3.vmdk",
+      "guest_bytes": 100663296,
+      "guest_sha256": "ddb6205e85fcd49c1bd4dfb42f536f0a5dce45b3782fa2bcb927c893075ab544",
+      "parent_cid": "17b1ffd6",
+      "parent_name": "child2.vmdk",
+      "reference": "vhd-chain/dynamic-flushed/child2.vhd.guest.raw.xz",
+      "sha256": "94a8d5acf4fc357a4dcd403d0d381c9a6ca62907a22ab1dfb04c2d429e06cb0e"
+    }
+  ],
+  "originals": {
+    "sample.avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+    "sample.docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+    "sample.flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "sample.pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+    "sample.sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+    "sample.tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+  },
+  "qemu": "qemu-img version 10.0.13 (Debian 1:10.0.13+ds-0+deb13u1)"
+}

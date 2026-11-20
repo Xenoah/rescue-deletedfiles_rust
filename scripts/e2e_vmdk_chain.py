@@ -98,6 +98,16 @@ def controls(binary, selected, specs, oracle):
     physical = next(b for b, m, c in zip(base_map, middle_map, child_map, strict=True)
                     if b > 1 and m == c == 0)
     with base.open("rb") as src:
+        src.seek(8)
+        compressed = struct.unpack("<I", src.read(4))[0] & (1 << 16)
+    if compressed:
+        # Damage the zlib payload of an inherited grain, retaining both its marker and all IDs.
+        with changed(base, physical * 512 + 12, bytes(2)):
+            reject("damaged_inherited_zlib")
+        with descriptor_edit(base, b"parentCID=ffffffff", b'parentCID=abcdef01\nparentFileNameHint="older.vmdk"'):
+            reject("compressed_member_claims_ancestor")
+        return sorted(rejected)
+    with base.open("rb") as src:
         src.seek(physical * 512)
         value = src.read(1)[0]
     with changed(base, physical * 512, bytes([value ^ 255])):
@@ -110,7 +120,7 @@ def controls(binary, selected, specs, oracle):
 
 def verify(binary, root, qemu=None, vbox_img=None):
     results = {}
-    for case in ("qemu10-ntfs", "qemu6-fat32", "qemu10-ext4", "virtualbox-ntfs"):
+    for case in ("qemu10-ntfs", "qemu6-fat32", "qemu10-ext4", "virtualbox-ntfs", "qemu10-stream-ntfs"):
         oracle = case == "virtualbox-ntfs"
         fixtures = TESTS / "vmdk-vbox-parent" if oracle else TESTS / "vmdk-chain" / case
         info = json.loads((fixtures / "manifest.json").read_text(encoding="utf-8"))
@@ -170,6 +180,16 @@ def verify(binary, root, qemu=None, vbox_img=None):
             result = {"guest_sha256": guests, "originals": files}
             if len(members) == 3:
                 result["refused"] = controls(binary, members, specs, oracle)
+            if case == "qemu10-stream-ntfs":
+                result["refused"] = controls(binary, members[1:], specs[:3], False)
+                grains = []
+                for path in reversed(members):
+                    with path.open("rb") as src:
+                        src.seek(20)
+                        grains.append(512 * struct.unpack("<Q", src.read(8))[0])
+                check(grains == [65536, 65536, 65536, 32768], grains)
+                check(grain_map(members[0])[0] > 1 and guests[-1] == guests[-2], members)
+                result["grain_bytes"] = grains
             if case == "qemu6-fat32":
                 explicit = grain_map(members[1]).count(1)
                 check(explicit == 16, explicit)

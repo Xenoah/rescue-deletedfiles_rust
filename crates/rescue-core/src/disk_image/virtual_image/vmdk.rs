@@ -344,10 +344,18 @@ impl Vmdk {
         })
     }
     pub fn block(&self, offset: u64) -> (Block, u64) {
+        let (mapping, span) = self.overlay_block(offset);
+        (mapping.unwrap_or(Block::Zero), span)
+    }
+    fn overlay_block(&self, offset: u64) -> (Option<Block>, u64) {
         let grain = self.grains[(offset / self.grain_size) as usize];
         let within = offset % self.grain_size;
         let at = u64::from(grain.sector) * SECTOR;
-        let block = if grain.sector == 0 || grain.sector == 1 && self.zero_grain {
+        let span = self.grain_size - within;
+        if grain.sector == 0 {
+            return (None, span);
+        }
+        let block = if grain.sector == 1 && self.zero_grain {
             Block::Zero
         } else if grain.encoded != 0 {
             Block::Compressed {
@@ -358,7 +366,7 @@ impl Vmdk {
         } else {
             Block::Data(at + within)
         };
-        (block, self.grain_size - within)
+        (Some(block), span)
     }
 }
 

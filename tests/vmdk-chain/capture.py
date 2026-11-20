@@ -13,9 +13,9 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def capture(case, dest, base_subformat="monolithicSparse"):
+def capture(case, dest):
     tests = Path(__file__).resolve().parents[1]
-    if case == "qemu10-ntfs":
+    if case.endswith("ntfs"):
         reference = tests / "vhd-chain/dynamic-flushed"
         info = json.loads((reference / "manifest.json").read_text())
         inputs = [reference / (m["filename"] + ".guest.raw.xz") for m in info["members"]]
@@ -25,6 +25,10 @@ def capture(case, dest, base_subformat="monolithicSparse"):
         info = json.loads((reference.parent / "manifest.json").read_text())[label]
         inputs = sorted(reference.glob(pattern))
 
+    streamed = case == "qemu10-stream-ntfs"
+    base_subformat = "streamOptimized" if streamed else "monolithicSparse"
+    if streamed:
+        inputs.append(inputs[-1])
     dest.mkdir(parents=True, exist_ok=False)
     with tempfile.TemporaryDirectory() as directory:
         work = Path(directory)
@@ -56,6 +60,16 @@ def capture(case, dest, base_subformat="monolithicSparse"):
                         writes.extend(["-c", f"write -s {part} {at} {len(span)}"])
                     else:
                         writes.extend(["-c", f"write -z {at} {len(span)}"])
+                if streamed and i == 3:
+                    # QEMU has no create option for a smaller grain. Change the empty
+                    # child's geometry before its first write. QEMU populates the map.
+                    with (work / name).open("r+b") as child:
+                        child.seek(20)
+                        assert struct.unpack("<Q", child.read(8))[0] == 128
+                        child.seek(20)
+                        child.write(struct.pack("<Q", 64))
+                    (work / "half.bin").write_bytes(data[:32768])
+                    writes = ["-c", "write -s half.bin 0 32768"]
                 command("qemu-io", "-f", "vmdk", *writes, name)
             command("qemu-img", "compare", "-f", "raw", "-F", "vmdk", "input.raw", name)
             command("qemu-img", "convert", "-f", "vmdk", "-O", "raw", name, "decoded.raw")
@@ -82,7 +96,7 @@ def capture(case, dest, base_subformat="monolithicSparse"):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("case", choices=["qemu10-ntfs", "qemu6-fat32", "qemu10-ext4"])
+    parser.add_argument("case", choices=["qemu10-ntfs", "qemu6-fat32", "qemu10-ext4", "qemu10-stream-ntfs"])
     parser.add_argument("destination", type=Path)
     args = parser.parse_args()
     capture(args.case, args.destination)

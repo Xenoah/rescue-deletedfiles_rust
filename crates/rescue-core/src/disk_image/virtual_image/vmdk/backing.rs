@@ -38,13 +38,13 @@ pub(super) fn import(
         }
         let before = file.metadata()?;
         let header = Header::read(&mut file, before.len())?;
-        if header.compressed {
-            return Err(Error::Unsupported(
-                "VMDK snapshots require uncompressed monolithicSparse members".into(),
-            ));
-        }
         let identity = validate_descriptor(&mut file, &header, None, true)?
             .ok_or_else(|| invalid("VMDK snapshot member requires an embedded descriptor"))?;
+        if header.compressed && identity.requires_parent() {
+            return Err(Error::Unsupported(
+                "streamOptimized VMDK is supported as a standalone base for snapshots".into(),
+            ));
+        }
         if !cids.insert(identity.cid) || identity.image.is_some_and(|id| !uuids.insert(id)) {
             return Err(invalid("repeated VMDK snapshot content ID or image UUID"));
         }
@@ -76,6 +76,11 @@ pub(super) fn import(
         ));
     }
     let size = members[0].layout.size;
+    // At most one compressed member can occur, the standalone base. Different
+    // child grain boundaries can split a compressed base grain across reads.
+    let mut cached_at = None;
+    let mut decoded = Vec::new();
+    let mut encoded = Vec::new();
     chain::flatten(
         &mut members,
         size,
@@ -84,15 +89,25 @@ pub(super) fn import(
         cancel,
         |member, offset, buf, limit| {
             let disk = &member.layout;
-            let (block, span) = disk.block(offset);
+            let (block, span) = disk.overlay_block(offset);
             *limit = span.min(*limit as u64) as usize;
             match block {
-                Block::Zero if disk.grains[(offset / disk.grain_size) as usize].sector == 0 => {
-                    return Ok(false);
+                None => return Ok(false),
+                Some(Block::Zero) => buf[..*limit].fill(0),
+                Some(Block::Data(at)) => read_at(&mut member.file, at, &mut buf[..*limit])?,
+                Some(Block::Compressed { at, bytes, codec }) => {
+                    let within = offset % disk.grain_size;
+                    if cached_at != Some(at) {
+                        let count = disk.grain_size.min(disk.size - (offset - within));
+                        encoded.resize(bytes, 0);
+                        read_at(&mut member.file, at, &mut encoded)?;
+                        decoded.resize(disk.grain_size as usize + 1, 0);
+                        codec.decode(&encoded, &mut decoded, disk.grain_size, count)?;
+                        cached_at = Some(at);
+                    }
+                    let start = within as usize;
+                    buf[..*limit].copy_from_slice(&decoded[start..start + *limit]);
                 }
-                Block::Zero => buf[..*limit].fill(0),
-                Block::Data(at) => read_at(&mut member.file, at, &mut buf[..*limit])?,
-                Block::Compressed { .. } => return Err(invalid("compressed VMDK snapshot grain")),
             }
             Ok(true)
         },
