@@ -12,6 +12,7 @@ mod font;
 mod frame_archive;
 mod icon;
 mod indexed;
+mod rar;
 mod rtf;
 mod rule;
 mod scope;
@@ -120,6 +121,7 @@ pub(crate) fn validate_estimated_extent(
         "mkv" => Some(Format::Mkv),
         "webm" => Some(Format::Webm),
         "ogg" => Some(Format::Ogg),
+        "rar" => Some(Format::Rar),
         "7z" => Some(Format::SevenZ),
         "cab" => Some(Format::Cab),
         "gz" => Some(Format::Gzip),
@@ -242,6 +244,7 @@ enum Format<'a> {
     Webm,
     Ogg,
     Gzip,
+    Rar,
     SevenZ,
     Cab,
     Ico,
@@ -303,6 +306,7 @@ impl<'a> Format<'a> {
             Self::Webm => "webm",
             Self::Ogg => "ogg",
             Self::Gzip => "gz",
+            Self::Rar => "rar",
             Self::SevenZ => "7z",
             Self::Cab => "cab",
             Self::Ico => "ico",
@@ -383,6 +387,7 @@ impl<'a> Format<'a> {
             | Self::Webm
             | Self::Ogg
             | Self::Cab
+            | Self::Rar
             | Self::SevenZ
             | Self::Gzip
             | Self::Wav
@@ -454,6 +459,9 @@ impl<'a> Format<'a> {
             }
             Self::Cab => {
                 cab::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
+            }
+            Self::Rar => {
+                rar::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
             }
             Self::SevenZ => {
                 sevenz::validate(image, at, boundary, cancel, budget).map(|b| (self, b, Vec::new()))
@@ -631,6 +639,8 @@ fn detect<'a>(
         Some(Format::Flac)
     } else if bytes.starts_with(b"MSCF") && Format::Cab.allowed(extensions) {
         Some(Format::Cab)
+    } else if rar::signature(bytes) && Format::Rar.allowed(extensions) {
+        Some(Format::Rar)
     } else if bytes.starts_with(sevenz::MAGIC) && Format::SevenZ.allowed(extensions) {
         Some(Format::SevenZ)
     } else if bytes.starts_with(b"%PDF-") && Format::Pdf.allowed(extensions) {
@@ -698,6 +708,9 @@ fn format_warnings(format: Format) -> &'static [&'static str] {
         ],
         Format::Cab => &[
             "Validated standalone cabinet layout, CFDATA checksums, and decoded folder/member lengths. Original file name and deletion status are unknown.",
+        ],
+        Format::Rar => &[
+            "RAR archive headers, end record and decoded member checksums verified. The original archive name and deletion status are unknown.",
         ],
         Format::SevenZ => &[
             "The contiguous 7z start and next headers and the decoded stream entries were CRC-checked. This does not establish deletion or the original filename.",
@@ -809,7 +822,7 @@ pub(crate) fn scan_range(
         total_records: boundary-start, cancelled: false, truncated: false, invalid_records: 0,
         search: Some(settings.clone()),
         region: None, volumes: Vec::new(),
-        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
+        warnings: vec![PROVENANCE.into(), "PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/TIFF/Netpbm/PDF/RTF/HTML/XML/JSON/RAR/ZIP/Office/OpenDocument/EPUB/MP4/MOV/MP3/FLAC/AIFF/AIFF-C/TTF/OTF/WOFF/GIF/BMP/WebP/ICO/CUR/WAV/SQLite/AVI/MKV/WebM/Ogg/gzip/bzip2/XZ/lzip/Zstandard/LZ4 contiguous carving; <=64 MiB encoded / pixel reservation, <=128 MiB PNG scanlines or JPEG coefficients, <=65536 markers/chunks; JPEG <=256 scans. Shared 4 GiB validation budget. Progress uses bytes. Metadata contents, deletion status and original bytes are not established by structure or pixel decoding.".into()],
     };
     let mut scope = scope::Scope::new(&mut image, settings.carve_scope)?;
     let mut json_end = 0;
@@ -1015,6 +1028,7 @@ pub(crate) fn recovery_data(
         .unwrap_or(1);
     let format = [
         Format::Tar(blocking),
+        Format::Rar,
         Format::SevenZ,
         Format::Cab,
         Format::Png,

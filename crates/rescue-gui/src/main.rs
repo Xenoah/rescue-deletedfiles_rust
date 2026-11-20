@@ -1348,7 +1348,7 @@ impl App {
                             });
                         });
                     }
-                    ui.label(tr!("PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/GIF/BMP/WebP/ICO/CUR、PDF、7z・CAB・ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/GIF/BMP/WebP/ICO/CUR, PDF, 7z, CAB, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
+                    ui.label(tr!("PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/GIF/BMP/WebP/ICO/CUR、PDF、RAR・7z・CAB・ZIP/Office、MP4/MOV・AVI・MKV/WebM、WAV・Ogg、gzip・bzip2・XZ・lzip、SQLiteの構造を調べます。元の名前・削除状態は不明です。", "Find PNG/APNG/JPEG/HEIC/AVIF/PSD/PSB/OpenEXR/GIF/BMP/WebP/ICO/CUR, PDF, RAR, 7z, CAB, ZIP/Office, MP4/MOV, AVI, MKV/WebM, WAV, Ogg, gzip, bzip2, XZ, lzip and SQLite by structure. Original names and deletion status are unknown."));
                     checked_text_row(ui, tr!("開始バイト", "Start byte"), &mut self.range_start, tr!("空欄: 0（ディスク/イメージの先頭）", "Blank: 0 (start of the disk / image)"), error(Field::RangeStart).as_deref());
                     checked_text_row(ui, tr!("終了バイト", "End byte"), &mut self.range_end, tr!("空欄: 末尾 / この位置は含みません", "Blank: end of source / This position is excluded"), error(Field::RangeEnd).as_deref());
                 } else {

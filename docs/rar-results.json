@@ -1,0 +1,40 @@
+{
+  "adjacent": {
+    "rar4-many.rar": "2dda3f21b74b7543b0609d61ded673b6dba1afc29bc8f6acdde9b9df0d5aa08a",
+    "rar4-normal.rar": "92d77200817d36ac68e2392f1c1b237ebe9918fa441df15eb5ca900eb4a10ab5",
+    "rar4-solid.rar": "c8128d5365ee1b243c1516ec6956afdcc96b4241e475987a94a20bfd7b0d02ce",
+    "rar4-store.rar": "fbf1da222600ae8d538ebe93a46fd9680886cde01ae8259c56057c24f58e6210",
+    "rar4-unicode.rar": "cf1607f82a2923811c0dd33abbfc814691bdfde0eeac2773862c74cbab443c13",
+    "rar5-blake.rar": "7fa8b44df7871ff3a8bec3d631264c7447091d592eb0a6079b9ad778e9dc38f9",
+    "rar5-fast.rar": "8cbefa0aea517852391fc37e6d1a738ba826be7f3f567f8bcffe67722c3458a3",
+    "rar5-normal.rar": "8acbc5bd154a72bc335ea7db8b7ce19b404d84c62715800a62e604cf7050fc6b",
+    "rar5-solid.rar": "ccb1b91799ce978d19bf93e81ef272c71eb9eba138d2f31bafa41fb7ce71aedd",
+    "rar5-store.rar": "5a6dc5d1a35a7b08acb1c83d4caa4edf36f9a9a1c5fc27ab2526f07ef3703a3e"
+  },
+  "refused": [
+    "future-marker",
+    "incomplete-size-varint",
+    "next-volume-end",
+    "rar4-comment",
+    "rar4-compressed-data",
+    "rar4-end-crc",
+    "rar4-hidden",
+    "rar4-main-crc",
+    "rar4-member-body",
+    "rar4-missing-end",
+    "rar4-password",
+    "rar4-truncated",
+    "rar4-volume",
+    "rar5-comment",
+    "rar5-compressed-data",
+    "rar5-end-crc",
+    "rar5-hidden",
+    "rar5-main-crc",
+    "rar5-member-body",
+    "rar5-missing-end",
+    "rar5-password",
+    "rar5-truncated",
+    "rar5-volume",
+    "unread-member-range"
+  ]
+}
