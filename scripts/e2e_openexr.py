@@ -11,6 +11,7 @@ from e2e_html import make_deleted_fat
 from e2e_imaging import mark_gap
 from e2e_jpeg2000 import candidates
 from e2e_netpbm import make_deleted_ext4
+from openexr_levels import build_reader, read_levels
 
 GOLD = Path(__file__).resolve().parents[1] / "tests/openexr"
 FILTER = ["--extension", "exr"]
@@ -20,7 +21,8 @@ def sha(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def verify_pixels(path, expected):
+def verify_pixels(path, reference, reader):
+    expected = reference["pixels"]
     import OpenEXR
     import numpy as np
     with OpenEXR.File(str(path), separate_channels=True) as image:
@@ -34,7 +36,11 @@ def verify_pixels(path, expected):
                                 "sha256": sha(values.tobytes())}, (path, name))
 
 
-def recover(binary, image, work, files, manifest, native):
+    if "levels" in reference:
+        check(read_levels(reader, path) == reference["levels"], (path, "pyramid levels"))
+
+
+def recover(binary, image, work, files, manifest, reader):
     lookup = {sha(v): k for k, v in files.items()}
     before = sha(image.read_bytes())
     for mode, flags in [("ordinary", []), ("indexed", ["--indexed"])]:
@@ -50,8 +56,8 @@ def recover(binary, image, work, files, manifest, native):
             path = Path(row["path"])
             data = path.read_bytes()
             check(row["status"] == "completed" and data == files[name] and sha(data) == manifest[name]["sha256"], row)
-            if native:
-                verify_pixels(path, manifest[name]["pixels"])
+            if reader:
+                verify_pixels(path, manifest[name], reader)
     check(sha(image.read_bytes()) == before, image)
     print(image.name, len(files), "OpenEXR originals matched in both scan modes", flush=True)
 
@@ -114,7 +120,7 @@ def controls(binary, folder, files):
         "invalid_zlib_header": edit(data, payload, b"\0\0"),
         "adler32_mismatch": edit(data, payload+size-1, bytes([data[payload+size-1] ^ 1])),
         "zero_tile_size": edit(tile, tf["tiles"][0], le(0)),
-        "unsupported_tile_level": edit(tile, tf["tiles"][0]+8, b"\x01"),
+        "one_level_table_claims_mipmaps": edit(tile, tf["tiles"][0]+8, b"\x01"),
         "tile_y": edit(tile, tile_header+4, le(9)),
         "tile_level_id": edit(tile, tile_header+8, le(1)),
         "incomplete_tile": tile[:-9],
@@ -140,6 +146,20 @@ def controls(binary, folder, files):
         "multipart_unterminated_headers": edit(multi, stop, b"x"),
         "multipart_outside_final_block": multi[:-13],
     })
+    rip = files["ripup.exr"]
+    rf, rt = layout(rip)
+    first_chunk = struct.unpack_from("<Q", rip, rt)[0]
+    last_chunk = struct.unpack_from("<Q", rip, first_chunk - 8)[0]
+    cases.update({
+        "invalid_tile_rounding": edit(rip, rf["tiles"][0]+8, b"\x22"),
+        "invalid_level_mode": edit(rip, rf["tiles"][0]+8, b"\x03"),
+        "rip_as_mip": edit(rip, rf["tiles"][0]+8, b"\x11"),
+        "wrong_last_level_x": edit(rip, last_chunk+8, le(0)),
+        "negative_last_level_y": edit(rip, last_chunk+12, le(0xffffffff)),
+        "wrong_last_level_tile": edit(rip, last_chunk, le(1)),
+        "alias_last_to_first_level": edit(rip, first_chunk-8, big(first_chunk)),
+        "missing_last_pyramid_level": rip[:last_chunk],
+    })
     for label, broken in cases.items():
         p = folder / (label + ".raw")
         p.write_bytes(broken)
@@ -161,7 +181,7 @@ def controls(binary, folder, files):
     return sorted(cases)
 
 
-def sparse_ext4(binary, root, files, manifest):
+def sparse_ext4(binary, root, files, manifest, reader):
     # debugfs omits all-zero 1 KiB blocks while writing these two native files.
     # The surviving extents are authoritative about both the location and the length of each hole.
     selected = {n: files[n] for n in ("stereo.exr", "mixedrow.exr")}
@@ -180,7 +200,7 @@ def sparse_ext4(binary, root, files, manifest):
         n = row["original_path"]
         path = Path(row["path"])
         check(path.read_bytes() == selected[n] and row["sha256"] == sha(selected[n]), row)
-        verify_pixels(path, manifest[n]["pixels"])
+        verify_pixels(path, manifest[n], reader)
     check(sha(disk.read_bytes()) == before, disk)
     return {"zero_block_offsets": holes, "metadata_restored": {n: sha(b) for n,b in selected.items()}}
 
@@ -207,20 +227,22 @@ def verify(binary, root, native=False):
     hashes = {n: sha(v) for n, v in files.items()}
     check(hashes == {n: m["sha256"] for n, m in manifest.items()}, "fixture drift")
     if native:
+        reader = build_reader(root / "read-levels")
         for n in manifest:
-            verify_pixels(GOLD / n, manifest[n]["pixels"])
+            verify_pixels(GOLD / n, manifest[n], reader)
         for label in ["fat32", "ext4"]:
             folder = root / label
             folder.mkdir()
             image = make_deleted_fat(folder, files) if label == "fat32" else make_deleted_ext4(folder, files, block_size=4096)
-            recover(binary, image, folder, files, manifest, True)
+            recover(binary, image, folder, files, manifest, reader)
         sparse = root / "sparse"
         sparse.mkdir()
-        return {"originals": hashes, "filesystems": ["fat32", "ext4-4096"], "sparse_ext4": sparse_ext4(binary, sparse, files, manifest),
+        return {"originals": hashes, "filesystems": ["fat32", "ext4-4096"], "sparse_ext4": sparse_ext4(binary, sparse, files, manifest, reader),
+                "levels": {n: len(m["levels"]) for n,m in manifest.items() if "levels" in m},
                 "pixels": {n: m["pixels"] for n,m in manifest.items()}}
     image = root / "adjacent.raw"
     image.write_bytes(b"!" * ((1 << 20) - 2) + b"".join(files.values()))
-    recover(binary, image, root, files, manifest, False)
+    recover(binary, image, root, files, manifest, None)
     return {"originals": hashes, "refused": controls(binary, root, files),
             "changed_metadata": changed_metadata(binary, root, files["rgbazip.exr"])}
 

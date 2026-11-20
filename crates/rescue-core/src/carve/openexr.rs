@@ -1,7 +1,11 @@
 //! Validate the headers, chunk tables and decoded blocks of flat OpenEXR images.
 use super::container::{Input, u32le, u64le};
 use crate::{Error, Result};
-use exr::block::reader::ChunksReader;
+use exr::{
+    block::reader::ChunksReader,
+    math::{RoundingMode, Vec2},
+    meta::{mip_map_levels, rip_map_levels},
+};
 use flate2::{Decompress, FlushDecompress, Status};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -123,9 +127,17 @@ fn channels(data: &[u8], max_name: usize) -> Result<(usize, usize, usize)> {
     Ok((count, bytes, floats))
 }
 
+struct Level {
+    index: Vec2<usize>,
+    size: Vec2<usize>,
+    columns: usize,
+    chunks: usize,
+}
+
 struct Grid {
-    width: usize,
-    height: usize,
+    levels: Vec<Level>,
+    pixels: usize,
+    chunks: usize,
     y: i32,
     block_width: usize,
     block_height: usize,
@@ -184,20 +196,52 @@ impl Grid {
             4 | 6 | 7 => 32,
             _ => return Err(invalid("compression")),
         };
-        let (block_width, block_height) = if tiled {
+        let (block_width, block_height, mode) = if tiled {
             let tile = field("tiles", "tiledesc")?;
             let (w, h) = (u32le(tile, 0), u32le(tile, 4));
-            if !(1..=8192).contains(&w) || !(1..=8192).contains(&h) || !matches!(tile[8], 0 | 16) {
+            if !(1..=8192).contains(&w)
+                || !(1..=8192).contains(&h)
+                || !matches!(tile[8], 0..=2 | 16..=18)
+            {
                 return Err(invalid("tile size or levels"));
             }
-            (w as usize, h as usize)
+            (w as usize, h as usize, tile[8])
         } else {
             if fields.contains_key("tiles") {
                 return Err(invalid("unexpected tile description"));
             }
-            (width, rows)
+            (width, rows, 0)
         };
-        let total = width.div_ceil(block_width) * height.div_ceil(block_height);
+        let size = Vec2(width, height);
+        let round = if mode & 16 == 0 {
+            RoundingMode::Down
+        } else {
+            RoundingMode::Up
+        };
+        let dimensions = match mode & 15 {
+            1 => mip_map_levels(round, size)
+                .map(|(i, s)| (Vec2(i, i), s))
+                .collect(),
+            2 => rip_map_levels(round, size).collect(),
+            _ => vec![(Vec2(0, 0), size)],
+        };
+        let levels: Vec<Level> = dimensions
+            .into_iter()
+            .map(|(index, size)| {
+                let columns = size.width().div_ceil(block_width);
+                Level {
+                    index,
+                    size,
+                    columns,
+                    chunks: columns * size.height().div_ceil(block_height),
+                }
+            })
+            .collect();
+        let pixels = levels.iter().map(|l| l.size.area()).sum::<usize>();
+        if pixels * count > MAX_SAMPLES {
+            return Err(invalid("sample count across levels"));
+        }
+        let total = levels.iter().map(|l| l.chunks).sum::<usize>();
         if total > 65_536
             || (fields.contains_key("chunkCount")
                 && u32le(field("chunkCount", "int")?, 0) as usize != total)
@@ -205,12 +249,13 @@ impl Grid {
             return Err(invalid("chunk count"));
         }
         Ok(Self {
-            width,
-            height,
+            levels,
+            pixels,
+            chunks: total,
             y,
             block_width,
             block_height,
-            samples: width * height * count,
+            samples: pixels * count,
             bytes_per_pixel,
             float_channels,
             tiled,
@@ -218,18 +263,15 @@ impl Grid {
         })
     }
 
-    fn chunks(&self) -> usize {
-        self.width.div_ceil(self.block_width) * self.height.div_ceil(self.block_height)
-    }
-
     fn read_chunk(
         &self,
         input: &mut Input<'_>,
         end: usize,
+        level: &Level,
         index: usize,
         inflated: &mut Vec<u8>,
     ) -> Result<usize> {
-        let columns = self.width.div_ceil(self.block_width);
+        let columns = level.columns;
         let (x, y) = (index % columns, index / columns);
         let head = if self.tiled { 20 } else { 8 };
         input.ensure(end + head)?;
@@ -237,15 +279,16 @@ impl Grid {
         if self.tiled {
             if u32le(chunk, 0) as usize != x
                 || u32le(chunk, 4) as usize != y
-                || u64le(chunk, 8) != 0
+                || u32le(chunk, 8) as usize != level.index.x()
+                || u32le(chunk, 12) as usize != level.index.y()
             {
                 return Err(invalid("tile identity"));
             }
         } else if u32le(chunk, 0) as i32 != self.y + (y * self.block_height) as i32 {
             return Err(invalid("scan-line identity"));
         }
-        let raw = (self.width - x * self.block_width).min(self.block_width)
-            * (self.height - y * self.block_height).min(self.block_height)
+        let raw = (level.size.width() - x * self.block_width).min(self.block_width)
+            * (level.size.height() - y * self.block_height).min(self.block_height)
             * self.bytes_per_pixel;
         let packed = u32le(chunk, head - 4) as usize;
         if packed == 0 || packed > raw || (self.compression == 0 && packed != raw) {
@@ -286,21 +329,23 @@ impl Grid {
 // Part offset tables are concatenated by header order. Pixel chunks may arrive
 // in another physical order, including interleaved parts and decreasing rows.
 fn extent(input: &mut Input<'_>, grids: &[Grid], mut end: usize, multipart: bool) -> Result<usize> {
-    let count = grids.iter().map(Grid::chunks).sum::<usize>();
+    let count = grids.iter().map(|g| g.chunks).sum::<usize>();
     if count > 65_536 {
         return Err(invalid("total chunk count"));
     }
     input.ensure(end + count * 8)?;
     let mut offsets = Vec::with_capacity(count);
     for (part, grid) in grids.iter().enumerate() {
-        for index in 0..grid.chunks() {
-            offsets.push((u64le(&input.bytes, end), part, index));
-            end += 8;
+        for (level, layout) in grid.levels.iter().enumerate() {
+            for index in 0..layout.chunks {
+                offsets.push((u64le(&input.bytes, end), part, level, index));
+                end += 8;
+            }
         }
     }
     offsets.sort_unstable();
     let mut inflated = Vec::new();
-    for (offset, part, index) in offsets {
+    for (offset, part, level, index) in offsets {
         if offset != end as u64 {
             return Err(invalid("missing, overlapping or discontiguous chunk"));
         }
@@ -311,7 +356,8 @@ fn extent(input: &mut Input<'_>, grids: &[Grid], mut end: usize, multipart: bool
             }
             end += 4;
         }
-        end = grids[part].read_chunk(input, end, index, &mut inflated)?;
+        end =
+            grids[part].read_chunk(input, end, &grids[part].levels[level], index, &mut inflated)?;
     }
     Ok(end)
 }
@@ -371,7 +417,7 @@ pub(super) fn parse(input: &mut Input<'_>) -> Result<usize> {
     let end = extent(input, &grids, pos, multipart)?;
     let expected = grids
         .iter()
-        .map(|g| g.width * g.height * g.bytes_per_pixel)
+        .map(|g| g.pixels * g.bytes_per_pixel)
         .sum::<usize>();
     input.work(expected * 2)?;
     // Validate each compressed block and its decoded size. Keep only one block in memory.

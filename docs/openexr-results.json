@@ -4,6 +4,13 @@
       "fat32",
       "ext4-4096"
     ],
+    "levels": {
+      "mipfloat.exr": 8,
+      "miphalf.exr": 7,
+      "mipup.exr": 8,
+      "ripdown.exr": 49,
+      "ripup.exr": 64
+    },
     "originals": {
       "alphab44.exr": "46c9c74e602ff4497634af57b7117c095a95e3eb09636d91691f9366cb2635bf",
       "cropped.exr": "be2d3eaae2c665206d35c01ae138d16f9ba3d15076352089ce0676a5130754e3",
@@ -17,11 +24,16 @@
       "halfb44.exr": "c1918ce85c5620c929c8bc8521c8a7f959f6b9e9204e390068d364b199cf5f71",
       "longname.exr": "9fc0c22e05776472fec8345138e26f7e4a087e5467ba5f5cb6234dd4f95e13ba",
       "luma.exr": "86f2d9d9e42979cbdf440bdaffbd010e95175608fb2b279a3c2d79d5748f6526",
+      "mipfloat.exr": "eef94e6f62076e3986d483501ba13afe79fb52e4e1067135c9f3ca3736a69bbf",
+      "miphalf.exr": "526944a814ea90771f163dc0bdad11215504ca01ddc95c11e284f21205e2b85f",
+      "mipup.exr": "f93b9d4d9e406c01befdfd3d1f0aa9d492e75722574ed2cf6e41bb7fa762c21a",
       "mixedrow.exr": "ffe687a445ee125652ab3c0ba64af68173afca880841d37948d2b9ec5842630f",
       "multitil.exr": "367be789d5ac3eaecf72aea3cef132f06a93466cfe124b8fbbe0070abb30c8c7",
       "negwin.exr": "9e15062b76f4aec6dd9181d59018c29f2e5a475ca6c7205605f314f12bfa0343",
       "rgbazip.exr": "1fc04d64668f5ff01f322e6667e329ac01f158bd01f2b43b16e6730a07751a47",
       "rgbzips.exr": "63955ae8f4b7374dd544a5fb8638a21a0e05377cafac1e1a3dad708a67cbb3e3",
+      "ripdown.exr": "1148ddd83c99bdab980f643bee9840c38b36a6be0c2b0a9f704921baf8a99f79",
+      "ripup.exr": "0906cfb26986859b9cdfb6a936a79c9c4ae3045783e8237e6acb4b8bf8f21ccd",
       "rlegrey.exr": "e48439c721466d70acb2c1da120891d0e979040b48fe8de7d379fb597a465a85",
       "stereo.exr": "f6ad91aeeeb44a9e765058b37a9dae6bdb2fbd4979af05ef09a48139794cc11b",
       "tilerle.exr": "8197802d9a90c2e0e7fa9270a899df38a641b1a55b866e05ef5c0ebd4ba30026",
@@ -341,6 +353,98 @@
           }
         }
       ],
+      "mipfloat.exr": [
+        {
+          "B": {
+            "dtype": "<f4",
+            "sha256": "01307690f457d4cce52e88ea21b5d5203ef55db8f94c1bc90175399e56ff2bc2",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "G": {
+            "dtype": "<f4",
+            "sha256": "f6ca06e88b6ca4d951ecfd323a9e3ddd6bbcc160d39bb3e236781b7318f0e8b2",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "R": {
+            "dtype": "<f4",
+            "sha256": "2d1178cdb7c7b1f1676ae1aacec4eefa36fdf81e40881659250f89d2c11eec3d",
+            "shape": [
+              67,
+              91
+            ]
+          }
+        }
+      ],
+      "miphalf.exr": [
+        {
+          "A": {
+            "dtype": "<f2",
+            "sha256": "46e4c0d998636601cf320d0a2fec4ad0a240906dffd2de61889f65f6485da703",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "B": {
+            "dtype": "<f2",
+            "sha256": "abb4d62320297e677ff29ab4db1300bda27d338ae7d8199afc79e366851012d6",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "G": {
+            "dtype": "<f2",
+            "sha256": "8932895511362b579629fcb833f7b0f5ba1aeb05a66276ce50d59aee169a3a7c",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "R": {
+            "dtype": "<f2",
+            "sha256": "533e387a15cd09b3f8db24d460613590a92faa0081ab42467d4c2f0df08278c9",
+            "shape": [
+              67,
+              91
+            ]
+          }
+        }
+      ],
+      "mipup.exr": [
+        {
+          "B": {
+            "dtype": "<f2",
+            "sha256": "8932895511362b579629fcb833f7b0f5ba1aeb05a66276ce50d59aee169a3a7c",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "G": {
+            "dtype": "<f2",
+            "sha256": "533e387a15cd09b3f8db24d460613590a92faa0081ab42467d4c2f0df08278c9",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "R": {
+            "dtype": "<f2",
+            "sha256": "e7be358b8d9c5a9765029f1cf326270eff33372e8c37e25b070c6081a7cf3eb1",
+            "shape": [
+              67,
+              91
+            ]
+          }
+        }
+      ],
       "mixedrow.exr": [
         {
           "B": {
@@ -543,6 +647,54 @@
           }
         }
       ],
+      "ripdown.exr": [
+        {
+          "B": {
+            "dtype": "<f2",
+            "sha256": "386067fa5c043935f7eac953f2494b3f616b97ffa3737f63a5b003e6902b0259",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "G": {
+            "dtype": "<f2",
+            "sha256": "22fca7e6d613b18efb3ba9fae4868bc31ea19df90b6437978da9f0451e76974a",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "R": {
+            "dtype": "<f2",
+            "sha256": "05cc5d186efe8eeee958792f0545c4eb52e1fac3246b3d6e770e4e83a2f3e2c1",
+            "shape": [
+              67,
+              91
+            ]
+          }
+        }
+      ],
+      "ripup.exr": [
+        {
+          "Z": {
+            "dtype": "<f4",
+            "sha256": "4b9553f4024ca08037fe55a069396a8995e03e8253801642cfab55d5c90d7600",
+            "shape": [
+              67,
+              91
+            ]
+          },
+          "objectID": {
+            "dtype": "<u4",
+            "sha256": "69c4a6ec5e6a18d40cae44dd149f5d40160aced0fd1dabd78b1b42e234159a8f",
+            "shape": [
+              67,
+              91
+            ]
+          }
+        }
+      ],
       "rlegrey.exr": [
         {
           "Y": {
@@ -716,11 +868,16 @@
       "halfb44.exr": "c1918ce85c5620c929c8bc8521c8a7f959f6b9e9204e390068d364b199cf5f71",
       "longname.exr": "9fc0c22e05776472fec8345138e26f7e4a087e5467ba5f5cb6234dd4f95e13ba",
       "luma.exr": "86f2d9d9e42979cbdf440bdaffbd010e95175608fb2b279a3c2d79d5748f6526",
+      "mipfloat.exr": "eef94e6f62076e3986d483501ba13afe79fb52e4e1067135c9f3ca3736a69bbf",
+      "miphalf.exr": "526944a814ea90771f163dc0bdad11215504ca01ddc95c11e284f21205e2b85f",
+      "mipup.exr": "f93b9d4d9e406c01befdfd3d1f0aa9d492e75722574ed2cf6e41bb7fa762c21a",
       "mixedrow.exr": "ffe687a445ee125652ab3c0ba64af68173afca880841d37948d2b9ec5842630f",
       "multitil.exr": "367be789d5ac3eaecf72aea3cef132f06a93466cfe124b8fbbe0070abb30c8c7",
       "negwin.exr": "9e15062b76f4aec6dd9181d59018c29f2e5a475ca6c7205605f314f12bfa0343",
       "rgbazip.exr": "1fc04d64668f5ff01f322e6667e329ac01f158bd01f2b43b16e6730a07751a47",
       "rgbzips.exr": "63955ae8f4b7374dd544a5fb8638a21a0e05377cafac1e1a3dad708a67cbb3e3",
+      "ripdown.exr": "1148ddd83c99bdab980f643bee9840c38b36a6be0c2b0a9f704921baf8a99f79",
+      "ripup.exr": "0906cfb26986859b9cdfb6a936a79c9c4ae3045783e8237e6acb4b8bf8f21ccd",
       "rlegrey.exr": "e48439c721466d70acb2c1da120891d0e979040b48fe8de7d379fb597a465a85",
       "stereo.exr": "f6ad91aeeeb44a9e765058b37a9dae6bdb2fbd4979af05ef09a48139794cc11b",
       "tilerle.exr": "8197802d9a90c2e0e7fa9270a899df38a641b1a55b866e05ef5c0ebd4ba30026",
@@ -729,6 +886,7 @@
     },
     "refused": [
       "adler32_mismatch",
+      "alias_last_to_first_level",
       "attribute_size",
       "channel_linearity",
       "channel_order",
@@ -741,9 +899,12 @@
       "excessive_window",
       "incomplete_final_block",
       "incomplete_tile",
+      "invalid_level_mode",
+      "invalid_tile_rounding",
       "invalid_zlib_header",
       "inverted_display_window",
       "missing_data_window",
+      "missing_last_pyramid_level",
       "multipart_aliased_chunk",
       "multipart_deep_part",
       "multipart_flag_without_parts",
@@ -757,18 +918,22 @@
       "multipart_unterminated_headers",
       "multipart_wrong_chunk_count",
       "multipart_wrong_valid_part",
+      "negative_last_level_y",
       "offset_hole",
       "offset_inside_header",
       "offset_overlap",
       "offset_past_source",
       "offset_swapped_identities",
+      "one_level_table_claims_mipmaps",
       "reserved_flags",
+      "rip_as_mip",
       "tile_level_id",
       "tile_y",
       "unsupported_compression",
       "unsupported_line_order",
-      "unsupported_tile_level",
       "version",
+      "wrong_last_level_tile",
+      "wrong_last_level_x",
       "wrong_row",
       "zero_chunk_size",
       "zero_tile_size"
