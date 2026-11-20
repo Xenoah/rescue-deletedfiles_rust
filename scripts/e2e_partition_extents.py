@@ -14,6 +14,8 @@ from e2e_apple_partitions import make_image
 from e2e_disks import disk_image
 from e2e_imaging import mark_gap
 from e2e_known_extents import CORPUS, manifest, restore, sha
+from e2e_legacy_ext import ROOT as LEGACY, build_boundary
+from verify_camera_raw_metadata import digest
 
 
 def mbr_entry(kind, start, count):
@@ -111,6 +113,48 @@ def kernel_unlinks(binary, root):
         flush=True,
     )
     return results
+
+
+def large_boundary(binary, root):
+    disk, info, volume = build_boundary(root, json.loads((LEGACY / "manifest.json").read_text()))
+    check(digest(disk) == info["sha256"], disk)
+    layout = run(binary, "inspect", "--source", disk, "--json")["layout"]
+    (region,) = layout["regions"]
+    check(layout["scheme"] == "gpt" and region["offset"] == info["partition_offset"], region)
+    files = {}
+    path = root / "layout.json"
+    out = root / "restored"
+    for name, entry in volume["originals"].items():
+        data = (CORPUS / name).read_bytes()
+        offset = entry["deleted_offset"]
+        plan = dict(
+            schema_version=2,
+            partition=region["index"],
+            sha256=entry["sha256"],
+            extents=[dict(offset=offset, length=entry["bytes"])],
+        )
+        write_layout(path, plan)
+        report = restore(binary, disk, path, out)
+        check(out.read_bytes() == data and sha(data) == report["file"]["sha256"] == entry["sha256"], name)
+        out.unlink()
+        files[name] = dict(
+            bytes=entry["bytes"],
+            sha256=entry["sha256"],
+            volume_offset=offset,
+            disk_offset=region["offset"] + offset,
+        )
+    wav = files["sample.wav"]
+    check(wav["disk_offset"] < 1 << 32 < wav["disk_offset"] + wav["bytes"], wav)
+    check(digest(disk) == info["sha256"], disk)
+    print("9 kernel-deleted ext3 files restored by volume offsets across the 4 GiB boundary", flush=True)
+    return dict(
+        partition=region["index"],
+        partition_offset=region["offset"],
+        disk_sha256=info["sha256"],
+        files=files,
+        wav_crosses_4gib=True,
+        source_unchanged=True,
+    )
 
 
 def exercise(binary, root):
@@ -232,6 +276,11 @@ def exercise(binary, root):
                     "--json",
                 )
                 acquired = Path(acq["image"])
+                # Neither this partition's boot sector nor the decoy boot sector is needed
+                # to apply a known layout. Only the partition table and requested bytes are mandatory.
+                decoy = next(other for other in table["regions"] if other["index"] != index)
+                mark_gap(acquired, decoy["offset"])
+                mark_gap(acquired, region["offset"])
                 mark_gap(acquired, region["offset"] + 512)
                 # Requested bytes are truly zero, yet the corresponding position on the disk was not acquired.
                 gapped = dict(
@@ -268,6 +317,7 @@ def exercise(binary, root):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", required=True, type=Path)
+    parser.add_argument("--large", action="store_true", help="Verify the sparse 4 GiB GPT fixture instead")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
-        exercise(args.binary.resolve(), Path(tmp))
+        (large_boundary if args.large else exercise)(args.binary.resolve(), Path(tmp))

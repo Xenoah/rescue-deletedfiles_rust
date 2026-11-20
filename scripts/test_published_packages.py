@@ -25,7 +25,7 @@ from e2e_udif import verify as udif_images
 from e2e_compressed_raw import verify as compressed_disks
 from e2e_udif_codecs import verify as modern_udif_codecs
 from e2e_known_extents import verify as known_extents
-from e2e_partition_extents import exercise as partition_extents
+from e2e_partition_extents import exercise as partition_extents, large_boundary as partition_extents_4g
 from e2e_vhd import verify as classic_vhd
 from e2e_aiff import verify as aiff_audio
 from e2e_fonts import verify as font_files
@@ -261,6 +261,9 @@ def main():
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 50, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['partition_extents'] = partition_extents(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['partition_extents_4g'] = partition_extents_4g(binary, Path(tmp))
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 49, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['camera_dng'] = camera_dng(binary, Path(tmp), native=a.platform == 'linux')

@@ -83,7 +83,7 @@ fn region(
         name,
         offset,
         length,
-        filesystem: filesystem(image, offset, length)?,
+        filesystem: None,
         recovery_boot: None,
     })
 }
@@ -356,6 +356,18 @@ pub fn inspect_source(path: &Path) -> Result<SourceLayout> {
     inspect_image(&mut Image::open(path)?)
 }
 pub(crate) fn inspect_image(image: &mut Image) -> Result<SourceLayout> {
+    let mut layout = partition_table(image)?;
+    for region in &mut layout.regions {
+        if region.offset != 0 {
+            region.filesystem = filesystem(image, region.offset, region.length)?;
+        }
+    }
+    Ok(layout)
+}
+
+// Only the partition table establishes boundaries. A caller with a known file
+// layout can read intact data even if an unrelated filesystem boot sector is missing.
+pub(crate) fn partition_table(image: &mut Image) -> Result<SourceLayout> {
     if image.length < 512 {
         return Err(invalid("source shorter than a sector"));
     }

@@ -224,7 +224,7 @@ def report_allocation(binary, root, volume, ref):
     return result
 
 
-def boundary(binary, root, manifest):
+def build_boundary(root, manifest):
     # The two GPT copies were written by GNU Parted. Rebuild the same sparse
     # device without requiring 4 GiB of physical storage on the test machine.
     folder = ROOT / "gpt-4g"
@@ -242,6 +242,12 @@ def boundary(binary, root, manifest):
         stream.write(contents)
         stream.seek(size - len(tail))
         stream.write(tail)
+    return disk, info, ref
+
+
+def boundary(binary, root, manifest):
+    disk, info, ref = build_boundary(root, manifest)
+    start = info["partition_offset"]
     def digest():
         with disk.open("rb") as stream:
             return hashlib.file_digest(stream, "sha256").hexdigest()
@@ -264,7 +270,7 @@ def boundary(binary, root, manifest):
                 check(status in report.splitlines(), (name, block, report))
     for label, indexed in [("ordinary", False), ("indexed", True)]:
         job = root / ("boundary-" + label)
-        session, rows = scan(binary, disk, job, indexed=indexed, extensions=EXTENSIONS, bounds=(start, start + len(contents)))
+        session, rows = scan(binary, disk, job, indexed=indexed, extensions=EXTENSIONS, bounds=(start, start + ref["bytes"]))
         check({r["record"] for r in rows} == truth.keys() and all(r["supported"] and r["allocation_status"] == "unallocated" for r in rows), rows)
         by_id = {r["id"]: truth[r["record"]] for r in rows}
         recovered = run(binary, "recover", "--session", session["session"], "--all", "--destination", job / "out", "--json", timeout=180)["results"]
@@ -275,7 +281,7 @@ def boundary(binary, root, manifest):
             check(restored == (ROOT.parent / "corpus/files" / name).read_bytes() and
                   hashlib.sha256(restored).hexdigest() == row["sha256"] == files[name]["sha256"], name)
     check(digest() == info["sha256"], disk)
-    return dict(disk_bytes=size, disk_sha256=info["sha256"], partition_offset=start, crossing_file="sample.wav",
+    return dict(disk_bytes=info["bytes"], disk_sha256=info["sha256"], partition_offset=start, crossing_file="sample.wav",
                 restored={name: dict(offset=pos, sha256=files[name]["sha256"]) for pos,name in truth.items()})
 
 

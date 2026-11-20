@@ -1,5 +1,5 @@
 {
-  "binary_sha256": "9fd67372c0f1534e7f28da8a3d9e8458fa54667426f33e9be0d3e42bd100f16f",
+  "binary_sha256": "5edf11fb2052af153764d90d2a8a585e30b9e5375f9e85f7cf49161eb3693752",
   "tool": "parted (GNU parted) 3.6",
   "volumes": {
     "contiguous": {
@@ -93,7 +93,7 @@
       "wrong_digest_refused": true
     },
     "fat32": {
-      "disk_sha256": "6625f7fba6dd02fb59711864a7504b338b8cf82520463d0d657a6ace7de2ec74",
+      "disk_sha256": "407ac8176bd8a204b65ad8a990cd3e26904b1035ab1aac413d0e22fac01bb988",
       "files": {
         "camera.ari": {
           "bytes": 11529396,
@@ -183,7 +183,7 @@
       "wrong_digest_refused": true
     },
     "fragmented": {
-      "disk_sha256": "4461a1d18ee43f0aa08f2e440e4622117841a4adade4f9d9d3c03d0870a489b9",
+      "disk_sha256": "cdae2cf1d4fb741b711ee1f68026119fa73016ab39898b31cb22d7e36f35e296",
       "files": {
         "camera.ari": {
           "bytes": 11529396,
@@ -273,7 +273,7 @@
       "wrong_digest_refused": true
     },
     "ntfs": {
-      "disk_sha256": "e86bf7e830924298abe3bad03ea57b6116474f8d105e783e9c674ea5ad2e495f",
+      "disk_sha256": "c8105bc82346700f9c72879d8016d1504e29bd47e09efa456450cc2a1d37822a",
       "files": {
         "camera.ari": {
           "bytes": 11529396,

@@ -200,7 +200,7 @@ rescue import-image --source disk.dmg --image-type dmg --output disk.raw --json
 rescue recover-extents --source disk.raw --layout layout.json --output restored.bin --json
 ```
 
-ボリュームをマウント中にFIEMAP、FIBMAP、debugfsなどで記録した配置は、通常そのボリューム先頭が起点です。ディスク全体を入力してこの配置を使うには、上記のJSONを `"schema_version": 2` に変更し、同じ階層に `"partition": 2` のようにパーティション番号を加えます。番号は `rescue inspect --source disk.raw --json` の `layout.regions[].index` で確認します。MBRの基本・論理パーティション、GPT、Apple Partition Mapに対応します。物理アドレスは指定パーティションの末尾までに制限されます。表を読み取れない場合や、番号が消えた場合は復元を停止します。直接取得したボリュームイメージには形式1を使用します。暗号化、圧縮、複数デバイスのファイルシステムが返す仮想アドレスを物理位置へ変換する機能はありません。
+ボリュームをマウント中にFIEMAP、FIBMAP、debugfsなどで記録した配置は、通常そのボリューム先頭が起点です。ディスク全体を入力してこの配置を使うには、上記のJSONを `"schema_version": 2` に変更し、同じ階層に `"partition": 2` のようにパーティション番号を加えます。番号は `rescue inspect --source disk.raw --json` の `layout.regions[].index` で確認します。MBRの基本・論理パーティション、GPT、Apple Partition Mapに対応します。物理アドレスは指定パーティションの末尾までに制限されます。表を読み取れない場合や、番号が消えた場合は復元を停止します。取得マップ上でファイルシステムのブートセクターが欠損していても、対象のパーティション表と指定した全区間を読み取れれば復元できます。直接取得したボリュームイメージには形式1を使用します。暗号化、圧縮、複数デバイスのファイルシステムが返す仮想アドレスを物理位置へ変換する機能はありません。
 
 元ファイルでゼロと分かっているスパース領域は `{"zero_bytes": 4096}` のように指定できます。通常の読み取り領域が取得マップの欠損に重なる場合は処理を止めます。全体のSHA-256が一致したときにだけ新しい保存先を確定します。RAW、対応する読み取り専用の物理ディスク、Rescueの取得マップ・RAID構成を使用できます。配置表の上限は4 MiB・65,536領域、ファイルの上限は16 TiBです。
 

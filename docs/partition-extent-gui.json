@@ -1,0 +1,44 @@
+{
+  "all_outputs_byte_exact": true,
+  "files": {
+    "avi": "302fd11cf739949fc1c6b39634f5710490a7a3652be6e67ffddd64a9da98a480",
+    "docx": "57d1eaaf38270ee75033f32d714c51df6b5df94c5a4050ae5343da830851957e",
+    "flac": "ab6efc1b73b15d473861874bf997153b90a7d595eeb38e631a2e3b14b1cae516",
+    "ogg": "f16aa69889c34f2f89bd5578210cd3b94c9d2d9c63f44bea55a27d43ade338f1",
+    "pptx": "8b94628c756bd48480cc93b1abc231bf7215d833222782c7441cd2434bc7304b",
+    "sqlite": "6119818201f9b931b4f1d1033c662f7b2fc7852adc318d998895a9f0db30712c",
+    "tar": "21032fd8741d682770a67457c18abede333c5a0fbe1d1c36481e39b4f0253d2f",
+    "tif": "3ddafcc4702ea0ab2a77ba5318d839d23cabf50e57179ed214c35d150a73d805",
+    "wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "xlsx": "a62fb4e5504bc03e8722c5616185651a29f3e1f95a43b14560aa05ab4d3f8c35"
+  },
+  "gui_sha256": "10ea862916916a0064edfd7f7e712806f33bafa6c52c6b1381780692635c1f16",
+  "hash_mismatch_refused": true,
+  "partition": 2,
+  "platform": "Linux x64, Xvfb",
+  "scheme": "gpt",
+  "screenshots": [
+    {
+      "file": "images/v1.50.0/known-layout-settings.png",
+      "height": 820,
+      "sha256": "e08a5907973d4fe5371afcf55c824ed5543d62b81cb76950615683ec44e2cad7",
+      "width": 1260
+    },
+    {
+      "file": "images/v1.50.0/known-layout-completed.png",
+      "height": 820,
+      "sha256": "4225da186d178ed6090df68f7ab16d683a719d6857ebcf615d86c94e52e6e9d6",
+      "width": 1260
+    },
+    {
+      "file": "images/v1.50.0/known-layout-digest-mismatch.png",
+      "height": 820,
+      "sha256": "b28fe7a2db0090e31204ee40a093e4343595ca1cc00b9771ea2e2c4de14a1fce",
+      "width": 1260
+    }
+  ],
+  "sector_bytes": 4096,
+  "source_sha256": "b53266800d9cace2367032cd1444e6b48e0ad2a9034648e9daf3660c356df2b5",
+  "source_unchanged": true,
+  "version": "1.50.0"
+}

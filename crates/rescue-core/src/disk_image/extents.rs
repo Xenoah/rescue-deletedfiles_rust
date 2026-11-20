@@ -114,7 +114,7 @@ pub fn recover_extents(
     let output = canonical_output_path(output)?;
     guard_image_output(&image, &output)?;
     if let Some(index) = layout.partition {
-        let table = crate::partitions::inspect_image(&mut image)?;
+        let table = crate::partitions::partition_table(&mut image)?;
         let region = table
             .regions
             .iter()

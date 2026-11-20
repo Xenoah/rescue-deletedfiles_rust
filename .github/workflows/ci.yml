@@ -151,6 +151,9 @@ jobs:
       - name: Recover 21 actual regularly fragmented FAT unlinks with original lengths and whole-file hashes
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_strided_files.py --native --binary target/${{ matrix.target }}/debug/rescue
+      - name: Recover nine ext3 unlinks with partition-relative file offsets across 4 GiB
+        if: runner.os == 'Linux'
+        run: python scripts/ci_command.py python scripts/e2e_partition_extents.py --large --binary target/${{ matrix.target }}/debug/rescue
       - name: Recover eight ext4 unlinks from e2fsprogs block locations
         if: runner.os == 'Linux'
         run: python scripts/ci_command.py python scripts/e2e_known_extents.py --native --binary target/${{ matrix.target }}/debug/rescue
