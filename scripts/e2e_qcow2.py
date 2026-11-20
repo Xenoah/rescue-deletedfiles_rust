@@ -64,6 +64,15 @@ def verify(binary, root):
         result = run(binary, 'import-image', '--source', image, '--output', output, '--json')
         check(output.read_bytes() == contents and result['bytes'] == len(contents)
               and result['sha256'] == hashlib.sha256(contents).hexdigest(), result)
+        family = root / (label + '-family.raw')
+        generic = run(binary, 'import-image', '--source', image, '--image-type', 'qcow',
+                      '--output', family, '--json')
+        check(generic['sha256'] == result['sha256'] and family.read_bytes() == contents,
+              'QCOW family selector must preserve QCOW2 decoding')
+        mismatch = root / (label + '-wrong-version.raw')
+        run(binary, 'import-image', '--source', image, '--image-type', 'qcow1',
+            '--output', mismatch, '--json', expected=4)
+        check(not mismatch.exists(), 'strict QCOW v1 selector accepted QCOW2')
         scan = run(binary, 'scan', '--source', output, '--mode', 'carve', '--work-dir', root / label, '--json')
         candidates = run(binary, 'results', '--session', scan['session'], '--json')['candidates']
         restored = []

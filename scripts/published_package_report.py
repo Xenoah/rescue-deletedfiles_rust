@@ -60,6 +60,20 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 28, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        reference = json.loads((docs/'qcow-v1-results.json').read_text())
+        assert run['qcow1'] == reference['portable']
+        assert run['qcow1_geometry'] == json.loads((docs/'qcow-v1-geometry.json').read_text())
+        if platform == 'linux':
+            layouts = run['qemu_qcow1']
+            assert layouts.keys() == reference['native'].keys()
+            for label, result in layouts.items():
+                assert result['originals'] == reference['native'][label]['originals']
+                assert result['plain_clusters'] > 0 and result['unallocated_l2_entries'] > 0
+                assert (result['deflate_clusters'] > 0) == label.endswith('-deflate')
+            for fs in ('fat32','ext4','windows-ntfs'):
+                assert layouts[fs+'-sparse']['disk_sha256'] == layouts[fs+'-deflate']['disk_sha256']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 27, 0):
         reference = json.loads((Path(__file__).resolve().parents[1]/'docs/heif-v1.27-results.json').read_text())
         assert run['heif_photos'] == reference['portable']
