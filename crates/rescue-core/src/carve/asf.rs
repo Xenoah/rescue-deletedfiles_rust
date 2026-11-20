@@ -332,7 +332,7 @@ pub(super) fn parse(input: &mut Input<'_>) -> Result<(Format<'static>, usize)> {
         let max = u32le(b, 24);
         let mut previous = 0;
         let mut seen_reference = false;
-        for entry in b[32..].chunks_exact(6) {
+        for entry in b[32..].as_chunks::<6>().0 {
             let start = u32le(entry, 0);
             let n = u32::from(u16le(entry, 4));
             // FFmpeg writes (0, 0) for preroll preceding the first indexed keyframe.

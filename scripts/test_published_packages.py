@@ -61,6 +61,7 @@ from e2e_vmdk import verify as native_vmdk
 from e2e_vmdk_split import verify as split_vmdk
 from e2e_vmdk_vbox_parent import verify as vmdk_vbox_parent
 from e2e_rar import verify as rar_archives
+from e2e_asf import verify as windows_media
 from e2e_svg import verify as svg_images
 from e2e_lvm2 import verify as lvm2_volumes
 from e2e_qed import verify as qed_images
@@ -254,6 +255,9 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 47, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['windows_media'] = windows_media(binary, Path(tmp), native=a.platform == 'linux')
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 46, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['qed'] = qed_images(binary, Path(tmp), native=a.platform == 'linux')

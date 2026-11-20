@@ -5,7 +5,7 @@ const CODEC_RESERVED: Guid = uuid::uuid!("86d15241-311d-11d0-a3a4-00a0c90348f6")
 
 fn utf16(bytes: &[u8]) -> Result<()> {
     if !bytes.len().is_multiple_of(2)
-        || char::decode_utf16(bytes.chunks_exact(2).map(|word| u16le(word, 0)))
+        || char::decode_utf16(bytes.as_chunks::<2>().0.iter().map(|word| u16le(word, 0)))
             .any(|ch| ch.is_err())
     {
         return Err(invalid());
@@ -16,7 +16,7 @@ fn utf16(bytes: &[u8]) -> Result<()> {
 pub(super) fn description(body: &[u8]) -> Result<()> {
     let mut cursor = Cursor(body);
     let lengths = cursor.take(10)?;
-    for word in lengths.chunks_exact(2) {
+    for word in lengths.as_chunks::<2>().0 {
         utf16(cursor.take(usize::from(u16le(word, 0)))?)?;
     }
     cursor.end()
