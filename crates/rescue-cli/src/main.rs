@@ -298,14 +298,14 @@ struct McpArgs {
 
 #[derive(Subcommand)]
 enum Command {
-    /// Convert a standalone virtual or forensic disk image to a new RAW file.
+    /// Convert a virtual or forensic disk image, including explicitly supplied QCOW2 backing files, to a new RAW file.
     ImportImage {
         #[command(flatten)]
         image: sleuthkit::ImageArgs,
-        /// Confirm the complete logical length before importing regular RAW segments.
+        /// Verify the logical disk length for an explicitly selected RAW or QCOW image type.
         #[arg(long)]
         raw_bytes: Option<u64>,
-        /// Confirm the complete logical SHA-256 before publishing a regular RAW image.
+        /// Verify the logical disk SHA-256 before publishing an explicitly selected RAW or QCOW conversion.
         #[arg(long)]
         raw_sha256: Option<String>,
         #[arg(long)]

@@ -19,6 +19,26 @@ pub struct RawExpectation<'a> {
     pub sha256: Option<&'a str>,
 }
 
+impl RawExpectation<'_> {
+    pub(super) fn expected_digest(self, size: u64) -> Result<Option<[u8; 32]>> {
+        if self.bytes.is_some_and(|n| n != size) {
+            return Err(Error::Invalid(
+                "RAW length differs from the expected byte count".into(),
+            ));
+        }
+        self.sha256.map(strong).transpose()
+    }
+}
+
+pub(super) fn verify_digest(digest: &Sha256, expected: Option<[u8; 32]>) -> Result<()> {
+    if expected.is_some_and(|want| <[u8; 32]>::from(digest.clone().finalize()) != want) {
+        return Err(Error::Invalid(
+            "RAW SHA-256 differs from the expected digest".into(),
+        ));
+    }
+    Ok(())
+}
+
 #[derive(Debug, Serialize)]
 pub struct RawSegment {
     pub path: PathBuf,
@@ -139,7 +159,6 @@ pub(super) fn import(
     expected: RawExpectation<'_>,
     cancel: &AtomicBool,
 ) -> Result<ImportedFile> {
-    let digest = expected.sha256.map(strong).transpose()?;
     let first = Path::new(&paths[0]);
     let members: Vec<PathBuf> = if paths.len() == 1 && numbered_start(first) {
         let found = discover(first, cancel)?;
@@ -186,11 +205,7 @@ pub(super) fn import(
             .ok_or_else(|| Error::Limit("RAW length overflow".into()))?;
         snapshots.push(snapshot);
     }
-    if expected.bytes.is_some_and(|n| n != total) {
-        return Err(Error::Invalid(
-            "RAW length differs from the expected byte count".into(),
-        ));
-    }
+    let digest = expected.expected_digest(total)?;
     let mut segments = Vec::with_capacity(members.len());
     let mut result = publish_output(&output, cancel, |out| {
         let mut logical = Sha256::new();
@@ -225,11 +240,7 @@ pub(super) fn import(
             });
             offset += original.bytes;
         }
-        if digest.is_some_and(|want| <[u8; 32]>::from(logical.clone().finalize()) != want) {
-            return Err(Error::Invalid(
-                "RAW SHA-256 differs from the expected digest".into(),
-            ));
-        }
+        verify_digest(&logical, digest)?;
         out.set_len(total)?;
         Ok((total, logical))
     })?;

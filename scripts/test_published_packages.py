@@ -41,10 +41,13 @@ from e2e_cab import verify as cabinet_archives
 from e2e_android_sparse import portable as android_sparse, native as aosp_deletions
 from e2e_ddrescue_partitions import exercise as shifted_ddrescue_partitions
 from e2e_qcow1 import portable as qcow1, native as qemu_qcow1
+from e2e_xfs_allocation import verify as xfs_allocation
 from e2e_ext4_allocation import verify as ext4_allocation
 from e2e_hfs_allocation import verify as hfs_allocation
 from e2e_qcow1_geometry import verify as qcow1_geometry
+from e2e_photoshop import verify as photoshop_documents
 from e2e_heif import verify as heif_photos
+from e2e_qcow2_backing import native as qcow_chain_native, portable as qcow_chain_portable
 from e2e_qcow2_subclusters import portable as qcow_modern, native as qemu_modern
 from e2e_ddrescue import portable as ddrescue_map, native as gnu_ddrescue
 from e2e_split_raw import portable as split_raw, native as gnu_split_raw, large as large_split_raw
@@ -233,6 +236,21 @@ def main():
     restore_paths(binary,(a.output/'restore-paths.json').resolve())
     restore_native(binary,(a.output/'restore-native.json').resolve())
     result['ntfs_extension_verification']=ntfs_extents(binary,(a.output/'ntfs-results.json').resolve())
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 33, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['xfs_allocation'] = xfs_allocation(binary, Path(tmp), xfs_tools=a.platform == 'linux')
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 32, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['qcow2_chain'] = qcow_chain_portable(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['qemu_chains'] = qcow_chain_native(binary, Path(tmp))
+    if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 31, 0):
+        with tempfile.TemporaryDirectory() as tmp:
+            result['photoshop_documents'] = photoshop_documents(binary, Path(tmp))
+        if a.platform == 'linux':
+            with tempfile.TemporaryDirectory() as tmp:
+                result['photoshop_deleted'] = photoshop_documents(binary, Path(tmp), native=True)
     if tuple(map(int, version.split('-')[0].split('.'))) >= (1, 30, 0):
         with tempfile.TemporaryDirectory() as tmp:
             result['ext4_allocation'] = ext4_allocation(binary, Path(tmp), tsk=a.platform == 'linux')

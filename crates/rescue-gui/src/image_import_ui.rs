@@ -99,7 +99,7 @@ impl Format {
     }
 
     fn split(self) -> bool {
-        matches!(self, Self::Raw | Self::Ewf | Self::Vmdk)
+        matches!(self, Self::Raw | Self::Ewf | Self::Vmdk | Self::Qcow)
     }
 }
 
@@ -177,12 +177,14 @@ impl App {
                         Format::Dmg => {ui.small(tr!("単独UDIFのブロック表と記録されたCRC-32を照合します。", "Checks the block maps and recorded CRC-32 of a standalone UDIF image."));}
                         Format::Ewf => { ui.small(tr!("libewfのewfinfo・ewfverify・ewfexportで取得エラーと論理SHA-256を確認します。", "Uses ewfinfo, ewfverify and ewfexport from libewf to check acquisition errors and the logical SHA-256.")); }
                         Format::Vmdk => {ui.small(tr!("単独の疎・圧縮VMDK、または記述ファイルと明示指定したフラット・分割エクステントを変換します。", "Import standalone sparse or compressed VMDK, or a descriptor and explicitly selected flat or split extent files."));}
-                        Format::Qcow => {ui.small(tr!("単独QCOW v1、QCOW2 v2/v3に対応します。QCOW2 v3はZstandard圧縮と拡張L2にも対応します。","Supports standalone QCOW v1 and QCOW2 v2/v3, including QCOW2 v3 Zstandard and extended L2."));}
+                        Format::Qcow => {ui.small(tr!("単独QCOW v1、QCOW2 v2/v3に対応します。差分QCOW2は直近の親から順にRAWまたはQCOW2を指定してください。","For a QCOW2 overlay, select its backing files in order from nearest parent to base (RAW or QCOW2). Standalone QCOW v1 and QCOW2 v2/v3 are also supported."));}
                         Format::Vdi | Format::Vhd | Format::Vhdx => {ui.small(tr!("親ディスクを参照しない単独イメージに対応します。", "Supports standalone images without a backing disk."));}
                         _ => {ui.small(tr!("The Sleuth Kitの対応ドライバーとimg_catを使用します。", "Uses img_cat and the appropriate driver from The Sleuth Kit."));}
                     }
                     if format.split() {
-                        let caption = if format == Format::Vmdk {
+                        let caption = if format == Format::Qcow {
+                            tr!("親ディスク（直近の親から順に1行1パス）","Backing files (nearest parent first, one path per line)")
+                        } else if format == Format::Vmdk {
                             tr!("記述ファイルにある構成ファイル（1行1パス）", "Extent files named in the descriptor (one path per line)")
                         } else {
                             tr!("追加セグメント（順番どおり、1行1パス）", "Additional segments in order (one path per line)")
@@ -196,7 +198,7 @@ impl App {
                         }
                     }
                 }
-                if state.format == Some(Format::Raw) {
+                if matches!(state.format,Some(Format::Raw | Format::Qcow)) {
                     ui.collapsing(
                         tr!("元ディスクと照合", "Verify against the original disk"),
                         |ui| {
@@ -299,7 +301,7 @@ impl App {
                     )
                 } else if format == Format::Android {
                     rescue_core::disk_image::import_android(&request.source, &output, &cancel)
-                } else if format == Format::Raw {
+                } else if matches!(format, Format::Raw | Format::Qcow) {
                     let bytes = if expected_size.is_empty() {
                         None
                     } else {

@@ -1,0 +1,204 @@
+{
+  "files_byte_exact": 7,
+  "bytes_exact": 13167,
+  "source_unchanged": true,
+  "source_sha256": "a2a44f2e35df75a73a480f55232e2c43f71447d6a66abb5410d19678d1e165fb",
+  "archive_sha256": "2a4c2e4f0537219313707708e9345fe4ec70745046869bc43b8e4575c2444598",
+  "actual_fat32_unlinks": {
+    "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+    "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+    "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+    "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+    "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+    "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+    "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+  },
+  "status": "passed",
+  "application_version": "1.32.0",
+  "time_utc": "2026-11-20T03:11:20.694916+00:00",
+  "platform": "Linux x64, Xvfb",
+  "scope": "Actual debug GUI with X11 mouse and keyboard. Loaded fixture sessions, returned to settings, started fresh scans and recovered selected files as ZIP archives. Application-generated reports independently checked against the ZIP contents.",
+  "settings_to_scan_to_selected_recovery": true,
+  "gui_binary_sha256": "29be3218917b50436d1c88b0130b04e3da37f7758ba5e92ba8e8c8d31c13704b",
+  "cli_binary_sha256": "e06540a999e2553fca65c521beed93b5d022c5a20e8597248d31aaefd4741c00",
+  "files": [
+    {
+      "archive_entry": "bmp_00000000000a1a00.bmp",
+      "bytes": 3126,
+      "sha256": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745"
+    },
+    {
+      "archive_entry": "gif_00000000000a2800.gif",
+      "bytes": 1731,
+      "sha256": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654"
+    },
+    {
+      "archive_entry": "pdf_00000000000a3200.pdf",
+      "bytes": 1367,
+      "sha256": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2"
+    },
+    {
+      "archive_entry": "png_00000000000a3000.png",
+      "bytes": 102,
+      "sha256": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403"
+    },
+    {
+      "archive_entry": "wav_00000000000a3a00.wav",
+      "bytes": 6478,
+      "sha256": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e"
+    },
+    {
+      "archive_entry": "webp_00000000000a3800.webp",
+      "bytes": 184,
+      "sha256": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94"
+    },
+    {
+      "archive_entry": "zip_00000000000a5400.zip",
+      "bytes": 179,
+      "sha256": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    }
+  ],
+  "readable_reports": {
+    "files_exactly_match_json": 7,
+    "html_sha256": "241152979275a5fafbd818f9f828cd44399e330d52d331f8c8636c7508b6a87b",
+    "csv_sha256": "248c5d7b50cf9415bc46600705d01c4c6346d34636045c0c79037801d8479015",
+    "browser": {
+      "engine": "Chromium",
+      "external_requests": 0,
+      "rows": 7
+    }
+  },
+  "imaging": {
+    "source_unchanged": true,
+    "resume_byte_exact": true,
+    "strategy": "adaptive",
+    "timeout_failed_bytes": 4194304,
+    "timeout_unattempted_bytes": 62914560,
+    "image_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "source_sha256": "355cff2b05f48202f37d7c32f380927a67526783f44b30ae40c76621e13ab956",
+    "acquired_bytes": 67108864,
+    "fault_method": "SIGSTOP of the acquisition child of this test GUI"
+  },
+  "cp932": {
+    "files_byte_exact": 8,
+    "bytes_exact": 224,
+    "source_unchanged": true,
+    "source_sha256": "ee3e3ea14facaad96a934ad3ac462a9624bd1c216d031bb128815275c9e3d406",
+    "archive_sha256": "71478ecb7226fb4f61c299cd9e060be5cbf0efacacabc8f4a09cf1ea8ad16c3d",
+    "raw_name_provenance": 7
+  },
+  "exfat_damage": {
+    "files_byte_exact": 8,
+    "bytes_exact": 14135,
+    "source_unchanged": true,
+    "source_sha256": "b9c5982d006c8984686115e82cf9400b74a3d54876886f2bed6eb2cda10d420f",
+    "archive_sha256": "328daab19fada8cc2a45fba98a2e105eff6ea8bddc91792594bac9131cffa47f",
+    "unverified_candidates": 11
+  },
+  "known_hashes": {
+    "matched": 2,
+    "not_listed": 6,
+    "not_comparable": 0,
+    "original_evidence_preserved": true,
+    "source_unchanged": true,
+    "saved_comparison_sha256": "6de859446c2456841cadf9c75f57ddeccd7ab8e6c7cd75cfe42e09d32dca575a"
+  },
+  "custom_rule": {
+    "files_byte_exact": 1,
+    "bytes_exact": 72,
+    "source_unchanged": true,
+    "source_sha256": "322079af505b5099ba18365718c662331bcca512ac637de069d1e9488dc56d09",
+    "archive_sha256": "d4588054fbd024ce1221886ff8db6701a2c7a56f63fd5fd1ae47e6130938a7da"
+  },
+  "screenshots": [
+    {
+      "file": "images/v1.32.0/structures-selected.png",
+      "sha256": "854196fcc24f878fc4282f2368cbd2f424909d47d937cbefba89ec20ad083e85",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/structures-recovered.png",
+      "sha256": "8c4a38a7a8c6cd05283efa8a4959435dd800cc53c2636ff4618cca8a001a7673",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/custom-recovered.png",
+      "sha256": "7ca33161b0913fbef6f27035a1ef78b5c4858293a1afd9c8fade6231a0e967fd",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/cp932-recovered.png",
+      "sha256": "b633437a5b0d33fdae9316dfa2eb3d21b289715dacad0b2c65cf171e6e4fbc79",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/exfat-recovered.png",
+      "sha256": "203642bff6b509a3f8e301c3ff6fdd6a36f9127a3515ccf705ebfe4f8b46e4b1",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/hash-saved.png",
+      "sha256": "1bf5d94995c05f153360b5a121b5eeed8d6df91ae10138ce812f5e3c781c301a",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/acq-interrupted.png",
+      "sha256": "8bc330ea543875c77f807da4174575f74f53de21b8b8a1ae6f4dabe65ce1769d",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/acq-resumed.png",
+      "sha256": "5942912a02b81ba5df19cb1e984fa0f7260b8ddf75934ed4f5dba8ffeab2d545",
+      "width": 1260,
+      "height": 820
+    },
+    {
+      "file": "images/v1.32.0/chain-settings.png",
+      "width": 1260,
+      "height": 820,
+      "sha256": "ebcaf7145781365a84b50dc320db5178cf408bdf6d5756826170a5a565cd7307"
+    },
+    {
+      "file": "images/v1.32.0/chain-selected.png",
+      "width": 1260,
+      "height": 820,
+      "sha256": "5bcf0e83ec6d2516a8a11fc6dbf3a95e2db827ec32886f8615b7176a95b1e15b"
+    },
+    {
+      "file": "images/v1.32.0/chain-rejected.png",
+      "width": 1260,
+      "height": 820,
+      "sha256": "b1a5a3f97743dc3fffa721a54ecc2d477df70650f60846ff9ff901a7fffd4466"
+    }
+  ],
+  "qcow2_backing_import": {
+    "members": {
+      "child.qcow2": "467455014daf7387fde3c17f28067bf817f6d1e5abba9288257b17e4f9dea739",
+      "middle.qcow2": "ab345d517b8dcb5981d29082b50305d7d27407f1e6f7982604d0c21812172b79",
+      "base.qcow2": "c108d2c7e72f35ce4293707f39b12e8191e8cde987f3ce15b87bbead9e35ee32"
+    },
+    "guest_sha256": "a2a44f2e35df75a73a480f55232e2c43f71447d6a66abb5410d19678d1e165fb",
+    "guest_bytes": 41943040,
+    "deleted_files": {
+      "sample.bmp": "75d2d5dc6b52e3e5ffe9256d961a8a81015eae9a23cb09383b443811922c3745",
+      "sample.gif": "5161b91d1fe9bd76b4890b9f75494c007964cf2f2861bd5abe54ff176593d654",
+      "sample.png": "802cbbd7b6715c55c8bea7bcf74d09f9d4be60be57f53a6e379aa8e3e244f403",
+      "sample.pdf": "eb62b5188f96301148a4e1e910765ecacbcfeac825cb666bf42c52a588923aa2",
+      "sample.webp": "27fedcd92083eca0a7c907223c69915f34467b38cecf22e445a4141be4685f94",
+      "sample.wav": "ad2b45dd27b82fd6406be86f3f2dce7976f360a9a10cb2fb8b69b7ae4edef90e",
+      "sample.zip": "30853c803ef91d20b5210adeb4ca4d148f01965c68c14ce9965cd420de3531a6"
+    },
+    "selected_as_scan_source": true,
+    "source_unchanged": true,
+    "same_name_wrong_parent_refused": true,
+    "output_absent": true,
+    "source_sha256": "edf10bf424f5b33ee374843702d129a3186c647c1b1b968b51a645447d01c582"
+  }
+}

@@ -60,6 +60,25 @@ for platform,arch in [('windows','x64'),('linux','x64'),('macos','x64'),('macos'
             assert len(run['fragmented_fat_files']) == 7
             history = run['apfs_snapshot_files']
             assert history['bare'] == history['offset-split'] and len(history['bare']) == 7
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 33, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        assert run['xfs_allocation'] == json.loads((docs/'xfs-allocation-results.json').read_text())
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 32, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        reference = json.loads((docs/'qcow2-backing-results.json').read_text())
+        assert run['qcow2_chain'] == reference['portable']
+        if platform == 'linux':
+            chains = run['qemu_chains']
+            assert chains.keys() == reference['native'].keys()
+            for name, sample in reference['native'].items():
+                assert all(chains[name][k] == sample[k] for k in ('originals', 'guest_bytes', 'qemu_depths'))
+            assert chains['windows-ntfs-zstd'] == reference['native']['windows-ntfs-zstd']
+    if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 31, 0):
+        docs = Path(__file__).resolve().parents[1]/'docs'
+        reference = json.loads((docs/'photoshop-results.json').read_text(encoding='utf-8'))
+        assert run['photoshop_documents'] == reference['portable']
+        if platform == 'linux':
+            assert run['photoshop_deleted'] == reference['native']
     if tuple(map(int, a.tag.removeprefix('v').split('-')[0].split('.'))) >= (1, 30, 0):
         docs = Path(__file__).resolve().parents[1]/'docs'
         assert run['ext4_allocation'] == json.loads((docs/'ext4-allocation-results.json').read_text())
